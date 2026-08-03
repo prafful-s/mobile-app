@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.dept.contentbridge</groupId>
+        <artifactId>contentbridge</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>contentbridge.ui.apps.structure</artifactId>
+    <packaging>content-package</packaging>
+    <name>ContentBridge - Repository Structure Package</name>
+    <description>Declares the JCR roots the code packages depend on, so deployment fails fast
+        instead of silently creating orphan nodes.</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.jackrabbit</groupId>
+                <artifactId>filevault-package-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <packageType>container</packageType>
+                    <repositoryStructurePackage>true</repositoryStructurePackage>
+                    <filters>
+                        <filter><root>/apps/contentbridge</root></filter>
+                        <!-- Install roots used by the 'all' container package. -->
+                        <filter><root>/apps/contentbridge-packages</root></filter>
+                        <filter><root>/apps/contentbridge-vendor-packages</root></filter>
+                        <filter><root>/conf/contentbridge</root></filter>
+                        <filter><root>/content/contentbridge</root></filter>
+                        <filter><root>/content/dam/contentbridge</root></filter>
+                    </filters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

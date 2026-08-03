@@ -1,0 +1,20 @@
+# ContentBridge filter rules.
+#
+# The default deny-all from the SDK stays in force; these rules open exactly the two things the
+# API needs and nothing more.
+
+# The read API itself. Only GET, only the 'path' and 'pretty' query parameters.
+/0100 {
+  /type "allow"
+  /method "GET"
+  /path "/bin/contentbridge/pages"
+  /query "*"
+}
+
+# Published DAM renditions referenced from the JSON payload.
+/0110 {
+  /type "allow"
+  /method "GET"
+  /path "/content/dam/contentbridge/*"
+  /extension '(?i)(jpe?g|png|gif|svg|webp)'
+}

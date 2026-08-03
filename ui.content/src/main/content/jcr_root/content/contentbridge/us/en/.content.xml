@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="cq:Page">
+    <jcr:content
+        jcr:primaryType="cq:PageContent"
+        sling:resourceType="contentbridge/components/page"
+        cq:template="/conf/contentbridge/settings/wcm/templates/screen-page"
+        jcr:title="Home"
+    appId="ContentBridge: sample-app"
+    appTitle="ContentBridge Sample App"
+    appType="mobile-v2"
+    useCart="{Boolean}true"
+    loginScreen="login"
+    profileScreen="user-details"
+    registrationScreen="registration"
+    screenIcon="home">
+        <contentbridge jcr:primaryType="nt:unstructured">
+            <branding jcr:primaryType="nt:unstructured"
+                logo="/content/dam/contentbridge/brand/logo.png"
+                dark_logo="/content/dam/contentbridge/brand/logo-dark.png"
+                variant="advanced"
+                roundness="{Long}4"
+                primaryColor="#000000"
+                secondaryColor="#ffffff"
+                tertiaryColor="#005971"
+                textColor="#000000"
+                backgroundColor="#ffffff"
+                topBarBackgroundColor="#005971"
+                topBarTextColor="#ffffff"
+                topBarAccentColor="#ffffff"
+                bottomBarBackgroundColor="#ffffff"
+                bottomBarTextColor="#000000"
+                bottomBarAccentColor="#000000"
+                dark_primaryColor="#ffffff"
+                dark_secondaryColor="#000000"
+                dark_tertiaryColor="#00bcd4"
+                dark_textColor="#ffffff"
+                dark_backgroundColor="#121212"
+                dark_topBarBackgroundColor="#00303a"
+                dark_topBarTextColor="#ffffff"
+                dark_topBarAccentColor="#00bcd4"
+                dark_bottomBarBackgroundColor="#1a1a1a"
+                dark_bottomBarTextColor="#ffffff"
+                dark_bottomBarAccentColor="#ffffff"/>
+            <!-- The {String} prefix is required: FileVault docview reads a leading '{' as a type
+                 hint, so a raw JSON object would be parsed as a (nonexistent) type name. A leading
+                 '[' means multi-value for the same reason - productsJson is therefore left unset
+                 here and defaults to an empty array. Authors editing these fields through Page
+                 Properties are unaffected; this only applies to content shipped as XML. -->
+            <extras jcr:primaryType="nt:unstructured"
+                integrationsJson="{String}{&quot;aep&quot;:{&quot;sandbox&quot;:&quot;public-demo&quot;}}"
+                profileViewerJson="{String}{&quot;segments&quot;:{&quot;segmentFilter&quot;:[]}}"/>
+        </contentbridge>
+        <root jcr:primaryType="nt:unstructured"
+            sling:resourceType="wcm/foundation/components/responsivegrid">
+            <container jcr:primaryType="nt:unstructured"
+                sling:resourceType="wcm/foundation/components/responsivegrid">
+        <banner
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/banner"
+            fileReference="/content/dam/contentbridge/images/hero.jpg"
+            horizontalAlignment="left"
+            verticalAlignment="middle"
+            contentAlignment="left"
+            isSubtitleRichText="{Boolean}true"
+            showButton="{Boolean}true"
+            title="Welcome to ContentBridge"
+            titleVariant="titleLarge"
+            subtitle="&lt;p&gt;Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.&lt;/p&gt;"
+            buttonLabel="Learn More"
+            linkTo="#"
+            buttonIcon="arrow-right"/>
+        <title
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/title"
+            jcr:title="Lorem ipsum dolor sit amet, consectetur adipiscing elit"
+            size="medium"
+            textAlignment="center"/>
+        <htmltext
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/htmlText"
+            text="&lt;p&gt;Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.&lt;/p&gt;"
+            textAlignment="center"/>
+        <card
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/card"
+            titleVariant="titleMedium"
+            textTransform="none"
+            cardType="stacked"
+            isSubtitleRichText="{Boolean}true"
+            subtitle="&lt;p&gt;Lorem Ipsum has been the industry's standard dummy text ever since the 1500s.&lt;/p&gt;"
+            fileReference="/content/dam/contentbridge/images/img2.png"
+            jcr:title="Lorem ipsum dolor sit amet"
+            link="#"/>
+        <divider
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/divider"/>
+        <card_1
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/card"
+            titleVariant="titleMedium"
+            textTransform="none"
+            cardType="stacked"
+            isSubtitleRichText="{Boolean}true"
+            subtitle="&lt;p&gt;Lorem Ipsum has been the industry's standard dummy text ever since the 1500s.&lt;/p&gt;"
+            fileReference="/content/dam/contentbridge/images/img4.png"
+            jcr:title="Second card"
+            link="/content/contentbridge/us/en/subpage3"
+            buttonLabel="Read More"/>
+        <divider_1
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/divider"/>
+        <title_1
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/title"
+            jcr:title="Follow Us On Social Media"
+            size="xlarge"
+            textAlignment="center"/>
+        <image
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/image"
+            fileReference="/content/dam/contentbridge/images/facebook.png"
+            link="#"
+            alt="Facebook"/>
+        <image_1
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/image"
+            fileReference="/content/dam/contentbridge/images/twitter.png"
+            link="#"
+            alt="Twitter"/>
+            </container>
+        </root>
+    </jcr:content>
+</jcr:root>

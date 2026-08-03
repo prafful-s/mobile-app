@@ -1,0 +1,7 @@
+{
+  "allowedRoots": [
+    "/content"
+  ],
+  "maxDepth": 5,
+  "cacheMaxAge": 300
+}

@@ -1,0 +1,71 @@
+// Preview styling for the AEM editor. Intentionally minimal - the real UI is whatever client
+// consumes the ContentBridge JSON.
+
+$cb-gap: 1.5rem;
+$cb-radius: 4px;
+
+.cb-align-left   { text-align: left; }
+.cb-align-center { text-align: center; }
+.cb-align-right  { text-align: right; }
+
+.cb-banner {
+    position: relative;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    background-size: cover;
+    background-position: center;
+    border-radius: $cb-radius;
+    overflow: hidden;
+
+    &__inner {
+        padding: $cb-gap * 2;
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+    }
+
+    &__cta {
+        display: inline-block;
+        margin-top: $cb-gap * .5;
+        padding: .6rem 1.4rem;
+        border-radius: $cb-radius;
+        background: #fff;
+        color: #111;
+        text-decoration: none;
+    }
+
+    &--image-only { min-height: 200px; }
+}
+
+.cb-title {
+    margin: $cb-gap 0 .5rem;
+
+    &--xlarge { font-size: 2.5rem; }
+    &--large  { font-size: 2rem; }
+    &--medium { font-size: 1.5rem; }
+    &--small  { font-size: 1.125rem; }
+}
+
+.cb-htmltext { line-height: 1.6; }
+
+.cb-card {
+    border: 1px solid #e1e1e1;
+    border-radius: $cb-radius;
+    overflow: hidden;
+    margin-bottom: $cb-gap;
+
+    &__image { width: 100%; display: block; }
+    &__title { margin: $cb-gap * .75 $cb-gap 0; }
+    &__subtitle { margin: .5rem $cb-gap $cb-gap; color: #4a4a4a; }
+    &__cta { display: inline-block; margin: 0 $cb-gap $cb-gap; }
+
+    &--horizontal { display: flex; .cb-card__image { width: 40%; object-fit: cover; } }
+}
+
+.cb-divider {
+    border: 0;
+    border-top: 1px solid #d9d9d9;
+    margin: $cb-gap 0;
+}
+
+.cb-image img { max-width: 100%; display: block; }

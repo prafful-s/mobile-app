@@ -1,0 +1,91 @@
+package com.dept.contentbridge.core.servlets;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import com.dept.contentbridge.core.ContentBridgeTestContext;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.wcm.testing.mock.aem.junit5.AemContext;
+import io.wcm.testing.mock.aem.junit5.AemContextExtension;
+
+@ExtendWith(AemContextExtension.class)
+class PageJsonServletTest {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private final AemContext context = ContentBridgeTestContext.newContext();
+
+    private PageJsonServlet servlet;
+
+    @BeforeEach
+    void setUp() {
+        ContentBridgeTestContext.setUp(context);
+        servlet = context.registerInjectActivateService(new PageJsonServlet());
+    }
+
+    private Map<String, Object> body() throws Exception {
+        return MAPPER.readValue(context.response().getOutputAsString(),
+                new TypeReference<Map<String, Object>>() { });
+    }
+
+    @Test
+    @DisplayName("returns the app payload for a valid path")
+    void happyPath() throws Exception {
+        context.request().setParameterMap(Map.of("path", ContentBridgeTestContext.APP_ROOT));
+        servlet.doGet(context.request(), context.response());
+
+        assertEquals(HttpServletResponse.SC_OK, context.response().getStatus());
+        assertTrue(context.response().getContentType().startsWith("application/json"));
+        assertEquals("max-age=300", context.response().getHeader("Cache-Control"));
+        assertEquals("ContentBridge: test-app", body().get("id"));
+    }
+
+    @Test
+    @DisplayName("pretty=true indents the response")
+    void prettyPrint() throws Exception {
+        context.request().setParameterMap(Map.of(
+                "path", ContentBridgeTestContext.APP_ROOT, "pretty", "true"));
+        servlet.doGet(context.request(), context.response());
+
+        assertTrue(context.response().getOutputAsString().contains("\n  "));
+    }
+
+    @Test
+    @DisplayName("missing path yields 400 with a JSON error body")
+    void missingPath() throws Exception {
+        servlet.doGet(context.request(), context.response());
+
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, context.response().getStatus());
+        assertTrue(body().get("error").toString().contains("path"));
+    }
+
+    @Test
+    @DisplayName("paths outside the allowed roots yield 403, not 404")
+    void forbiddenPath() throws Exception {
+        context.request().setParameterMap(Map.of("path", "/etc/passwd"));
+        servlet.doGet(context.request(), context.response());
+
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, context.response().getStatus());
+        assertEquals("no-store", context.response().getHeader("Cache-Control"));
+    }
+
+    @Test
+    @DisplayName("an allowed but non-existent page yields 404")
+    void missingPage() throws Exception {
+        context.request().setParameterMap(Map.of("path", "/content/contentbridge/us/nope"));
+        servlet.doGet(context.request(), context.response());
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, context.response().getStatus());
+    }
+}

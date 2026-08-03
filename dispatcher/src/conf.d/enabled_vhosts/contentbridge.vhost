@@ -1,0 +1,28 @@
+# ContentBridge virtual host.
+#
+# The JSON API is a plain GET under /bin/contentbridge/pages, so it can be cached at the CDN and
+# at the dispatcher. Everything else follows the usual publish rules.
+
+<VirtualHost *:80>
+    ServerName "publish"
+    ServerAlias "contentbridge.local"
+
+    <Directory />
+        Options FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    # CORS for browser and mobile clients consuming the JSON contract.
+    <LocationMatch "^/bin/contentbridge/pages">
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Content-Type"
+    </LocationMatch>
+
+    <IfModule disp_apache2.c>
+        ModMimeUsePathInfo On
+        DispatcherUseProcessedURL On
+        DispatcherPassError 400-404,500
+    </IfModule>
+</VirtualHost>

@@ -1,0 +1,18 @@
+target/
+node_modules/
+dist/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+ui.apps/src/main/content/jcr_root/apps/contentbridge/clientlibs/clientlib-site/
+
+# Logs - kept on disk, never committed
+*.log
+logs/
+crx-quickstart/
+
+# JVM crash artefacts (written to the working directory by a crashing JVM)
+hs_err_pid*.log
+replay_pid*.log
+core.*

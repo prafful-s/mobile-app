@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="cq:Page">
+    <jcr:content
+        jcr:primaryType="cq:PageContent"
+        sling:resourceType="contentbridge/components/page"
+        cq:template="/conf/contentbridge/settings/wcm/templates/screen-page"
+        jcr:title="subpage-1"
+    screenIcon="file-document">
+
+        <root jcr:primaryType="nt:unstructured"
+            sling:resourceType="wcm/foundation/components/responsivegrid">
+            <container jcr:primaryType="nt:unstructured"
+                sling:resourceType="wcm/foundation/components/responsivegrid">
+        <banner
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/banner"
+            fileReference="/content/dam/contentbridge/images/banner-6.png"
+            horizontalAlignment="left"
+            verticalAlignment="middle"
+            contentAlignment="left"
+            isSubtitleRichText="{Boolean}true"
+            showButton="{Boolean}false"/>
+        <title
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/title"
+            jcr:title="Lorem ipsum dolor sit amet, consectetur adipiscing elit"
+            size="medium"
+            textAlignment="center"/>
+        <htmltext
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/htmlText"
+            text="&lt;p&gt;Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.&lt;/p&gt;"
+            textAlignment="center"/>
+        <card
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/card"
+            titleVariant="titleMedium"
+            textTransform="none"
+            cardType="stacked"
+            isSubtitleRichText="{Boolean}true"
+            subtitle="&lt;p&gt;Lorem Ipsum has been the industry's standard dummy text ever since the 1500s.&lt;/p&gt;"
+            fileReference="/content/dam/contentbridge/images/img5.png"
+            jcr:title="Lorem ipsum dolor sit amet"/>
+        <divider
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="contentbridge/components/divider"/>
+            </container>
+        </root>
+    </jcr:content>
+</jcr:root>

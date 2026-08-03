@@ -1,0 +1,15 @@
+<sly data-sly-use.model="com.dept.contentbridge.core.models.impl.CardModel"
+     data-sly-test.content="${model.content}"></sly>
+<article class="cb-card cb-card--${content.cardType}">
+    <img class="cb-card__image" data-sly-test="${content.image}" src="${content.image @ context='uri'}" alt="${content.title}"/>
+    <h3 class="cb-card__title" data-sly-test="${content.title}">${content.title}</h3>
+    <div class="cb-card__subtitle" data-sly-test="${content.subtitle}">${content.subtitle @ context='html'}</div>
+    <a class="cb-card__cta" data-sly-test="${content.buttonLabel}" href="${content.link}">${content.buttonLabel}</a>
+</article>
+<sly data-sly-call="${placeholder @ isEmpty = !content.title && !content.image}"></sly>
+
+<sly data-sly-template.placeholder="${@ isEmpty}">
+    <sly data-sly-test="${isEmpty && wcmmode.edit}">
+        <div class="cq-placeholder" data-emptytext="${component.title}"></div>
+    </sly>
+</sly>

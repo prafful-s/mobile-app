@@ -1,0 +1,16 @@
+<sly data-sly-use.model="com.dept.contentbridge.core.models.impl.BannerModel"
+     data-sly-test.content="${model.content}"></sly>
+<div class="cb-banner" style="background-image:url('${content.image @ context='uri'}')">
+    <div class="cb-banner__inner cb-align-${content.contentAlignment}">
+        <h2 class="cb-banner__title" data-sly-test="${content.title}">${content.title}</h2>
+        <div class="cb-banner__subtitle" data-sly-test="${content.subtitle}">${content.subtitle @ context='html'}</div>
+        <a class="cb-banner__cta" data-sly-test="${content.buttonLabel}" href="${content.linkTo}">${content.buttonLabel}</a>
+    </div>
+</div>
+<sly data-sly-call="${placeholder @ isEmpty = !content.image && !content.title}"></sly>
+
+<sly data-sly-template.placeholder="${@ isEmpty}">
+    <sly data-sly-test="${isEmpty && wcmmode.edit}">
+        <div class="cq-placeholder" data-emptytext="${component.title}"></div>
+    </sly>
+</sly>

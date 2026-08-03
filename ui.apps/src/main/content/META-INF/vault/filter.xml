@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspaceFilter version="1.0">
+    <!-- Each owned subtree is listed individually rather than claiming /apps/contentbridge as a
+         whole. /apps/contentbridge/osgiconfig belongs to the ui.config package, and an APPLICATION
+         package may not use excludes to carve it out - so the two packages simply never overlap. -->
+    <filter root="/apps/contentbridge/components"/>
+    <filter root="/apps/contentbridge/clientlibs"/>
+</workspaceFilter>
