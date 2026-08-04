@@ -1,6 +1,6 @@
 # ContentBridge virtual host.
 #
-# The JSON API is a plain GET under /bin/contentbridge/pages, so it can be cached at the CDN and
+# The JSON API is a plain GET on /apps/contentbridge/api.json, so it can be cached at the CDN and
 # at the dispatcher. Everything else follows the usual publish rules.
 
 <VirtualHost *:80>
@@ -14,7 +14,7 @@
     </Directory>
 
     # CORS for browser and mobile clients consuming the JSON contract.
-    <LocationMatch "^/bin/contentbridge/pages">
+    <LocationMatch "^/apps/contentbridge/api\.json">
         Header always set Access-Control-Allow-Origin "*"
         Header always set Access-Control-Allow-Methods "GET, OPTIONS"
         Header always set Access-Control-Allow-Headers "Content-Type"

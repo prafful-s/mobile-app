@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.sling.api.resource.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,13 @@ class PageJsonServletTest {
     void setUp() {
         ContentBridgeTestContext.setUp(context);
         servlet = context.registerInjectActivateService(new PageJsonServlet());
+
+        // The servlet is bound by resource type, so requests arrive on the endpoint node rather
+        // than on a path. Mirror that here instead of invoking doGet against a bare request.
+        final Resource endpoint = context.create().resource("/apps/contentbridge/api",
+                "sling:resourceType", PageJsonServlet.RESOURCE_TYPE);
+        context.currentResource(endpoint);
+        context.requestPathInfo().setExtension("json");
     }
 
     private Map<String, Object> body() throws Exception {

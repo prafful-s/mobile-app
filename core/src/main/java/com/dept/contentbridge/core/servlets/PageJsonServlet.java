@@ -2,6 +2,7 @@ package com.dept.contentbridge.core.servlets;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -10,9 +11,12 @@ import javax.servlet.Servlet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
-import org.apache.sling.servlets.annotations.SlingServletPaths;
+import org.apache.sling.servlets.annotations.SlingServletResourceTypes;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
@@ -28,31 +32,67 @@ import com.fasterxml.jackson.databind.SerializationFeature;
  * The ContentBridge read API.
  *
  * <pre>
- * GET /bin/contentbridge/pages?path=/content/contentbridge/us/en
- * GET /bin/contentbridge/pages?path=/content/contentbridge/us/en/subpage-1&amp;pretty=true
+ * GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en
+ * GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en/subpage-1&amp;pretty=true
  * </pre>
+ *
+ * <p>Bound by <strong>resource type</strong> rather than by path. Adobe's guidance for AEM as a
+ * Cloud Service is to avoid {@code @SlingServletPaths}: path-bound servlets bypass Sling's resource
+ * resolution, so the repository ACLs on the requested resource are never consulted, they cannot be
+ * cached by the dispatcher against a real resource, and they sit outside the standard
+ * resource/selector/extension contract. Binding to {@code contentbridge/api} means the request first
+ * resolves a real node, which the requesting user must be allowed to read.</p>
+ *
+ * <p>Content is read through the {@code contentbridge-reader} system user, which repoinit grants
+ * {@code jcr:read} on {@code /content}. That is what lets one endpoint serve every site on the
+ * instance, including projects that know nothing about ContentBridge, and it means the response does
+ * <em>not</em> reflect the requesting user's permissions - {@code allowedRoots} is the access
+ * boundary, so keep it meaningful.</p>
+ *
+ * <p>If the service user cannot be obtained or cannot see the page, the request falls back to the
+ * caller's own resolver and logs a warning. That keeps a misconfigured service user from taking the
+ * endpoint down on author, where the caller can usually read the content anyway - but it is a
+ * warning, not a solution: on publish the caller is anonymous and there is nothing to fall back to.</p>
  *
  * <p>Responses are {@code application/json;charset=UTF-8}. Errors are returned as a JSON body with
  * an {@code error} key so clients never have to parse an HTML error page.</p>
  */
 @Component(service = Servlet.class,
            property = {"service.description=ContentBridge - Page JSON API"})
-@SlingServletPaths(value = PageJsonServlet.SERVLET_PATH)
+@SlingServletResourceTypes(
+        resourceTypes = PageJsonServlet.RESOURCE_TYPE,
+        methods = HttpConstants.METHOD_GET,
+        extensions = PageJsonServlet.EXTENSION)
 public class PageJsonServlet extends SlingSafeMethodsServlet {
 
-    static final String SERVLET_PATH = "/bin/contentbridge/pages";
+    /** Resource type the endpoint node carries; the node itself lives at /apps/contentbridge/api. */
+    public static final String RESOURCE_TYPE = "contentbridge/api";
+
+    static final String EXTENSION = "json";
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(PageJsonServlet.class);
 
     private static final String PARAM_PATH = "path";
     private static final String PARAM_PRETTY = "pretty";
+
+    /** Overrides where product Content Fragments are read from, for testing and one-off exports. */
+    private static final String PARAM_PRODUCTS_PATH = "productsPath";
     private static final String CONTENT_TYPE = "application/json";
+
+    /**
+     * Sub-service name. Mapped to the {@code contentbridge-reader} system user, which repoinit
+     * grants {@code jcr:read} on {@code /content}.
+     */
+    private static final String SUBSERVICE = "contentbridge-reader";
 
     private final transient ObjectMapper mapper = new ObjectMapper();
 
     @Reference
     private transient PageJsonExporter exporter;
+
+    @Reference
+    private transient ResourceResolverFactory resolverFactory;
 
     @Override
     protected void doGet(final SlingHttpServletRequest request, final SlingHttpServletResponse response)
@@ -75,18 +115,34 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             return;
         }
 
-        final ResourceResolver resolver = request.getResourceResolver();
-        final PageManager pageManager = resolver.adaptTo(PageManager.class);
-        final Page page = pageManager == null ? null : pageManager.getPage(path);
+        // Prefer the contentbridge-reader system user so the API can serve every site under /content
+        // regardless of who is asking. 'allowedRoots' is the access boundary, not the caller's ACLs.
+        try (ResourceResolver serviceResolver = openServiceResolver()) {
 
-        if (page == null) {
-            writeError(response, SlingHttpServletResponse.SC_NOT_FOUND,
-                    "No page exists at '" + path + "'.");
-            return;
-        }
+            Page page = findPage(serviceResolver, path);
 
-        try {
-            final Map<String, Object> payload = exporter.export(page);
+            if (page == null) {
+                // The service user could not see it. That is either a genuine 404 or a
+                // misconfigured grant, and the two are indistinguishable from here - so fall back to
+                // the caller, who on author is usually an author or admin and can read it fine.
+                final Page viaRequest = findPage(request.getResourceResolver(), path);
+                if (viaRequest != null) {
+                    LOG.warn("Page {} was not readable by service user '{}' but is readable by the "
+                            + "requesting user - serving it. Check that repoinit granted jcr:read on "
+                            + "/content and that the user sits under system/cq:services.",
+                            path, SUBSERVICE);
+                    page = viaRequest;
+                }
+            }
+
+            if (page == null) {
+                writeError(response, SlingHttpServletResponse.SC_NOT_FOUND,
+                        "No page exists at '" + path + "'.");
+                return;
+            }
+
+            final Map<String, Object> payload =
+                    exporter.export(page, request.getParameter(PARAM_PRODUCTS_PATH));
             final int maxAge = exporter.getCacheMaxAge();
             if (maxAge > 0) {
                 response.setHeader("Cache-Control", "max-age=" + maxAge);
@@ -95,11 +151,36 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             }
             response.setStatus(SlingHttpServletResponse.SC_OK);
             writer(request).writeValue(response.getWriter(), payload);
+
         } catch (final IOException e) {
             LOG.error("Failed to serialise ContentBridge payload for {}", path, e);
             writeError(response, SlingHttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Could not serialise the page.");
         }
+    }
+
+    /**
+     * Opens the service-user resolver, or null when it cannot be obtained. A missing or misconfigured
+     * service user degrades to the requesting user rather than taking the endpoint down.
+     */
+    private ResourceResolver openServiceResolver() {
+        try {
+            return resolverFactory.getServiceResourceResolver(
+                    Collections.singletonMap(ResourceResolverFactory.SUBSERVICE, SUBSERVICE));
+        } catch (final LoginException e) {
+            LOG.warn("Could not open a resolver for sub-service '{}' - falling back to the requesting "
+                    + "user. Check the repoinit service user and the ServiceUserMapper amendment.",
+                    SUBSERVICE, e);
+            return null;
+        }
+    }
+
+    private Page findPage(final ResourceResolver resolver, final String path) {
+        if (resolver == null) {
+            return null;
+        }
+        final PageManager pageManager = resolver.adaptTo(PageManager.class);
+        return pageManager == null ? null : pageManager.getPage(path);
     }
 
     private com.fasterxml.jackson.databind.ObjectWriter writer(final SlingHttpServletRequest request) {

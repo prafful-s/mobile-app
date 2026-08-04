@@ -4,7 +4,7 @@
   # Cache the JSON responses. The exporter also sets Cache-Control, so the TTL is honoured by the
   # CDN as well as by the dispatcher.
   /0000 {
-    /glob "/bin/contentbridge/pages*"
+    /glob "/apps/contentbridge/api.json*"
     /type "allow"
   }
 }

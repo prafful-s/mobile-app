@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The ContentBridge API endpoint.
+
+    The node carries the resource type the servlet is bound to, which is what makes
+    /apps/contentbridge/api.json resolvable. Requests are served by PageJsonServlet.
+
+    Because resolution goes through the repository, the requesting user must be able to read this
+    node - unlike a path-bound servlet, which answers regardless of ACLs.
+-->
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          xmlns:jcr="http://www.jcp.org/jcr/1.0"
+    jcr:primaryType="sling:Folder"
+    jcr:title="ContentBridge API"
+    sling:resourceType="contentbridge/api"/>

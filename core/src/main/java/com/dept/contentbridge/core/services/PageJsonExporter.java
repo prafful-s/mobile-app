@@ -24,6 +24,16 @@ public interface PageJsonExporter {
     Map<String, Object> export(Page requested);
 
     /**
+     * As {@link #export(Page)}, but with an explicit catalogue location.
+     *
+     * @param requested    the page named by the caller
+     * @param productsPath overrides where product Content Fragments are read from; when blank the
+     *                     site's placeholders page, then its page properties, then a DAM search decide
+     * @return an insertion-ordered map ready for serialisation
+     */
+    Map<String, Object> export(Page requested, String productsPath);
+
+    /**
      * @param path a repository path
      * @return true when the path sits under one of the configured allowed roots
      */

@@ -5,17 +5,17 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.metatype.annotations.Designate;
 
-import com.dept.contentbridge.core.services.ContentBridgeConfiguration;
 import com.dept.contentbridge.core.services.UrlService;
+import com.dept.contentbridge.core.services.UrlServiceConfiguration;
 
 @Component(service = UrlService.class)
-@Designate(ocd = ContentBridgeConfiguration.class)
+@Designate(ocd = UrlServiceConfiguration.class)
 public class UrlServiceImpl implements UrlService {
 
     private String publishDomain;
 
     @Activate
-    protected void activate(final ContentBridgeConfiguration config) {
+    protected void activate(final UrlServiceConfiguration config) {
         this.publishDomain = StringUtils.removeEnd(StringUtils.trimToEmpty(config.publishDomain()), "/");
     }
 

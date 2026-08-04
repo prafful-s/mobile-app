@@ -71,6 +71,8 @@ public final class SchemaConstants {
     public static final String PN_REGISTRATION_SCREEN = "registrationScreen";
     public static final String PN_AUTHORIZED_MENU = "authorizedMenu";
     public static final String PN_SCREEN_ICON = "screenIcon";
+    /** Explicit path to the navigation page, overriding the configured name lookup. */
+    public static final String PN_NAV_PATH = "navPath";
     public static final String PN_EXCLUDE_FROM_APP = "excludeFromApp";
 
     /** Child node of jcr:content holding the branding palette. */

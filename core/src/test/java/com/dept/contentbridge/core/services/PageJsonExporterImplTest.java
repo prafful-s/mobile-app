@@ -100,7 +100,8 @@ class PageJsonExporterImplTest {
                 map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("screens"));
         final Map<String, Object> home = map(screens.get("Home"));
 
-        assertEquals("home", map(home.get("meta")).get("icon"));
+        assertEquals(List.of("name", "title"), List.copyOf(map(home.get("meta")).keySet()),
+                "screen meta carries name and title only - no icon");
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> content = (List<Map<String, Object>>) home.get("content");
@@ -166,13 +167,13 @@ class PageJsonExporterImplTest {
     }
 
     @Test
-    @DisplayName("branding keeps numeric types and externalises logo paths")
+    @DisplayName("branding keeps numeric types and leaves colour tokens alone")
     void branding() {
         final Map<String, Object> branding =
                 map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("branding"));
 
-        assertEquals(ContentBridgeTestContext.PUBLISH_DOMAIN + "/content/dam/contentbridge/brand/logo.png",
-                branding.get("logo"));
+        // No placeholders page in this fixture, so no host is resolved and DAM paths stay relative.
+        assertEquals("/content/dam/contentbridge/brand/logo.png", branding.get("logo"));
         assertEquals("#000000", branding.get("primaryColor"));
         assertEquals(4L, branding.get("roundness"));
         assertFalse(branding.containsKey("jcr:primaryType"));

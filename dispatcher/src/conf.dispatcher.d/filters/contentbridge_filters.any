@@ -3,11 +3,12 @@
 # The default deny-all from the SDK stays in force; these rules open exactly the two things the
 # API needs and nothing more.
 
-# The read API itself. Only GET, only the 'path' and 'pretty' query parameters.
+# The read API. Resource-type bound, so it is requested as a real resource with a .json extension.
 /0100 {
   /type "allow"
   /method "GET"
-  /path "/bin/contentbridge/pages"
+  /path "/apps/contentbridge/api"
+  /extension "json"
   /query "*"
 }
 

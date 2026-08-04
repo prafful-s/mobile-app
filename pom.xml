@@ -32,9 +32,9 @@
 
         <!-- Local AEM SDK quickstart. Deploy target for this project. -->
         <aem.host>localhost</aem.host>
-        <aem.port>5402</aem.port>
+        <aem.port>6502</aem.port>
         <aem.publish.host>localhost</aem.publish.host>
-        <aem.publish.port>5403</aem.publish.port>
+        <aem.publish.port>6503</aem.publish.port>
         <sling.user>admin</sling.user>
         <sling.password>admin</sling.password>
         <vault.user>admin</vault.user>
@@ -43,10 +43,11 @@
         <!-- Dependency versions (aligned with AEM Project Archetype 57) -->
         <aem.sdk.api>2026.6.26908.20260625T154911Z-260600</aem.sdk.api>
         <core.wcm.components.version>2.31.2</core.wcm.components.version>
+        <jsoup.version>1.17.2</jsoup.version>
         <componentGroupName>ContentBridge - Content</componentGroupName>
 
         <bnd.version>6.4.0</bnd.version>
-        <aemanalyser.version>1.6.6</aemanalyser.version>
+        <aemanalyser.version>1.7.2</aemanalyser.version>
         <aem.nodetypes.version>2026.06.0</aem.nodetypes.version>
         <filevault.package.plugin.version>1.3.6</filevault.package.plugin.version>
         <content.package.maven.plugin.version>1.0.2</content.package.maven.plugin.version>
@@ -137,7 +138,10 @@
                             <goals><goal>bnd-process</goal></goals>
                             <configuration>
                                 <bnd><![CDATA[
-Import-Package: javax.annotation;version=0.0.0,*
+# org.jspecify.annotations is dropped rather than imported: jsoup references it only for
+# compile-time nullability annotations, which have CLASS retention and are never loaded at runtime.
+# Nothing in AEM exports the package, so importing it would leave the bundle unresolvable.
+Import-Package: !org.jspecify.annotations,javax.annotation;version=0.0.0,*
 -exportcontents: ${removeall;${packages;VERSIONED};${packages;CONDITIONAL}}
 -noimportjava: true
 -fixupmessages: "Classes found in the wrong directory";is:=warning
@@ -145,6 +149,10 @@ Import-Package: javax.annotation;version=0.0.0,*
 # Scans for @Model classes and writes the Sling-Model-Classes header. WITHOUT THIS NOTHING
 # REGISTERS: every adaptTo returns null and the exporter emits empty content arrays.
 -plugin org.apache.sling.bnd.models.ModelsScannerPlugin
+
+# Embed jsoup privately instead of importing it. AEM ships jsoup internally, but it is not part of
+# the documented API surface, so relying on that export would be fragile across SDK versions.
+-conditionalpackage: org.jsoup.*
                                 ]]></bnd>
                             </configuration>
                         </execution>
@@ -252,6 +260,12 @@ Import-Package: javax.annotation;version=0.0.0,*
                 <artifactId>core.wcm.components.core</artifactId>
                 <version>${core.wcm.components.version}</version>
                 <scope>provided</scope>
+            </dependency>
+            <!-- Compile scope on purpose: embedded into the bundle by -conditionalpackage. -->
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.adobe.cq</groupId>

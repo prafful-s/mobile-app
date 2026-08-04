@@ -1,0 +1,5 @@
+{
+  "scripts": [
+    "create service user contentbridge-reader with forced path system/cq:services/contentbridge\n\nset principal ACL for contentbridge-reader\n    allow jcr:read on /content\nend\n"
+  ]
+}

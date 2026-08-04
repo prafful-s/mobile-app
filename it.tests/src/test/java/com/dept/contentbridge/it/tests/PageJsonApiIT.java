@@ -27,7 +27,7 @@ class PageJsonApiIT {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private static final String BASE = System.getProperty("it.author.url", "http://localhost:5402");
+    private static final String BASE = System.getProperty("it.author.url", "http://localhost:6502");
     private static final String USER = System.getProperty("it.author.user", "admin");
     private static final String PASSWORD = System.getProperty("it.author.password", "admin");
     private static final String APP_ROOT = "/content/contentbridge/us/en";
@@ -36,7 +36,7 @@ class PageJsonApiIT {
         final String credentials = Base64.getEncoder()
                 .encodeToString((USER + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
         final HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/bin/contentbridge/pages?" + query))
+                .uri(URI.create(BASE + "/apps/contentbridge/api.json?" + query))
                 .header("Authorization", "Basic " + credentials)
                 .GET()
                 .build();

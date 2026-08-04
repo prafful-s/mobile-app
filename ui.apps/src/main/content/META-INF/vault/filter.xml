@@ -5,4 +5,5 @@
          package may not use excludes to carve it out - so the two packages simply never overlap. -->
     <filter root="/apps/contentbridge/components"/>
     <filter root="/apps/contentbridge/clientlibs"/>
+    <filter root="/apps/contentbridge/api"/>
 </workspaceFilter>

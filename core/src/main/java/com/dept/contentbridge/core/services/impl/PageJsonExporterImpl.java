@@ -1,12 +1,15 @@
 package com.dept.contentbridge.core.services.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
@@ -26,6 +29,7 @@ import com.dept.contentbridge.core.services.ContentBridgeConfiguration;
 import com.dept.contentbridge.core.services.PageJsonExporter;
 import com.dept.contentbridge.core.services.UrlService;
 import com.day.cq.wcm.api.Page;
+import com.day.cq.wcm.api.PageManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -37,6 +41,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
+
+    /** Values starting with this are asset references and get the site's publish host prefixed. */
+    private static final String DAM_PREFIX = "/content/dam/";
 
     /** Component container locations, most specific first. See {@code resolveContainer}. */
     private static final List<String> CONTAINER_CANDIDATES = Arrays.asList(
@@ -57,12 +64,31 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private ModelFactory modelFactory;
 
     private String[] allowedRoots;
+    private String[] navPageNames;
+    private Set<String> excludedPageNames;
+    private boolean includeHomeScreen;
+    private String authorHostSegment;
+    private String publishHostSegment;
+    private String productsFolderName;
+    private String[] productFieldAliases;
+    private int maxProducts;
     private int maxDepth;
     private int cacheMaxAge;
 
     @Activate
     protected void activate(final ContentBridgeConfiguration config) {
         this.allowedRoots = config.allowedRoots() == null ? new String[0] : config.allowedRoots().clone();
+        this.navPageNames = config.navPageNames() == null ? new String[0] : config.navPageNames().clone();
+        this.excludedPageNames = config.excludedPageNames() == null
+                ? Collections.emptySet()
+                : new HashSet<>(Arrays.asList(config.excludedPageNames()));
+        this.includeHomeScreen = config.includeHomeScreen();
+        this.authorHostSegment = StringUtils.defaultIfBlank(config.authorHostSegment(), "author");
+        this.publishHostSegment = StringUtils.defaultIfBlank(config.publishHostSegment(), "publish");
+        this.productsFolderName = StringUtils.defaultIfBlank(config.productsFolderName(), "products");
+        this.productFieldAliases = config.productFieldAliases() == null
+                ? new String[0] : config.productFieldAliases().clone();
+        this.maxProducts = Math.max(1, config.maxProducts());
         this.maxDepth = Math.max(1, config.maxDepth());
         this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
     }
@@ -87,17 +113,27 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     @Override
     public Map<String, Object> export(final Page requested) {
+        return export(requested, null);
+    }
+
+    @Override
+    public Map<String, Object> export(final Page requested, final String productsPath) {
         final Page appRoot = findAppRoot(requested);
         final Page envelopeSource = appRoot != null ? appRoot : requested;
-        final ValueMap rootProps = contentProperties(envelopeSource);
+        final ValueMap rootProps = envelopeSource.getProperties();
 
         final String appId = rootProps.get(SchemaConstants.PN_APP_ID, envelopeSource.getName());
+
+        // Resolved once per export: every screen in one response belongs to the same site, so the
+        // placeholders lookup should not be repeated per page.
+        final String assetHost = new SiteHostResolver(authorHostSegment, publishHostSegment)
+                .resolve(envelopeSource);
 
         final Map<String, Object> app = new LinkedHashMap<>();
         app.put(SchemaConstants.KEY_ID, appId);
         app.put(SchemaConstants.KEY_META, buildMeta(envelopeSource, appId, rootProps));
-        app.put(SchemaConstants.KEY_SCREENS, buildScreens(envelopeSource, requested));
-        app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource));
+        app.put(SchemaConstants.KEY_SCREENS, buildScreens(envelopeSource, requested, assetHost));
+        app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
         app.put(SchemaConstants.KEY_INTEGRATIONS,
@@ -105,7 +141,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         app.put(SchemaConstants.KEY_PROFILE_VIEWER,
                 readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON));
         app.put(SchemaConstants.KEY_PRODUCTS,
-                readJsonArray(extras, SchemaConstants.PN_PRODUCTS_JSON));
+                buildProducts(envelopeSource, extras, assetHost, productsPath));
 
         return app;
     }
@@ -134,7 +170,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private List<String> buildMenu(final Page root) {
         final List<String> menu = new ArrayList<>();
-        for (final Page page : collectScreens(root)) {
+        for (final Page page : screenPages(root)) {
             menu.add(screenKey(page));
         }
         return menu;
@@ -142,37 +178,131 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /* --------------------------------------------------------------- screens */
 
-    private Map<String, Object> buildScreens(final Page root, final Page requested) {
+    private Map<String, Object> buildScreens(final Page root, final Page requested, final String assetHost) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         final boolean wholeApp = requested == null || StringUtils.equals(root.getPath(), requested.getPath());
-        final List<Page> pages = wholeApp ? collectScreens(root) : Collections.singletonList(requested);
+        final List<Page> pages = wholeApp ? screenPages(root) : Collections.singletonList(requested);
         for (final Page page : pages) {
-            screens.put(screenKey(page), buildScreen(page));
+            screens.put(screenKey(page), buildScreen(page, assetHost));
         }
         return screens;
     }
 
-    private Map<String, Object> buildScreen(final Page page) {
+    /**
+     * The single source of truth for which pages are screens - used to build both {@code screens} and
+     * {@code meta.navigation.menu}, which is what keeps the two lists in step.
+     *
+     * <p>Preference is given to the authored navigation page. Listing child pages produces an
+     * accidental menu - every page in JCR order, including nav and footer fragments - whereas the
+     * navigation page is what an author actually curates. Sites with no navigation page keep the old
+     * child-listing behaviour.</p>
+     */
+    private List<Page> screenPages(final Page root) {
+        final Page navPage = resolveNavPage(root);
+        if (navPage == null) {
+            LOG.debug("No navigation page under {} - falling back to listing child pages", root.getPath());
+            return collectScreens(root);
+        }
+
+        final PageManager pageManager = root.getPageManager();
+        final List<Page> pages = new NavigationExtractor(pageManager)
+                // No asset host needed: only the anchors matter here, not the images.
+                .extract(navPage, buildComponents(navPage, null));
+
+        if (pages.isEmpty()) {
+            LOG.warn("Navigation page {} produced no resolvable links - falling back to child pages",
+                    navPage.getPath());
+            return collectScreens(root);
+        }
+
+        // A nav usually links home from the logo rather than listing it, so the home screen would
+        // otherwise be absent from an app built entirely from this response.
+        if (includeHomeScreen && pages.stream().noneMatch(p -> p.getPath().equals(root.getPath()))) {
+            pages.add(0, root);
+        }
+        return pages;
+    }
+
+    /**
+     * @return the authored navigation page, or null when the site has none
+     */
+    private Page resolveNavPage(final Page root) {
+        final String explicit = root.getProperties().get(SchemaConstants.PN_NAV_PATH, String.class);
+        if (StringUtils.isNotBlank(explicit)) {
+            final Page page = root.getPageManager().getPage(explicit);
+            if (page != null) {
+                return page;
+            }
+            LOG.warn("navPath on {} points at '{}', which is not a page", root.getPath(), explicit);
+        }
+        for (final String name : navPageNames) {
+            final Page candidate = root.getPageManager().getPage(root.getPath() + "/" + name);
+            if (candidate != null && candidate.getContentResource() != null) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private Map<String, Object> buildScreen(final Page page, final String assetHost) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("name", screenKey(page));
         meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
-        meta.put("icon", page.getProperties().get(SchemaConstants.PN_SCREEN_ICON,
-                page.getDepth() <= depthOfRoot(page) ? SchemaConstants.DEFAULT_HOME_ICON
-                        : SchemaConstants.DEFAULT_SCREEN_ICON));
         screen.put(SchemaConstants.KEY_META, meta);
-        screen.put(SchemaConstants.KEY_CONTENT, buildComponents(page));
+        screen.put(SchemaConstants.KEY_CONTENT, buildComponents(page, assetHost));
         return screen;
     }
 
-    private List<Map<String, Object>> buildComponents(final Page page) {
+    private List<Map<String, Object>> buildComponents(final Page page, final String assetHost) {
         final List<Map<String, Object>> components = new ArrayList<>();
         final Resource container = resolveContainer(page);
         if (container != null) {
             collectComponents(container, components, 0);
         }
+        if (StringUtils.isNotBlank(assetHost)) {
+            for (final Map<String, Object> component : components) {
+                final Object content = component.get(SchemaConstants.KEY_CONTENT);
+                if (content instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    final Map<String, Object> payload = (Map<String, Object>) content;
+                    prefixAssets(payload, assetHost);
+                }
+            }
+        }
         return components;
+    }
+
+    /**
+     * Prefixes DAM references with the site's publish host, in place.
+     *
+     * <p>Applied here rather than inside each model so that curated models and the generic fallback
+     * behave identically, and so the host is resolved once per export instead of once per component.
+     * Keyed on the value, not the property name, because projects use {@code image},
+     * {@code imageRef}, {@code fileReference} and others interchangeably.</p>
+     */
+    private void prefixAssets(final Map<String, Object> payload, final String assetHost) {
+        for (final Map.Entry<String, Object> entry : payload.entrySet()) {
+            final Object value = entry.getValue();
+            if (value instanceof String) {
+                entry.setValue(prefixAsset((String) value, assetHost));
+            } else if (value instanceof List) {
+                final List<?> source = (List<?>) value;
+                final List<Object> rewritten = new ArrayList<>(source.size());
+                for (final Object item : source) {
+                    rewritten.add(item instanceof String ? prefixAsset((String) item, assetHost) : item);
+                }
+                entry.setValue(rewritten);
+            }
+        }
+    }
+
+    private String prefixAsset(final String value, final String assetHost) {
+        if (StringUtils.isBlank(assetHost) || !StringUtils.startsWith(value, DAM_PREFIX)) {
+            return value;
+        }
+        return assetHost + value;
     }
 
     /**
@@ -195,64 +325,45 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             if (isSystemNode(child)) {
                 continue;
             }
-            // Structural first: a container block would otherwise adapt to a model and be exported
-            // as an empty component, swallowing the items underneath it.
-            if (isStructural(child)) {
+            final String resourceType = StringUtils.trimToEmpty(child.getResourceType());
+            final boolean hasChildren = child.hasChildren();
+
+            // Known layout containers, and the untyped row/col wrappers, never produce a component.
+            if (isKnownContainerType(resourceType) || (hasChildren && isUntyped(resourceType))) {
                 collectComponents(child, sink, depth + 1);
                 continue;
             }
+
             // A registered model wins so curated components keep their exact shape; everything
             // else is projected generically, which is what lets the API serve an arbitrary site.
             ContentBridgeComponent model = adaptStrictly(child);
             if (model == null) {
                 model = new GenericComponent(child, urlService);
             }
+            final Map<String, Object> content = model.getContent();
+
+            // Children but nothing of its own to say: a wrapper such as an Edge Delivery cards or
+            // accordion block. Exporting it would emit an empty component and hide its items.
+            // Evaluated from the content already built, so properties are read only once.
+            if (hasChildren && content.isEmpty()) {
+                collectComponents(child, sink, depth + 1);
+                continue;
+            }
+
             final Map<String, Object> entry = new LinkedHashMap<>();
             final Map<String, Object> meta = new LinkedHashMap<>();
             meta.put(SchemaConstants.KEY_ID, model.getId());
             meta.put(SchemaConstants.KEY_COMPONENT, model.getComponentName());
             entry.put(SchemaConstants.KEY_META, meta);
-            entry.put(SchemaConstants.KEY_CONTENT, model.getContent());
+            entry.put(SchemaConstants.KEY_CONTENT, content);
             sink.add(entry);
 
             // Components that also nest (carousels, tabs, blocks with items) contribute their
             // children to the same flat list.
-            if (child.hasChildren()) {
+            if (hasChildren) {
                 collectComponents(child, sink, depth + 1);
             }
         }
-    }
-
-    /**
-     * A node is structural when it groups other components instead of carrying content of its own.
-     * Structural nodes are walked through and never appear in the output.
-     *
-     * <p>The test has to be generic, because an arbitrary site brings its own layout containers.
-     * Three signals are used, in order:</p>
-     * <ol>
-     *   <li>a resource type known to be a layout container - responsive grid, parsys, container,
-     *       or one of the Edge Delivery structural types;</li>
-     *   <li>no {@code sling:resourceType} at all, plus children - the untyped {@code row1}/{@code col1}
-     *       wrappers and plain node folders;</li>
-     *   <li>children but no authored properties of its own - which is how a container is told apart
-     *       from a component that merely happens to nest, without hard-coding its resource type.</li>
-     * </ol>
-     */
-    private boolean isStructural(final Resource resource) {
-        final String resourceType = StringUtils.trimToEmpty(resource.getResourceType());
-
-        if (isKnownContainerType(resourceType)) {
-            return true;
-        }
-        if (!resource.hasChildren()) {
-            return false;
-        }
-        if (isUntyped(resourceType)) {
-            return true;
-        }
-        // Children, but nothing of its own to say: a wrapper. Exporting it would emit an empty
-        // component and, worse, hide everything underneath it.
-        return new GenericComponent(resource, urlService).getContent().isEmpty();
     }
 
     /**
@@ -353,7 +464,24 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /* -------------------------------------------------------------- branding */
 
-    private Map<String, Object> buildBranding(final Page root) {
+    /**
+     * Products come from the site's Content Fragments. The hand-authored {@code productsJson} on the
+     * page is kept as a fallback so sites configured before this existed keep working, and so a site
+     * with no fragment catalogue can still supply a static list.
+     */
+    private List<Object> buildProducts(final Page root, final Resource extras, final String assetHost,
+                                       final String productsPath) {
+        final List<Map<String, Object>> fromFragments =
+                new ProductExporter(productsFolderName, maxProducts, productFieldAliases)
+                        .export(root, assetHost, productsPath);
+
+        if (!fromFragments.isEmpty()) {
+            return new ArrayList<>(fromFragments);
+        }
+        return readJsonArray(extras, SchemaConstants.PN_PRODUCTS_JSON);
+    }
+
+    private Map<String, Object> buildBranding(final Page root, final String assetHost) {
         final Resource branding = childResource(root, SchemaConstants.NN_BRANDING);
         final Map<String, Object> result = new LinkedHashMap<>();
         if (branding == null) {
@@ -365,17 +493,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 continue;
             }
             final Object value = entry.getValue();
+            // Logos are DAM paths; colour tokens are not, and prefixAsset keys on the value so it
+            // leaves '#005971' alone without needing to know which properties are which.
             result.put(entry.getKey(),
-                    value instanceof String ? maybeExternalize(entry.getKey(), (String) value) : value);
+                    value instanceof String ? prefixAsset((String) value, assetHost) : value);
         }
         return result;
-    }
-
-    /**
-     * Logo properties hold DAM paths and must be externalised; colour tokens must not be touched.
-     */
-    private String maybeExternalize(final String key, final String value) {
-        return StringUtils.containsIgnoreCase(key, "logo") ? urlService.externalize(value) : value;
     }
 
     /* ----------------------------------------------------------------- utils */
@@ -406,7 +529,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private boolean isExported(final Page page) {
         return page != null && page.getContentResource() != null
-                && !page.getProperties().get(SchemaConstants.PN_EXCLUDE_FROM_APP, false);
+                && !page.getProperties().get(SchemaConstants.PN_EXCLUDE_FROM_APP, false)
+                // nav and footer are site furniture, not destinations
+                && !excludedPageNames.contains(page.getName());
     }
 
     private Page findAppRoot(final Page page) {
@@ -426,15 +551,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
     }
 
-    private int depthOfRoot(final Page page) {
-        final Page root = findAppRoot(page);
-        return root != null ? root.getDepth() : page.getDepth();
-    }
-
-    private ValueMap contentProperties(final Page page) {
-        return page.getProperties();
-    }
-
     private Resource childResource(final Page page, final String relPath) {
         final Resource content = page.getContentResource();
         return content == null ? null : content.getChild(relPath);
@@ -447,7 +563,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         try {
             return MAPPER.readValue(raw, new TypeReference<LinkedHashMap<String, Object>>() { });
-        } catch (final Exception e) {
+        } catch (final IOException e) {
             LOG.warn("Property {} on {} is not valid JSON - emitting an empty object", property,
                     extras.getPath(), e);
             return new LinkedHashMap<>();
@@ -461,7 +577,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         try {
             return MAPPER.readValue(raw, new TypeReference<ArrayList<Object>>() { });
-        } catch (final Exception e) {
+        } catch (final IOException e) {
             LOG.warn("Property {} on {} is not valid JSON - emitting an empty array", property,
                     extras.getPath(), e);
             return new ArrayList<>();
