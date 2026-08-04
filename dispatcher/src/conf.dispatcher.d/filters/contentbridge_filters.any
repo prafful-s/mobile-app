@@ -3,8 +3,20 @@
 # The default deny-all from the SDK stays in force; these rules open exactly the two things the
 # API needs and nothing more.
 
-# The read API. Resource-type bound, so it is requested as a real resource with a .json extension.
+# The read API, as served from /content. This is the endpoint that works on publish: /apps is not
+# readable by anonymous there. Any node carrying sling:resourceType=contentbridge/api is an endpoint,
+# so the rule matches the conventional location rather than one fixed path.
 /0100 {
+  /type "allow"
+  /method "GET"
+  /path "/content/*/api/*"
+  /extension "json"
+  /query "*"
+}
+
+# The same servlet under /apps. Author-side convenience only - harmless on publish because the
+# repository denies anonymous read regardless, but keep it out of production farms if you prefer.
+/0110 {
   /type "allow"
   /method "GET"
   /path "/apps/contentbridge/api"
@@ -12,10 +24,11 @@
   /query "*"
 }
 
-# Published DAM renditions referenced from the JSON payload.
-/0110 {
+# Published DAM renditions referenced from the JSON payload. Not restricted to one site: the API
+# exports any site under /content, so their assets have to be reachable too.
+/0120 {
   /type "allow"
   /method "GET"
-  /path "/content/dam/contentbridge/*"
+  /path "/content/dam/*"
   /extension '(?i)(jpe?g|png|gif|svg|webp)'
 }

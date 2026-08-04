@@ -4,7 +4,7 @@ An AEM as a Cloud Service project whose only job is to publish authored pages as
 contract. Authors work in the normal AEM page editor; clients read a single GET endpoint.
 
 ```
-GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en
+GET /content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en
 ```
 
 It works against **any site under `/content`** — no per-project configuration, no need to know your
@@ -33,7 +33,7 @@ Then:
 
 ```bash
 curl -u admin:admin \
-  'http://localhost:6502/apps/contentbridge/api.json?path=/content/contentbridge/us/en&pretty=true'
+  'http://localhost:6502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true'
 ```
 
 If every screen comes back with `"content": []`, check
@@ -45,22 +45,30 @@ If every screen comes back with `"content": []`, check
 
 | | |
 |---|---|
-| Endpoint | `/apps/contentbridge/api.json` |
+| Endpoint | `/content/contentbridge/api/getPageDetails.json` |
 | Method | `GET` |
 | Binding | resource type `contentbridge/api`, extension `json` |
 | `path` | **required.** Repository path of a page. Must sit under an allowed root. |
 | `pretty` | optional. `true` indents the response. |
+| `productsPath` | optional. Reads the product catalogue from this folder instead of resolving it per site. |
 | Response | `application/json;charset=UTF-8` |
 
 The servlet is bound by **resource type**, not by path. Adobe advises against `@SlingServletPaths`
 on AEM as a Cloud Service: a path-bound servlet bypasses resource resolution entirely, so the ACLs on
 the requested resource are never consulted and the dispatcher has no real resource to cache against.
-Binding to `contentbridge/api` means the request resolves the node at `/apps/contentbridge/api`
-first, which the requesting user must be permitted to read.
 
-> **On publish, `/apps` is not readable by anonymous.** For a public endpoint, create a node under
-> `/content` carrying `sling:resourceType="contentbridge/api"` and call that instead — the same
-> servlet answers. The `/apps` node is the author-side default.
+The consequence is that the URL is not fixed. **Any node carrying
+`sling:resourceType="contentbridge/api"`, requested with a `.json` extension, is an endpoint.** Name
+it whatever suits the consumer:
+
+| Node | Notes |
+|---|---|
+| `/content/<site>/api/getPageDetails` | **Use this.** Under `/content`, so it is readable on publish and cacheable at the dispatcher. |
+| `/apps/contentbridge/api` | Ships with `ui.apps`. Author-side only. |
+
+> **`/apps` is not readable by anonymous on publish**, so an `/apps` endpoint returns 404 there while
+> working fine on author — an easy thing to miss until go-live. Create the `/content` node in
+> `ui.content` so it deploys with the project rather than living only in one environment.
 
 ### Service user
 
@@ -127,7 +135,7 @@ Errors return JSON (`{"status":403,"error":"..."}`) so clients never have to par
 
 ```bash
 curl -u admin:admin \
-  'http://localhost:6502/apps/contentbridge/api.json?path=/content/contentbridge/us/en&pretty=true'
+  'http://localhost:6502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true'
 ```
 
 ---
@@ -152,7 +160,7 @@ curl -u admin:admin \
   },
   "screens": {
     "Home": {
-      "meta": { "name": "Home", "title": "Home", "icon": "home" },
+      "meta": { "name": "Home", "title": "Home" },
       "content": [
         { "meta": { "id": "9199a89b", "component": "banner" }, "content": { /* ... */ } }
       ]
@@ -161,7 +169,7 @@ curl -u admin:admin \
   "branding":      { /* colour palette + logos */ },
   "integrations":  { /* free-form JSON */ },
   "profileViewer": { /* free-form JSON */ },
-  "products":      [ /* free-form JSON array */ ]
+  "products":      [ /* fixed 13-key shape, see Products below */ ]
 }
 ```
 
@@ -388,12 +396,18 @@ Everything the envelope needs lives in **Page Properties**, in four added tabs.
 | Tab | Sets |
 |---|---|
 | ContentBridge App | `appId` (**this marks the page as the app root**), `appTitle`, `appType`, `useCart`, login / registration / profile screens, `authorizedMenu` |
-| ContentBridge Screen | `screenName` (key used in `screens` and `menu`), `screenIcon`, `excludeFromApp` |
+| ContentBridge Screen | `screenName` (key used in `screens` and `menu`), `excludeFromApp` |
 | ContentBridge Branding | Logos, variant, roundness, and the full light/dark colour palette |
 | ContentBridge Extras | Raw JSON for `integrations`, `profileViewer`, `products` |
 
 Invalid JSON in the Extras tab is logged and exported as an empty object/array — a typo cannot take
 the endpoint down.
+
+The dialog also carries `screenIcon`, which is no longer exported — `screens.<page>.meta` is `name`
+and `title` only. The field is left in place so the data survives, should the key ever come back.
+
+`products` in the Extras tab is only used when the site has no Content Fragment catalogue; fragments
+win when both exist.
 
 ---
 
@@ -430,7 +444,7 @@ mvn verify -PintegrationTests
 ### After the first deploy
 
 1. Author: <http://localhost:6502/sites.html/content/contentbridge/us/en>
-2. API: <http://localhost:6502/apps/contentbridge/api.json?path=/content/contentbridge/us/en&pretty=true>
+2. API: <http://localhost:6502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true>
 
 The sample content references DAM assets under `/content/dam/contentbridge/…` that are **not**
 shipped in this package. Upload your own or repoint the components — the export works either way,

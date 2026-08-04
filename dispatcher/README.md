@@ -3,7 +3,7 @@
 Flexible-mode layout for the AEM as a Cloud Service Dispatcher SDK.
 
 `src/conf.dispatcher.d/filters/contentbridge_filters.any` is the file that matters most: it is the
-only place where `/apps/contentbridge/api.json` is opened to the outside world. The SDK's default
+only place where the JSON API is opened to the outside world. The SDK's default
 deny-all remains in force for everything else.
 
 Validate locally before committing:
