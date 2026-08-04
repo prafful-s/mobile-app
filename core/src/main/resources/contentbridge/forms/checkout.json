@@ -1,0 +1,142 @@
+{
+  "firstName": {
+    "id": "",
+    "label": "First Name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "middleName": {
+    "id": "",
+    "label": "Middle Name (optional)",
+    "name": "middleName",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "",
+    "label": "Last Name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  },
+  "birthDate": {
+    "id": "",
+    "label": "Birth Date",
+    "name": "birthDate",
+    "value": "",
+    "type": "text"
+  },
+  "gender": {
+    "id": "",
+    "label": "Gender",
+    "name": "gender",
+    "value": "",
+    "type": "select"
+  },
+  "frequentFlyerId": {
+    "id": "",
+    "label": "Frequent Flyer ID",
+    "name": "frequentFlyerId",
+    "value": "",
+    "type": "text"
+  },
+  "email": {
+    "id": "",
+    "label": "Email Address",
+    "name": "email",
+    "value": "",
+    "type": "text"
+  },
+  "phone": {
+    "id": "",
+    "label": "Phone Number",
+    "name": "phone",
+    "value": "",
+    "type": "text"
+  },
+  "wknd-club": {
+    "id": "",
+    "label": "I want to sign up for WKND Fly Club",
+    "name": "wknd-club",
+    "value": "checked",
+    "type": "checkbox"
+  },
+  "sms": {
+    "id": "",
+    "label": "I want to get SMS with booking confirmation",
+    "name": "sms",
+    "value": "",
+    "type": "checkbox"
+  },
+  "promo": {
+    "id": "",
+    "label": "I want to receive electronic mail with promotions and announcements",
+    "name": "promo",
+    "value": "",
+    "type": "checkbox"
+  },
+  "nameOnCard": {
+    "id": "",
+    "label": "Name on Card",
+    "name": "nameOnCard",
+    "value": "",
+    "type": "text"
+  },
+  "expiration": {
+    "id": "",
+    "label": "Expiration",
+    "name": "expiration",
+    "value": "",
+    "type": "text"
+  },
+  "cardNumber": {
+    "id": "",
+    "label": "Card Number",
+    "name": "cardNumber",
+    "value": "",
+    "type": "text"
+  },
+  "cvv": {
+    "id": "",
+    "label": "CVV",
+    "name": "cvv",
+    "value": "",
+    "type": "text"
+  },
+  "upgrade-points": {
+    "id": "",
+    "label": "Upgrade class with points",
+    "name": "upgrade-points",
+    "value": "",
+    "type": "checkbox"
+  },
+  "upgrade-luggage": {
+    "id": "",
+    "label": "Add extra piece of checked-in luggage",
+    "name": "upgrade-luggage",
+    "value": "",
+    "type": "checkbox"
+  },
+  "seat": {
+    "id": "",
+    "label": "Seat",
+    "name": "seat",
+    "value": "",
+    "type": "select"
+  },
+  "section": {
+    "id": "",
+    "label": "Section",
+    "name": "section",
+    "value": "",
+    "type": "select"
+  },
+  "meal": {
+    "id": "",
+    "label": "Meal",
+    "name": "meal",
+    "value": "",
+    "type": "select"
+  }
+}

@@ -26,6 +26,7 @@ import com.dept.contentbridge.core.models.impl.GenericComponent;
 import com.dept.contentbridge.core.schema.ContentBridgeComponent;
 import com.dept.contentbridge.core.schema.SchemaConstants;
 import com.dept.contentbridge.core.services.ContentBridgeConfiguration;
+import com.dept.contentbridge.core.services.FormSchemaService;
 import com.dept.contentbridge.core.services.PageJsonExporter;
 import com.dept.contentbridge.core.services.UrlService;
 import com.day.cq.wcm.api.Page;
@@ -62,6 +63,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     @Reference
     private ModelFactory modelFactory;
+
+    @Reference
+    private FormSchemaService formSchemaService;
 
     private String[] allowedRoots;
     private String[] navPageNames;
@@ -356,6 +360,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             meta.put(SchemaConstants.KEY_COMPONENT, model.getComponentName());
             entry.put(SchemaConstants.KEY_META, meta);
             entry.put(SchemaConstants.KEY_CONTENT, content);
+
+            // Form blocks carry their field definitions alongside the authored content, so a client
+            // can render the form without a second call or a hard-coded copy of the schema.
+            final Map<String, Object> schema = resolveFormSchema(model.getComponentName(), content);
+            if (!schema.isEmpty()) {
+                entry.put(SchemaConstants.KEY_SCHEMA, schema);
+            }
             sink.add(entry);
 
             // Components that also nest (carousels, tabs, blocks with items) contribute their
@@ -364,6 +375,41 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 collectComponents(child, sink, depth + 1);
             }
         }
+    }
+
+    /**
+     * Finds the form schema a block should carry, if any.
+     *
+     * <p>An explicit {@code formName} or {@code form} property wins, but the usual case needs
+     * neither: Edge Delivery block models are already named after the form they render
+     * ({@code sign-in}, {@code create-account}, {@code checkout}), so the component name is matched
+     * against the known schemas directly. A block whose name is not a known form gets nothing, which
+     * is how every non-form component stays untouched.</p>
+     *
+     * @return the field definitions, or an empty map when this block is not a form
+     */
+    private Map<String, Object> resolveFormSchema(final String componentName,
+                                                  final Map<String, Object> content) {
+        final String[] candidates = {
+            asString(content.get(SchemaConstants.PN_FORM_NAME)),
+            asString(content.get(SchemaConstants.PN_FORM)),
+            componentName
+        };
+        for (final String candidate : candidates) {
+            if (StringUtils.isBlank(candidate)) {
+                continue;
+            }
+            final Map<String, Object> schema = formSchemaService.getSchema(candidate);
+            if (!schema.isEmpty()) {
+                LOG.debug("Attached form schema '{}' to a {} block", candidate, componentName);
+                return schema;
+            }
+        }
+        return Collections.emptyMap();
+    }
+
+    private static String asString(final Object value) {
+        return value instanceof String ? (String) value : null;
     }
 
     /**

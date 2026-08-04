@@ -1,0 +1,93 @@
+{
+  "firstName": {
+    "id": "firstName",
+    "label": "First name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "lastName",
+    "label": "Last name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  },
+  "email": {
+    "id": "email",
+    "label": "Email address",
+    "name": "email",
+    "value": "",
+    "type": "text"
+  },
+  "phone": {
+    "id": "phone",
+    "label": "Phone number",
+    "name": "phone",
+    "value": "",
+    "type": "text"
+  },
+  "streetAddress": {
+    "id": "streetAddress",
+    "label": "Address",
+    "name": "streetAddress",
+    "value": "",
+    "type": "text"
+  },
+  "state": {
+    "id": "state",
+    "label": "State",
+    "name": "state",
+    "value": "",
+    "type": "select"
+  },
+  "zipCode": {
+    "id": "zipCode",
+    "label": "ZIP code",
+    "name": "zipCode",
+    "value": "",
+    "type": "text"
+  },
+  "city": {
+    "id": "city",
+    "label": "City",
+    "name": "city",
+    "value": "",
+    "type": "text"
+  },
+  "country": {
+    "id": "country",
+    "label": "Country",
+    "name": "country",
+    "value": "",
+    "type": "select"
+  },
+  "authorize": {
+    "id": "authorize",
+    "label": "I authorize SecurFinancial to verify my credit. I've read and agreed to Mortgage's Terms of Use, Privacy Policy and Consent to Receive Electronic Documents.",
+    "name": "authorize",
+    "value": "",
+    "type": "checkbox"
+  },
+  "proofOfIncome": {
+    "id": "proofOfIncome",
+    "label": "Proof of Income",
+    "name": "proofOfIncome",
+    "value": "",
+    "type": "file"
+  },
+  "utilityBill": {
+    "id": "utilityBill",
+    "label": "Utility Bill",
+    "name": "utilityBill",
+    "value": "",
+    "type": "file"
+  },
+  "employmentVerification": {
+    "id": "employmentVerification",
+    "label": "Employment Verification",
+    "name": "employmentVerification",
+    "value": "",
+    "type": "file"
+  }
+}

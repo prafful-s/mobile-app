@@ -1,0 +1,23 @@
+{
+  "transferFrom": {
+    "id": "transfer-from",
+    "label": "Transfer from",
+    "name": "transferFrom",
+    "value": "checking-account",
+    "type": "select"
+  },
+  "transferTo": {
+    "id": "transfer-to",
+    "label": "Transfer to",
+    "name": "transferTo",
+    "value": "retirement-account",
+    "type": "select"
+  },
+  "amount": {
+    "id": "amount",
+    "label": "Amount",
+    "name": "amount",
+    "value": "$100.00",
+    "type": "text"
+  }
+}

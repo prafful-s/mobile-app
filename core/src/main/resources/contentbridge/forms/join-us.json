@@ -1,0 +1,86 @@
+{
+  "firstName": {
+    "id": "firstName",
+    "label": "First Name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "lastName",
+    "label": "Last Name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  },
+  "email": {
+    "id": "email",
+    "label": "Email",
+    "name": "email",
+    "value": "",
+    "type": "text"
+  },
+  "phone": {
+    "id": "phone",
+    "label": "Phone number",
+    "name": "phone",
+    "value": "",
+    "type": "text"
+  },
+  "zipCode": {
+    "id": "zipCode",
+    "label": "Zip code",
+    "name": "zipCode",
+    "value": "",
+    "type": "text"
+  },
+  "streetLine1": {
+    "id": "streetLine1",
+    "label": "Street Address Line 1",
+    "name": "streetLine1",
+    "value": "",
+    "type": "text"
+  },
+  "streetLine2": {
+    "id": "streetLine2",
+    "label": "Street Address Line 2",
+    "name": "streetLine2",
+    "value": "",
+    "type": "text"
+  },
+  "city": {
+    "id": "city",
+    "label": "City",
+    "name": "city",
+    "value": "",
+    "type": "text"
+  },
+  "postalCode": {
+    "id": "postalCode",
+    "label": "Postal Code",
+    "name": "postalCode",
+    "value": "",
+    "type": "text"
+  },
+  "callBeforeDelivery": {
+    "id": "callBeforeDelivery",
+    "label": "Call Before Delivery",
+    "name": "callBeforeDelivery",
+    "value": "",
+    "type": "checkbox"
+  },
+  "deliveryFrequency": {
+    "id": "deliveryFrequency",
+    "label": "Delivery Frequency",
+    "name": "deliveryFrequency",
+    "value": "",
+    "type": "select"
+  },
+  "consent": {
+    "id": "consent",
+    "label": "I want to join WKND Fly Club and I have read and understand the Privacy and Cookies Policy. I want to receive personalized communication by email.",
+    "name": "consent",
+    "value": "",
+    "type": "checkbox"
+  }
+}

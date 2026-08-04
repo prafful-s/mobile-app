@@ -2,6 +2,7 @@ package com.dept.contentbridge.core;
 
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
 
+import com.dept.contentbridge.core.services.impl.FormSchemaServiceImpl;
 import com.dept.contentbridge.core.services.impl.PageJsonExporterImpl;
 import com.dept.contentbridge.core.services.impl.UrlServiceImpl;
 
@@ -30,6 +31,7 @@ public final class ContentBridgeTestContext {
 
         context.registerInjectActivateService(new UrlServiceImpl(),
                 "publishDomain", PUBLISH_DOMAIN);
+        context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
                 "allowedRoots", new String[] {"/content/contentbridge"},
                 "maxDepth", 3,

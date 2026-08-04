@@ -1,0 +1,37 @@
+{
+  "reasonForNameChange": {
+    "id": "reasonForNameChange",
+    "label": "",
+    "name": "reasonForNameChange",
+    "value": "",
+    "type": "checkbox"
+  },
+  "identityDocument": {
+    "id": "identityDocument",
+    "label": "Identity document",
+    "name": "identityDocument",
+    "value": "",
+    "type": "file"
+  },
+  "firstName": {
+    "id": "firstName",
+    "label": "First name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "middleName": {
+    "id": "middleName",
+    "label": "Middle name",
+    "name": "middleName",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "lastName",
+    "label": "Last name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  }
+}

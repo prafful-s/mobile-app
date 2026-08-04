@@ -1,0 +1,30 @@
+{
+  "transferFrom": {
+    "id": "transfer-from",
+    "label": "Transfer from",
+    "name": "transferFrom",
+    "value": "Checking Account",
+    "type": "select"
+  },
+  "transferTo": {
+    "id": "transfer-to",
+    "label": "Transfer to",
+    "name": "transferTo",
+    "value": "Retirement Account",
+    "type": "select"
+  },
+  "amount": {
+    "id": "amount",
+    "label": "Amount",
+    "name": "amount",
+    "value": "$100.00",
+    "type": "text"
+  },
+  "objective": {
+    "id": "objective",
+    "label": "Objective",
+    "name": "objective",
+    "value": "",
+    "type": "checkbox"
+  }
+}

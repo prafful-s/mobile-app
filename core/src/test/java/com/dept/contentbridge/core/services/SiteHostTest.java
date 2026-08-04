@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.dept.contentbridge.core.services.impl.FormSchemaServiceImpl;
 import com.dept.contentbridge.core.services.impl.PageJsonExporterImpl;
 import com.dept.contentbridge.core.services.impl.UrlServiceImpl;
 import com.day.cq.wcm.api.Page;
@@ -43,6 +44,7 @@ class SiteHostTest {
 
     private PageJsonExporter exporter() {
         context.addModelsForPackage("com.dept.contentbridge.core.models.impl");
+        context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
                 "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0);
         final PageJsonExporter exporter = context.getService(PageJsonExporter.class);

@@ -1,0 +1,58 @@
+{
+  "childFirstName": {
+    "id": "childFirstName",
+    "label": "First name",
+    "name": "childFirstName",
+    "value": "",
+    "type": "text"
+  },
+  "childLastName": {
+    "id": "childLastName",
+    "label": "Last name",
+    "name": "childLastName",
+    "value": "",
+    "type": "text"
+  },
+  "parentFirstName": {
+    "id": "parentFirstName",
+    "label": "First name",
+    "name": "parentFirstName",
+    "value": "",
+    "type": "text"
+  },
+  "parentLastName": {
+    "id": "parentLastName",
+    "label": "Last name",
+    "name": "parentLastName",
+    "value": "",
+    "type": "text"
+  },
+  "relationshipToChild": {
+    "id": "relationshipToChild",
+    "label": "Relationship to Child",
+    "name": "relationshipToChild",
+    "value": "",
+    "type": "select"
+  },
+  "confirmInformation": {
+    "id": "confirmInformation",
+    "label": "I confirm that the information provided above is accurate.",
+    "name": "confirmInformation",
+    "value": "",
+    "type": "checkbox"
+  },
+  "consentAccountOperation": {
+    "id": "consentAccountOperation",
+    "label": "I consent to the continued operation of my child's account in accordance with SecurFinancial's Terms and Conditions.",
+    "name": "consentAccountOperation",
+    "value": "",
+    "type": "checkbox"
+  },
+  "acknowledgeFeatureChanges": {
+    "id": "acknowledgeFeatureChanges",
+    "label": "I acknowledge and agree to any changes in account features applicable to account holders aged 13 and above.",
+    "name": "acknowledgeFeatureChanges",
+    "value": "",
+    "type": "checkbox"
+  }
+}

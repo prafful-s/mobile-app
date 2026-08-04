@@ -1,0 +1,23 @@
+{
+  "coverageFor": {
+    "id": "coverageFor",
+    "label": "Are you looking for coverage for yourself or your family?",
+    "name": "coverageFor",
+    "value": "",
+    "type": "radio"
+  },
+  "careFrequency": {
+    "id": "careFrequency",
+    "label": "How often do you get care?",
+    "name": "careFrequency",
+    "value": "",
+    "type": "radio"
+  },
+  "costPreference": {
+    "id": "costPreference",
+    "label": "Would you rather:",
+    "name": "costPreference",
+    "value": "",
+    "type": "radio"
+  }
+}

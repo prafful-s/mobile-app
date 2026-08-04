@@ -1,0 +1,51 @@
+{
+  "firstName": {
+    "id": "firstName",
+    "label": "First Name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "lastName",
+    "label": "Last Name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  },
+  "email": {
+    "id": "email",
+    "label": "Email",
+    "name": "email",
+    "value": "",
+    "type": "text"
+  },
+  "phone": {
+    "id": "phone",
+    "label": "Phone number",
+    "name": "phone",
+    "value": "",
+    "type": "text"
+  },
+  "address": {
+    "id": "address",
+    "label": "Address",
+    "name": "address",
+    "value": "",
+    "type": "text"
+  },
+  "city": {
+    "id": "city",
+    "label": "City",
+    "name": "city",
+    "value": "",
+    "type": "text"
+  },
+  "zipCode": {
+    "id": "zipCode",
+    "label": "Zip code",
+    "name": "zipCode",
+    "value": "",
+    "type": "text"
+  }
+}

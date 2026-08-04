@@ -1,0 +1,37 @@
+{
+  "zipCode": {
+    "id": "zipCode",
+    "label": "ZIP Code",
+    "name": "zipCode",
+    "value": "",
+    "type": "text"
+  },
+  "monthlyPaymentPreference": {
+    "id": "monthlyPaymentPreference",
+    "label": "When you think about your monthly payment, which best describes you?",
+    "name": "monthlyPaymentPreference",
+    "value": "",
+    "type": "radio"
+  },
+  "preferredBenefits": {
+    "id": "preferredBenefits",
+    "label": "Which type of benefits do you want in your plan?",
+    "name": "preferredBenefits",
+    "value": "",
+    "type": "radio"
+  },
+  "additionalBenefits": {
+    "id": "additionalBenefits",
+    "label": "I need vision and/or dental options",
+    "name": "additionalBenefits",
+    "value": "",
+    "type": "checkbox"
+  },
+  "networkPreference": {
+    "id": "networkPreference",
+    "label": "Which best describes you?",
+    "name": "networkPreference",
+    "value": "",
+    "type": "radio"
+  }
+}

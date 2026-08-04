@@ -1,0 +1,79 @@
+{
+  "firstName": {
+    "id": "firstName",
+    "label": "First name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "lastName",
+    "label": "Last name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  },
+  "email": {
+    "id": "email",
+    "label": "Email address",
+    "name": "email",
+    "value": "",
+    "type": "text"
+  },
+  "phone": {
+    "id": "phone",
+    "label": "Phone number",
+    "name": "phone",
+    "value": "",
+    "type": "text"
+  },
+  "streetAddress": {
+    "id": "streetAddress",
+    "label": "Address",
+    "name": "streetAddress",
+    "value": "",
+    "type": "text"
+  },
+  "state": {
+    "id": "state",
+    "label": "State",
+    "name": "state",
+    "value": "",
+    "type": "select"
+  },
+  "zipCode": {
+    "id": "zipCode",
+    "label": "ZIP code",
+    "name": "zipCode",
+    "value": "",
+    "type": "text"
+  },
+  "city": {
+    "id": "city",
+    "label": "City",
+    "name": "city",
+    "value": "",
+    "type": "text"
+  },
+  "country": {
+    "id": "country",
+    "label": "Country",
+    "name": "country",
+    "value": "",
+    "type": "select"
+  },
+  "dateOfBirth": {
+    "id": "dateOfBirth",
+    "label": "Date of birth",
+    "name": "dateOfBirth",
+    "value": "",
+    "type": "text"
+  },
+  "ssn": {
+    "id": "ssn",
+    "label": "Social Security Number",
+    "name": "ssn",
+    "value": "",
+    "type": "text"
+  }
+}

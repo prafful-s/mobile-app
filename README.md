@@ -199,6 +199,43 @@ rebuilds, changing only if the component is moved.
 Booleans inside `content` are emitted as **strings** (`"true"` / `"false"`) to match the published
 contract. Booleans in `meta` (e.g. `useCart`) are real JSON booleans.
 
+### Forms
+
+When a block turns out to be a form, its field definitions are attached alongside the authored
+content, so a client can render the form without a second call or a hard-coded copy of the schema:
+
+```jsonc
+{
+  "meta":    { "id": "a1b2c3", "component": "sign-in" },
+  "content": { "title": "Sign in" },
+  "schema": {
+    "email":    { "id": "email", "label": "Email address", "name": "email", "value": "", "type": "text" },
+    "password": { "id": "password", "label": "Password", "name": "password", "value": "", "type": "password" }
+  }
+}
+```
+
+`schema` sits beside `content` rather than inside it, so authored fields and derived ones never
+collide, and a client can tell which is which.
+
+**How a block is recognised as a form.** A `formName` or `form` property wins, but usually neither is
+needed: Edge Delivery block models are already named after the form they render, so the component
+name is matched against the known schemas directly. A block whose name is not a known form gets no
+`schema` key — that is how every other component stays untouched.
+
+**Where the schemas live.** `core/src/main/resources/contentbridge/forms/`, one JSON file per form,
+named after the form, plus `index.json` naming them all. **Adding a form means adding the file *and*
+its name to the index** — a bundle cannot reliably list its own contents, so the index is how the
+service knows what to load. `FormSchemaServiceTest` fails if the two ever disagree, so the extra step
+cannot be forgotten silently.
+
+They ship in the bundle rather than the repository on purpose. A schema is a contract between the API
+and its clients, so it should version with the code and be identical on every environment, with
+nothing in AEM authoring able to drift it. `FormSchemaService` reads them once at activation and
+holds them immutable.
+
+Field types in use: `text`, `select`, `checkbox`, `radio`, `file`, `password`, `date`.
+
 ### Products
 
 `products` is built from the site's Content Fragments, projected onto one fixed key set:

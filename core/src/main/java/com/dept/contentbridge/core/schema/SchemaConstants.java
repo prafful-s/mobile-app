@@ -60,6 +60,12 @@ public final class SchemaConstants {
     public static final String KEY_PRODUCTS = "products";
     public static final String KEY_NAVIGATION = "navigation";
     public static final String KEY_COMPONENT = "component";
+    /** Field definitions attached to a form block, taken from the bundled form schemas. */
+    public static final String KEY_SCHEMA = "schema";
+
+    /** Properties that may name the form a block renders, tried before the component name. */
+    public static final String PN_FORM_NAME = "formName";
+    public static final String PN_FORM = "form";
 
     /* ---- page / app properties authored in AEM ---- */
     public static final String PN_APP_ID = "appId";

@@ -1,0 +1,93 @@
+{
+  "firstName": {
+    "id": "firstName",
+    "label": "First name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "lastName",
+    "label": "Last name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  },
+  "email": {
+    "id": "email",
+    "label": "Email",
+    "name": "email",
+    "value": "",
+    "type": "text"
+  },
+  "phone": {
+    "id": "phone",
+    "label": "Phone number",
+    "name": "phone",
+    "value": "",
+    "type": "text"
+  },
+  "streetAddress": {
+    "id": "street",
+    "label": "Street address",
+    "name": "streetAddress",
+    "value": "",
+    "type": "text"
+  },
+  "city": {
+    "id": "city",
+    "label": "City",
+    "name": "city",
+    "value": "",
+    "type": "text"
+  },
+  "zipCode": {
+    "id": "postalCode",
+    "label": "Postal code",
+    "name": "zipCode",
+    "value": "",
+    "type": "text"
+  },
+  "country": {
+    "id": "country",
+    "label": "Country",
+    "name": "country",
+    "value": "",
+    "type": "select"
+  },
+  "paymentMethod": {
+    "id": "paymentMethod",
+    "label": "Payment",
+    "name": "paymentMethod",
+    "value": "card",
+    "type": "radio"
+  },
+  "cardNumber": {
+    "id": "cardNumber",
+    "label": "Card number",
+    "name": "cardNumber",
+    "value": "",
+    "type": "text"
+  },
+  "shippingMethod": {
+    "id": "shippingMethod",
+    "label": "Shipping",
+    "name": "shippingMethod",
+    "value": "standard",
+    "type": "radio"
+  },
+  "lumaLoyalty": {
+    "id": "lumaLoyalty",
+    "label": "I want to join Luma+ Loyalty Program",
+    "name": "lumaLoyalty",
+    "value": "",
+    "type": "checkbox"
+  },
+  "createAccount": {
+    "id": "createAccount",
+    "label": "I want to create the account",
+    "name": "createAccount",
+    "value": "",
+    "type": "checkbox"
+  }
+}

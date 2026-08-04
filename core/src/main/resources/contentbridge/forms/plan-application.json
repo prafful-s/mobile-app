@@ -1,0 +1,86 @@
+{
+  "firstName": {
+    "id": "firstName",
+    "label": "First name",
+    "name": "firstName",
+    "value": "",
+    "type": "text"
+  },
+  "birthDate": {
+    "id": "birthDate",
+    "label": "Date of birth",
+    "name": "birthDate",
+    "value": "",
+    "type": "text"
+  },
+  "lastName": {
+    "id": "lastName",
+    "label": "Last name",
+    "name": "lastName",
+    "value": "",
+    "type": "text"
+  },
+  "gender": {
+    "id": "gender",
+    "label": "Gender",
+    "name": "gender",
+    "value": "",
+    "type": "select"
+  },
+  "email": {
+    "id": "email",
+    "label": "Email",
+    "name": "email",
+    "value": "",
+    "type": "text"
+  },
+  "phoneNumber": {
+    "id": "phoneNumber",
+    "label": "Mobile phone number",
+    "name": "phoneNumber",
+    "value": "",
+    "type": "text"
+  },
+  "jointApplicant": {
+    "id": "jointApplicant",
+    "label": "Is there a joint applicant?",
+    "name": "jointApplicant",
+    "value": "",
+    "type": "radio"
+  },
+  "address": {
+    "id": "address",
+    "label": "Street Address",
+    "name": "address",
+    "value": "",
+    "type": "text"
+  },
+  "ssn": {
+    "id": "ssn",
+    "label": "Social Security Number",
+    "name": "ssn",
+    "value": "",
+    "type": "text"
+  },
+  "patientNumber": {
+    "id": "patientNumber",
+    "label": "Patient number",
+    "name": "patientNumber",
+    "value": "",
+    "type": "text"
+  },
+  "zipCode": {
+    "id": "zipCode",
+    "label": "Zip code",
+    "name": "zipCode",
+    "value": "",
+    "type": "text"
+  },
+  "state": {
+    "id": "state",
+    "label": "State",
+    "name": "state",
+    "value": "",
+    "type": "text"
+  }
+}
