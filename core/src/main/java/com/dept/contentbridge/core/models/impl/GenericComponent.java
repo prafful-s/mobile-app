@@ -38,14 +38,14 @@ import com.dept.contentbridge.core.services.UrlService;
 public final class GenericComponent implements ContentBridgeComponent {
 
     /** Identity and bookkeeping - never content. */
-    private static final Set<String> IGNORED_PROPERTIES = new LinkedHashSet<>(Arrays.asList(
+    private static final Set<String> IGNORED_PROPERTIES = Set.of(
             SchemaConstants.PN_MODEL,
             SchemaConstants.PN_MODEL_FIELDS,
             SchemaConstants.PN_FILTER,
-            SchemaConstants.PN_NAME));
+            SchemaConstants.PN_NAME);
 
     private static final List<String> IGNORED_PREFIXES =
-            Arrays.asList("jcr:", "sling:", "cq:", "mix:", "nt:", "granite:", "oak:", "rep:");
+            List.of("jcr:", "sling:", "cq:", "mix:", "nt:", "granite:", "oak:", "rep:");
 
     private static final String DAM_PREFIX = "/content/dam/";
 

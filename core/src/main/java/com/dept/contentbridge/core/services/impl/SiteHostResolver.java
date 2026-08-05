@@ -67,11 +67,15 @@ final class SiteHostResolver {
      * <p>Placeholders are the natural home for per-site settings an author owns - the delivery
      * hostname, the catalogue location - so the lookup is generic rather than hard-wired to one key.</p>
      *
+     * <p>Static because reading a placeholder needs no configuration - only host rewriting does.
+     * A caller wanting {@code productsPath} should not have to invent author/publish segments it
+     * will never use.</p>
+     *
      * @param page any page in the site
      * @param key  the placeholder name, e.g. {@code hostname} or {@code productsPath}
      * @return the value, or empty when the site has no placeholders page or no such entry
      */
-    String placeholder(final Page page, final String key) {
+    static String placeholder(final Page page, final String key) {
         final Resource placeholders = findPlaceholders(page);
         if (placeholders == null) {
             LOG.debug("No {} page for {}", PLACEHOLDERS, page.getPath());
@@ -101,7 +105,7 @@ final class SiteHostResolver {
     /**
      * @return the placeholders resource for the site {@code page} belongs to
      */
-    private Resource findPlaceholders(final Page page) {
+    private static Resource findPlaceholders(final Page page) {
         final String siteRoot = siteRoot(page.getPath());
         if (siteRoot == null) {
             return null;
@@ -134,7 +138,7 @@ final class SiteHostResolver {
      * Breadth-first search for the hostname, tolerating both a direct property and the key/value
      * row shape used by Edge Delivery placeholder sheets.
      */
-    private String findEntry(final Resource root, final String key) {
+    private static String findEntry(final Resource root, final String key) {
         final Deque<Resource> queue = new ArrayDeque<>();
         queue.add(root);
         int visited = 0;
@@ -163,7 +167,7 @@ final class SiteHostResolver {
     /**
      * Handles the sheet shape, where one node holds {@code key=<name>} alongside the value column.
      */
-    private String valueFromKeyValueRow(final Map<String, Object> properties, final String key) {
+    private static String valueFromKeyValueRow(final Map<String, Object> properties, final String key) {
         boolean isMatchingRow = false;
         for (final Map.Entry<String, Object> entry : properties.entrySet()) {
             if (StringUtils.equalsIgnoreCase(key, asString(entry.getValue()))

@@ -156,6 +156,13 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             LOG.error("Failed to serialise ContentBridge payload for {}", path, e);
             writeError(response, SlingHttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Could not serialise the page.");
+        } catch (final RuntimeException e) {
+            // Without this, a bug in any component model escapes to Sling's default handler and the
+            // client receives an HTML error page - breaking the promise that errors are always JSON,
+            // for exactly the clients least able to cope with HTML.
+            LOG.error("Unexpected failure exporting {}", path, e);
+            writeError(response, SlingHttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Could not export the page.");
         }
     }
 

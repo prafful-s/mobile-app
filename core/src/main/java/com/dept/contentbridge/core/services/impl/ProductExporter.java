@@ -2,11 +2,11 @@ package com.dept.contentbridge.core.services.impl;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,19 +42,20 @@ final class ProductExporter {
     private static final String DAM_ROOT = "/content/dam/";
 
     /** Output keys, in the order they appear in the response. */
-    static final List<String> KEYS = Arrays.asList(
+    static final List<String> KEYS = List.of(
             "id", "sku", "name", "image", "price", "type_id", "category", "thumbnail",
             "description", "category_ids", "importedFrom", "category_uids", "short_description");
 
     /** Keys whose value is a list of integers. */
-    private static final Set<String> INTEGER_LIST_KEYS = new LinkedHashSet<>(
-            Arrays.asList("category_ids"));
+    private static final Set<String> INTEGER_LIST_KEYS = Set.of("category_ids");
 
     /** Keys whose value is a list of strings. */
-    private static final Set<String> STRING_LIST_KEYS = new LinkedHashSet<>(
-            Arrays.asList("category_uids"));
+    private static final Set<String> STRING_LIST_KEYS = Set.of("category_uids");
 
     private static final String KEY_PRICE = "price";
+
+    /** Placeholder entry and page property naming the catalogue folder. */
+    private static final String PN_PRODUCTS_PATH = "productsPath";
 
     /** Folder visit budget for the catalogue search. See {@code searchForFolder}. */
     private static final int MAX_FOLDERS_SCANNED = 5000;
@@ -62,23 +63,26 @@ final class ProductExporter {
     /**
      * Default element-name candidates per output key. The output key itself is always tried first.
      */
-    private static final Map<String, List<String>> DEFAULT_ALIASES = new LinkedHashMap<>();
+    private static final Map<String, List<String>> DEFAULT_ALIASES;
 
     static {
-        DEFAULT_ALIASES.put("id", Arrays.asList("id", "productId", "identifier", "sku"));
-        DEFAULT_ALIASES.put("sku", Arrays.asList("sku", "productSku", "code", "id"));
-        DEFAULT_ALIASES.put("name", Arrays.asList("name", "productName", "title", "jcr:title"));
-        DEFAULT_ALIASES.put("image", Arrays.asList("image", "mainImage", "imageUrl", "fileReference", "asset"));
-        DEFAULT_ALIASES.put(KEY_PRICE, Arrays.asList("price", "amount", "listPrice"));
-        DEFAULT_ALIASES.put("type_id", Arrays.asList("type_id", "typeId", "type", "productType"));
-        DEFAULT_ALIASES.put("category", Arrays.asList("category", "categoryName", "categoryPath"));
-        DEFAULT_ALIASES.put("thumbnail", Arrays.asList("thumbnail", "thumbnailUrl", "image"));
-        DEFAULT_ALIASES.put("description", Arrays.asList("description", "longDescription", "body", "text"));
-        DEFAULT_ALIASES.put("category_ids", Arrays.asList("category_ids", "categoryIds"));
-        DEFAULT_ALIASES.put("importedFrom", Arrays.asList("importedFrom", "source", "origin"));
-        DEFAULT_ALIASES.put("category_uids", Arrays.asList("category_uids", "categoryUids"));
-        DEFAULT_ALIASES.put("short_description",
-                Arrays.asList("short_description", "shortDescription", "summary", "subtitle"));
+        final Map<String, List<String>> defaults = new LinkedHashMap<>();
+        defaults.put("id", List.of("id", "productId", "identifier", "sku"));
+        defaults.put("sku", List.of("sku", "productSku", "code", "id"));
+        defaults.put("name", List.of("name", "productName", "title", "jcr:title"));
+        defaults.put("image", List.of("image", "mainImage", "imageUrl", "fileReference", "asset"));
+        defaults.put(KEY_PRICE, List.of("price", "amount", "listPrice"));
+        defaults.put("type_id", List.of("type_id", "typeId", "type", "productType"));
+        defaults.put("category", List.of("category", "categoryName", "categoryPath"));
+        defaults.put("thumbnail", List.of("thumbnail", "thumbnailUrl", "image"));
+        defaults.put("description", List.of("description", "longDescription", "body", "text"));
+        defaults.put("category_ids", List.of("category_ids", "categoryIds"));
+        defaults.put("importedFrom", List.of("importedFrom", "source", "origin"));
+        defaults.put("category_uids", List.of("category_uids", "categoryUids"));
+        defaults.put("short_description",
+                List.of("short_description", "shortDescription", "summary", "subtitle"));
+        // Published immutable: this map is shared by every request and merged, never mutated.
+        DEFAULT_ALIASES = Collections.unmodifiableMap(defaults);
     }
 
     private final String folderName;
@@ -340,8 +344,7 @@ final class ProductExporter {
             return fromRequest;
         }
 
-        final String fromPlaceholders =
-                new SiteHostResolver("author", "publish").placeholder(page, "productsPath");
+        final String fromPlaceholders = SiteHostResolver.placeholder(page, PN_PRODUCTS_PATH);
         final Resource placeholderFolder =
                 resolveExplicit(resolver, fromPlaceholders, "placeholders page");
         if (placeholderFolder != null) {
@@ -350,7 +353,7 @@ final class ProductExporter {
 
         final ValueMap properties = page.getProperties();
         final Resource fromProperty = resolveExplicit(
-                resolver, properties.get("productsPath", String.class), "page property");
+                resolver, properties.get(PN_PRODUCTS_PATH, String.class), "page property");
         if (fromProperty != null) {
             return fromProperty;
         }
