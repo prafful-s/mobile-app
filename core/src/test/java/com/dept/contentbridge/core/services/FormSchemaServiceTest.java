@@ -74,16 +74,55 @@ class FormSchemaServiceTest {
                 "loan-application-form", "credit-card-application-form", "transfer-funds")));
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> part(final Map<String, Object> field, final String key) {
+        return (Map<String, Object>) field.get(key);
+    }
+
     @Test
-    @DisplayName("a field carries id, label, name, value and type")
+    @DisplayName("a field is a meta/content pair, the same envelope a component uses")
     void fieldShape() {
         final Map<String, Object> email = field("sign-in", "email");
         assertNotNull(email);
-        assertEquals("email", email.get("id"));
-        assertEquals("Email address", email.get("label"));
-        assertEquals("email", email.get("name"));
-        assertEquals("", email.get("value"));
-        assertEquals("text", email.get("type"));
+
+        assertEquals(java.util.List.of("meta", "content"), java.util.List.copyOf(email.keySet()));
+        assertEquals("email", part(email, "meta").get("id"));
+        assertEquals("textField", part(email, "meta").get("component"),
+                "the widget the client renders, distinct from the value type");
+
+        final Map<String, Object> content = part(email, "content");
+        assertEquals("Email address", content.get("label"));
+        assertEquals("email", content.get("name"));
+        assertEquals("", content.get("value"));
+        assertEquals("text", content.get("type"));
+        assertEquals("email", content.get("inputMode"), "drives the on-screen keyboard");
+        assertEquals(Boolean.TRUE, content.get("prefill"));
+        assertEquals("personalEmail.address", content.get("path"),
+                "where the client reads the prefill value from in its profile");
+    }
+
+    @Test
+    @DisplayName("a password field is marked as one rather than only typed as one")
+    void passwordField() {
+        final Map<String, Object> password = field("sign-in", "password");
+
+        assertEquals("textField", part(password, "meta").get("component"));
+        assertEquals("password", part(password, "content").get("type"));
+        assertEquals(Boolean.TRUE, part(password, "content").get("isPassword"));
+    }
+
+    @Test
+    @DisplayName("a choice field carries the options the client renders")
+    void choiceFieldsCarryOptions() {
+        final Map<String, Object> country = field("checkout-shipping", "country");
+        assertEquals("dropdown", part(country, "meta").get("component"));
+
+        @SuppressWarnings("unchecked")
+        final java.util.List<Map<String, Object>> options =
+                (java.util.List<Map<String, Object>>) part(country, "content").get("options");
+        assertTrue(options.size() > 1, "a dropdown with no options cannot be rendered");
+        assertTrue(options.stream().allMatch(o -> o.containsKey("label") && o.containsKey("value")),
+                "every option needs both a label and a value: " + options);
     }
 
     @Test
@@ -97,29 +136,54 @@ class FormSchemaServiceTest {
     @DisplayName("ids that differ from the field key are preserved")
     void idsThatDifferFromTheKey() {
         // checkout-shipping deliberately keys 'zipCode' with an id of 'postalCode'
-        assertEquals("postalCode", field("checkout-shipping", "zipCode").get("id"));
-        assertEquals("street", field("checkout-shipping", "streetAddress").get("id"));
+        assertEquals("postalCode", part(field("checkout-shipping", "zipCode"), "meta").get("id"));
+        assertEquals("street", part(field("checkout-shipping", "streetAddress"), "meta").get("id"));
     }
 
     @Test
     @DisplayName("non-empty default values survive")
     void defaultValues() {
-        assertEquals("$100.00", field("transfer-funds", "amount").get("value"));
-        assertEquals("card", field("checkout-shipping", "paymentMethod").get("value"));
-        assertEquals("checked", field("checkout", "wknd-club").get("value"));
+        assertEquals("$100.00", part(field("transfer-funds", "amount"), "content").get("value"));
+        assertEquals("card", part(field("checkout-shipping", "paymentMethod"), "content").get("value"));
+        assertEquals("checked", part(field("checkout", "wknd-club"), "content").get("value"));
     }
 
     @Test
-    @DisplayName("every field type in use is one the client can render")
+    @DisplayName("every field names a widget the client can render and a type it can hold")
     void knownFieldTypes() {
-        final java.util.Set<String> allowed =
+        // Two separate vocabularies on purpose: 'component' is the widget, 'type' is the value it
+        // produces. A checkbox group and a switch are the same type and different components.
+        final java.util.Set<String> components = java.util.Set.of(
+                "textField", "dropdown", "checkboxGroup", "radioGroup", "datePicker", "fileUpload");
+        final java.util.Set<String> types =
                 java.util.Set.of("text", "select", "checkbox", "radio", "file", "password", "date");
 
         service.getFormNames().forEach(form -> service.getSchema(form).forEach((name, definition) -> {
             @SuppressWarnings("unchecked")
-            final Map<String, Object> typed = (Map<String, Object>) definition;
-            assertTrue(allowed.contains(typed.get("type")),
-                    form + "." + name + " has unexpected type " + typed.get("type"));
+            final Map<String, Object> field = (Map<String, Object>) definition;
+            final Object component = part(field, "meta").get("component");
+            final Object type = part(field, "content").get("type");
+
+            assertTrue(components.contains(component),
+                    form + "." + name + " has unexpected component " + component);
+            assertTrue(types.contains(type), form + "." + name + " has unexpected type " + type);
+        }));
+    }
+
+    @Test
+    @DisplayName("every choice field actually has choices")
+    void choiceFieldsAreRenderable() {
+        final java.util.Set<String> needsOptions =
+                java.util.Set.of("dropdown", "checkboxGroup", "radioGroup");
+
+        service.getFormNames().forEach(form -> service.getSchema(form).forEach((name, definition) -> {
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> field = (Map<String, Object>) definition;
+            if (needsOptions.contains(part(field, "meta").get("component"))) {
+                final Object options = part(field, "content").get("options");
+                assertTrue(options instanceof java.util.List && !((java.util.List<?>) options).isEmpty(),
+                        form + "." + name + " is a choice field with no options");
+            }
         }));
     }
 

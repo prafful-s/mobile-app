@@ -1,9 +1,26 @@
 {
   "email": {
-    "id": "",
-    "label": "",
-    "name": "email",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "personalEmail.address",
+      "label": "",
+      "name": "email",
+      "value": "",
+      "type": "text",
+      "inputMode": "email",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   }
 }

@@ -1,37 +1,127 @@
 {
   "reasonForNameChange": {
-    "id": "reasonForNameChange",
-    "label": "",
-    "name": "reasonForNameChange",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "reasonForNameChange",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "",
+      "name": "reasonForNameChange",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "Marriage",
+          "value": "marriage"
+        },
+        {
+          "label": "Divorce",
+          "value": "divorce"
+        },
+        {
+          "label": "Legal name change",
+          "value": "legal-name-change"
+        },
+        {
+          "label": "First or middle name correction",
+          "value": "first-or-middle-name-correction"
+        },
+        {
+          "label": "Naturalization",
+          "value": "naturalization"
+        }
+      ]
+    }
   },
   "identityDocument": {
-    "id": "identityDocument",
-    "label": "Identity document",
-    "name": "identityDocument",
-    "value": "",
-    "type": "file"
+    "meta": {
+      "id": "identityDocument",
+      "component": "fileUpload"
+    },
+    "content": {
+      "path": "",
+      "label": "Identity document",
+      "name": "identityDocument",
+      "value": "",
+      "type": "file",
+      "inputMode": "none",
+      "prefill": false
+    }
   },
   "firstName": {
-    "id": "firstName",
-    "label": "First name",
-    "name": "firstName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "firstName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.firstName",
+      "label": "First name",
+      "name": "firstName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "middleName": {
-    "id": "middleName",
-    "label": "Middle name",
-    "name": "middleName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "middleName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Middle name",
+      "name": "middleName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "lastName": {
-    "id": "lastName",
-    "label": "Last name",
-    "name": "lastName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "lastName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.lastName",
+      "label": "Last name",
+      "name": "lastName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   }
 }

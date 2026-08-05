@@ -34,6 +34,15 @@ public interface PageJsonExporter {
     Map<String, Object> export(Page requested, String productsPath);
 
     /**
+     * As {@link #export(Page)}, with explicit per-request options.
+     *
+     * @param requested the page named by the caller
+     * @param options   schema version and catalogue override; never null
+     * @return an insertion-ordered map ready for serialisation
+     */
+    Map<String, Object> export(Page requested, ExportOptions options);
+
+    /**
      * @param path a repository path
      * @return true when the path sits under one of the configured allowed roots
      */

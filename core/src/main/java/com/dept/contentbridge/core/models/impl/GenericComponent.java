@@ -37,12 +37,21 @@ import com.dept.contentbridge.core.services.UrlService;
  */
 public final class GenericComponent implements ContentBridgeComponent {
 
-    /** Identity and bookkeeping - never content. */
+    /**
+     * Identity and bookkeeping - never content.
+     *
+     * <p>{@code aueComponentId} is the Universal Editor's own marker. Leaving it in did more harm
+     * than the stray field suggests: a wrapper block such as Edge Delivery's {@code cards} carries
+     * nothing but that marker, and the walker decides a block is a wrapper by finding no content on
+     * it. One bookkeeping property was enough to make every such wrapper look like a real component
+     * and be exported as an empty shell alongside the items it wraps.</p>
+     */
     private static final Set<String> IGNORED_PROPERTIES = Set.of(
             SchemaConstants.PN_MODEL,
             SchemaConstants.PN_MODEL_FIELDS,
             SchemaConstants.PN_FILTER,
-            SchemaConstants.PN_NAME);
+            SchemaConstants.PN_NAME,
+            SchemaConstants.PN_AUE_COMPONENT_ID);
 
     private static final List<String> IGNORED_PREFIXES =
             List.of("jcr:", "sling:", "cq:", "mix:", "nt:", "granite:", "oak:", "rep:");

@@ -299,8 +299,17 @@ Both shapes are supported — a property literally named `hostname`, and the key
 Delivery placeholder sheets use. A value already pointing at publish is left alone. With no
 `placeholders` page, DAM paths stay relative.
 
-Only values starting `/content/dam/` are prefixed, so page links and colour tokens are untouched.
-The `author` → `publish` segments are configurable (`authorHostSegment`, `publishHostSegment`).
+**Everything under `/content` is prefixed, not just `/content/dam`.** A client consuming this JSON has
+no AEM to resolve `/content/site/en/plans.html` against, so a page link is exactly as unusable as a
+bare asset path. That includes links buried in authored rich text — `href` and `src` attributes are
+rewritten in place.
+
+Markup is rewritten by targeted substitution rather than by parsing and re-serialising it: an HTML
+parser reformats tags and re-encodes entities, silently changing what the author typed.
+
+Colour tokens, anchors and absolute URLs are left alone — the rule keys on the *value*, so `#005971`
+and `https://…` need no special casing. The `author` → `publish` segments are configurable
+(`authorHostSegment`, `publishHostSegment`).
 
 ### Navigation
 

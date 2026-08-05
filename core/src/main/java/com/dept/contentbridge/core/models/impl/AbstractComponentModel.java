@@ -38,8 +38,12 @@ public abstract class AbstractComponentModel implements ContentBridgeComponent {
     /**
      * Ids are derived from the resource path so they stay stable across exports as long as the
      * component is not moved, and they survive a package rebuild - unlike a random UUID.
+     *
+     * <p>Public because the exporter generates ids for synthesised components - a panel derived from
+     * an AEM section has no model of its own, but still needs an id from the same scheme, or two
+     * components in one response would be numbered by different rules.</p>
      */
-    static String generateId(final String path) {
+    public static String generateId(final String path) {
         return Integer.toHexString(path.hashCode());
     }
 

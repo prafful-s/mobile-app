@@ -12,6 +12,7 @@ import org.apache.sling.models.factory.ModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dept.contentbridge.core.models.impl.AbstractComponentModel;
 import com.dept.contentbridge.core.models.impl.GenericComponent;
 import com.dept.contentbridge.core.schema.ContentBridgeComponent;
 import com.dept.contentbridge.core.schema.SchemaConstants;
@@ -36,9 +37,6 @@ final class ComponentTreeWalker {
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
 
-    /** Values starting with this are asset references and get the site's publish host prefixed. */
-    private static final String DAM_PREFIX = "/content/dam/";
-
     /** Component container locations, most specific first. See {@code resolveContainer}. */
     private static final List<String> CONTAINER_CANDIDATES = List.of(
             SchemaConstants.NN_CONTAINER,   // editable templates: root/container
@@ -49,40 +47,67 @@ final class ComponentTreeWalker {
     private final ModelFactory modelFactory;
     private final UrlService urlService;
     private final FormSchemaService formSchemaService;
+    private final StyleResolver styleResolver;
+    private final ComponentMappings mappings;
 
     ComponentTreeWalker(final ModelFactory modelFactory, final UrlService urlService,
-                        final FormSchemaService formSchemaService) {
+                        final FormSchemaService formSchemaService, final StyleResolver styleResolver,
+                        final ComponentMappings mappings) {
         this.modelFactory = modelFactory;
         this.urlService = urlService;
         this.formSchemaService = formSchemaService;
+        this.styleResolver = styleResolver;
+        this.mappings = mappings == null ? ComponentMappings.EMPTY : mappings;
     }
 
     List<Map<String, Object>> componentsOf(final Page page, final String assetHost) {
+        return componentsOf(page, assetHost, false);
+    }
+
+    /**
+     * @param hierarchical when true, layout containers become {@code panel} components whose
+     *                     {@code content} is an array of children, instead of being flattened away
+     */
+    List<Map<String, Object>> componentsOf(final Page page, final String assetHost,
+                                           final boolean hierarchical) {
         final List<Map<String, Object>> components = new ArrayList<>();
         final Resource container = resolveContainer(page);
         if (container != null) {
-            collectComponents(container, components, 0);
+            collectComponents(container, components, 0, hierarchical);
         }
-        if (StringUtils.isNotBlank(assetHost)) {
-            for (final Map<String, Object> component : components) {
-                final Object content = component.get(SchemaConstants.KEY_CONTENT);
-                if (content instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    final Map<String, Object> payload = (Map<String, Object>) content;
-                    prefixAssets(payload, assetHost);
-                }
-            }
-        }
+        prefixAssetsDeep(components, assetHost);
         return components;
     }
 
     /**
-     * Prefixes DAM references with the site's publish host, in place.
+     * Walks the finished tree applying the asset host. Recursive because a nested panel's children
+     * are just as likely to hold DAM references as a top-level component's.
+     */
+    private void prefixAssetsDeep(final List<Map<String, Object>> components, final String assetHost) {
+        if (StringUtils.isBlank(assetHost)) {
+            return;
+        }
+        for (final Map<String, Object> component : components) {
+            final Object content = component.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof Map) {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> payload = (Map<String, Object>) content;
+                prefixAssets(payload, assetHost);
+            } else if (content instanceof List) {
+                @SuppressWarnings("unchecked")
+                final List<Map<String, Object>> children = (List<Map<String, Object>>) content;
+                prefixAssetsDeep(children, assetHost);
+            }
+        }
+    }
+
+    /**
+     * Prefixes repository paths with the site's delivery host, in place.
      *
      * <p>Applied here rather than inside each model so that curated models and the generic fallback
      * behave identically, and so the host is resolved once per export instead of once per component.
      * Keyed on the value, not the property name, because projects use {@code image},
-     * {@code imageRef}, {@code fileReference} and others interchangeably.</p>
+     * {@code imageRef}, {@code fileReference}, {@code link} and others interchangeably.</p>
      */
     private void prefixAssets(final Map<String, Object> payload, final String assetHost) {
         for (final Map.Entry<String, Object> entry : payload.entrySet()) {
@@ -101,10 +126,7 @@ final class ComponentTreeWalker {
     }
 
     private String prefixAsset(final String value, final String assetHost) {
-        if (StringUtils.isBlank(assetHost) || !StringUtils.startsWith(value, DAM_PREFIX)) {
-            return value;
-        }
-        return assetHost + value;
+        return ContentPaths.prefix(value, assetHost);
     }
 
     /**
@@ -117,7 +139,7 @@ final class ComponentTreeWalker {
      * {@code content[]} contract identical for both authoring models.</p>
      */
     private void collectComponents(final Resource parent, final List<Map<String, Object>> sink,
-                                   final int depth) {
+                                   final int depth, final boolean hierarchical) {
         if (depth > MAX_COMPONENT_DEPTH) {
             LOG.warn("Component nesting below {} exceeds {} levels - not descending further",
                     parent.getPath(), MAX_COMPONENT_DEPTH);
@@ -130,9 +152,23 @@ final class ComponentTreeWalker {
             final String resourceType = StringUtils.trimToEmpty(child.getResourceType());
             final boolean hasChildren = child.hasChildren();
 
+            // An untyped node with no children is an empty layout cell - a column an author left
+            // blank. It has no resource type to name it, so exporting it produced a component called
+            // 'nt:unstructured' with empty content: a JCR implementation detail presented to the
+            // client as though it were content.
+            if (!hasChildren && isUntyped(resourceType)) {
+                continue;
+            }
+
             // Known layout containers, and the untyped row/col wrappers, never produce a component.
             if (isKnownContainerType(resourceType) || (hasChildren && isUntyped(resourceType))) {
-                collectComponents(child, sink, depth + 1);
+                if (hierarchical) {
+                    // A section carries the spacing and alignment the target's panel wants, so it is
+                    // a component in its own right rather than scaffolding to step over.
+                    emitPanel(child, sink, depth, resourceType);
+                } else {
+                    collectComponents(child, sink, depth + 1, false);
+                }
                 continue;
             }
 
@@ -142,26 +178,65 @@ final class ComponentTreeWalker {
             if (model == null) {
                 model = new GenericComponent(child, urlService);
             }
-            final Map<String, Object> content = model.getContent();
+
+            // Does this model already speak the app's vocabulary? The models extending
+            // AbstractComponentModel do - they were written against the target contract and emit
+            // 'title', 'subtitle', 'linkTo' directly. FranklinComponentModel and GenericComponent do
+            // not: they project whatever the author set, under the names the author used.
+            //
+            // The distinction matters because rule names and target names overlap. The 'card' rule
+            // matches the name 'card', so without this guard CardModel's output would be projected a
+            // second time - hunting for a rich-text blob that is not there and discarding the title
+            // it had already resolved.
+            final boolean speaksTargetVocabulary = model instanceof AbstractComponentModel;
+            final Map<String, Object> authored = model.getContent();
 
             // Children but nothing of its own to say: a wrapper such as an Edge Delivery cards or
             // accordion block. Exporting it would emit an empty component and hide its items.
-            // Evaluated from the content already built, so properties are read only once.
-            if (hasChildren && content.isEmpty()) {
-                collectComponents(child, sink, depth + 1);
+            // Evaluated from the authored content, before any mapping, so that a rule cannot turn a
+            // wrapper into a component by supplying constants.
+            if (hasChildren && authored.isEmpty()) {
+                collectComponents(child, sink, depth + 1, hierarchical);
                 continue;
+            }
+
+            final String authoredName = model.getComponentName();
+            String componentName = authoredName;
+            Map<String, Object> content = authored;
+
+            // v2 speaks the app's vocabulary, so an authored 'hero' becomes a 'banner' carrying the
+            // fields the client expects. v1 is left exactly as it was: the two schemas are each a
+            // published contract, and a mapping rule must not silently change the older one.
+            final ComponentMapping mapping =
+                    hierarchical && !speaksTargetVocabulary ? mappings.find(authoredName) : null;
+            if (mapping != null) {
+                final Map<String, Object> mapped = mapping.apply(authored);
+                if (mapped.isEmpty()) {
+                    // The rule matched a component with none of its source fields authored. An empty
+                    // banner tells a client less than the authored shape does, so this one component
+                    // is exported unmapped rather than emptied.
+                    LOG.debug("Rule for '{}' produced nothing at {} - exporting it unmapped",
+                            authoredName, child.getPath());
+                } else {
+                    componentName = mapping.getComponent();
+                    content = mapped;
+                }
             }
 
             final Map<String, Object> entry = new LinkedHashMap<>();
             final Map<String, Object> meta = new LinkedHashMap<>();
             meta.put(SchemaConstants.KEY_ID, model.getId());
-            meta.put(SchemaConstants.KEY_COMPONENT, model.getComponentName());
+            if (hierarchical) {
+                meta.put(SchemaConstants.KEY_ORDER, sink.size());
+            }
+            meta.put(SchemaConstants.KEY_COMPONENT, componentName);
             entry.put(SchemaConstants.KEY_META, meta);
             entry.put(SchemaConstants.KEY_CONTENT, content);
 
             // Form blocks carry their field definitions alongside the authored content, so a client
-            // can render the form without a second call or a hard-coded copy of the schema.
-            final Map<String, Object> schema = resolveFormSchema(model.getComponentName(), content);
+            // can render the form without a second call or a hard-coded copy of the schema. Looked up
+            // on the authored name, since that is what the schemas are keyed by.
+            final Map<String, Object> schema = resolveFormSchema(authoredName, authored);
             if (!schema.isEmpty()) {
                 entry.put(SchemaConstants.KEY_SCHEMA, schema);
             }
@@ -170,9 +245,48 @@ final class ComponentTreeWalker {
             // Components that also nest (carousels, tabs, blocks with items) contribute their
             // children to the same flat list.
             if (hasChildren) {
-                collectComponents(child, sink, depth + 1);
+                collectComponents(child, sink, depth + 1, hierarchical);
             }
         }
+    }
+
+    /**
+     * Emits a layout container as a {@code panel} whose {@code content} is its children.
+     *
+     * <p>A panel with nothing in it is dropped rather than emitted empty - an authored section that
+     * ended up with no content is noise to a client, not a layout instruction.</p>
+     */
+    private void emitPanel(final Resource resource, final List<Map<String, Object>> sink,
+                           final int depth, final String resourceType) {
+        final List<Map<String, Object>> children = new ArrayList<>();
+        collectComponents(resource, children, depth + 1, true);
+
+        if (children.isEmpty()) {
+            return;
+        }
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
+        meta.put(SchemaConstants.KEY_ORDER, sink.size());
+        meta.put(SchemaConstants.KEY_LAYOUT, layoutOf(resourceType));
+        meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
+
+        final Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put(SchemaConstants.KEY_META, meta);
+
+        final Map<String, Object> styles = styleResolver.stylesOf(resource);
+        if (!styles.isEmpty()) {
+            entry.put(SchemaConstants.KEY_STYLES, styles);
+        }
+        entry.put(SchemaConstants.KEY_CONTENT, children);
+        sink.add(entry);
+    }
+
+    /** Columns lay their children out side by side; a section stacks them. */
+    private static String layoutOf(final String resourceType) {
+        return SchemaConstants.RT_FRANKLIN_COLUMNS.equals(resourceType)
+                || StringUtils.endsWith(resourceType, "/columns")
+                ? "horizontal" : "vertical";
     }
 
     /**

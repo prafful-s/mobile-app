@@ -16,4 +16,15 @@ public interface UrlService {
      * @return the URL to place in the JSON payload
      */
     String externalize(String path);
+
+    /**
+     * The configured publish domain, without a trailing slash, or an empty string when none is set.
+     *
+     * <p>Exposed so the exporter can fall back to it for sites whose {@code placeholders} page
+     * carries no {@code hostname}. Without the fallback such a site would emit bare repository paths
+     * even on an instance that knows its own delivery domain.</p>
+     *
+     * @return the publish domain, never {@code null}
+     */
+    String getPublishDomain();
 }

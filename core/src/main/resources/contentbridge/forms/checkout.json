@@ -1,142 +1,505 @@
 {
   "firstName": {
-    "id": "",
-    "label": "First Name",
-    "name": "firstName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.firstName",
+      "label": "First Name",
+      "name": "firstName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "middleName": {
-    "id": "",
-    "label": "Middle Name (optional)",
-    "name": "middleName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Middle Name (optional)",
+      "name": "middleName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "lastName": {
-    "id": "",
-    "label": "Last Name",
-    "name": "lastName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.lastName",
+      "label": "Last Name",
+      "name": "lastName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "birthDate": {
-    "id": "",
-    "label": "Birth Date",
-    "name": "birthDate",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "datePicker"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.birthDate",
+      "label": "Birth Date",
+      "name": "birthDate",
+      "value": "",
+      "type": "text",
+      "inputMode": "none",
+      "prefill": true,
+      "withDateFormatInLabel": false
+    }
   },
   "gender": {
-    "id": "",
-    "label": "Gender",
-    "name": "gender",
-    "value": "",
-    "type": "select"
+    "meta": {
+      "id": "",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Gender",
+      "name": "gender",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Not Specified",
+          "value": ""
+        },
+        {
+          "label": "Male",
+          "value": "male"
+        },
+        {
+          "label": "Female",
+          "value": "female"
+        }
+      ]
+    }
   },
   "frequentFlyerId": {
-    "id": "",
-    "label": "Frequent Flyer ID",
-    "name": "frequentFlyerId",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Frequent Flyer ID",
+      "name": "frequentFlyerId",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "email": {
-    "id": "",
-    "label": "Email Address",
-    "name": "email",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "personalEmail.address",
+      "label": "Email Address",
+      "name": "email",
+      "value": "",
+      "type": "text",
+      "inputMode": "email",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "phone": {
-    "id": "",
-    "label": "Phone Number",
-    "name": "phone",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "mobilePhone.number",
+      "label": "Phone Number",
+      "name": "phone",
+      "value": "",
+      "type": "text",
+      "inputMode": "tel",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "wknd-club": {
-    "id": "",
-    "label": "I want to sign up for WKND Fly Club",
-    "name": "wknd-club",
-    "value": "checked",
-    "type": "checkbox"
+    "meta": {
+      "id": "",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "person.isMember",
+      "label": "I want to sign up for WKND Fly Club",
+      "name": "wknd-club",
+      "value": "checked",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": true,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I want to sign up for WKND Fly Club",
+          "value": "true"
+        }
+      ]
+    }
   },
   "sms": {
-    "id": "",
-    "label": "I want to get SMS with booking confirmation",
-    "name": "sms",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "consents.marketing.sms.val",
+      "label": "I want to get SMS with booking confirmation",
+      "name": "sms",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": true,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I want to get SMS with booking confirmation",
+          "value": "true"
+        }
+      ]
+    }
   },
   "promo": {
-    "id": "",
-    "label": "I want to receive electronic mail with promotions and announcements",
-    "name": "promo",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "consents.marketing.email.val",
+      "label": "I want to receive electronic mail with promotions and announcements",
+      "name": "promo",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": true,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I want to receive electronic mail with promotions and announcements",
+          "value": "true"
+        }
+      ]
+    }
   },
   "nameOnCard": {
-    "id": "",
-    "label": "Name on Card",
-    "name": "nameOnCard",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Name on Card",
+      "name": "nameOnCard",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "expiration": {
-    "id": "",
-    "label": "Expiration",
-    "name": "expiration",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Expiration",
+      "name": "expiration",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "cardNumber": {
-    "id": "",
-    "label": "Card Number",
-    "name": "cardNumber",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Card Number",
+      "name": "cardNumber",
+      "value": "",
+      "type": "text",
+      "inputMode": "numeric",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "cvv": {
-    "id": "",
-    "label": "CVV",
-    "name": "cvv",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "CVV",
+      "name": "cvv",
+      "value": "",
+      "type": "text",
+      "inputMode": "numeric",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "upgrade-points": {
-    "id": "",
-    "label": "Upgrade class with points",
-    "name": "upgrade-points",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "Upgrade class with points",
+      "name": "upgrade-points",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "Upgrade class with points",
+          "value": "true"
+        }
+      ]
+    }
   },
   "upgrade-luggage": {
-    "id": "",
-    "label": "Add extra piece of checked-in luggage",
-    "name": "upgrade-luggage",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "Add extra piece of checked-in luggage",
+      "name": "upgrade-luggage",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "Add extra piece of checked-in luggage",
+          "value": "true"
+        }
+      ]
+    }
   },
   "seat": {
-    "id": "",
-    "label": "Seat",
-    "name": "seat",
-    "value": "",
-    "type": "select"
+    "meta": {
+      "id": "",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Seat",
+      "name": "seat",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Window",
+          "value": "window"
+        },
+        {
+          "label": "Aisle",
+          "value": "aisle"
+        }
+      ]
+    }
   },
   "section": {
-    "id": "",
-    "label": "Section",
-    "name": "section",
-    "value": "",
-    "type": "select"
+    "meta": {
+      "id": "",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Section",
+      "name": "section",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Forward",
+          "value": "forward"
+        },
+        {
+          "label": "Rear",
+          "value": "rear"
+        }
+      ]
+    }
   },
   "meal": {
-    "id": "",
-    "label": "Meal",
-    "name": "meal",
-    "value": "",
-    "type": "select"
+    "meta": {
+      "id": "",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Meal",
+      "name": "meal",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Regular",
+          "value": "regular"
+        },
+        {
+          "label": "Vegetarian",
+          "value": "vegetarian"
+        },
+        {
+          "label": "Low Calories",
+          "value": "low-calories"
+        },
+        {
+          "label": "Peanut-Free",
+          "value": "peanut-free"
+        },
+        {
+          "label": "Non-Lactose",
+          "value": "non-lactose"
+        },
+        {
+          "label": "Diabetic",
+          "value": "diabetic"
+        }
+      ]
+    }
   }
 }

@@ -1,44 +1,100 @@
 {
   "flight-from": {
-    "id": "flight-from",
-    "label": "From",
-    "name": "flight-from",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "flight-from",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "From",
+      "name": "flight-from",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "flight-to": {
-    "id": "flight-to",
-    "label": "To",
-    "name": "flight-to",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "flight-to",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "To",
+      "name": "flight-to",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "flight-date": {
-    "id": "flight-date",
-    "label": "Date",
-    "name": "flight-date",
-    "value": "",
-    "type": "date"
+    "meta": {
+      "id": "flight-date",
+      "component": "datePicker"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Date",
+      "name": "flight-date",
+      "value": "",
+      "type": "date",
+      "inputMode": "none",
+      "prefill": false,
+      "withDateFormatInLabel": false
+    }
   },
-  "business-trip": {
-    "id": "business-trip",
-    "label": "Business Trip",
-    "name": "business-trip",
-    "value": "",
-    "type": "checkbox"
-  },
-  "business-class": {
-    "id": "business-class",
-    "label": "Business Class",
-    "name": "business-class",
-    "value": "",
-    "type": "checkbox"
-  },
-  "travelling-children": {
-    "id": "travelling-children",
-    "label": "Travelling with children",
-    "name": "travelling-children",
-    "value": "",
-    "type": "checkbox"
+  "flight-options": {
+    "meta": {
+      "id": "flight-options",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "",
+      "name": "flight-options",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "id": "business-trip",
+          "label": "Business Trip",
+          "value": "true"
+        },
+        {
+          "id": "business-class",
+          "label": "Business Class",
+          "value": "true"
+        },
+        {
+          "id": "travelling-children",
+          "label": "Travelling with children",
+          "value": "true"
+        }
+      ]
+    }
   }
 }

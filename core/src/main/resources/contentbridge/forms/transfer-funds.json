@@ -1,23 +1,70 @@
 {
   "transferFrom": {
-    "id": "transfer-from",
-    "label": "Transfer from",
-    "name": "transferFrom",
-    "value": "checking-account",
-    "type": "select"
+    "meta": {
+      "id": "transfer-from",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Transfer from",
+      "name": "transferFrom",
+      "value": "checking-account",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Checking Account",
+          "value": "Checking Account"
+        }
+      ]
+    }
   },
   "transferTo": {
-    "id": "transfer-to",
-    "label": "Transfer to",
-    "name": "transferTo",
-    "value": "retirement-account",
-    "type": "select"
+    "meta": {
+      "id": "transfer-to",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Transfer to",
+      "name": "transferTo",
+      "value": "retirement-account",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Retirement Account",
+          "value": "Retirement Account"
+        }
+      ]
+    }
   },
   "amount": {
-    "id": "amount",
-    "label": "Amount",
-    "name": "amount",
-    "value": "$100.00",
-    "type": "text"
+    "meta": {
+      "id": "amount",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Amount",
+      "name": "amount",
+      "value": "$100.00",
+      "type": "text",
+      "inputMode": "numeric",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": "$100.00"
+    }
   }
 }

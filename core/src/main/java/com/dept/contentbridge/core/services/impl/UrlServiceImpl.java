@@ -20,6 +20,11 @@ public class UrlServiceImpl implements UrlService {
     }
 
     @Override
+    public String getPublishDomain() {
+        return StringUtils.trimToEmpty(publishDomain);
+    }
+
+    @Override
     public String externalize(final String path) {
         if (StringUtils.isBlank(path)) {
             return path;

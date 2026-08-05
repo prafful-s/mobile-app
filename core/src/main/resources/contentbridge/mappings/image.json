@@ -1,0 +1,10 @@
+{
+  "match": ["image", "picture"],
+  "component": "image",
+  "fields": [
+    { "target": "image", "first": ["image", "fileReference", "imageRef", "src"] },
+    { "target": "alt", "first": ["imageAlt", "alt", "altText"] },
+    { "target": "link", "first": ["link", "linkTo"] },
+    { "target": "caption", "from": "caption" }
+  ]
+}

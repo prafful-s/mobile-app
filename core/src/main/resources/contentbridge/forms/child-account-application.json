@@ -1,58 +1,202 @@
 {
   "childFirstName": {
-    "id": "childFirstName",
-    "label": "First name",
-    "name": "childFirstName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "childFirstName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "First name",
+      "name": "childFirstName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "childLastName": {
-    "id": "childLastName",
-    "label": "Last name",
-    "name": "childLastName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "childLastName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Last name",
+      "name": "childLastName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "parentFirstName": {
-    "id": "parentFirstName",
-    "label": "First name",
-    "name": "parentFirstName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "parentFirstName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.firstName",
+      "label": "First name",
+      "name": "parentFirstName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "parentLastName": {
-    "id": "parentLastName",
-    "label": "Last name",
-    "name": "parentLastName",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "parentLastName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.lastName",
+      "label": "Last name",
+      "name": "parentLastName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "relationshipToChild": {
-    "id": "relationshipToChild",
-    "label": "Relationship to Child",
-    "name": "relationshipToChild",
-    "value": "",
-    "type": "select"
+    "meta": {
+      "id": "relationshipToChild",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Relationship to Child",
+      "name": "relationshipToChild",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Mother",
+          "value": "mother"
+        },
+        {
+          "label": "Father",
+          "value": "father"
+        },
+        {
+          "label": "Legal Guardian",
+          "value": "legal-guardian"
+        },
+        {
+          "label": "Other",
+          "value": "other"
+        }
+      ]
+    }
   },
   "confirmInformation": {
-    "id": "confirmInformation",
-    "label": "I confirm that the information provided above is accurate.",
-    "name": "confirmInformation",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "confirmInformation",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "I confirm that the information provided above is accurate.",
+      "name": "confirmInformation",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I confirm that the information provided above is accurate.",
+          "value": "true"
+        }
+      ]
+    }
   },
   "consentAccountOperation": {
-    "id": "consentAccountOperation",
-    "label": "I consent to the continued operation of my child's account in accordance with SecurFinancial's Terms and Conditions.",
-    "name": "consentAccountOperation",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "consentAccountOperation",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "I consent to the continued operation of my child's account in accordance with SecurFinancial's Terms and Conditions.",
+      "name": "consentAccountOperation",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I consent to the continued operation of my child's account in accordance with SecurFinancial's Terms and Conditions.",
+          "value": "true"
+        }
+      ]
+    }
   },
   "acknowledgeFeatureChanges": {
-    "id": "acknowledgeFeatureChanges",
-    "label": "I acknowledge and agree to any changes in account features applicable to account holders aged 13 and above.",
-    "name": "acknowledgeFeatureChanges",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "acknowledgeFeatureChanges",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "I acknowledge and agree to any changes in account features applicable to account holders aged 13 and above.",
+      "name": "acknowledgeFeatureChanges",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I acknowledge and agree to any changes in account features applicable to account holders aged 13 and above.",
+          "value": "true"
+        }
+      ]
+    }
   }
 }

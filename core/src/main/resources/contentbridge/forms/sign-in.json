@@ -1,16 +1,50 @@
 {
   "email": {
-    "id": "email",
-    "label": "Email address",
-    "name": "email",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "email",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "personalEmail.address",
+      "label": "Email address",
+      "name": "email",
+      "value": "",
+      "type": "text",
+      "inputMode": "email",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "password": {
-    "id": "password",
-    "label": "Password",
-    "name": "password",
-    "value": "",
-    "type": "password"
+    "meta": {
+      "id": "password",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Password",
+      "name": "password",
+      "value": "",
+      "type": "password",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": true,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   }
 }

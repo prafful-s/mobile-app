@@ -1,0 +1,9 @@
+{
+  "match": ["title", "heading"],
+  "component": "title",
+  "fields": [
+    { "target": "text", "first": ["title", "jcr:title", "text"] },
+    { "target": "size", "first": ["titleType", "type", "size"], "default": "h2" },
+    { "target": "textAlignment", "first": ["alignment", "textAlignment"], "default": "left" }
+  ]
+}

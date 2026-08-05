@@ -82,6 +82,21 @@ public @interface ContentBridgeConfiguration {
     String[] productFieldAliases() default {};
 
     @AttributeDefinition(
+            name = "Style tokens",
+            description = "Resolves the style tokens authors pick (sec-spacing=section-large) into the "
+                    + "concrete values a client renders, as token=key:value or token=k1:v1;k2:v2. Only "
+                    + "used by the v2 schema. An unmapped token is dropped rather than guessed at.")
+    String[] styleTokens() default {
+        "section-none=padding:0",
+        "section-small=padding:8",
+        "section-medium=padding:16",
+        "section-large=padding:24",
+        "section-huge=padding:32",
+        "section-xhuge=padding:48",
+        "bg-default=backgroundColor:#F5F8FA"
+    };
+
+    @AttributeDefinition(
             name = "Cache max-age (seconds)",
             description = "Value used for the Cache-Control header on successful responses. 0 disables caching.")
     int cacheMaxAge() default 300;

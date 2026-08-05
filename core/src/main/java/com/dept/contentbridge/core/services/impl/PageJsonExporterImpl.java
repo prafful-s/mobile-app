@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dept.contentbridge.core.schema.SchemaConstants;
 import com.dept.contentbridge.core.services.ContentBridgeConfiguration;
+import com.dept.contentbridge.core.services.ExportOptions;
 import com.dept.contentbridge.core.services.FormSchemaService;
 import com.dept.contentbridge.core.services.PageJsonExporter;
 import com.dept.contentbridge.core.services.UrlService;
@@ -40,9 +41,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
-
-    /** Values starting with this are asset references and get the site's publish host prefixed. */
-    private static final String DAM_PREFIX = "/content/dam/";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
@@ -93,7 +91,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.maxDepth = Math.max(1, config.maxDepth());
         this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
 
-        this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService);
+        // Rules ship inside the bundle, so they are read once here rather than per request.
+        this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
+                new StyleResolver(config.styleTokens()), ComponentMappings.load());
         this.hostResolver = new SiteHostResolver(authorHostSegment, publishHostSegment);
         this.productExporter = new ProductExporter(productsFolderName, maxProducts, productFieldAliases);
     }
@@ -118,11 +118,20 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     @Override
     public Map<String, Object> export(final Page requested) {
-        return export(requested, null);
+        // Explicit defaults rather than a bare null: with both a String and an ExportOptions
+        // overload, null is ambiguous to the compiler.
+        return export(requested, ExportOptions.defaults());
     }
 
     @Override
     public Map<String, Object> export(final Page requested, final String productsPath) {
+        return export(requested, ExportOptions.of(ExportOptions.SCHEMA_V1, productsPath));
+    }
+
+    @Override
+    public Map<String, Object> export(final Page requested, final ExportOptions options) {
+        final ExportOptions opts = options == null ? ExportOptions.defaults() : options;
+        final String productsPath = opts.getProductsPath();
         final Page appRoot = findAppRoot(requested);
         final Page envelopeSource = appRoot != null ? appRoot : requested;
         final ValueMap rootProps = envelopeSource.getProperties();
@@ -131,12 +140,23 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
         // Resolved once per export: every screen in one response belongs to the same site, so the
         // placeholders lookup should not be repeated per page.
-        final String assetHost = hostResolver.resolve(envelopeSource);
+        final String assetHost = deliveryHost(envelopeSource);
+
+        // Resolved once and shared: the menu and the screen list have to agree, and screenPages()
+        // walks the authored navigation page, which is not work to repeat.
+        final List<String> menu = buildMenu(screenPages(envelopeSource));
 
         final Map<String, Object> app = new LinkedHashMap<>();
         app.put(SchemaConstants.KEY_ID, appId);
-        app.put(SchemaConstants.KEY_META, buildMeta(envelopeSource, appId, rootProps));
-        app.put(SchemaConstants.KEY_SCREENS, buildScreens(envelopeSource, requested, assetHost));
+        app.put(SchemaConstants.KEY_META, buildMeta(envelopeSource, appId, rootProps, menu, opts));
+        if (opts.isHierarchical()) {
+            // No AEM source for either yet, but the target shape is fixed, so a client can rely on
+            // the keys being present rather than testing for them.
+            app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
+            app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
+        }
+        app.put(SchemaConstants.KEY_SCREENS,
+                buildScreens(envelopeSource, requested, assetHost, opts, menu));
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
@@ -152,7 +172,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /* ------------------------------------------------------------------ meta */
 
-    private Map<String, Object> buildMeta(final Page root, final String appId, final ValueMap props) {
+    private Map<String, Object> buildMeta(final Page root, final String appId, final ValueMap props,
+                                          final List<String> menu, final ExportOptions options) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, appId);
         meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
@@ -161,7 +182,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
 
         final Map<String, Object> navigation = new LinkedHashMap<>();
-        navigation.put("menu", buildMenu(root));
+        navigation.put("menu", menu);
         navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "login"));
         navigation.put("profileScreen", props.get(SchemaConstants.PN_PROFILE_SCREEN, "user-details"));
         navigation.put("authorizedMenu",
@@ -169,12 +190,15 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         navigation.put("registrationScreen", props.get(SchemaConstants.PN_REGISTRATION_SCREEN, "registration"));
         meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
 
+        if (options.isHierarchical()) {
+            EnvelopeMeta.addAppMeta(meta, root);
+        }
         return meta;
     }
 
-    private List<String> buildMenu(final Page root) {
+    private List<String> buildMenu(final List<Page> screens) {
         final List<String> menu = new ArrayList<>();
-        for (final Page page : screenPages(root)) {
+        for (final Page page : screens) {
             menu.add(screenKey(page));
         }
         return menu;
@@ -182,12 +206,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /* --------------------------------------------------------------- screens */
 
-    private Map<String, Object> buildScreens(final Page root, final Page requested, final String assetHost) {
+    private Map<String, Object> buildScreens(final Page root, final Page requested, final String assetHost,
+                                            final ExportOptions options, final List<String> menu) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         final boolean wholeApp = requested == null || StringUtils.equals(root.getPath(), requested.getPath());
         final List<Page> pages = wholeApp ? screenPages(root) : Collections.singletonList(requested);
         for (final Page page : pages) {
-            screens.put(screenKey(page), buildScreen(page, assetHost));
+            screens.put(screenKey(page), buildScreen(page, root, assetHost, options, menu));
         }
         return screens;
     }
@@ -248,14 +273,20 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return null;
     }
 
-    private Map<String, Object> buildScreen(final Page page, final String assetHost) {
+    private Map<String, Object> buildScreen(final Page page, final Page root, final String assetHost,
+                                           final ExportOptions options, final List<String> menu) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
-        final Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("name", screenKey(page));
-        meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
+        final Map<String, Object> meta;
+        if (options.isHierarchical()) {
+            meta = EnvelopeMeta.screenMeta(page, root, screenKey(page), menu);
+        } else {
+            meta = new LinkedHashMap<>();
+            meta.put("name", screenKey(page));
+            meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
+        }
         screen.put(SchemaConstants.KEY_META, meta);
-        screen.put(SchemaConstants.KEY_CONTENT, walker.componentsOf(page, assetHost));
+        screen.put(SchemaConstants.KEY_CONTENT, walker.componentsOf(page, assetHost, options.isHierarchical()));
         return screen;
     }
 
@@ -290,12 +321,29 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 continue;
             }
             final Object value = entry.getValue();
-            // Logos are DAM paths; colour tokens are not, and prefixAsset keys on the value so it
-            // leaves '#005971' alone without needing to know which properties are which.
+            // Logos are repository paths; colour tokens are not, and the prefixer keys on the value
+            // so it leaves '#005971' alone without needing to know which properties are which.
             result.put(entry.getKey(),
                     value instanceof String ? prefixAsset((String) value, assetHost) : value);
         }
         return result;
+    }
+
+    /**
+     * The host every repository path in this response is made absolute against.
+     *
+     * <p>The site's own {@code placeholders} page wins, so two sites in one repository can point at
+     * different delivery domains. A site declaring no {@code hostname} falls back to the
+     * instance-wide publish domain - an explicit operator setting, not a guess - and with neither
+     * configured the paths stay relative. Nothing else is consulted: a URL sitting in some other
+     * placeholder is not necessarily a host, and guessing produces links that resolve to nothing.</p>
+     */
+    private String deliveryHost(final Page site) {
+        final String fromPlaceholders = hostResolver.resolve(site);
+        if (StringUtils.isNotBlank(fromPlaceholders)) {
+            return fromPlaceholders;
+        }
+        return urlService == null ? StringUtils.EMPTY : urlService.getPublishDomain();
     }
 
     /**
@@ -304,10 +352,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * nothing to do with the component tree.
      */
     private String prefixAsset(final String value, final String assetHost) {
-        if (StringUtils.isBlank(assetHost) || !StringUtils.startsWith(value, DAM_PREFIX)) {
-            return value;
-        }
-        return assetHost + value;
+        return ContentPaths.prefix(value, assetHost);
     }
 
     /* ----------------------------------------------------------------- utils */

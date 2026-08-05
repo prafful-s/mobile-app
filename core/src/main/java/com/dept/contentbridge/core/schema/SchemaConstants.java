@@ -40,6 +40,8 @@ public final class SchemaConstants {
     /** Present on container blocks such as cards and accordion. */
     public static final String PN_FILTER = "filter";
     public static final String PN_NAME = "name";
+    /** The Universal Editor's own marker on an authored node. Bookkeeping, never content. */
+    public static final String PN_AUE_COMPONENT_ID = "aueComponentId";
 
     /* ---- component names emitted in meta.component ---- */
     public static final String COMPONENT_BANNER = "banner";
@@ -48,6 +50,8 @@ public final class SchemaConstants {
     public static final String COMPONENT_CARD = "card";
     public static final String COMPONENT_DIVIDER = "divider";
     public static final String COMPONENT_IMAGE = "image";
+    /** Emitted by the mapping rules; there is no curated model for a standalone button. */
+    public static final String COMPONENT_BUTTON = "button";
 
     /* ---- envelope keys ---- */
     public static final String KEY_ID = "id";
@@ -60,8 +64,24 @@ public final class SchemaConstants {
     public static final String KEY_PRODUCTS = "products";
     public static final String KEY_NAVIGATION = "navigation";
     public static final String KEY_COMPONENT = "component";
+
+    /* ---- v2 (hierarchical) keys ---- */
+    /** Index of a component among its siblings. */
+    public static final String KEY_ORDER = "order";
+    /** Resolved style values on a layout container. */
+    public static final String KEY_STYLES = "styles";
+    /** How a panel arranges its children: vertical or horizontal. */
+    public static final String KEY_LAYOUT = "layout";
+    /** Component name emitted for an AEM section, columns or untyped layout wrapper. */
+    public static final String COMPONENT_PANEL = "panel";
     /** Field definitions attached to a form block, taken from the bundled form schemas. */
     public static final String KEY_SCHEMA = "schema";
+    /** Language tag of the exported app, e.g. {@code en-us}. */
+    public static final String KEY_LOCALE = "locale";
+    /** Client-side rules. No AEM source yet, so emitted empty to keep the shape fixed. */
+    public static final String KEY_RULES = "rules";
+    /** Client-side modules. No AEM source yet, so emitted empty to keep the shape fixed. */
+    public static final String KEY_MODULES = "modules";
 
     /** Properties that may name the form a block renders, tried before the component name. */
     public static final String PN_FORM_NAME = "formName";

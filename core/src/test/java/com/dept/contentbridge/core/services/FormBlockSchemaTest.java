@@ -83,8 +83,11 @@ class FormBlockSchemaTest {
 
         final Map<String, Object> schema = map(component("sign-in").get("schema"));
         assertEquals(List.of("email", "password"), List.copyOf(schema.keySet()));
-        assertEquals("Email address", map(schema.get("email")).get("label"));
-        assertEquals("password", map(schema.get("password")).get("type"));
+
+        // A field is itself a meta/content pair, so the schema nests the same way the payload does.
+        assertEquals("Email address", map(map(schema.get("email")).get("content")).get("label"));
+        assertEquals("textField", map(map(schema.get("email")).get("meta")).get("component"));
+        assertEquals("password", map(map(schema.get("password")).get("content")).get("type"));
     }
 
     @Test
@@ -112,7 +115,7 @@ class FormBlockSchemaTest {
 
         final Map<String, Object> schema = map(component("form").get("schema"));
         assertTrue(schema.containsKey("shippingMethod"));
-        assertEquals("postalCode", map(schema.get("zipCode")).get("id"));
+        assertEquals("postalCode", map(map(schema.get("zipCode")).get("meta")).get("id"));
     }
 
     @Test

@@ -104,8 +104,8 @@ class SiteHostTest {
     }
 
     @Test
-    @DisplayName("only DAM references are prefixed - page links are untouched")
-    void pageLinksAreNotPrefixed() {
+    @DisplayName("page links are prefixed too, not just assets")
+    void pageLinksArePrefixed() {
         buildSite();
         context.create().page(SITE + "/placeholders", "", Map.of("hostname", AUTHOR_HOST));
 
@@ -115,6 +115,7 @@ class SiteHostTest {
         final List<Map<String, Object>> content =
                 (List<Map<String, Object>>) map(screens.get("Home")).get("content");
 
-        assertEquals("/content/acme/us/en/news", map(content.get(0).get("content")).get("link"));
+        assertEquals(PUBLISH_HOST + "/content/acme/us/en/news",
+                map(content.get(0).get("content")).get("link"));
     }
 }

@@ -22,6 +22,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dept.contentbridge.core.services.ExportOptions;
 import com.dept.contentbridge.core.services.PageJsonExporter;
 import com.day.cq.wcm.api.Page;
 import com.day.cq.wcm.api.PageManager;
@@ -78,6 +79,12 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
 
     /** Overrides where product Content Fragments are read from, for testing and one-off exports. */
     private static final String PARAM_PRODUCTS_PATH = "productsPath";
+
+    /**
+     * Selects the response contract: {@code v1} (default, flat) or {@code v2} (layout containers
+     * preserved as panels). Versioned rather than replaced so existing clients keep working.
+     */
+    private static final String PARAM_SCHEMA = "schema";
     private static final String CONTENT_TYPE = "application/json";
 
     /**
@@ -141,8 +148,9 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
                 return;
             }
 
-            final Map<String, Object> payload =
-                    exporter.export(page, request.getParameter(PARAM_PRODUCTS_PATH));
+            final Map<String, Object> payload = exporter.export(page, ExportOptions.of(
+                    request.getParameter(PARAM_SCHEMA),
+                    request.getParameter(PARAM_PRODUCTS_PATH)));
             final int maxAge = exporter.getCacheMaxAge();
             if (maxAge > 0) {
                 response.setHeader("Cache-Control", "max-age=" + maxAge);

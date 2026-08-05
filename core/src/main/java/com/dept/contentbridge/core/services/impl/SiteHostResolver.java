@@ -33,6 +33,14 @@ final class SiteHostResolver {
 
     private static final String CONTENT_ROOT = "/content/";
     private static final String PLACEHOLDERS = "placeholders";
+    /**
+     * The one placeholder key naming the delivery host.
+     *
+     * <p>Deliberately not widened to other keys that happen to hold a URL. {@code dmurl} in
+     * particular is the Dynamic Media delivery URL - Scene7 serves rendered images from it, so
+     * prefixing a page link with it produces a URL that resolves to nothing. A site that declares no
+     * {@code hostname} emits relative paths, which is honest about what the site said.</p>
+     */
     private static final String PN_HOSTNAME = "hostname";
 
     /** Property names a key/value sheet uses for the value column. */

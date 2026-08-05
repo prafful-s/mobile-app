@@ -172,8 +172,12 @@ class PageJsonExporterImplTest {
         final Map<String, Object> branding =
                 map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("branding"));
 
-        // No placeholders page in this fixture, so no host is resolved and DAM paths stay relative.
-        assertEquals("/content/dam/contentbridge/brand/logo.png", branding.get("logo"));
+        // No placeholders page in this fixture, so the host falls back to the configured publish
+        // domain - the logo is as unreachable to the client as any other bare repository path.
+        assertEquals(ContentBridgeTestContext.PUBLISH_DOMAIN + "/content/dam/contentbridge/brand/logo.png",
+                branding.get("logo"));
+
+        // A colour token is not a path and must survive the host pass untouched.
         assertEquals("#000000", branding.get("primaryColor"));
         assertEquals(4L, branding.get("roundness"));
         assertFalse(branding.containsKey("jcr:primaryType"));

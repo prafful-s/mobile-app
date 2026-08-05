@@ -1,0 +1,8 @@
+{
+  "match": ["text", "richtext"],
+  "component": "htmlText",
+  "fields": [
+    { "target": "text", "first": ["text", "richText", "jcr:text"] },
+    { "target": "textAlignment", "first": ["alignment", "textAlignment"], "default": "left" }
+  ]
+}

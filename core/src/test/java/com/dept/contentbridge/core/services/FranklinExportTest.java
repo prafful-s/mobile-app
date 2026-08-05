@@ -106,15 +106,16 @@ class FranklinExportTest {
     }
 
     @Test
-    @DisplayName("DAM references are externalised, other paths are left alone")
-    void damReferencesAreExternalised() {
+    @DisplayName("every repository path is externalised - pages as well as assets")
+    void repositoryPathsAreExternalised() {
         final Map<String, Object> heroContent = map(content("English").get(0).get("content"));
         assertEquals(PUBLISH_DOMAIN + "/content/dam/bodea/en/images/hero.png", heroContent.get("image"));
 
         final Map<String, Object> cardContent = map(content("English").get(2).get("content"));
         assertEquals(PUBLISH_DOMAIN + "/content/dam/bodea/en/images/card1.jpg", cardContent.get("image"));
-        assertEquals("/content/bodea/language-masters/en/machine-learning-in-the-digital-age",
-                cardContent.get("link"), "page links must not be externalised");
+        assertEquals(PUBLISH_DOMAIN + "/content/bodea/language-masters/en/machine-learning-in-the-digital-age",
+                cardContent.get("link"),
+                "a page link is as unusable as a bare asset path to a client with no AEM");
     }
 
     @Test

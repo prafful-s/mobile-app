@@ -1,35 +1,953 @@
 {
-  "email": { "id": "email", "label": "Email address", "name": "email", "value": "", "type": "text" },
-  "password": { "id": "password", "label": "Password", "name": "password", "value": "", "type": "password" },
-  "firstName": { "id": "firstName", "label": "First name", "name": "firstName", "value": "", "type": "text" },
-  "lastName": { "id": "lastName", "label": "Last name", "name": "lastName", "value": "", "type": "text" },
-  "phone": { "id": "phone", "label": "Phone number", "name": "phone", "value": "", "type": "text" },
-  "companyName": { "id": "companyName", "label": "Company name", "name": "companyName", "value": "", "type": "text" },
-  "streetAddress": { "id": "address", "label": "Address", "name": "streetAddress", "value": "", "type": "text" },
-  "zipCode": { "id": "zipCode", "label": "ZIP code", "name": "zipCode", "value": "", "type": "text" },
-  "city": { "id": "city", "label": "City", "name": "city", "value": "", "type": "text" },
-  "dateOfBirth": { "id": "dateOfBirth", "label": "Date of birth (YYYY-MM-DD)", "name": "dateOfBirth", "value": "", "type": "text" },
-  "dietaryRestrictions": { "id": "dietaryRestrictions", "label": "Dietary restrictions", "name": "dietaryRestrictions", "value": "", "type": "select" },
-  "companySize": { "id": "companySize", "label": "Company size", "name": "companySize", "value": "", "type": "select" },
-  "industry": { "id": "industry", "label": "Industry", "name": "industry", "value": "", "type": "select" },
-  "topicOfInterest": { "id": "topicOfInterest", "label": "Topic of interest", "name": "topicOfInterest", "value": "", "type": "select" },
-  "wkndFlyMember": { "id": "wkndFlyMember", "label": "WKND Fly Member", "name": "wkndFlyMember", "value": "", "type": "select" },
-  "privacyPolicy": { "id": "privacyPolicy", "label": "I have read and understand the Privacy and Cookies Policy", "name": "privacyPolicy", "value": "", "type": "checkbox" },
-  "joinLoyaltyProgram": { "id": "joinLoyaltyProgram", "label": "I want to join loyalty program", "name": "joinLoyaltyProgram", "value": "", "type": "checkbox" },
-  "marketingConsent": { "id": "marketingConsent", "label": "Yes, I would like to receive special offers and updates by email.", "name": "marketingConsent", "value": "", "type": "checkbox" },
-  "prefEmail": { "id": "prefEmail", "label": "Email", "name": "prefEmail", "value": "", "type": "checkbox" },
-  "prefPhone": { "id": "prefPhone", "label": "Phone", "name": "prefPhone", "value": "", "type": "checkbox" },
-  "prefSms": { "id": "prefSms", "label": "SMS", "name": "prefSms", "value": "", "type": "checkbox" },
-  "prefWhatsapp": { "id": "prefWhatsapp", "label": "WhatsApp", "name": "prefWhatsapp", "value": "", "type": "checkbox" },
-  "shoeSize": { "id": "shoeSize", "label": "Shoe size", "name": "shoeSize", "value": "", "type": "select" },
-  "shirtSize": { "id": "shirtSize", "label": "Shirt size", "name": "shirtSize", "value": "", "type": "select" },
-  "favoriteColor": { "id": "favoriteColor", "label": "Favorite color", "name": "favoriteColor", "value": "", "type": "select" },
-  "frescopaOwner": { "id": "frescopaOwner", "label": "Do you already have a Frescopa machine?", "name": "frescopaOwner", "value": "", "type": "select" },
-  "favouriteNewsCategory": { "id": "favouriteNewsCategory", "label": "Favourite news category", "name": "favouriteNewsCategory", "value": "", "type": "select" },
-  "accountType": { "id": "accountType", "label": "Account Type", "name": "accountType", "value": "", "type": "select" },
-  "cardName": { "id": "cardName", "label": "NAME ON CARD", "name": "cardName", "value": "", "type": "text" },
-  "cardNumber": { "id": "cardNumber", "label": "CARD NUMBER", "name": "cardNumber", "value": "", "type": "text" },
-  "cardExpiry": { "id": "cardExpiry", "label": "EXPIRATION DATE", "name": "cardExpiry", "value": "", "type": "text" },
-  "cardCvv": { "id": "cardCvv", "label": "SECURITY CODE", "name": "cardCvv", "value": "", "type": "text" },
-  "trialConsent": { "id": "trialConsent", "label": "I want to start with a free 30 days trial. I won't be charged for my first month of use.", "name": "trialConsent", "value": "", "type": "checkbox" }
+  "email": {
+    "meta": {
+      "id": "email",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "personalEmail.address",
+      "label": "Email address",
+      "name": "email",
+      "value": "",
+      "type": "text",
+      "inputMode": "email",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "password": {
+    "meta": {
+      "id": "password",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Password",
+      "name": "password",
+      "value": "",
+      "type": "password",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": true,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "firstName": {
+    "meta": {
+      "id": "firstName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.firstName",
+      "label": "First name",
+      "name": "firstName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "lastName": {
+    "meta": {
+      "id": "lastName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.name.lastName",
+      "label": "Last name",
+      "name": "lastName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "phone": {
+    "meta": {
+      "id": "phone",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "mobilePhone.number",
+      "label": "Phone number",
+      "name": "phone",
+      "value": "",
+      "type": "text",
+      "inputMode": "tel",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "companyName": {
+    "meta": {
+      "id": "companyName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Company name",
+      "name": "companyName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "streetAddress": {
+    "meta": {
+      "id": "address",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "homeAddress.street1",
+      "label": "Address",
+      "name": "streetAddress",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "zipCode": {
+    "meta": {
+      "id": "zipCode",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "homeAddress.postalCode",
+      "label": "ZIP code",
+      "name": "zipCode",
+      "value": "",
+      "type": "text",
+      "inputMode": "numeric",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "city": {
+    "meta": {
+      "id": "city",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "homeAddress.city",
+      "label": "City",
+      "name": "city",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "dateOfBirth": {
+    "meta": {
+      "id": "dateOfBirth",
+      "component": "datePicker"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.birthDate",
+      "label": "Date of birth (YYYY-MM-DD)",
+      "name": "dateOfBirth",
+      "value": "",
+      "type": "text",
+      "inputMode": "none",
+      "prefill": true,
+      "withDateFormatInLabel": false
+    }
+  },
+  "dietaryRestrictions": {
+    "meta": {
+      "id": "dietaryRestrictions",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Dietary restrictions",
+      "name": "dietaryRestrictions",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "I have none",
+          "value": "none"
+        },
+        {
+          "label": "No gluten",
+          "value": "no-gluten"
+        },
+        {
+          "label": "No dairy",
+          "value": "no-dairy"
+        },
+        {
+          "label": "No nuts",
+          "value": "no-nuts"
+        },
+        {
+          "label": "No soy",
+          "value": "no-soy"
+        },
+        {
+          "label": "Vegetarian",
+          "value": "vegetarian"
+        }
+      ]
+    }
+  },
+  "companySize": {
+    "meta": {
+      "id": "companySize",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Company size",
+      "name": "companySize",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "<50",
+          "value": "<50"
+        },
+        {
+          "label": "50-100",
+          "value": "50-100"
+        },
+        {
+          "label": "100-1000",
+          "value": "100-1000"
+        },
+        {
+          "label": "1000+",
+          "value": "1000+"
+        }
+      ]
+    }
+  },
+  "industry": {
+    "meta": {
+      "id": "industry",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Industry",
+      "name": "industry",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Technology",
+          "value": "technology"
+        },
+        {
+          "label": "Finance",
+          "value": "finance"
+        },
+        {
+          "label": "Healthcare",
+          "value": "healthcare"
+        },
+        {
+          "label": "Retail",
+          "value": "retail"
+        },
+        {
+          "label": "Other",
+          "value": "other"
+        }
+      ]
+    }
+  },
+  "topicOfInterest": {
+    "meta": {
+      "id": "topicOfInterest",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Topic of interest",
+      "name": "topicOfInterest",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Hi - Tech",
+          "value": "hi-tech"
+        },
+        {
+          "label": "Design",
+          "value": "design"
+        },
+        {
+          "label": "Marketing",
+          "value": "marketing"
+        },
+        {
+          "label": "Development",
+          "value": "development"
+        }
+      ]
+    }
+  },
+  "wkndFlyMember": {
+    "meta": {
+      "id": "wkndFlyMember",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "person.wkndFlyMember",
+      "label": "WKND Fly Member",
+      "name": "wkndFlyMember",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": true,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Member",
+          "value": "member"
+        },
+        {
+          "label": "Non-member",
+          "value": "non-member"
+        }
+      ]
+    }
+  },
+  "privacyPolicy": {
+    "meta": {
+      "id": "privacyPolicy",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "I have read and understand the Privacy and Cookies Policy",
+      "name": "privacyPolicy",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I have read and understand the Privacy and Cookies Policy",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "joinLoyaltyProgram": {
+    "meta": {
+      "id": "joinLoyaltyProgram",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "I want to join loyalty program",
+      "name": "joinLoyaltyProgram",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I want to join loyalty program",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "marketingConsent": {
+    "meta": {
+      "id": "marketingConsent",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "Yes, I would like to receive special offers and updates by email.",
+      "name": "marketingConsent",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "Yes, I would like to receive special offers and updates by email.",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "prefEmail": {
+    "meta": {
+      "id": "prefEmail",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "consents.marketing.email.val",
+      "label": "Email",
+      "name": "prefEmail",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": true,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "Email",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "prefPhone": {
+    "meta": {
+      "id": "prefPhone",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "consents.marketing.call.val",
+      "label": "Phone",
+      "name": "prefPhone",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": true,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "Phone",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "prefSms": {
+    "meta": {
+      "id": "prefSms",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "consents.marketing.sms.val",
+      "label": "SMS",
+      "name": "prefSms",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": true,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "SMS",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "prefWhatsapp": {
+    "meta": {
+      "id": "prefWhatsapp",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "WhatsApp",
+      "name": "prefWhatsapp",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "WhatsApp",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "shoeSize": {
+    "meta": {
+      "id": "shoeSize",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Shoe size",
+      "name": "shoeSize",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "36",
+          "value": "36"
+        },
+        {
+          "label": "37",
+          "value": "37"
+        },
+        {
+          "label": "38",
+          "value": "38"
+        },
+        {
+          "label": "39",
+          "value": "39"
+        },
+        {
+          "label": "40",
+          "value": "40"
+        },
+        {
+          "label": "41",
+          "value": "41"
+        },
+        {
+          "label": "42",
+          "value": "42"
+        },
+        {
+          "label": "43",
+          "value": "43"
+        },
+        {
+          "label": "44",
+          "value": "44"
+        },
+        {
+          "label": "45",
+          "value": "45"
+        }
+      ]
+    }
+  },
+  "shirtSize": {
+    "meta": {
+      "id": "shirtSize",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Shirt size",
+      "name": "shirtSize",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "S",
+          "value": "s"
+        },
+        {
+          "label": "M",
+          "value": "m"
+        },
+        {
+          "label": "L",
+          "value": "l"
+        },
+        {
+          "label": "XL",
+          "value": "xl"
+        },
+        {
+          "label": "XXL",
+          "value": "xxl"
+        }
+      ]
+    }
+  },
+  "favoriteColor": {
+    "meta": {
+      "id": "favoriteColor",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Favorite color",
+      "name": "favoriteColor",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Select...",
+          "value": ""
+        },
+        {
+          "label": "Black",
+          "value": "black"
+        },
+        {
+          "label": "Blue",
+          "value": "blue"
+        },
+        {
+          "label": "Green",
+          "value": "green"
+        },
+        {
+          "label": "Orange",
+          "value": "orange"
+        },
+        {
+          "label": "Pink",
+          "value": "pink"
+        },
+        {
+          "label": "Purple",
+          "value": "purple"
+        },
+        {
+          "label": "Red",
+          "value": "red"
+        },
+        {
+          "label": "White",
+          "value": "white"
+        },
+        {
+          "label": "Yellow",
+          "value": "yellow"
+        }
+      ]
+    }
+  },
+  "frescopaOwner": {
+    "meta": {
+      "id": "frescopaOwner",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Do you already have a Frescopa machine?",
+      "name": "frescopaOwner",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Yes",
+          "value": "yes"
+        },
+        {
+          "label": "No",
+          "value": "no"
+        }
+      ]
+    }
+  },
+  "favouriteNewsCategory": {
+    "meta": {
+      "id": "favouriteNewsCategory",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Favourite news category",
+      "name": "favouriteNewsCategory",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "None",
+          "value": ""
+        },
+        {
+          "label": "Politics",
+          "value": "politics"
+        },
+        {
+          "label": "Entertainment",
+          "value": "entertainment"
+        },
+        {
+          "label": "Business",
+          "value": "business"
+        },
+        {
+          "label": "Sport",
+          "value": "sport"
+        },
+        {
+          "label": "High-Tech",
+          "value": "high-tech"
+        }
+      ]
+    }
+  },
+  "accountType": {
+    "meta": {
+      "id": "accountType",
+      "component": "dropdown"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "Account Type",
+      "name": "accountType",
+      "value": "",
+      "type": "select",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Home",
+          "value": "home"
+        },
+        {
+          "label": "Business/School",
+          "value": "business/school"
+        }
+      ]
+    }
+  },
+  "cardName": {
+    "meta": {
+      "id": "cardName",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "NAME ON CARD",
+      "name": "cardName",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "cardNumber": {
+    "meta": {
+      "id": "cardNumber",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "CARD NUMBER",
+      "name": "cardNumber",
+      "value": "",
+      "type": "text",
+      "inputMode": "numeric",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "cardExpiry": {
+    "meta": {
+      "id": "cardExpiry",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "EXPIRATION DATE",
+      "name": "cardExpiry",
+      "value": "",
+      "type": "text",
+      "inputMode": "text",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "cardCvv": {
+    "meta": {
+      "id": "cardCvv",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "",
+      "label": "SECURITY CODE",
+      "name": "cardCvv",
+      "value": "",
+      "type": "text",
+      "inputMode": "numeric",
+      "prefill": false,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
+  },
+  "trialConsent": {
+    "meta": {
+      "id": "trialConsent",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "I want to start with a free 30 days trial. I won't be charged for my first month of use.",
+      "name": "trialConsent",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I want to start with a free 30 days trial. I won't be charged for my first month of use.",
+          "value": "true"
+        }
+      ]
+    }
+  }
 }

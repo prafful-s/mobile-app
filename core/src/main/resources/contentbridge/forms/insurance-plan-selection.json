@@ -1,23 +1,85 @@
 {
   "coverageFor": {
-    "id": "coverageFor",
-    "label": "Are you looking for coverage for yourself or your family?",
-    "name": "coverageFor",
-    "value": "",
-    "type": "radio"
+    "meta": {
+      "id": "coverageFor",
+      "component": "radioGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "Are you looking for coverage for yourself or your family?",
+      "name": "coverageFor",
+      "value": "",
+      "type": "radio",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Myself",
+          "value": "myself"
+        },
+        {
+          "label": "Family",
+          "value": "family"
+        }
+      ]
+    }
   },
   "careFrequency": {
-    "id": "careFrequency",
-    "label": "How often do you get care?",
-    "name": "careFrequency",
-    "value": "",
-    "type": "radio"
+    "meta": {
+      "id": "careFrequency",
+      "component": "radioGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "How often do you get care?",
+      "name": "careFrequency",
+      "value": "",
+      "type": "radio",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Never",
+          "value": "never"
+        },
+        {
+          "label": "Rarely",
+          "value": "rarely"
+        },
+        {
+          "label": "Sometimes",
+          "value": "sometimes"
+        },
+        {
+          "label": "Often",
+          "value": "often"
+        }
+      ]
+    }
   },
   "costPreference": {
-    "id": "costPreference",
-    "label": "Would you rather:",
-    "name": "costPreference",
-    "value": "",
-    "type": "radio"
+    "meta": {
+      "id": "costPreference",
+      "component": "radioGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "Would you rather:",
+      "name": "costPreference",
+      "value": "",
+      "type": "radio",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Pay a lower monthly premium and stay in-network for care",
+          "value": "lower"
+        },
+        {
+          "label": "Pay a higher monthly premium and be able to choose any doctor",
+          "value": "higher"
+        }
+      ]
+    }
   }
 }

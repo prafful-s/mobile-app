@@ -1,37 +1,127 @@
 {
   "zipCode": {
-    "id": "zipCode",
-    "label": "ZIP Code",
-    "name": "zipCode",
-    "value": "",
-    "type": "text"
+    "meta": {
+      "id": "zipCode",
+      "component": "textField"
+    },
+    "content": {
+      "mode": "edit",
+      "path": "homeAddress.postalCode",
+      "label": "ZIP Code",
+      "name": "zipCode",
+      "value": "",
+      "type": "text",
+      "inputMode": "numeric",
+      "prefill": true,
+      "multiline": false,
+      "isPassword": false,
+      "autoCorrect": false,
+      "leftElement": "",
+      "rightElement": "",
+      "enterKeyHint": "enter",
+      "placeholder": "",
+      "defaultValue": ""
+    }
   },
   "monthlyPaymentPreference": {
-    "id": "monthlyPaymentPreference",
-    "label": "When you think about your monthly payment, which best describes you?",
-    "name": "monthlyPaymentPreference",
-    "value": "",
-    "type": "radio"
+    "meta": {
+      "id": "monthlyPaymentPreference",
+      "component": "radioGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "When you think about your monthly payment, which best describes you?",
+      "name": "monthlyPaymentPreference",
+      "value": "",
+      "type": "radio",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "Pay a lower monthly payment even if it means I have slightly fewer benefits",
+          "value": "lower"
+        },
+        {
+          "label": "I don't mind a higher monthly payment to get more benefits",
+          "value": "higher"
+        }
+      ]
+    }
   },
   "preferredBenefits": {
-    "id": "preferredBenefits",
-    "label": "Which type of benefits do you want in your plan?",
-    "name": "preferredBenefits",
-    "value": "",
-    "type": "radio"
+    "meta": {
+      "id": "preferredBenefits",
+      "component": "radioGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "Which type of benefits do you want in your plan?",
+      "name": "preferredBenefits",
+      "value": "",
+      "type": "radio",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "I want one convenient plan which bundles all of the benefits from Medicare Parts A , B, and possibly D",
+          "value": "all"
+        },
+        {
+          "label": "I want a plan that helps fill the gaps by covering costs that Original Medicare does not cover (such as deductibles and coinsurance)",
+          "value": "medium"
+        },
+        {
+          "label": "I want a plan which only helps pay the cost of my prescription drugs (Part D only)",
+          "value": "basic"
+        }
+      ]
+    }
   },
   "additionalBenefits": {
-    "id": "additionalBenefits",
-    "label": "I need vision and/or dental options",
-    "name": "additionalBenefits",
-    "value": "",
-    "type": "checkbox"
+    "meta": {
+      "id": "additionalBenefits",
+      "component": "checkboxGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "I need vision and/or dental options",
+      "name": "additionalBenefits",
+      "value": "",
+      "type": "checkbox",
+      "inputMode": "none",
+      "prefill": false,
+      "variant": "switch",
+      "options": [
+        {
+          "label": "I need vision and/or dental options",
+          "value": "true"
+        }
+      ]
+    }
   },
   "networkPreference": {
-    "id": "networkPreference",
-    "label": "Which best describes you?",
-    "name": "networkPreference",
-    "value": "",
-    "type": "radio"
+    "meta": {
+      "id": "networkPreference",
+      "component": "radioGroup"
+    },
+    "content": {
+      "path": "",
+      "label": "Which best describes you?",
+      "name": "networkPreference",
+      "value": "",
+      "type": "radio",
+      "inputMode": "none",
+      "prefill": false,
+      "options": [
+        {
+          "label": "I don't mind selecting from a network of doctors and facilities that accept Medicare patients",
+          "value": "network"
+        },
+        {
+          "label": "I want the flexibility to go to any facility, doctor, or specialist that accepts Medicare patients.",
+          "value": "any"
+        }
+      ]
+    }
   }
 }
