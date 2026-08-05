@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,13 +43,13 @@ public class FormSchemaServiceImpl implements FormSchemaService {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private Map<String, Object> schemas = Collections.emptyMap();
+    private Map<String, List<Map<String, Object>>> schemas = Collections.emptyMap();
 
     @Activate
     protected void activate() {
         final List<String> formNames = readIndex();
         // Sorted so the JSON serialises in a stable order regardless of index ordering.
-        final Map<String, Object> loaded = new TreeMap<>();
+        final Map<String, List<Map<String, Object>>> loaded = new TreeMap<>();
 
         for (final String formName : formNames) {
             if (StringUtils.isBlank(formName)) {
@@ -81,35 +81,33 @@ public class FormSchemaServiceImpl implements FormSchemaService {
         }
     }
 
-    private Map<String, Object> readSchema(final String formName) throws IOException {
+    private List<Map<String, Object>> readSchema(final String formName) throws IOException {
         final String path = SCHEMA_PATH + "/" + formName + ".json";
         try (InputStream in = getClass().getResourceAsStream(path)) {
             if (in == null) {
                 throw new IOException(path + " is listed in the index but not present in the bundle");
             }
             final String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            return Collections.unmodifiableMap(
-                    MAPPER.readValue(json, new TypeReference<LinkedHashMap<String, Object>>() { }));
+            return Collections.unmodifiableList(MAPPER.readValue(json,
+                    new TypeReference<ArrayList<Map<String, Object>>>() { }));
         }
     }
 
     @Override
-    public Map<String, Object> getSchema(final String formName) {
+    public List<Map<String, Object>> getSchema(final String formName) {
         if (StringUtils.isBlank(formName)) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
-        final Object schema = schemas.get(formName.trim());
-        if (schema instanceof Map) {
-            @SuppressWarnings("unchecked")
-            final Map<String, Object> typed = (Map<String, Object>) schema;
-            return typed;
+        final List<Map<String, Object>> schema = schemas.get(formName.trim());
+        if (schema != null) {
+            return schema;
         }
         LOG.debug("No form schema named '{}' - known forms are {}", formName, schemas.keySet());
-        return Collections.emptyMap();
+        return Collections.emptyList();
     }
 
     @Override
-    public Map<String, Object> getAllSchemas() {
+    public Map<String, List<Map<String, Object>>> getAllSchemas() {
         return schemas;
     }
 

@@ -14,10 +14,13 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.engine.SlingRequestProcessor;
 import org.apache.sling.models.factory.ModelFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +59,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Reference
     private FormSchemaService formSchemaService;
 
+    /**
+     * Dispatches the persisted GraphQL query in-JVM. Optional so the exporter still activates on an
+     * instance where it cannot be bound - products then come from Content Fragments, which is the
+     * behaviour every site had before persisted queries were an option.
+     */
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.STATIC)
+    private SlingRequestProcessor requestProcessor;
+
     private String[] allowedRoots;
     private String[] navPageNames;
     private Set<String> excludedPageNames;
@@ -73,6 +84,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private ComponentTreeWalker walker;
     private SiteHostResolver hostResolver;
     private ProductExporter productExporter;
+    private GraphQlProductSource graphQlProducts;
 
     @Activate
     protected void activate(final ContentBridgeConfiguration config) {
@@ -96,6 +108,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 new StyleResolver(config.styleTokens()), ComponentMappings.load());
         this.hostResolver = new SiteHostResolver(authorHostSegment, publishHostSegment);
         this.productExporter = new ProductExporter(productsFolderName, maxProducts, productFieldAliases);
+        this.graphQlProducts = new GraphQlProductSource(
+                new GraphQlClient(requestProcessor), productExporter);
     }
 
     @Override
@@ -131,7 +145,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Override
     public Map<String, Object> export(final Page requested, final ExportOptions options) {
         final ExportOptions opts = options == null ? ExportOptions.defaults() : options;
-        final String productsPath = opts.getProductsPath();
         final Page appRoot = findAppRoot(requested);
         final Page envelopeSource = appRoot != null ? appRoot : requested;
         final ValueMap rootProps = envelopeSource.getProperties();
@@ -142,12 +155,18 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // placeholders lookup should not be repeated per page.
         final String assetHost = deliveryHost(envelopeSource);
 
-        // Resolved once and shared: the menu and the screen list have to agree, and screenPages()
-        // walks the authored navigation page, which is not work to repeat.
-        final List<String> menu = buildMenu(screenPages(envelopeSource));
+        // Two different questions, deliberately answered by two different methods. The menu is what
+        // an author curated on the nav page; the screens are every page the app can reach. A page
+        // can be a screen without being in the menu - a plan detail page reached from a card, say -
+        // and screen meta records that as includeInNavigation: false.
+        final List<String> menu = buildMenu(menuPages(envelopeSource));
 
         final Map<String, Object> app = new LinkedHashMap<>();
-        app.put(SchemaConstants.KEY_ID, appId);
+        // v2 (hierarchical): top-level id is inside meta; omit the standalone key to match the DSN
+        // reference contract. v1 keeps it for backward compatibility with existing clients.
+        if (!opts.isHierarchical()) {
+            app.put(SchemaConstants.KEY_ID, appId);
+        }
         app.put(SchemaConstants.KEY_META, buildMeta(envelopeSource, appId, rootProps, menu, opts));
         if (opts.isHierarchical()) {
             // No AEM source for either yet, but the target shape is fixed, so a client can rely on
@@ -160,12 +179,22 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
-        app.put(SchemaConstants.KEY_INTEGRATIONS,
-                readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
-        app.put(SchemaConstants.KEY_PROFILE_VIEWER,
-                readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON));
-        app.put(SchemaConstants.KEY_PRODUCTS,
-                buildProducts(envelopeSource, extras, assetHost, productsPath));
+        if (opts.isHierarchical()) {
+            // DSN reference order: branding, products, integrations, profileViewer
+            app.put(SchemaConstants.KEY_PRODUCTS,
+                    buildProducts(envelopeSource, extras, assetHost, opts));
+            app.put(SchemaConstants.KEY_INTEGRATIONS,
+                    readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
+            app.put(SchemaConstants.KEY_PROFILE_VIEWER,
+                    readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON));
+        } else {
+            app.put(SchemaConstants.KEY_INTEGRATIONS,
+                    readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
+            app.put(SchemaConstants.KEY_PROFILE_VIEWER,
+                    readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON));
+            app.put(SchemaConstants.KEY_PRODUCTS,
+                    buildProducts(envelopeSource, extras, assetHost, opts));
+        }
 
         return app;
     }
@@ -174,26 +203,34 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private Map<String, Object> buildMeta(final Page root, final String appId, final ValueMap props,
                                           final List<String> menu, final ExportOptions options) {
+        final Map<String, Object> navigation = buildNavigation(props, menu);
+
+        if (options.isHierarchical()) {
+            // v2: build the entire meta in DSN reference field order via EnvelopeMeta
+            return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation);
+        }
+
+        // v1: original field order (id, type, title, useCart, navigation)
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, appId);
         meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
         meta.put("title", props.get(SchemaConstants.PN_APP_TITLE,
                 StringUtils.defaultIfBlank(root.getTitle(), root.getName())));
         meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
+        meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
+        return meta;
+    }
 
+    private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
         navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "login"));
         navigation.put("profileScreen", props.get(SchemaConstants.PN_PROFILE_SCREEN, "user-details"));
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
-        navigation.put("registrationScreen", props.get(SchemaConstants.PN_REGISTRATION_SCREEN, "registration"));
-        meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
-
-        if (options.isHierarchical()) {
-            EnvelopeMeta.addAppMeta(meta, root);
-        }
-        return meta;
+        navigation.put("registrationScreen",
+                props.get(SchemaConstants.PN_REGISTRATION_SCREEN, "registration"));
+        return navigation;
     }
 
     private List<String> buildMenu(final List<Page> screens) {
@@ -218,18 +255,35 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * The single source of truth for which pages are screens - used to build both {@code screens} and
-     * {@code meta.navigation.menu}, which is what keeps the two lists in step.
+     * Every page the app can reach: the site root and its descendants, minus the fragments that are
+     * furniture rather than destinations.
      *
-     * <p>Preference is given to the authored navigation page. Listing child pages produces an
-     * accidental menu - every page in JCR order, including nav and footer fragments - whereas the
-     * navigation page is what an author actually curates. Sites with no navigation page keep the old
-     * child-listing behaviour.</p>
+     * <p>Deliberately not the menu. A site has pages a client must be able to render but that no
+     * author put in the navigation - a plan detail page opened from a card, a confirmation screen
+     * after a form. Exporting only the menu would leave those unreachable; exporting them without
+     * distinction would make the menu meaningless. So both are produced, and screen meta says which
+     * screens the menu contains.</p>
+     *
+     * <p>{@code header}, {@code footer} and the nav fragment are excluded by name through
+     * {@code excludedPageNames}, along with any page flagged with {@code excludeFromApp}.</p>
      */
     private List<Page> screenPages(final Page root) {
+        return collectScreens(root);
+    }
+
+    /**
+     * The pages named in the authored navigation, in the order the author put them.
+     *
+     * <p>Read from the nav or header fragment rather than by listing children, because listing
+     * produces an accidental menu - every page in JCR order, including the fragments themselves.
+     * A site with no navigation page falls back to its screens, which at least gives a client
+     * something to render.</p>
+     */
+    private List<Page> menuPages(final Page root) {
         final Page navPage = resolveNavPage(root);
         if (navPage == null) {
-            LOG.debug("No navigation page under {} - falling back to listing child pages", root.getPath());
+            LOG.debug("No navigation page under {} - the menu falls back to the screen list",
+                    root.getPath());
             return collectScreens(root);
         }
 
@@ -239,8 +293,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 .extract(navPage, walker.componentsOf(navPage, null));
 
         if (pages.isEmpty()) {
-            LOG.warn("Navigation page {} produced no resolvable links - falling back to child pages",
-                    navPage.getPath());
+            LOG.warn("Navigation page {} produced no resolvable links - the menu falls back to the "
+                    + "screen list", navPage.getPath());
             return collectScreens(root);
         }
 
@@ -286,6 +340,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
         }
         screen.put(SchemaConstants.KEY_META, meta);
+        if (options.isHierarchical()) {
+            // DSN reference shape: meta, editor, content.
+            // The editor block carries canvas layout (zIndex/position) authored in DSN Studio;
+            // AEM has no equivalent, so an empty map keeps the key present without fabricating data.
+            screen.put(SchemaConstants.KEY_EDITOR, Collections.emptyMap());
+        }
         screen.put(SchemaConstants.KEY_CONTENT, walker.componentsOf(page, assetHost, options.isHierarchical()));
         return screen;
     }
@@ -298,10 +358,33 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * page is kept as a fallback so sites configured before this existed keep working, and so a site
      * with no fragment catalogue can still supply a static list.
      */
+    /**
+     * Products, from the first source that has any.
+     *
+     * <p>Three sources, most authoritative first. A persisted GraphQL query is preferred where a
+     * site configures one, because the query is a contract owned by whoever owns the fragment model.
+     * Reading the fragments directly is the fallback, and a hand-authored {@code productsJson} the
+     * one after that - kept so sites configured before either existed keep working.</p>
+     *
+     * <p>Each falls through on an empty result rather than on an exception, so a query that is
+     * misconfigured, unregistered or simply returns nothing costs the catalogue and not the export.
+     * The cost of that leniency is that a genuinely empty catalogue is indistinguishable from a
+     * broken query - which is why {@code GraphQlClient} logs the difference.</p>
+     */
     private List<Object> buildProducts(final Page root, final Resource extras, final String assetHost,
-                                       final String productsPath) {
+                                       final ExportOptions options) {
+        final GraphQlQuery query = GraphQlQuery.resolve(root, options, this::isAllowed);
+        if (query.isConfigured()) {
+            final List<Map<String, Object>> fromQuery =
+                    graphQlProducts.export(root, query, assetHost);
+            if (!fromQuery.isEmpty()) {
+                return new ArrayList<>(fromQuery);
+            }
+            LOG.debug("Persisted query {} yielded nothing - falling back to Content Fragments", query);
+        }
+
         final List<Map<String, Object>> fromFragments =
-                productExporter.export(root, assetHost, productsPath);
+                productExporter.export(root, assetHost, options.getProductsPath());
 
         if (!fromFragments.isEmpty()) {
             return new ArrayList<>(fromFragments);

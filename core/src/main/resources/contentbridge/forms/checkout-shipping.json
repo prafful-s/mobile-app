@@ -1,342 +1,179 @@
-{
-  "firstName": {
-    "meta": {
-      "id": "firstName",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "person.name.firstName",
-      "label": "First name",
-      "name": "firstName",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+[
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "lastName": {
-    "meta": {
-      "id": "lastName",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "person.name.lastName",
-      "label": "Last name",
-      "name": "lastName",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "email": {
-    "meta": {
-      "id": "email",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "personalEmail.address",
-      "label": "Email",
-      "name": "email",
-      "value": "",
-      "type": "text",
-      "inputMode": "email",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "phone": {
-    "meta": {
-      "id": "phone",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "mobilePhone.number",
-      "label": "Phone number",
-      "name": "phone",
-      "value": "",
-      "type": "text",
-      "inputMode": "tel",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "phone",
+    "name": "mobilePhone.number",
+    "label": "Phone number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "streetAddress": {
-    "meta": {
-      "id": "street",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.street1",
-      "label": "Street address",
-      "name": "streetAddress",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "street",
+    "name": "homeAddress.street1",
+    "label": "Street address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "city": {
-    "meta": {
-      "id": "city",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.city",
-      "label": "City",
-      "name": "city",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "city",
+    "name": "homeAddress.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "zipCode": {
-    "meta": {
-      "id": "postalCode",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.postalCode",
-      "label": "Postal code",
-      "name": "zipCode",
-      "value": "",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "postalCode",
+    "name": "homeAddress.postalCode",
+    "label": "Postal code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "country": {
-    "meta": {
-      "id": "country",
-      "component": "dropdown"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.country",
-      "label": "Country",
-      "name": "country",
-      "value": "",
-      "type": "select",
-      "inputMode": "none",
-      "prefill": true,
-      "options": [
-        {
-          "label": "Select...",
-          "value": ""
-        },
-        {
-          "label": "United States",
-          "value": "US"
-        },
-        {
-          "label": "Canada",
-          "value": "CA"
-        },
-        {
-          "label": "United Kingdom",
-          "value": "GB"
-        },
-        {
-          "label": "Germany",
-          "value": "DE"
-        },
-        {
-          "label": "France",
-          "value": "FR"
-        }
-      ]
-    }
+  {
+    "id": "country",
+    "name": "homeAddress.country",
+    "label": "Country",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "United States",
+        "value": "US"
+      },
+      {
+        "label": "Canada",
+        "value": "CA"
+      },
+      {
+        "label": "United Kingdom",
+        "value": "GB"
+      },
+      {
+        "label": "Germany",
+        "value": "DE"
+      },
+      {
+        "label": "France",
+        "value": "FR"
+      }
+    ]
   },
-  "paymentMethod": {
-    "meta": {
-      "id": "paymentMethod",
-      "component": "radioGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "Payment",
-      "name": "paymentMethod",
-      "value": "card",
-      "type": "radio",
-      "inputMode": "none",
-      "prefill": false,
-      "options": [
-        {
-          "label": "Credit or Debit Card",
-          "value": "card"
-        },
-        {
-          "label": "Paypal",
-          "value": "paypal"
-        }
-      ]
-    }
+  {
+    "id": "paymentMethod",
+    "name": "paymentMethod",
+    "label": "Payment",
+    "value": "card",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Credit or Debit Card",
+        "value": "card"
+      },
+      {
+        "label": "Paypal",
+        "value": "paypal"
+      }
+    ]
   },
-  "cardNumber": {
-    "meta": {
-      "id": "cardNumber",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Card number",
-      "name": "cardNumber",
-      "value": "",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": false,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "cardNumber",
+    "name": "cardNumber",
+    "label": "Card number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "shippingMethod": {
-    "meta": {
-      "id": "shippingMethod",
-      "component": "radioGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "Shipping",
-      "name": "shippingMethod",
-      "value": "standard",
-      "type": "radio",
-      "inputMode": "none",
-      "prefill": false,
-      "options": [
-        {
-          "label": "Standard: 5-14 business days",
-          "value": "standard"
-        },
-        {
-          "label": "Ground: 3-7 business days",
-          "value": "ground"
-        },
-        {
-          "label": "Priority: 2 business days",
-          "value": "priority"
-        },
-        {
-          "label": "Express: 1 business day",
-          "value": "express"
-        },
-        {
-          "label": "Next-day pickup",
-          "value": "pickup"
-        }
-      ]
-    }
+  {
+    "id": "shippingMethod",
+    "name": "shippingMethod",
+    "label": "Shipping",
+    "value": "standard",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Standard: 5-14 business days",
+        "value": "standard"
+      },
+      {
+        "label": "Ground: 3-7 business days",
+        "value": "ground"
+      },
+      {
+        "label": "Priority: 2 business days",
+        "value": "priority"
+      },
+      {
+        "label": "Express: 1 business day",
+        "value": "express"
+      },
+      {
+        "label": "Next-day pickup",
+        "value": "pickup"
+      }
+    ]
   },
-  "lumaLoyalty": {
-    "meta": {
-      "id": "lumaLoyalty",
-      "component": "checkboxGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "I want to join Luma+ Loyalty Program",
-      "name": "lumaLoyalty",
-      "value": "",
-      "type": "checkbox",
-      "inputMode": "none",
-      "prefill": false,
-      "variant": "switch",
-      "options": [
-        {
-          "label": "I want to join Luma+ Loyalty Program",
-          "value": "true"
-        }
-      ]
-    }
+  {
+    "id": "lumaLoyalty",
+    "name": "lumaLoyalty",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I want to join Luma+ Loyalty Program",
+        "value": "true"
+      }
+    ]
   },
-  "createAccount": {
-    "meta": {
-      "id": "createAccount",
-      "component": "checkboxGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "I want to create the account",
-      "name": "createAccount",
-      "value": "",
-      "type": "checkbox",
-      "inputMode": "none",
-      "prefill": false,
-      "variant": "switch",
-      "options": [
-        {
-          "label": "I want to create the account",
-          "value": "true"
-        }
-      ]
-    }
+  {
+    "id": "createAccount",
+    "name": "createAccount",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I want to create the account",
+        "value": "true"
+      }
+    ]
   }
-}
+]

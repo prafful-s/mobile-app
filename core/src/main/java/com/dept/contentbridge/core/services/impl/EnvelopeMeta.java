@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.ValueMap;
@@ -56,17 +57,106 @@ final class EnvelopeMeta {
     private static final String DEFAULT_DISPLAY_INBOX = "mainNavigation";
     private static final String DEFAULT_SCREEN_TEMPLATE = "FreeformScreen";
 
+    /** Suffix stripped from the AEM theme property when deriving a brand display label. */
+    private static final Pattern THEME_SUFFIX = Pattern.compile("-theme$", Pattern.CASE_INSENSITIVE);
+
+    /** Page property holding the category/preset for a screen (e.g. "home", "article"). */
+    private static final String PN_PAGE_CATEGORY = "pageCategory";
+
     private EnvelopeMeta() {
         // static helpers only
     }
 
     /**
-     * Adds the v2-only app fields to a {@code meta} block that already carries id, type, title,
-     * useCart and navigation.
+     * Builds the complete v2 app-level {@code meta} block in DSN reference field order.
      *
-     * @param meta the block to extend, in place
-     * @param root the site root page, whose placeholders supply the authored values
+     * <p>Field order matches the DSN contract:
+     * id, docs, type, brand, title, locale, useCart, template, vertical, rightIcon, thumbnail,
+     * navigation, description, displayInbox, authentication, enableTargetRec, brandingMboxName,
+     * targetRecMboxName, enableBrandingTargeting.</p>
+     *
+     * @param root       the site root page (placeholders page is resolved from here)
+     * @param appId      the app identifier
+     * @param props      {@code jcr:content} properties of the root page
+     * @param navigation the already-built navigation block
      */
+    static Map<String, Object> buildFullV2Meta(final Page root, final String appId,
+                                               final ValueMap props,
+                                               final Map<String, Object> navigation) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+
+        meta.put("id", appId);
+
+        putIfPlaceholder(meta, root, "docs");
+
+        meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
+
+        // brand: placeholders wins, then theme fallback
+        final String brand = SiteHostResolver.placeholder(root, "brand");
+        if (StringUtils.isNotBlank(brand)) {
+            meta.put("brand", brand);
+        } else {
+            final String theme = root.getProperties().get("theme", String.class);
+            if (StringUtils.isNotBlank(theme)) {
+                meta.put("brand", themeToLabel(theme));
+            }
+        }
+
+        meta.put("title", props.get(SchemaConstants.PN_APP_TITLE,
+                StringUtils.defaultIfBlank(root.getTitle(), root.getName())));
+
+        final String loc = locale(root);
+        if (StringUtils.isNotBlank(loc)) {
+            meta.put(SchemaConstants.KEY_LOCALE, loc);
+        }
+
+        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
+
+        // optional: template, vertical, rightIcon, thumbnail (from placeholders)
+        putIfPlaceholder(meta, root, "template");
+        putIfPlaceholder(meta, root, "vertical");
+        final Map<String, Object> ri = rightIcon(root);
+        if (!ri.isEmpty()) {
+            meta.put("rightIcon", ri);
+        }
+        putIfPlaceholder(meta, root, "thumbnail");
+
+        meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
+
+        // description: placeholders wins, then jcr:description
+        final String desc = SiteHostResolver.placeholder(root, "description");
+        if (StringUtils.isNotBlank(desc)) {
+            meta.put("description", desc);
+        } else {
+            final String pageDesc = root.getDescription();
+            if (StringUtils.isNotBlank(pageDesc)) {
+                meta.put("description", pageDesc);
+            }
+        }
+
+        // Always-present fields the client switches on
+        meta.put("displayInbox", StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "displayInbox"), DEFAULT_DISPLAY_INBOX));
+        meta.put("authentication", StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "authentication"), DEFAULT_AUTHENTICATION));
+        meta.put("enableTargetRec", flag(SiteHostResolver.placeholder(root, "enableTargetRec")));
+        meta.put("brandingMboxName", StringUtils.defaultString(
+                SiteHostResolver.placeholder(root, "brandingMboxName")));
+        meta.put("targetRecMboxName", StringUtils.defaultString(
+                SiteHostResolver.placeholder(root, "targetRecMboxName")));
+        meta.put("enableBrandingTargeting",
+                flag(SiteHostResolver.placeholder(root, "enableBrandingTargeting")));
+
+        return meta;
+    }
+
+    /**
+     * Adds v2 app fields to a pre-built meta block (legacy call path).
+     *
+     * @deprecated Prefer {@link #buildFullV2Meta} which emits keys in reference order.
+     *             This method is retained so that any existing call sites compile without changes.
+     */
+    @Deprecated
     static void addAppMeta(final Map<String, Object> meta, final Page root) {
         for (final String key : APP_PLACEHOLDER_KEYS) {
             final String value = SiteHostResolver.placeholder(root, key);
@@ -74,9 +164,18 @@ final class EnvelopeMeta {
                 meta.put(key, value);
             }
         }
-
-        // Emitted whether or not authored: the client switches on them, and an absent key is a
-        // different thing to reason about than a false one.
+        if (!meta.containsKey("brand")) {
+            final String theme = root.getProperties().get("theme", String.class);
+            if (StringUtils.isNotBlank(theme)) {
+                meta.put("brand", themeToLabel(theme));
+            }
+        }
+        if (!meta.containsKey("description")) {
+            final String desc = root.getDescription();
+            if (StringUtils.isNotBlank(desc)) {
+                meta.put("description", desc);
+            }
+        }
         meta.putIfAbsent("authentication", DEFAULT_AUTHENTICATION);
         meta.putIfAbsent("displayInbox", DEFAULT_DISPLAY_INBOX);
         for (final String key : APP_FLAG_KEYS) {
@@ -84,12 +183,10 @@ final class EnvelopeMeta {
         }
         meta.putIfAbsent("brandingMboxName", StringUtils.EMPTY);
         meta.putIfAbsent("targetRecMboxName", StringUtils.EMPTY);
-
         final String locale = locale(root);
         if (StringUtils.isNotBlank(locale)) {
             meta.put(SchemaConstants.KEY_LOCALE, locale);
         }
-
         final Map<String, Object> rightIcon = rightIcon(root);
         if (!rightIcon.isEmpty()) {
             meta.put("rightIcon", rightIcon);
@@ -118,7 +215,10 @@ final class EnvelopeMeta {
     }
 
     /**
-     * Builds a screen's {@code meta}.
+     * Builds a screen's {@code meta} in DSN reference field order.
+     *
+     * <p>Field order: icon, name, event, title, preset, template, thumbnail, customEvent,
+     * isRootScreen, navigationOrder, includeInNavigation.</p>
      *
      * @param page       the screen
      * @param root       the site root, used to decide whether this screen is the root one
@@ -131,24 +231,38 @@ final class EnvelopeMeta {
         final Map<String, Object> meta = new LinkedHashMap<>();
         final ValueMap props = page.getProperties();
 
+        // icon first (optional)
+        putIfPresent(meta, props, "icon");
+
         meta.put("name", screenKey);
+
+        // event between name and title (optional)
+        putIfPresent(meta, props, "event");
+
         meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
-        for (final String key : SCREEN_PAGE_KEYS) {
-            final String value = props.get(key, String.class);
-            if (StringUtils.isNotBlank(value)) {
-                meta.put(key, value);
-            }
+        // preset: explicit prop wins, then pageCategory fallback
+        final String preset = StringUtils.defaultIfBlank(
+                props.get("preset", String.class),
+                props.get(PN_PAGE_CATEGORY, String.class));
+        if (StringUtils.isNotBlank(preset)) {
+            meta.put("preset", preset);
         }
-        meta.putIfAbsent("template", DEFAULT_SCREEN_TEMPLATE);
+
+        // template (always present)
+        meta.put("template", StringUtils.defaultIfBlank(
+                props.get("template", String.class), DEFAULT_SCREEN_TEMPLATE));
+
+        // thumbnail, customEvent (optional)
+        putIfPresent(meta, props, "thumbnail");
+        putIfPresent(meta, props, "customEvent");
 
         meta.put("isRootScreen", StringUtils.equals(page.getPath(), root.getPath()));
 
-        // Derived from the menu rather than authored: the navigation page is what an author curates,
-        // so a screen's place in it should not also have to be typed onto the page.
+        // navigationOrder before includeInNavigation to match reference order
         final int order = menu == null ? -1 : menu.indexOf(screenKey);
-        meta.put("includeInNavigation", order >= 0);
         meta.put("navigationOrder", order >= 0 ? Integer.valueOf(order) : null);
+        meta.put("includeInNavigation", order >= 0);
 
         return meta;
     }
@@ -171,8 +285,42 @@ final class EnvelopeMeta {
         return rightIcon;
     }
 
+    /** Adds a placeholder value to the map only when non-blank. */
+    private static void putIfPlaceholder(final Map<String, Object> meta, final Page root,
+                                         final String key) {
+        final String value = SiteHostResolver.placeholder(root, key);
+        if (StringUtils.isNotBlank(value)) {
+            meta.put(key, value);
+        }
+    }
+
+    /** Adds a page property to the map only when non-blank. */
+    private static void putIfPresent(final Map<String, Object> meta, final ValueMap props,
+                                     final String key) {
+        final String value = props.get(key, String.class);
+        if (StringUtils.isNotBlank(value)) {
+            meta.put(key, value);
+        }
+    }
+
     /** Placeholder sheets store everything as text, so a flag arrives as "true" rather than true. */
     private static boolean flag(final String value) {
         return Boolean.parseBoolean(StringUtils.trimToEmpty(value));
+    }
+
+    /**
+     * Converts an AEM theme token to a display label by stripping the conventional {@code -theme}
+     * suffix and capitalising the initial character.
+     *
+     * <p>Examples: {@code wehealthcare-theme} → {@code Wehealthcare},
+     * {@code binji-theme} → {@code Binji}.</p>
+     *
+     * <p>A properly authored brand name in the placeholders page always wins; this is a best-effort
+     * fallback for sites that have not yet set one.</p>
+     */
+    static String themeToLabel(final String theme) {
+        final String base = THEME_SUFFIX.matcher(theme).replaceFirst("");
+        final String label = StringUtils.isBlank(base) ? theme : base;
+        return Character.toUpperCase(label.charAt(0)) + label.substring(1);
     }
 }

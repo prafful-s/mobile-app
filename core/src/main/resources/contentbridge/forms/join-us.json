@@ -1,296 +1,134 @@
-{
-  "firstName": {
-    "meta": {
-      "id": "firstName",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "person.name.firstName",
-      "label": "First Name",
-      "name": "firstName",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+[
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "lastName": {
-    "meta": {
-      "id": "lastName",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "person.name.lastName",
-      "label": "Last Name",
-      "name": "lastName",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "email": {
-    "meta": {
-      "id": "email",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "personalEmail.address",
-      "label": "Email",
-      "name": "email",
-      "value": "",
-      "type": "text",
-      "inputMode": "email",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "phone": {
-    "meta": {
-      "id": "phone",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "mobilePhone.number",
-      "label": "Phone number",
-      "name": "phone",
-      "value": "",
-      "type": "text",
-      "inputMode": "tel",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "phone",
+    "name": "mobilePhone.number",
+    "label": "Phone number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "zipCode": {
-    "meta": {
-      "id": "zipCode",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.postalCode",
-      "label": "Zip code",
-      "name": "zipCode",
-      "value": "",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "zipCode",
+    "name": "homeAddress.postalCode",
+    "label": "Zip code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "streetLine1": {
-    "meta": {
-      "id": "streetLine1",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.street1",
-      "label": "Street Address Line 1",
-      "name": "streetLine1",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "streetLine1",
+    "name": "homeAddress.street1",
+    "label": "Street Address Line 1",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "streetLine2": {
-    "meta": {
-      "id": "streetLine2",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Street Address Line 2",
-      "name": "streetLine2",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": false,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "streetLine2",
+    "name": "streetLine2",
+    "label": "Street Address Line 2",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "city": {
-    "meta": {
-      "id": "city",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.city",
-      "label": "City",
-      "name": "city",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "city",
+    "name": "homeAddress.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "postalCode": {
-    "meta": {
-      "id": "postalCode",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.postalCode",
-      "label": "Postal Code",
-      "name": "postalCode",
-      "value": "",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "postalCode",
+    "name": "homeAddress.postalCode",
+    "label": "Postal Code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "callBeforeDelivery": {
-    "meta": {
-      "id": "callBeforeDelivery",
-      "component": "checkboxGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "Call Before Delivery",
-      "name": "callBeforeDelivery",
-      "value": "",
-      "type": "checkbox",
-      "inputMode": "none",
-      "prefill": false,
-      "variant": "switch",
-      "options": [
-        {
-          "label": "Call Before Delivery",
-          "value": "true"
-        }
-      ]
-    }
+  {
+    "id": "callBeforeDelivery",
+    "name": "callBeforeDelivery",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "Call Before Delivery",
+        "value": "true"
+      }
+    ]
   },
-  "deliveryFrequency": {
-    "meta": {
-      "id": "deliveryFrequency",
-      "component": "dropdown"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Delivery Frequency",
-      "name": "deliveryFrequency",
-      "value": "",
-      "type": "select",
-      "inputMode": "none",
-      "prefill": false,
-      "options": [
-        {
-          "label": "Once a week",
-          "value": "once"
-        },
-        {
-          "label": "Twice a week",
-          "value": "twice"
-        },
-        {
-          "label": "Thrice a week",
-          "value": "thrice"
-        },
-        {
-          "label": "Daily",
-          "value": "daily"
-        }
-      ]
-    }
+  {
+    "id": "deliveryFrequency",
+    "name": "deliveryFrequency",
+    "label": "Delivery Frequency",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Once a week",
+        "value": "once"
+      },
+      {
+        "label": "Twice a week",
+        "value": "twice"
+      },
+      {
+        "label": "Thrice a week",
+        "value": "thrice"
+      },
+      {
+        "label": "Daily",
+        "value": "daily"
+      }
+    ]
   },
-  "consent": {
-    "meta": {
-      "id": "consent",
-      "component": "checkboxGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "I want to join WKND Fly Club and I have read and understand the Privacy and Cookies Policy. I want to receive personalized communication by email.",
-      "name": "consent",
-      "value": "",
-      "type": "checkbox",
-      "inputMode": "none",
-      "prefill": false,
-      "variant": "switch",
-      "options": [
-        {
-          "label": "I want to join WKND Fly Club and I have read and understand the Privacy and Cookies Policy. I want to receive personalized communication by email.",
-          "value": "true"
-        }
-      ]
-    }
+  {
+    "id": "consent",
+    "name": "consent",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I want to join WKND Fly Club and I have read and understand the Privacy and Cookies Policy. I want to receive personalized communication by email.",
+        "value": "true"
+      }
+    ]
   }
-}
+]

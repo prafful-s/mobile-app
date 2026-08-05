@@ -1,104 +1,62 @@
-{
-  "transferFrom": {
-    "meta": {
-      "id": "transfer-from",
-      "component": "dropdown"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Transfer from",
-      "name": "transferFrom",
-      "value": "Checking Account",
-      "type": "select",
-      "inputMode": "none",
-      "prefill": false,
-      "options": [
-        {
-          "label": "Checking Account",
-          "value": "Checking Account"
-        }
-      ]
-    }
+[
+  {
+    "id": "transfer-from",
+    "name": "transferFrom",
+    "label": "Transfer from",
+    "value": "Checking Account",
+    "type": "select",
+    "options": [
+      {
+        "label": "Checking Account",
+        "value": "Checking Account"
+      }
+    ]
   },
-  "transferTo": {
-    "meta": {
-      "id": "transfer-to",
-      "component": "dropdown"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Transfer to",
-      "name": "transferTo",
-      "value": "Retirement Account",
-      "type": "select",
-      "inputMode": "none",
-      "prefill": false,
-      "options": [
-        {
-          "label": "Retirement Account",
-          "value": "Retirement Account"
-        }
-      ]
-    }
+  {
+    "id": "transfer-to",
+    "name": "transferTo",
+    "label": "Transfer to",
+    "value": "Retirement Account",
+    "type": "select",
+    "options": [
+      {
+        "label": "Retirement Account",
+        "value": "Retirement Account"
+      }
+    ]
   },
-  "amount": {
-    "meta": {
-      "id": "amount",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Amount",
-      "name": "amount",
-      "value": "$100.00",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": false,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": "$100.00"
-    }
+  {
+    "id": "amount",
+    "name": "amount",
+    "label": "Amount",
+    "value": "$100.00",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "$100.00"
   },
-  "objective": {
-    "meta": {
-      "id": "objective",
-      "component": "checkboxGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "Objective",
-      "name": "objective",
-      "value": "",
-      "type": "checkbox",
-      "inputMode": "none",
-      "prefill": false,
-      "variant": "switch",
-      "options": [
-        {
-          "label": "Build emergency fund",
-          "value": "Build emergency fund"
-        },
-        {
-          "label": "Establish a budget",
-          "value": "Establish a budget"
-        },
-        {
-          "label": "Pay off credit cards",
-          "value": "Pay off credit cards"
-        },
-        {
-          "label": "Save for college",
-          "value": "Save for college"
-        }
-      ]
-    }
+  {
+    "id": "objective",
+    "name": "objective",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "Build emergency fund",
+        "value": "Build emergency fund"
+      },
+      {
+        "label": "Establish a budget",
+        "value": "Establish a budget"
+      },
+      {
+        "label": "Pay off credit cards",
+        "value": "Pay off credit cards"
+      },
+      {
+        "label": "Save for college",
+        "value": "Save for college"
+      }
+    ]
   }
-}
+]

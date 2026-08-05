@@ -49,6 +49,7 @@ final class ComponentTreeWalker {
     private final FormSchemaService formSchemaService;
     private final StyleResolver styleResolver;
     private final ComponentMappings mappings;
+    private final FormBlockBuilder formBuilder;
 
     ComponentTreeWalker(final ModelFactory modelFactory, final UrlService urlService,
                         final FormSchemaService formSchemaService, final StyleResolver styleResolver,
@@ -58,6 +59,7 @@ final class ComponentTreeWalker {
         this.formSchemaService = formSchemaService;
         this.styleResolver = styleResolver;
         this.mappings = mappings == null ? ComponentMappings.EMPTY : mappings;
+        this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
     List<Map<String, Object>> componentsOf(final Page page, final String assetHost) {
@@ -223,6 +225,16 @@ final class ComponentTreeWalker {
                 }
             }
 
+            // A form is a container of fields, the way a panel is a container of components, so it
+            // is built rather than described: its settings move into meta and its content becomes
+            // the ordered field list. Only in v2 - v1 keeps the flat block with a schema beside it,
+            // because that contract is already published.
+            if (hierarchical && isFormBlock(child, authoredName, authored)) {
+                sink.add(formBuilder.build(child, formNameOf(authoredName, authored),
+                        model.getId(), sink.size(), authored));
+                continue;
+            }
+
             final Map<String, Object> entry = new LinkedHashMap<>();
             final Map<String, Object> meta = new LinkedHashMap<>();
             meta.put(SchemaConstants.KEY_ID, model.getId());
@@ -233,10 +245,9 @@ final class ComponentTreeWalker {
             entry.put(SchemaConstants.KEY_META, meta);
             entry.put(SchemaConstants.KEY_CONTENT, content);
 
-            // Form blocks carry their field definitions alongside the authored content, so a client
-            // can render the form without a second call or a hard-coded copy of the schema. Looked up
-            // on the authored name, since that is what the schemas are keyed by.
-            final Map<String, Object> schema = resolveFormSchema(authoredName, authored);
+            // v1 only: the field definitions travel alongside the authored content, so a client can
+            // render the form without a second call or a hard-coded copy of the schema.
+            final List<Map<String, Object>> schema = resolveFormSchema(authoredName, authored);
             if (!schema.isEmpty()) {
                 entry.put(SchemaConstants.KEY_SCHEMA, schema);
             }
@@ -290,6 +301,43 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * Is this block a form?
+     *
+     * <p>Three ways to be one, because forms reach the repository by three routes. An AEM Forms
+     * component says so on itself with {@code fieldType=form}. An Edge Delivery block says so by
+     * being named after a known schema, or by naming one in {@code formName}. A block that is none
+     * of these is not treated as a form, however form-like its properties look - guessing here would
+     * turn an unrelated block into an empty form.</p>
+     */
+    private boolean isFormBlock(final Resource resource, final String componentName,
+                                final Map<String, Object> authored) {
+        if (FormBlockBuilder.COMPONENT_FORM.equals(
+                resource.getValueMap().get("fieldType", String.class))) {
+            return true;
+        }
+        return StringUtils.isNotBlank(formNameOf(componentName, authored));
+    }
+
+    /**
+     * @return the schema this block should use, or null when it names none - an authored AEM Forms
+     *         component is a form without naming a schema, and takes its fields from its children
+     */
+    private String formNameOf(final String componentName, final Map<String, Object> authored) {
+        final String[] candidates = {
+            asString(authored.get(SchemaConstants.PN_FORM_NAME)),
+            asString(authored.get(SchemaConstants.PN_FORM)),
+            componentName,
+        };
+        for (final String candidate : candidates) {
+            if (StringUtils.isNotBlank(candidate)
+                    && !formSchemaService.getSchema(candidate).isEmpty()) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Finds the form schema a block should carry, if any.
      *
      * <p>An explicit {@code formName} or {@code form} property wins, but the usual case needs
@@ -298,10 +346,10 @@ final class ComponentTreeWalker {
      * against the known schemas directly. A block whose name is not a known form gets nothing, which
      * is how every non-form component stays untouched.</p>
      *
-     * @return the field definitions, or an empty map when this block is not a form
+     * @return the fields in render order, or an empty list when this block is not a form
      */
-    private Map<String, Object> resolveFormSchema(final String componentName,
-                                                  final Map<String, Object> content) {
+    private List<Map<String, Object>> resolveFormSchema(final String componentName,
+                                                        final Map<String, Object> content) {
         final String[] candidates = {
             asString(content.get(SchemaConstants.PN_FORM_NAME)),
             asString(content.get(SchemaConstants.PN_FORM)),
@@ -311,13 +359,13 @@ final class ComponentTreeWalker {
             if (StringUtils.isBlank(candidate)) {
                 continue;
             }
-            final Map<String, Object> schema = formSchemaService.getSchema(candidate);
+            final List<Map<String, Object>> schema = formSchemaService.getSchema(candidate);
             if (!schema.isEmpty()) {
                 LOG.debug("Attached form schema '{}' to a {} block", candidate, componentName);
                 return schema;
             }
         }
-        return Collections.emptyMap();
+        return Collections.emptyList();
     }
 
     private static String asString(final Object value) {

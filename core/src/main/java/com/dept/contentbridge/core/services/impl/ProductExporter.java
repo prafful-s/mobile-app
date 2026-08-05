@@ -54,6 +54,9 @@ final class ProductExporter {
 
     private static final String KEY_PRICE = "price";
 
+    /** Keys that fall back to the resource or item name rather than being left empty. */
+    private static final Set<String> IDENTITY_KEYS = Set.of("id", "sku", "name");
+
     /** Placeholder entry and page property naming the catalogue folder. */
     private static final String PN_PRODUCTS_PATH = "productsPath";
 
@@ -215,6 +218,31 @@ final class ProductExporter {
         return product;
     }
 
+    /**
+     * Maps an already-flattened set of field values onto the product schema.
+     *
+     * <p>Shared with the GraphQL source so the alias table, the key order and the type coercion are
+     * written once. A product read from a persisted query and one read from a Content Fragment are
+     * indistinguishable in the response, which is the whole point of having two sources.</p>
+     *
+     * @param values     field name to value, already flattened out of whatever the source returned
+     * @param fallbackId used for id, sku and name when the source supplied none - a product with no
+     *                   identity is useless to a client
+     * @param assetHost  publish host for any repository path still left relative
+     */
+    Map<String, Object> productFrom(final Map<String, String> values, final String fallbackId,
+                                    final String assetHost) {
+        final Map<String, Object> product = new LinkedHashMap<>();
+        for (final String key : KEYS) {
+            String raw = firstAlias(values, key);
+            if (StringUtils.isBlank(raw) && IDENTITY_KEYS.contains(key)) {
+                raw = fallbackId;
+            }
+            product.put(key, coerce(key, raw, assetHost));
+        }
+        return product;
+    }
+
     private String stringify(final Object value) {
         if (value == null) {
             return null;
@@ -237,11 +265,9 @@ final class ProductExporter {
      */
     private String firstMatch(final Map<String, String> elements, final String key,
                               final Resource resource) {
-        for (final String alias : aliases.getOrDefault(key, Arrays.asList(key))) {
-            final String value = elements.get(alias);
-            if (StringUtils.isNotBlank(value)) {
-                return value;
-            }
+        final String value = firstAlias(elements, key);
+        if (StringUtils.isNotBlank(value)) {
+            return value;
         }
         // Identity always resolves to something: a product with no id is useless to a client.
         if ("name".equals(key)) {
@@ -252,6 +278,17 @@ final class ProductExporter {
         }
         if ("id".equals(key) || "sku".equals(key)) {
             return resource.getName();
+        }
+        return null;
+    }
+
+    /** @return the first value matching one of the key's aliases, or null */
+    private String firstAlias(final Map<String, String> values, final String key) {
+        for (final String alias : aliases.getOrDefault(key, Arrays.asList(key))) {
+            final String value = values.get(alias);
+            if (StringUtils.isNotBlank(value)) {
+                return value;
+            }
         }
         return null;
     }

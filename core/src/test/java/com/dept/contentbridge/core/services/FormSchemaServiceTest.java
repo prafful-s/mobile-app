@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
@@ -34,9 +35,20 @@ class FormSchemaServiceTest {
         service = context.registerInjectActivateService(new FormSchemaServiceImpl());
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> field(final String form, final String name) {
-        return (Map<String, Object>) service.getSchema(form).get(name);
+    /** Fields are a list now, so a test that wants one by name has to look it up by id. */
+    private Map<String, Object> field(final String form, final String id) {
+        for (final Map<String, Object> candidate : service.getSchema(form)) {
+            if (id.equals(candidate.get("id"))) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private List<String> fieldIds(final String form) {
+        final List<String> ids = new java.util.ArrayList<>();
+        service.getSchema(form).forEach(f -> ids.add(String.valueOf(f.get("id"))));
+        return ids;
     }
 
     @Test
@@ -74,121 +86,91 @@ class FormSchemaServiceTest {
                 "loan-application-form", "credit-card-application-form", "transfer-funds")));
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> part(final Map<String, Object> field, final String key) {
-        return (Map<String, Object>) field.get(key);
-    }
-
     @Test
-    @DisplayName("a field is a meta/content pair, the same envelope a component uses")
+    @DisplayName("a field is a flat definition the client can render directly")
     void fieldShape() {
         final Map<String, Object> email = field("sign-in", "email");
         assertNotNull(email);
 
-        assertEquals(java.util.List.of("meta", "content"), java.util.List.copyOf(email.keySet()));
-        assertEquals("email", part(email, "meta").get("id"));
-        assertEquals("textField", part(email, "meta").get("component"),
-                "the widget the client renders, distinct from the value type");
-
-        final Map<String, Object> content = part(email, "content");
-        assertEquals("Email address", content.get("label"));
-        assertEquals("email", content.get("name"));
-        assertEquals("", content.get("value"));
-        assertEquals("text", content.get("type"));
-        assertEquals("email", content.get("inputMode"), "drives the on-screen keyboard");
-        assertEquals(Boolean.TRUE, content.get("prefill"));
-        assertEquals("personalEmail.address", content.get("path"),
-                "where the client reads the prefill value from in its profile");
+        assertEquals("email", email.get("id"), "the identifier within the form");
+        assertEquals("personalEmail.address", email.get("name"),
+                "the path the client reads and writes in its own profile model");
+        assertEquals("Email address", email.get("label"));
+        assertEquals("", email.get("value"));
+        assertEquals("text", email.get("type"));
     }
 
     @Test
-    @DisplayName("a password field is marked as one rather than only typed as one")
-    void passwordField() {
-        final Map<String, Object> password = field("sign-in", "password");
-
-        assertEquals("textField", part(password, "meta").get("component"));
-        assertEquals("password", part(password, "content").get("type"));
-        assertEquals(Boolean.TRUE, part(password, "content").get("isPassword"));
+    @DisplayName("id and name are different things and both survive")
+    void idAndNameAreDistinct() {
+        // 'id' is unique within the form; 'name' points into the profile model, so two forms asking
+        // for the same detail use the same name and different ids.
+        final Map<String, Object> first = field("loan-application-form", "firstName");
+        assertEquals("firstName", first.get("id"));
+        assertEquals("person.name.firstName", first.get("name"));
     }
 
     @Test
-    @DisplayName("a choice field carries the options the client renders")
-    void choiceFieldsCarryOptions() {
-        final Map<String, Object> country = field("checkout-shipping", "country");
-        assertEquals("dropdown", part(country, "meta").get("component"));
-
-        @SuppressWarnings("unchecked")
-        final java.util.List<Map<String, Object>> options =
-                (java.util.List<Map<String, Object>>) part(country, "content").get("options");
-        assertTrue(options.size() > 1, "a dropdown with no options cannot be rendered");
-        assertTrue(options.stream().allMatch(o -> o.containsKey("label") && o.containsKey("value")),
-                "every option needs both a label and a value: " + options);
-    }
-
-    @Test
-    @DisplayName("field order follows the file, not alphabetical order")
+    @DisplayName("field order follows the file - a form is rendered top to bottom")
     void fieldOrderIsPreserved() {
-        assertEquals(java.util.List.of("email", "password"),
-                java.util.List.copyOf(service.getSchema("sign-in").keySet()));
-    }
-
-    @Test
-    @DisplayName("ids that differ from the field key are preserved")
-    void idsThatDifferFromTheKey() {
-        // checkout-shipping deliberately keys 'zipCode' with an id of 'postalCode'
-        assertEquals("postalCode", part(field("checkout-shipping", "zipCode"), "meta").get("id"));
-        assertEquals("street", part(field("checkout-shipping", "streetAddress"), "meta").get("id"));
+        assertEquals(List.of("email", "password"), fieldIds("sign-in"));
     }
 
     @Test
     @DisplayName("non-empty default values survive")
     void defaultValues() {
-        assertEquals("$100.00", part(field("transfer-funds", "amount"), "content").get("value"));
-        assertEquals("card", part(field("checkout-shipping", "paymentMethod"), "content").get("value"));
-        assertEquals("checked", part(field("checkout", "wknd-club"), "content").get("value"));
+        assertEquals("$100.00", field("transfer-funds", "amount").get("value"));
     }
 
     @Test
-    @DisplayName("every field names a widget the client can render and a type it can hold")
+    @DisplayName("every field names a type the client can render")
     void knownFieldTypes() {
-        // Two separate vocabularies on purpose: 'component' is the widget, 'type' is the value it
-        // produces. A checkbox group and a switch are the same type and different components.
-        final java.util.Set<String> components = java.util.Set.of(
-                "textField", "dropdown", "checkboxGroup", "radioGroup", "datePicker", "fileUpload");
         final java.util.Set<String> types =
                 java.util.Set.of("text", "select", "checkbox", "radio", "file", "password", "date");
 
-        service.getFormNames().forEach(form -> service.getSchema(form).forEach((name, definition) -> {
-            @SuppressWarnings("unchecked")
-            final Map<String, Object> field = (Map<String, Object>) definition;
-            final Object component = part(field, "meta").get("component");
-            final Object type = part(field, "content").get("type");
+        service.getFormNames().forEach(form -> service.getSchema(form).forEach(field ->
+                assertTrue(types.contains(field.get("type")),
+                        form + "." + field.get("id") + " has unexpected type " + field.get("type"))));
+    }
 
-            assertTrue(components.contains(component),
-                    form + "." + name + " has unexpected component " + component);
-            assertTrue(types.contains(type), form + "." + name + " has unexpected type " + type);
+    @Test
+    @DisplayName("every field has an id and a name - both are load-bearing")
+    void everyFieldIsAddressable() {
+        service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
+            assertNotNull(field.get("id"), form + " has a field with no id");
+            assertNotNull(field.get("name"), form + "." + field.get("id") + " has no name");
         }));
     }
 
     @Test
     @DisplayName("every choice field actually has choices")
     void choiceFieldsAreRenderable() {
-        final java.util.Set<String> needsOptions =
-                java.util.Set.of("dropdown", "checkboxGroup", "radioGroup");
+        // Invisible in the JSON, fatal in the UI: a select with no options renders as an empty box.
+        final java.util.Set<String> needsOptions = java.util.Set.of("select", "radio", "checkbox");
 
-        service.getFormNames().forEach(form -> service.getSchema(form).forEach((name, definition) -> {
-            @SuppressWarnings("unchecked")
-            final Map<String, Object> field = (Map<String, Object>) definition;
-            if (needsOptions.contains(part(field, "meta").get("component"))) {
-                final Object options = part(field, "content").get("options");
-                assertTrue(options instanceof java.util.List && !((java.util.List<?>) options).isEmpty(),
-                        form + "." + name + " is a choice field with no options");
+        service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
+            if (needsOptions.contains(field.get("type"))) {
+                final Object options = field.get("options");
+                assertTrue(options instanceof List && !((List<?>) options).isEmpty(),
+                        form + "." + field.get("id") + " is a choice field with no options");
             }
         }));
     }
 
     @Test
-    @DisplayName("an unknown form yields an empty map rather than null")
+    @DisplayName("options carry both a label and a value")
+    void optionsAreWellFormed() {
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> options =
+                (List<Map<String, Object>>) field("loan-application-form", "state").get("options");
+
+        assertTrue(options.size() > 1);
+        assertTrue(options.stream().allMatch(o -> o.containsKey("label") && o.containsKey("value")),
+                "an option missing either is unrenderable: " + options);
+    }
+
+    @Test
+    @DisplayName("an unknown form yields an empty list rather than null")
     void unknownForm() {
         assertTrue(service.getSchema("does-not-exist").isEmpty());
         assertTrue(service.getSchema(null).isEmpty());
@@ -199,7 +181,7 @@ class FormSchemaServiceTest {
     @DisplayName("schemas are immutable - a caller cannot corrupt them for everyone else")
     void schemasAreImmutable() {
         assertThrows(UnsupportedOperationException.class,
-                () -> service.getSchema("sign-in").put("injected", "value"));
+                () -> service.getSchema("sign-in").add(new java.util.HashMap<>()));
         assertThrows(UnsupportedOperationException.class,
                 () -> service.getAllSchemas().remove("sign-in"));
     }

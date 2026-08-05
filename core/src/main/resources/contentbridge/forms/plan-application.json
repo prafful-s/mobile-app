@@ -1,294 +1,133 @@
-{
-  "firstName": {
-    "meta": {
-      "id": "firstName",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "person.name.firstName",
-      "label": "First name",
-      "name": "firstName",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+[
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "birthDate": {
-    "meta": {
-      "id": "birthDate",
-      "component": "datePicker"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "person.birthDate",
-      "label": "Date of birth",
-      "name": "birthDate",
-      "value": "",
-      "type": "text",
-      "inputMode": "none",
-      "prefill": true,
-      "withDateFormatInLabel": false
-    }
+  {
+    "id": "birthDate",
+    "name": "person.birthDate",
+    "label": "Date of birth",
+    "value": "",
+    "type": "text",
+    "withDateFormatInLabel": false
   },
-  "lastName": {
-    "meta": {
-      "id": "lastName",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "person.name.lastName",
-      "label": "Last name",
-      "name": "lastName",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "gender": {
-    "meta": {
-      "id": "gender",
-      "component": "dropdown"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Gender",
-      "name": "gender",
-      "value": "",
-      "type": "select",
-      "inputMode": "none",
-      "prefill": false,
-      "options": [
-        {
-          "label": "Female",
-          "value": "female"
-        },
-        {
-          "label": "Male",
-          "value": "male"
-        },
-        {
-          "label": "Not Specified",
-          "value": "not_specified"
-        },
-        {
-          "label": "Non-specific",
-          "value": "non_specific"
-        }
-      ]
-    }
+  {
+    "id": "gender",
+    "name": "gender",
+    "label": "Gender",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Female",
+        "value": "female"
+      },
+      {
+        "label": "Male",
+        "value": "male"
+      },
+      {
+        "label": "Not Specified",
+        "value": "not_specified"
+      },
+      {
+        "label": "Non-specific",
+        "value": "non_specific"
+      }
+    ]
   },
-  "email": {
-    "meta": {
-      "id": "email",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "personalEmail.address",
-      "label": "Email",
-      "name": "email",
-      "value": "",
-      "type": "text",
-      "inputMode": "email",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "phoneNumber": {
-    "meta": {
-      "id": "phoneNumber",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "mobilePhone.number",
-      "label": "Mobile phone number",
-      "name": "phoneNumber",
-      "value": "",
-      "type": "text",
-      "inputMode": "tel",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "phoneNumber",
+    "name": "mobilePhone.number",
+    "label": "Mobile phone number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "jointApplicant": {
-    "meta": {
-      "id": "jointApplicant",
-      "component": "radioGroup"
-    },
-    "content": {
-      "path": "",
-      "label": "Is there a joint applicant?",
-      "name": "jointApplicant",
-      "value": "",
-      "type": "radio",
-      "inputMode": "none",
-      "prefill": false,
-      "options": [
-        {
-          "label": "Yes",
-          "value": "yes"
-        },
-        {
-          "label": "No",
-          "value": "no"
-        }
-      ]
-    }
+  {
+    "id": "jointApplicant",
+    "name": "jointApplicant",
+    "label": "Is there a joint applicant?",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Yes",
+        "value": "yes"
+      },
+      {
+        "label": "No",
+        "value": "no"
+      }
+    ]
   },
-  "address": {
-    "meta": {
-      "id": "address",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.street1",
-      "label": "Street Address",
-      "name": "address",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "address",
+    "name": "homeAddress.street1",
+    "label": "Street Address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "ssn": {
-    "meta": {
-      "id": "ssn",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Social Security Number",
-      "name": "ssn",
-      "value": "",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": false,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "ssn",
+    "name": "ssn",
+    "label": "Social Security Number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "patientNumber": {
-    "meta": {
-      "id": "patientNumber",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "",
-      "label": "Patient number",
-      "name": "patientNumber",
-      "value": "",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": false,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "patientNumber",
+    "name": "patientNumber",
+    "label": "Patient number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "zipCode": {
-    "meta": {
-      "id": "zipCode",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.postalCode",
-      "label": "Zip code",
-      "name": "zipCode",
-      "value": "",
-      "type": "text",
-      "inputMode": "numeric",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "zipCode",
+    "name": "homeAddress.postalCode",
+    "label": "Zip code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
-  "state": {
-    "meta": {
-      "id": "state",
-      "component": "textField"
-    },
-    "content": {
-      "mode": "edit",
-      "path": "homeAddress.state",
-      "label": "State",
-      "name": "state",
-      "value": "",
-      "type": "text",
-      "inputMode": "text",
-      "prefill": true,
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "",
-      "rightElement": "",
-      "enterKeyHint": "enter",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+  {
+    "id": "state",
+    "name": "homeAddress.state",
+    "label": "State",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   }
-}
+]

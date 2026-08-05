@@ -106,23 +106,32 @@ class NavigationMenuTest {
     }
 
     @Test
-    @DisplayName("pages not linked from the nav are not screens")
-    void unlistedPagesAreNotScreens() {
+    @DisplayName("a page off the nav is still a screen; furniture is not")
+    void unlistedPagesAreStillScreens() {
         buildSite(NAV);
         final Map<String, Object> screens = map(defaultExporter().export(home()).get("screens"));
 
-        assertFalse(screens.containsKey("Unlisted"));
-        assertFalse(screens.containsKey("Header"), "the nav page is not a screen");
-        assertFalse(screens.containsKey("Footer"), "the footer page is not a screen");
+        assertTrue(screens.containsKey("Unlisted"),
+                "the nav decides the menu, not what the app can render: " + screens.keySet());
+        assertFalse(screens.containsKey("Header"), "the nav page is furniture, not a destination");
+        assertFalse(screens.containsKey("Footer"), "the footer page is furniture, not a destination");
     }
 
     @Test
-    @DisplayName("menu and screens stay in step")
-    void menuMatchesScreens() {
+    @DisplayName("every menu entry has a screen behind it")
+    void everyMenuEntryIsRenderable() {
         buildSite(NAV);
         final Map<String, Object> app = defaultExporter().export(home());
+        final Map<String, Object> screens = map(app.get("screens"));
 
-        assertEquals(menu(app), List.copyOf(map(app.get("screens")).keySet()));
+        // The menu is a subset of the screens, not equal to them: a menu entry with no screen is a
+        // dead link, but a screen with no menu entry is just a page reached some other way.
+        for (final String entry : menu(app)) {
+            assertTrue(screens.containsKey(entry),
+                    "menu entry '" + entry + "' has no screen: " + screens.keySet());
+        }
+        assertTrue(screens.size() > menu(app).size(),
+                "the fixture has an unlisted page, so screens must outnumber the menu");
     }
 
     @Test

@@ -82,6 +82,11 @@ public final class SchemaConstants {
     public static final String KEY_RULES = "rules";
     /** Client-side modules. No AEM source yet, so emitted empty to keep the shape fixed. */
     public static final String KEY_MODULES = "modules";
+    /**
+     * DSN Studio canvas metadata (zIndex / position). AEM has no equivalent; the key is emitted
+     * as an empty map on v2 screens so consumers parsing a fixed shape find the key.
+     */
+    public static final String KEY_EDITOR = "editor";
 
     /** Properties that may name the form a block renders, tried before the component name. */
     public static final String PN_FORM_NAME = "formName";

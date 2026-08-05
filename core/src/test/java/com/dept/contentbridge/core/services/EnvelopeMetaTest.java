@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.sling.api.resource.ModifiableValueMap;
+
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -189,6 +191,55 @@ class EnvelopeMetaTest {
 
         assertEquals("MapScreen", screenMeta("ATM").get("template"));
         assertEquals("atm", screenMeta("ATM").get("icon"));
+    }
+
+    @Test
+    @DisplayName("brand is derived from the theme property when not in placeholders")
+    void brandFallbackFromTheme() {
+        context.resourceResolver().getResource(HOME + "/jcr:content")
+                .adaptTo(ModifiableValueMap.class).put("theme", "acme-theme");
+
+        assertEquals("Acme", appMeta().get("brand"));
+    }
+
+    @Test
+    @DisplayName("placeholders brand wins over the theme fallback")
+    void placeholdersBrandTakesPrecedence() {
+        context.create().page(SITE + "/placeholders", "", Map.of("brand", "Acme Official"));
+        context.resourceResolver().getResource(HOME + "/jcr:content")
+                .adaptTo(ModifiableValueMap.class).put("theme", "acme-theme");
+
+        assertEquals("Acme Official", appMeta().get("brand"));
+    }
+
+    @Test
+    @DisplayName("description falls back to jcr:description on the root page when not in placeholders")
+    void descriptionFallbackFromPage() {
+        context.resourceResolver().getResource(HOME + "/jcr:content")
+                .adaptTo(ModifiableValueMap.class).put("jcr:description", "Healthcare app for members");
+
+        assertEquals("Healthcare app for members", appMeta().get("description"));
+    }
+
+    @Test
+    @DisplayName("screen preset comes from pageCategory when not explicitly set as preset")
+    void screenPresetFromPageCategory() {
+        context.create().page(HOME + "/insurance", "", Map.of(
+                "jcr:title", "Insurance",
+                "pageCategory", "article"));
+
+        assertEquals("article", screenMeta("Insurance").get("preset"));
+    }
+
+    @Test
+    @DisplayName("explicit preset property wins over pageCategory")
+    void explicitPresetWinsOverPageCategory() {
+        context.create().page(HOME + "/login", "", Map.of(
+                "jcr:title", "Login",
+                "preset", "login",
+                "pageCategory", "article"));
+
+        assertEquals("login", screenMeta("Login").get("preset"));
     }
 
     @Test

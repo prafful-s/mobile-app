@@ -69,6 +69,17 @@ class FormBlockSchemaTest {
         return (List<Map<String, Object>>) map(screens.get("Home")).get("content");
     }
 
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> schemaOf(final String componentName) {
+        return (List<Map<String, Object>>) component(componentName).get("schema");
+    }
+
+    private List<String> fieldIds(final String componentName) {
+        final List<String> ids = new java.util.ArrayList<>();
+        schemaOf(componentName).forEach(f -> ids.add(String.valueOf(f.get("id"))));
+        return ids;
+    }
+
     private Map<String, Object> component(final String componentName) {
         return content().stream()
                 .filter(c -> componentName.equals(map(c.get("meta")).get("component")))
@@ -81,13 +92,13 @@ class FormBlockSchemaTest {
     void schemaAttachedByBlockName() {
         block("signin", "model", "sign-in", "title", "Sign in");
 
-        final Map<String, Object> schema = map(component("sign-in").get("schema"));
-        assertEquals(List.of("email", "password"), List.copyOf(schema.keySet()));
+        // An ordered list, because a form is rendered top to bottom.
+        assertEquals(List.of("email", "password"), fieldIds("sign-in"));
 
-        // A field is itself a meta/content pair, so the schema nests the same way the payload does.
-        assertEquals("Email address", map(map(schema.get("email")).get("content")).get("label"));
-        assertEquals("textField", map(map(schema.get("email")).get("meta")).get("component"));
-        assertEquals("password", map(map(schema.get("password")).get("content")).get("type"));
+        final List<Map<String, Object>> schema = schemaOf("sign-in");
+        assertEquals("Email address", schema.get(0).get("label"));
+        assertEquals("personalEmail.address", schema.get(0).get("name"));
+        assertEquals("password", schema.get(1).get("type"));
     }
 
     @Test
@@ -113,9 +124,7 @@ class FormBlockSchemaTest {
     void explicitFormNameWins() {
         block("genericForm", "model", "form", "formName", "checkout-shipping");
 
-        final Map<String, Object> schema = map(component("form").get("schema"));
-        assertTrue(schema.containsKey("shippingMethod"));
-        assertEquals("postalCode", map(map(schema.get("zipCode")).get("meta")).get("id"));
+        assertTrue(fieldIds("form").contains("shippingMethod"), fieldIds("form").toString());
     }
 
     @Test
@@ -134,6 +143,7 @@ class FormBlockSchemaTest {
         block("c", "model", "hero", "text", "x");
 
         assertEquals(2, content().stream().filter(c -> c.containsKey("schema")).count());
-        assertTrue(map(component("create-account").get("schema")).containsKey("trialConsent"));
+        assertTrue(fieldIds("create-account").contains("trialConsent"),
+                fieldIds("create-account").toString());
     }
 }

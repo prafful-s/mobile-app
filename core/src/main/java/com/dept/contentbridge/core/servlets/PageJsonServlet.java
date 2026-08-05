@@ -85,6 +85,22 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
      * preserved as panels). Versioned rather than replaced so existing clients keep working.
      */
     private static final String PARAM_SCHEMA = "schema";
+
+    /**
+     * Selects the persisted GraphQL query products come from. Both are optional and both fall back
+     * to the site's {@code placeholders} page, so a normal request names neither.
+     *
+     * <pre>
+     * ?gqlConfig=dsn-eds-configuration&amp;gqlQuery=productListByPathBinji
+     * </pre>
+     *
+     * <p>Only queries already registered in AEM can run, so this selects among existing queries
+     * rather than supplying one. The accompanying {@code productsPath} is checked against the
+     * exporter's allowed roots before it reaches the query.</p>
+     */
+    private static final String PARAM_GQL_CONFIG = "gqlConfig";
+    private static final String PARAM_GQL_QUERY = "gqlQuery";
+
     private static final String CONTENT_TYPE = "application/json";
 
     /**
@@ -150,7 +166,9 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
 
             final Map<String, Object> payload = exporter.export(page, ExportOptions.of(
                     request.getParameter(PARAM_SCHEMA),
-                    request.getParameter(PARAM_PRODUCTS_PATH)));
+                    request.getParameter(PARAM_PRODUCTS_PATH),
+                    request.getParameter(PARAM_GQL_CONFIG),
+                    request.getParameter(PARAM_GQL_QUERY)));
             final int maxAge = exporter.getCacheMaxAge();
             if (maxAge > 0) {
                 response.setHeader("Cache-Control", "max-age=" + maxAge);

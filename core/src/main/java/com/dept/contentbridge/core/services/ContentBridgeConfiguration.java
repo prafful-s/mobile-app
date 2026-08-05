@@ -24,22 +24,27 @@ public @interface ContentBridgeConfiguration {
 
     @AttributeDefinition(
             name = "Max screen depth",
-            description = "How many levels below the site root are walked when no navigation page is "
-                    + "found and the exporter falls back to listing child pages.")
+            description = "How many levels below the site root are walked when collecting screens. "
+                    + "Every page within this depth becomes a screen unless it is excluded by name or "
+                    + "flagged with excludeFromApp, so raising it grows the response.")
     int maxDepth() default 3;
 
     @AttributeDefinition(
             name = "Navigation page names",
-            description = "Child pages of the site root to look for, in order, when building the menu. "
-                    + "The first that exists wins. A 'navPath' property on the site root overrides this "
-                    + "entirely. If none is found the exporter falls back to listing child pages.")
+            description = "Child pages of the site root to look for, in order, when building "
+                    + "meta.navigation.menu. The first that exists wins, and a 'navPath' property on "
+                    + "the site root overrides this entirely. The menu is read from this fragment's "
+                    + "links; it does not decide which pages are exported as screens.")
     String[] navPageNames() default {"nav", "header", "navigation"};
 
     @AttributeDefinition(
             name = "Non-screen page names",
-            description = "Child pages never exported as screens - navigation and footer fragments are "
-                    + "site furniture, not destinations.")
-    String[] excludedPageNames() default {"nav", "header", "navigation", "footer"};
+            description = "Pages never exported as screens. Header, navigation and footer fragments "
+                    + "are site furniture rather than destinations, and a placeholders sheet is "
+                    + "configuration. Everything else under the site root becomes a screen.")
+    String[] excludedPageNames() default {
+        "nav", "header", "navigation", "footer", "placeholders",
+    };
 
     @AttributeDefinition(
             name = "Always include the home screen",

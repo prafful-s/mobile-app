@@ -44,6 +44,7 @@
         <aem.sdk.api>2026.6.26908.20260625T154911Z-260600</aem.sdk.api>
         <core.wcm.components.version>2.31.2</core.wcm.components.version>
         <jsoup.version>1.17.2</jsoup.version>
+        <sling.servlet.helpers.version>1.4.2</sling.servlet.helpers.version>
         <componentGroupName>ContentBridge - Content</componentGroupName>
 
         <bnd.version>6.4.0</bnd.version>
@@ -152,7 +153,13 @@ Import-Package: !org.jspecify.annotations,javax.annotation;version=0.0.0,*
 
 # Embed jsoup privately instead of importing it. AEM ships jsoup internally, but it is not part of
 # the documented API surface, so relying on that export would be fragile across SDK versions.
--conditionalpackage: org.jsoup.*
+#
+# Sling servlet-helpers is embedded for a blunter reason: AEM as a Cloud Service does not export
+# org.apache.sling.servlethelpers.internalrequests at start level 20, so importing it leaves the
+# bundle unresolvable - which the aemanalyser catches at build time rather than on deploy. Only the
+# internal-request classes come along; everything they reference (org.apache.sling.api,
+# org.apache.sling.engine) is exported by AEM and is still imported normally.
+-conditionalpackage: org.jsoup.*,org.apache.sling.servlethelpers.*
                                 ]]></bnd>
                             </configuration>
                         </execution>
@@ -266,6 +273,12 @@ Import-Package: !org.jspecify.annotations,javax.annotation;version=0.0.0,*
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
                 <version>${jsoup.version}</version>
+            </dependency>
+            <!-- Also embedded: AEM does not export it. See the -conditionalpackage note above. -->
+            <dependency>
+                <groupId>org.apache.sling</groupId>
+                <artifactId>org.apache.sling.servlet-helpers</artifactId>
+                <version>${sling.servlet.helpers.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.adobe.cq</groupId>

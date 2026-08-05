@@ -254,14 +254,41 @@ class ComponentMappingTest {
     @Test
     @DisplayName("a component with no rule keeps its authored shape in v2 too")
     void unmappedComponentFallsThrough() {
+        // 'video' deliberately: it has neither a mapping rule nor a bundled form schema, so nothing
+        // claims it. 'get-offer' would not do - it names a form, and forms are built rather than
+        // projected. See getOfferIsAForm below.
+        final Map<String, Object> exported = export(true,
+                "model", "video",
+                "videoUrl", "https://example.com/v.mp4",
+                "autoplay", "false");
+
+        assertEquals("video", component(exported));
+        assertEquals("https://example.com/v.mp4", content(exported).get("videoUrl"),
+                "an unmapped component is projected generically, not dropped");
+    }
+
+    @Test
+    @DisplayName("a block naming a bundled form is built as a form, not projected")
+    void getOfferIsAForm() {
+        // The newsletter block on every we-healthcare page. It has a one-field schema, so under v2
+        // it is a form component with that field as its content - not a generic block.
         final Map<String, Object> exported = export(true,
                 "model", "get-offer",
                 "placeholder", "Type your email address",
                 "button-label", "Subscribe");
 
-        assertEquals("get-offer", component(exported));
-        assertEquals("Subscribe", content(exported).get("button-label"),
-                "an unmapped component is projected generically, not dropped");
+        assertEquals("form", component(exported));
+        assertEquals("Subscribe", map(exported.get("meta")).get("submitButtonLabel"),
+                "the authored button label becomes the form's submit label");
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> fields = (List<Map<String, Object>>) exported.get("content");
+        assertEquals(1, fields.size());
+        assertEquals("textField", map(fields.get(0).get("meta")).get("component"));
+
+        // get-offer's one field carries no id in the configuration, so its name stands in - a field
+        // the client cannot address is a field it cannot submit.
+        assertEquals("personalEmail.address", map(fields.get(0).get("meta")).get("id"));
     }
 
     @Test

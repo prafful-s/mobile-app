@@ -89,6 +89,19 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
         </dependency>
+        <!--
+            Builds the synthetic request that dispatches to /graphql/execute.json inside the JVM.
+            Writing an HttpServletRequest by hand for SlingRequestProcessor is a few hundred lines of
+            boilerplate; this is the purpose-built API for it.
+
+            Compile scope, and embedded by -conditionalpackage in the parent: AEM does not export
+            org.apache.sling.servlethelpers at the bundle's start level, so importing it would leave
+            contentbridge.core unresolvable.
+        -->
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.servlet-helpers</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
