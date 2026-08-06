@@ -494,4 +494,18 @@ class ComponentMappingTest {
         assertEquals(Boolean.FALSE, content(exported).get("showLogoutButton"),
                 "Edge Delivery writes booleans as strings; the rule coerces them");
     }
+
+    @Test
+    @DisplayName("userLogin takes its authored labels and its defaults")
+    void userLoginMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "userLogin",
+                "title", "Sign in");
+
+        assertEquals("userLogin", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals("Sign in", content.get("title"));
+        assertEquals("Password", content.get("passwordLabel"));
+        assertEquals("Email", content.get("usernameLabel"));
+    }
 }

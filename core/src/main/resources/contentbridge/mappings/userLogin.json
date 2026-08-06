@@ -1,0 +1,9 @@
+{
+  "match": ["userLogin"],
+  "component": "userLogin",
+  "fields": [
+    { "target": "title", "from": "title", "default": "Login" },
+    { "target": "passwordLabel", "from": "passwordLabel", "default": "Password" },
+    { "target": "usernameLabel", "from": "usernameLabel", "default": "Email" }
+  ]
+}

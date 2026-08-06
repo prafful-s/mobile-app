@@ -12,5 +12,6 @@
   "productImage",
   "productTitle",
   "timeSlotPicker",
-  "userDetails"
+  "userDetails",
+  "userLogin"
 ]
