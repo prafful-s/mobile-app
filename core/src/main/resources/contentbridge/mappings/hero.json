@@ -1,29 +1,28 @@
 {
   "match": ["hero", "banner", "masthead"],
   "component": "banner",
+  "skeleton": true,
   "fields": [
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
-    { "target": "alt", "first": ["imageAlt", "alt"] },
-
     { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
-    { "target": "titleVariant", "const": "titleLarge" },
-
     { "target": "subtitle",
-      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true } },
-
-    { "target": "buttonLabel", "extract": { "from": "text", "select": "a", "as": "text" } },
+      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true },
+      "nullable": true },
     { "target": "linkTo",
-      "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" } },
-    { "target": "buttonVariant", "from": "ctastyle", "default": "button" },
-
-    { "target": "layout", "from": "herolayout", "default": "overlay" },
-    { "target": "horizontalAlignment", "from": "alignment", "default": "left" },
-    { "target": "verticalAlignment", "from": "verticalalignment", "default": "middle" },
+      "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
+      "nullable": true },
+    { "target": "opacity", "from": "opacity", "type": "number", "nullable": true },
+    { "target": "showButton",
+      "extract": { "from": "text", "select": "a", "as": "text" },
+      "type": "presence", "nullable": true },
+    { "target": "buttonLabel",
+      "extract": { "from": "text", "select": "a", "as": "text" }, "nullable": true },
+    { "target": "buttonVariant", "from": "ctastyle", "nullable": true },
+    { "target": "imageResize", "from": "imageResize", "default": "cover" },
+    { "target": "titleVariant", "const": "titleLarge" },
+    { "target": "subtitleVariant", "const": "titleSmall", "nullable": true },
     { "target": "contentAlignment", "from": "alignment", "default": "left" },
-
-    { "target": "fullWidth", "from": "isfullwidth", "type": "boolean" },
-    { "target": "textOverlay", "from": "textoverlay", "type": "boolean" },
-    { "target": "underlineLinks", "from": "enableunderline", "type": "boolean" },
-    { "target": "backgroundColor", "from": "backgroundcolor" }
+    { "target": "verticalAlignment", "from": "verticalalignment", "default": "middle" },
+    { "target": "horizontalAlignment", "from": "alignment", "default": "left" }
   ]
 }

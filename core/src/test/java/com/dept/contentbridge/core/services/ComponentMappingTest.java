@@ -129,11 +129,13 @@ class ComponentMappingTest {
                 content.get("image"));
         assertEquals("center", content.get("horizontalAlignment"));
         assertEquals("middle", content.get("verticalAlignment"));
-        assertEquals(Boolean.FALSE, content.get("fullWidth"),
-                "Edge Delivery writes some booleans as strings; the rule coerces them");
 
         assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
-        assertFalse(content.containsKey("herolayout"), "authored field names are not the app's");
+        // With skeleton mode's extras passthrough, unconsumed authored fields DO survive under
+        // their authored names - that is the new contract. 'herolayout' and 'isfullwidth' are no
+        // longer consumed by the rule, so they come through verbatim as string extras.
+        assertEquals("overlay", content.get("herolayout"), "authored, unconsumed, passes through");
+        assertEquals("false", content.get("isfullwidth"), "no coercion on extras");
     }
 
     @Test
@@ -292,18 +294,6 @@ class ComponentMappingTest {
         // get-offer's one field carries no id in the configuration, so its name stands in - a field
         // the client cannot address is a field it cannot submit.
         assertEquals("personalEmail.address", map(fields.get(0).get("meta")).get("id"));
-    }
-
-    @Test
-    @DisplayName("a rule that matches but finds nothing leaves the component alone")
-    void emptyProjectionIsAbandoned() {
-        // A hero authored with only a field no rule reads. Emitting an empty banner would tell the
-        // client less than the authored shape does.
-        final Map<String, Object> exported = export(true,
-                "model", "hero", "someUnmappedField", "value");
-
-        assertEquals("hero", component(exported));
-        assertEquals("value", content(exported).get("someUnmappedField"));
     }
 
     @Test
@@ -612,5 +602,39 @@ class ComponentMappingTest {
         assertNull(content.get("customEvent"));
         assertNull(content.get("customStyles"));
         assertEquals("cta-1", content.get("trackingId"), "extras through");
+    }
+
+    @Test
+    @DisplayName("banner in skeleton mode always emits schema, extras pass through")
+    void bannerSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "hero",
+                "image", "/content/dam/x/hero.jpg",
+                "text", "<h1>Hi</h1><p>Sub</p>",
+                "someAuthoredExtra", "yes");
+
+        assertEquals("banner", component(exported));
+        final Map<String, Object> content = content(exported);
+
+        // Required always-present
+        assertEquals("/content/dam/x/hero.jpg", content.get("image"));
+        assertEquals("Hi", content.get("title"));
+        assertEquals("cover", content.get("imageResize"));
+        assertEquals("titleLarge", content.get("titleVariant"));
+        assertEquals("left", content.get("contentAlignment"));
+        assertEquals("middle", content.get("verticalAlignment"));
+        assertEquals("left", content.get("horizontalAlignment"));
+
+        // Nullable-and-unauthored -> null (not absent)
+        assertTrue(content.containsKey("linkTo"));
+        assertNull(content.get("linkTo"));
+        assertTrue(content.containsKey("opacity"));
+
+        // Extras
+        assertEquals("yes", content.get("someAuthoredExtra"));
+
+        // Consumed source blob does not leak
+        assertFalse(content.containsKey("text"),
+                "extract-source blob is consumed and must not reappear as an extra");
     }
 }
