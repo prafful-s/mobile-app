@@ -432,4 +432,18 @@ class ComponentMappingTest {
         assertEquals("#FFF", styles.get("color"));
         assertEquals(200, ((Number) styles.get("height")).intValue());
     }
+
+    @Test
+    @DisplayName("a productImage takes its layout defaults and its authored height")
+    void productImageMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "productImage",
+                "fullWidth", "true");
+
+        assertEquals("productImage", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals(Boolean.TRUE, content.get("fullWidth"));
+        assertEquals("contain", content.get("imageResize"));
+        assertEquals(250, ((Number) map(exported.get("styles")).get("height")).intValue());
+    }
 }
