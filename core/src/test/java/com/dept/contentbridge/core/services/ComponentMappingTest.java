@@ -3,6 +3,7 @@ package com.dept.contentbridge.core.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -562,5 +563,28 @@ class ComponentMappingTest {
         assertFalse(content.containsKey("modelFields"), "modelFields is bookkeeping");
         assertFalse(content.containsKey("jcr:title"), "jcr: prefix is bookkeeping");
         assertFalse(content.containsKey("model"), "the 'model' discriminator is bookkeeping");
+    }
+
+    @Test
+    @DisplayName("title in skeleton mode emits every schema key + extras passthrough")
+    void titleSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "title",
+                "title", "Hello",
+                "weight", "bold",
+                "trackingId", "hero-title");
+
+        assertEquals("title", component(exported));
+        final Map<String, Object> content = content(exported);
+
+        assertEquals("Hello", content.get("text"));
+        assertEquals("bold", content.get("weight"));
+        assertEquals("medium", content.get("size"), "default from the schema");
+        assertNull(content.get("textColor"), "nullable optional, absent");
+        assertNull(content.get("textAlignment"), "nullable optional, absent");
+        assertEquals("hero-title", content.get("trackingId"), "unconsumed extras pass through");
+
+        assertTrue(content.containsKey("textColor"),
+                "nullable keys must be present as null, not absent");
     }
 }

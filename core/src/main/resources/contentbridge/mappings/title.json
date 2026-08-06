@@ -1,9 +1,12 @@
 {
   "match": ["title", "heading"],
   "component": "title",
+  "skeleton": true,
   "fields": [
+    { "target": "size", "first": ["titleType", "type", "size"], "default": "medium" },
     { "target": "text", "first": ["title", "jcr:title", "text"] },
-    { "target": "size", "first": ["titleType", "type", "size"], "default": "h2" },
-    { "target": "textAlignment", "first": ["alignment", "textAlignment"], "default": "left" }
+    { "target": "weight", "from": "weight", "default": "regular" },
+    { "target": "textColor", "from": "textColor", "nullable": true },
+    { "target": "textAlignment", "first": ["alignment", "textAlignment"], "nullable": true }
   ]
 }
