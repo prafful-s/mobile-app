@@ -91,48 +91,29 @@ final class EnvelopeMeta {
 
         meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
 
-        // brand: placeholders wins, then theme fallback
+        // brand: placeholders wins, then the theme name, then blank - but always present.
         final String brand = SiteHostResolver.placeholder(root, "brand");
-        if (StringUtils.isNotBlank(brand)) {
-            meta.put("brand", brand);
-        } else {
-            final String theme = root.getProperties().get("theme", String.class);
-            if (StringUtils.isNotBlank(theme)) {
-                meta.put("brand", themeToLabel(theme));
-            }
-        }
+        meta.put("brand", StringUtils.defaultString(StringUtils.defaultIfBlank(brand,
+                themeToLabel(root.getProperties().get("theme", String.class)))));
 
         meta.put("title", props.get(SchemaConstants.PN_APP_TITLE,
                 StringUtils.defaultIfBlank(root.getTitle(), root.getName())));
 
-        final String loc = locale(root);
-        if (StringUtils.isNotBlank(loc)) {
-            meta.put(SchemaConstants.KEY_LOCALE, loc);
-        }
+        meta.put(SchemaConstants.KEY_LOCALE, locale(root));
 
         meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
 
         // optional: template, vertical, rightIcon, thumbnail (from placeholders)
         putIfPlaceholder(meta, root, "template");
         putIfPlaceholder(meta, root, "vertical");
-        final Map<String, Object> ri = rightIcon(root);
-        if (!ri.isEmpty()) {
-            meta.put("rightIcon", ri);
-        }
+        meta.put("rightIcon", rightIcon(root));
         putIfPlaceholder(meta, root, "thumbnail");
 
         meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
 
-        // description: placeholders wins, then jcr:description
-        final String desc = SiteHostResolver.placeholder(root, "description");
-        if (StringUtils.isNotBlank(desc)) {
-            meta.put("description", desc);
-        } else {
-            final String pageDesc = root.getDescription();
-            if (StringUtils.isNotBlank(pageDesc)) {
-                meta.put("description", pageDesc);
-            }
-        }
+        // description: placeholders wins, then jcr:description, then blank - always present.
+        meta.put("description", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "description"), root.getDescription())));
 
         // Always-present fields the client switches on
         meta.put("displayInbox", StringUtils.defaultIfBlank(
@@ -272,12 +253,11 @@ final class EnvelopeMeta {
      * target is a button that does nothing.
      */
     private static Map<String, Object> rightIcon(final Page root) {
-        final String icon = SiteHostResolver.placeholder(root, "rightIcon");
-        if (StringUtils.isBlank(icon)) {
-            return java.util.Collections.emptyMap();
-        }
+        final String icon = StringUtils.defaultString(SiteHostResolver.placeholder(root, "rightIcon"));
         final String target = SiteHostResolver.placeholder(root, "rightIconTarget");
 
+        // Emitted even when unset, for the same reason as the flat keys: the shape is fixed. An
+        // icon with no name renders as nothing, which is what an unconfigured right icon should do.
         final Map<String, Object> rightIcon = new LinkedHashMap<>();
         rightIcon.put("icon", icon);
         rightIcon.put("name", icon);
@@ -288,10 +268,10 @@ final class EnvelopeMeta {
     /** Adds a placeholder value to the map only when non-blank. */
     private static void putIfPlaceholder(final Map<String, Object> meta, final Page root,
                                          final String key) {
-        final String value = SiteHostResolver.placeholder(root, key);
-        if (StringUtils.isNotBlank(value)) {
-            meta.put(key, value);
-        }
+        // Always emitted, blank when the site sets nothing. The target contract is a fixed shape,
+        // and a client should not have to distinguish "this site has no docs URL" from "this
+        // exporter forgot to send one".
+        meta.put(key, StringUtils.defaultString(SiteHostResolver.placeholder(root, key)));
     }
 
     /** Adds a page property to the map only when non-blank. */
@@ -319,6 +299,11 @@ final class EnvelopeMeta {
      * fallback for sites that have not yet set one.</p>
      */
     static String themeToLabel(final String theme) {
+        // Null- and blank-safe: brand is now always emitted, so this is called for every site,
+        // including the ones that set no theme at all.
+        if (StringUtils.isBlank(theme)) {
+            return StringUtils.EMPTY;
+        }
         final String base = THEME_SUFFIX.matcher(theme).replaceFirst("");
         final String label = StringUtils.isBlank(base) ? theme : base;
         return Character.toUpperCase(label.charAt(0)) + label.substring(1);
