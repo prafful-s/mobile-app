@@ -482,4 +482,16 @@ class ComponentMappingTest {
         assertEquals(8, ((Number) styles.get("gap")).intValue());
         assertEquals(8, ((Number) styles.get("padding")).intValue());
     }
+
+    @Test
+    @DisplayName("userDetails coerces its authored flag to a real boolean")
+    void userDetailsMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "userDetails",
+                "showLogoutButton", "false");
+
+        assertEquals("userDetails", component(exported));
+        assertEquals(Boolean.FALSE, content(exported).get("showLogoutButton"),
+                "Edge Delivery writes booleans as strings; the rule coerces them");
+    }
 }
