@@ -360,4 +360,29 @@ class ComponentMappingTest {
         assertEquals(onDisk, new java.util.TreeSet<>(indexed),
                 "index.json is out of step with the files - add or remove the name there too");
     }
+
+    @Test
+    @DisplayName("a list carries its authored items and its numeric/boolean defaults")
+    void listMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "list",
+                "items", new String[] {"money-transfer", "currency-rates", "atm"},
+                "limit", "6",
+                "hideSubtitle", "false");
+
+        assertEquals("list", component(exported));
+
+        final Map<String, Object> content = content(exported);
+        assertEquals(List.of("money-transfer", "currency-rates", "atm"), content.get("items"));
+        assertEquals(6L, content.get("limit"), "declared as type: number");
+        assertEquals(Boolean.FALSE, content.get("hideSubtitle"));
+        assertEquals("none", content.get("sort"), "unauthored, falls back to its default");
+        assertEquals("horizontal", content.get("layout"));
+        assertEquals("screenList", content.get("listType"));
+
+        // An unauthored 'type: number' default comes straight off the parsed JSON rather than
+        // through the same coercion an authored value gets - Jackson reads a bare integer literal
+        // as Integer, not Long, so this compares via Number rather than pinning the boxed type.
+        assertEquals(8, ((Number) map(exported.get("styles")).get("gap")).intValue());
+    }
 }
