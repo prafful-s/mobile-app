@@ -34,6 +34,15 @@ final class FieldRule {
     private static final String TYPE_NUMBER = "number";
     private static final String TYPE_STRING = "string";
 
+    /**
+     * True when the source produced anything at all, whatever it said.
+     *
+     * <p>Distinct from {@code boolean}, which reads the value: a banner's {@code showButton} is true
+     * because the authored rich text contained a link, not because that link said "true". Coercing
+     * "Select your plan" with {@code Boolean.parseBoolean} would answer false.</p>
+     */
+    private static final String TYPE_PRESENCE = "presence";
+
     private final String target;
     private final String from;
     private final List<String> first;
@@ -41,10 +50,11 @@ final class FieldRule {
     private final Extract extract;
     private final Object defaultValue;
     private final String type;
+    private final boolean nullable;
 
     private FieldRule(final String target, final String from, final List<String> first,
                       final Object constant, final Extract extract, final Object defaultValue,
-                      final String type) {
+                      final String type, final boolean nullable) {
         this.target = target;
         this.from = from;
         this.first = first;
@@ -52,6 +62,7 @@ final class FieldRule {
         this.extract = extract;
         this.defaultValue = defaultValue;
         this.type = type;
+        this.nullable = nullable;
     }
 
     /**
@@ -69,7 +80,8 @@ final class FieldRule {
                 definition.get("const"),
                 Extract.of(definition.get("extract")),
                 definition.get("default"),
-                string(definition.get("type")));
+                string(definition.get("type")),
+                Boolean.TRUE.equals(definition.get("nullable")));
     }
 
     String getTarget() {
@@ -93,6 +105,33 @@ final class FieldRule {
     /** The value to use when nothing was authored: the constant, or the declared default. */
     Object fallback() {
         return constant != null ? constant : defaultValue;
+    }
+
+    /**
+     * True when the schema declares this field nullable. Under skeleton mode, an unauthored
+     * nullable field is emitted as {@code null} (rather than dropped), so the client sees a
+     * fixed key set.
+     */
+    boolean isNullable() {
+        return nullable;
+    }
+
+    /**
+     * The CRX property names this rule reads from, so extras passthrough can filter them out.
+     * Constant-only rules return an empty list - they consume nothing.
+     */
+    List<String> consumedProperties() {
+        if (extract != null) {
+            final String source = extract.sourceProperty();
+            return source == null ? Collections.emptyList() : List.of(source);
+        }
+        if (!first.isEmpty()) {
+            return first;
+        }
+        if (from != null) {
+            return List.of(from);
+        }
+        return Collections.emptyList();
     }
 
     private Object resolve(final Map<String, Object> source) {
@@ -126,6 +165,8 @@ final class FieldRule {
         }
         final String text = String.valueOf(value);
         switch (type) {
+            case TYPE_PRESENCE:
+                return StringUtils.isNotBlank(text);
             case TYPE_BOOLEAN:
                 return value instanceof Boolean ? value : Boolean.parseBoolean(text.trim());
             case TYPE_NUMBER:
@@ -201,6 +242,11 @@ final class FieldRule {
             return html instanceof String
                     ? HtmlExtractor.extract((String) html, select, as, attribute, all)
                     : null;
+        }
+
+        /** The CRX property this extract reads from, or null when it names none. */
+        String sourceProperty() {
+            return from;
         }
     }
 }
