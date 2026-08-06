@@ -1,0 +1,15 @@
+{
+  "match": ["map"],
+  "component": "map",
+  "fields": [
+    { "comment": "mapCoordinates intentionally omitted - needs child-row aggregation the mapping engine does not have yet. See the design spec.",
+      "target": "text", "from": "text" },
+    { "target": "buttonLabel", "from": "buttonLabel" },
+    { "target": "showInModal", "from": "showInModal", "type": "boolean", "default": false },
+    { "target": "buttonVariant", "from": "buttonVariant", "default": "contained" }
+  ],
+  "styles": [
+    { "target": "color", "from": "color", "default": "blue" },
+    { "target": "locationColor", "from": "locationColor", "default": "green" }
+  ]
+}

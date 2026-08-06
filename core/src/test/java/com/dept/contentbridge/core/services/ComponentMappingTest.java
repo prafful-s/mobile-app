@@ -385,4 +385,27 @@ class ComponentMappingTest {
         // as Integer, not Long, so this compares via Number rather than pinning the boxed type.
         assertEquals(8, ((Number) map(exported.get("styles")).get("gap")).intValue());
     }
+
+    @Test
+    @DisplayName("a map carries its flat fields and styles - mapCoordinates is a known gap")
+    void mapMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "map",
+                "text", "ATM",
+                "buttonLabel", "Find one");
+
+        assertEquals("map", component(exported));
+
+        final Map<String, Object> content = content(exported);
+        assertEquals("ATM", content.get("text"));
+        assertEquals("Find one", content.get("buttonLabel"));
+        assertEquals(Boolean.FALSE, content.get("showInModal"));
+        assertEquals("contained", content.get("buttonVariant"));
+        assertFalse(content.containsKey("mapCoordinates"),
+                "child-row aggregation is a known gap, not attempted here");
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals("blue", styles.get("color"));
+        assertEquals("green", styles.get("locationColor"));
+    }
 }
