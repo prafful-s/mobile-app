@@ -1,10 +1,18 @@
 {
   "match": ["image", "picture"],
   "component": "image",
+  "skeleton": true,
   "fields": [
-    { "target": "image", "first": ["image", "fileReference", "imageRef", "src"] },
-    { "target": "alt", "first": ["imageAlt", "alt", "altText"] },
-    { "target": "link", "first": ["link", "linkTo"] },
-    { "target": "caption", "from": "caption" }
+    { "target": "alt", "first": ["imageAlt", "alt", "altText"], "nullable": true },
+    { "target": "image", "first": ["image", "fileReference", "imageRef", "src", "uri"] },
+    { "target": "width", "from": "width", "nullable": true },
+    { "target": "height", "from": "height", "type": "number", "nullable": true },
+    { "target": "linkTo", "first": ["linkTo", "link", "href"], "nullable": true },
+    { "target": "fullWidth", "from": "fullWidth", "type": "boolean", "nullable": true },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
+    { "target": "imageSize", "from": "imageSize", "nullable": true },
+    { "target": "resizeMode", "from": "resizeMode", "nullable": true },
+    { "target": "weight", "from": "weight", "nullable": true },
+    { "target": "justifyContent", "from": "justifyContent", "nullable": true }
   ]
 }

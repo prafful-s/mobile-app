@@ -637,4 +637,24 @@ class ComponentMappingTest {
         assertFalse(content.containsKey("text"),
                 "extract-source blob is consumed and must not reappear as an extra");
     }
+
+    @Test
+    @DisplayName("image in skeleton mode")
+    void imageSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "image",
+                "fileReference", "/content/dam/x/pic.jpg",
+                "alt", "A picture",
+                "authorNotes", "cropped by design team");
+
+        final Map<String, Object> content = content(exported);
+        assertEquals("/content/dam/x/pic.jpg", content.get("image"));
+        assertEquals("A picture", content.get("alt"));
+        assertEquals("contain", content.get("imageResize"), "schema default");
+        assertNull(content.get("width"));
+        assertNull(content.get("height"));
+        assertNull(content.get("linkTo"));
+        assertNull(content.get("fullWidth"));
+        assertEquals("cropped by design team", content.get("authorNotes"), "extras through");
+    }
 }
