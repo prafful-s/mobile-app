@@ -48,11 +48,6 @@ final class EnvelopeMeta {
         "enableTargetRec", "enableBrandingTargeting",
     };
 
-    /** Screen fields an author sets on the page itself. */
-    private static final String[] SCREEN_PAGE_KEYS = {
-        "icon", "event", "preset", "template", "thumbnail", "customEvent",
-    };
-
     private static final String DEFAULT_AUTHENTICATION = "optional";
     private static final String DEFAULT_DISPLAY_INBOX = "mainNavigation";
     private static final String DEFAULT_SCREEN_TEMPLATE = "FreeformScreen";
@@ -196,9 +191,14 @@ final class EnvelopeMeta {
     }
 
     /**
-     * Builds a screen's {@code meta} in DSN reference field order.
+     * Builds a screen's {@code meta} in DSN reference field order, as a fixed skeleton.
      *
-     * <p>Field order: icon, name, event, title, preset, template, thumbnail, customEvent,
+     * <p>Every key defined by the target contract is always present, so a client parsing a fixed
+     * shape need not distinguish "author set nothing" from "exporter forgot the key". Missing
+     * string properties emit as {@code ""}; {@code navigationOrder} is {@code null} for screens
+     * off the menu, since {@code 0} would falsely claim the first slot.</p>
+     *
+     * <p>Field order: icon, name, event, title, preset, template, customEvent,
      * isRootScreen, navigationOrder, includeInNavigation.</p>
      *
      * @param page       the screen
@@ -212,31 +212,20 @@ final class EnvelopeMeta {
         final Map<String, Object> meta = new LinkedHashMap<>();
         final ValueMap props = page.getProperties();
 
-        // icon first (optional)
-        putIfPresent(meta, props, "icon");
-
+        meta.put("icon", StringUtils.defaultString(props.get("icon", String.class)));
         meta.put("name", screenKey);
-
-        // event between name and title (optional)
-        putIfPresent(meta, props, "event");
-
+        meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
         meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
-        // preset: explicit prop wins, then pageCategory fallback
-        final String preset = StringUtils.defaultIfBlank(
+        // preset: explicit prop wins, then pageCategory fallback, else blank.
+        meta.put("preset", StringUtils.defaultString(StringUtils.defaultIfBlank(
                 props.get("preset", String.class),
-                props.get(PN_PAGE_CATEGORY, String.class));
-        if (StringUtils.isNotBlank(preset)) {
-            meta.put("preset", preset);
-        }
+                props.get(PN_PAGE_CATEGORY, String.class))));
 
-        // template (always present)
         meta.put("template", StringUtils.defaultIfBlank(
                 props.get("template", String.class), DEFAULT_SCREEN_TEMPLATE));
 
-        // thumbnail, customEvent (optional)
-        putIfPresent(meta, props, "thumbnail");
-        putIfPresent(meta, props, "customEvent");
+        meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
 
         meta.put("isRootScreen", StringUtils.equals(page.getPath(), root.getPath()));
 
@@ -272,15 +261,6 @@ final class EnvelopeMeta {
         // and a client should not have to distinguish "this site has no docs URL" from "this
         // exporter forgot to send one".
         meta.put(key, StringUtils.defaultString(SiteHostResolver.placeholder(root, key)));
-    }
-
-    /** Adds a page property to the map only when non-blank. */
-    private static void putIfPresent(final Map<String, Object> meta, final ValueMap props,
-                                     final String key) {
-        final String value = props.get(key, String.class);
-        if (StringUtils.isNotBlank(value)) {
-            meta.put(key, value);
-        }
     }
 
     /** Placeholder sheets store everything as text, so a flag arrives as "true" rather than true. */

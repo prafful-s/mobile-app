@@ -163,6 +163,22 @@ class EnvelopeMetaTest {
     }
 
     @Test
+    @DisplayName("every screen key the target defines is present, even on a page that configures none")
+    void screenShapeIsFixed() {
+        final Map<String, Object> meta = screenMeta("en");
+
+        for (final String key : List.of("icon", "name", "event", "title", "preset", "template",
+                "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation")) {
+            assertTrue(meta.containsKey(key), "screen meta is missing " + key + ": " + meta.keySet());
+        }
+        assertEquals("", meta.get("icon"), "blank rather than absent");
+        assertEquals("", meta.get("event"));
+        assertEquals("", meta.get("preset"));
+        assertEquals("", meta.get("customEvent"));
+        assertFalse(meta.containsKey("thumbnail"), "not part of the reference contract");
+    }
+
+    @Test
     @DisplayName("navigation order and membership are derived from the menu, not authored twice")
     void navigationIsDerived() {
         @SuppressWarnings("unchecked")
