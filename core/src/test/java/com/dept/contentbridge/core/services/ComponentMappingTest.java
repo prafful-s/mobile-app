@@ -461,4 +461,25 @@ class ComponentMappingTest {
         assertEquals("center", content.get("textAlignment"));
         assertEquals("#FFF", map(exported.get("styles")).get("color"));
     }
+
+    @Test
+    @DisplayName("a timeSlotPicker carries its authored path/options and its defaults")
+    void timeSlotPickerMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "timeSlotPicker",
+                "path", "appointment.dateTime",
+                "timeOptions", new String[] {"09:00", "10:00", "11:00"});
+
+        assertEquals("timeSlotPicker", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals("appointment.dateTime", content.get("path"));
+        assertEquals(List.of("09:00", "10:00", "11:00"), content.get("timeOptions"));
+        assertEquals(Boolean.TRUE, content.get("prefill"));
+        assertEquals(3, ((Number) content.get("numberOfDays")).intValue());
+        assertEquals(3, ((Number) content.get("numberOfTimeColumns")).intValue());
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals(8, ((Number) styles.get("gap")).intValue());
+        assertEquals(8, ((Number) styles.get("padding")).intValue());
+    }
 }
