@@ -131,10 +131,8 @@ class FormBlockV2Test {
         assertEquals("outlined", content.get("mode"));
         assertEquals("Email address", content.get("label"));
 
-        // sign-in.json sets no 'path', and 'name' is not one - so there is nowhere to pre-fill from
-        // and the payload says so rather than inventing a profile location.
-        assertEquals("", content.get("path"));
-        assertEquals(Boolean.FALSE, content.get("prefill"));
+        assertEquals("personalEmail.address", content.get("path"), "config 'name' is the target 'path'");
+        assertEquals(Boolean.TRUE, content.get("prefill"), "it knows where its value lives");
         assertEquals("email", content.get("inputMode"), "an email keyboard, not a plain one");
         assertEquals(Boolean.FALSE, content.get("multiline"));
         assertEquals(Boolean.FALSE, content.get("isPassword"));
@@ -168,39 +166,123 @@ class FormBlockV2Test {
         assertEquals("dropdown", map(state.get("meta")).get("component"));
 
         final Map<String, Object> content = map(state.get("content"));
+        assertEquals(List.of("mode", "path", "label", "options", "prefill"),
+                List.copyOf(content.keySet()), "a dropdown carries exactly these five keys");
+
         final List<?> options = (List<?>) content.get("options");
         assertTrue(options.size() > 1, "a dropdown with no options cannot be rendered");
-
-        // Every field carries the same input keys, whatever widget renders it - a client parsing a
-        // fixed shape should not have to branch on the component to know which keys exist.
-        assertEquals("none", content.get("inputMode"), "nothing is typed into a dropdown");
-        assertEquals(Boolean.FALSE, content.get("multiline"));
-        assertEquals(Boolean.FALSE, content.get("isPassword"));
-        assertEquals(Boolean.FALSE, content.get("autoCorrect"));
-        assertEquals("off", content.get("leftElement"));
-        assertEquals("off", content.get("rightElement"));
-        assertEquals("enter", content.get("enterKeyHint"));
     }
 
     @Test
-    @DisplayName("every field type carries the same input keys")
-    void everyWidgetHasTheSameKeys() {
+    @DisplayName("each widget family has its own content shape")
+    void contentShapeFollowsTheWidget() {
         context.build().resource(ROOT + "/form",
                 "sling:resourceType", "core/franklin/components/block/v1/block",
                 "model", "form", "formName", "name-change-request");
 
-        final List<String> required = List.of("mode", "path", "label", "prefill", "inputMode",
+        final List<String> typed = List.of("mode", "path", "label", "prefill", "inputMode",
                 "multiline", "isPassword", "autoCorrect", "leftElement", "rightElement",
                 "enterKeyHint", "value", "placeholder", "defaultValue");
+        final List<String> toggle = List.of("options", "prefill", "variant");
 
         for (final Map<String, Object> field : list(form().get("content"))) {
+            final String component = String.valueOf(map(field.get("meta")).get("component"));
             final Map<String, Object> content = map(field.get("content"));
-            for (final String key : required) {
-                assertTrue(content.containsKey(key),
-                        map(field.get("meta")).get("component") + " is missing " + key
-                                + ": " + content.keySet());
+
+            if (List.of("checkboxGroup", "radioGroup").contains(component)) {
+                // A group says nothing about itself beyond an optional question label; each option
+                // carries its own path and label.
+                assertTrue(content.keySet().containsAll(toggle), component + ": " + content);
+                assertFalse(content.containsKey("mode"), component + " is not typed into");
+            } else if ("dropdown".equals(component)) {
+                assertEquals(List.of("mode", "path", "label", "options", "prefill"),
+                        List.copyOf(content.keySet()), component + ": " + content);
+            } else {
+                for (final String key : typed) {
+                    assertTrue(content.containsKey(key),
+                            component + " is missing " + key + ": " + content.keySet());
+                }
             }
         }
+    }
+
+    @Test
+    @DisplayName("a checkbox group puts the path and label on each option, not on the field")
+    void checkboxGroupShape() {
+        context.build().resource(ROOT + "/form",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "form", "formName", "loan-application-form");
+
+        final Map<String, Object> authorize = list(form().get("content")).stream()
+                .filter(f -> "authorize".equals(map(f.get("meta")).get("id")))
+                .findFirst().orElseThrow(() -> new AssertionError("authorize field missing"));
+
+        assertEquals("checkboxGroup", map(authorize.get("meta")).get("component"));
+
+        final Map<String, Object> content = map(authorize.get("content"));
+        // loan-application-form declares variant 'switch'; the configuration decides where it speaks.
+        assertEquals("switch", content.get("variant"));
+        assertFalse(content.containsKey("label"), "this field has none - the option carries it");
+        assertFalse(content.containsKey("mode"));
+
+        final Map<String, Object> option = list(content.get("options")).get(0);
+        assertEquals(List.of("path", "label", "checkedValue", "uncheckedValue"),
+                List.copyOf(option.keySet()));
+        assertEquals("authorize", option.get("path"), "each option says where its own value goes");
+        assertTrue(String.valueOf(option.get("label")).startsWith("I authorize"));
+        assertEquals("true", option.get("checkedValue"), "the configured option value");
+    }
+
+    @Test
+    @DisplayName("an authored checkbox is one node standing for one option")
+    void authoredCheckboxShape() {
+        // Copied from form-test: a checkbox has no enum/enumNames - it is a single node carrying its
+        // own name, title and checkedValue. Reading only the arrays left it with no options at all.
+        context.build().resource(ROOT + "/form",
+                "sling:resourceType", "fd/franklin/components/form/v1/form", "fieldType", "form");
+        context.build().resource(ROOT + "/form/checkbox",
+                "sling:resourceType", "core/fd/components/form/checkbox/v1/checkbox",
+                "fieldType", "checkbox",
+                "jcr:title", "SMS",
+                "name", "consents.marketing.sms.val",
+                "checkedValue", "true");
+
+        final Map<String, Object> field = list(form().get("content")).get(0);
+        assertEquals("checkboxGroup", map(field.get("meta")).get("component"));
+
+        final Map<String, Object> content = map(field.get("content"));
+        assertEquals(List.of("options", "prefill", "variant"), List.copyOf(content.keySet()),
+                "the node's title is the option's label, so it is not repeated on the group");
+
+        final Map<String, Object> option = list(content.get("options")).get(0);
+        assertEquals("consents.marketing.sms.val", option.get("path"));
+        assertEquals("SMS", option.get("label"));
+        assertEquals("true", option.get("checkedValue"), "read off the node, not invented");
+        assertEquals("", option.get("uncheckedValue"), "the node sets none");
+    }
+
+    @Test
+    @DisplayName("a radio group has the same shape as a checkbox group")
+    void radioGroupMatchesCheckbox() {
+        context.build().resource(ROOT + "/form",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "form", "formName", "insurance-plan-selection");
+
+        final Map<String, Object> radio = list(form().get("content")).get(0);
+        assertEquals("radioGroup", map(radio.get("meta")).get("component"));
+
+        final Map<String, Object> content = map(radio.get("content"));
+        assertEquals(List.of("label", "options", "prefill", "variant"),
+                List.copyOf(content.keySet()));
+        assertEquals("radio", content.get("variant"), "no variant configured, so the control names it");
+
+        // A radio group asks a question the options only answer, so its label is kept rather than
+        // dropped for the sake of matching the checkbox shape exactly.
+        assertEquals("Are you looking for coverage for yourself or your family?", content.get("label"));
+
+        final Map<String, Object> option = list(content.get("options")).get(0);
+        assertEquals(List.of("path", "label", "checkedValue", "uncheckedValue"),
+                List.copyOf(option.keySet()), "same option shape as a checkbox group");
     }
 
     @Test
@@ -264,9 +346,8 @@ class FormBlockV2Test {
         assertEquals("First Name", content.get("label"), "the label is jcr:title, not title");
         assertEquals("Enter your first name", content.get("placeholder"));
 
-        // The node carries 'name', not 'path'. They are different things, so path stays empty.
-        assertEquals("", content.get("path"));
-        assertEquals(Boolean.FALSE, content.get("prefill"));
+        assertEquals("person.name.firstName", content.get("path"), "the node's 'name' is the path");
+        assertEquals(Boolean.TRUE, content.get("prefill"), "it knows where its value lives");
         assertEquals("John", content.get("defaultValue"), "the editor calls it 'default'");
     }
 
@@ -283,6 +364,41 @@ class FormBlockV2Test {
         assertEquals("textField", map(field.get("meta")).get("component"));
         assertEquals(Boolean.TRUE, map(field.get("content")).get("isPassword"));
         assertEquals(Boolean.FALSE, map(field.get("content")).get("prefill"));
+    }
+
+    @Test
+    @DisplayName("a date-typed field becomes a datePicker - and only a date-typed one")
+    void dateTypeBecomesDatePicker() {
+        context.build().resource(ROOT + "/form",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "form", "formName", "flight-search");
+
+        final Map<String, Object> date = list(form().get("content")).stream()
+                .filter(f -> "flight-date".equals(map(f.get("meta")).get("id")))
+                .findFirst().orElseThrow(() -> new AssertionError("flight-date field missing"));
+
+        assertEquals("datePicker", map(date.get("meta")).get("component"));
+        assertEquals(Boolean.FALSE, map(date.get("content")).get("withDateFormatInLabel"));
+    }
+
+    @Test
+    @DisplayName("a date-looking field typed as text stays a text field")
+    void dateLookingTextStaysText() {
+        // create-account has both: dateOfBirth and cardExpiry are typed 'text'. The type decides the
+        // widget - guessing from a label would turn 'EXPIRATION DATE' into a date picker, which is a
+        // poor way to enter MM/YY.
+        context.build().resource(ROOT + "/form",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "form", "formName", "create-account");
+
+        for (final String id : List.of("dateOfBirth", "cardExpiry")) {
+            final Map<String, Object> field = list(form().get("content")).stream()
+                    .filter(f -> id.equals(map(f.get("meta")).get("id")))
+                    .findFirst().orElseThrow(() -> new AssertionError(id + " missing"));
+
+            assertEquals("textField", map(field.get("meta")).get("component"),
+                    id + " is typed 'text', so it renders as one");
+        }
     }
 
     @Test

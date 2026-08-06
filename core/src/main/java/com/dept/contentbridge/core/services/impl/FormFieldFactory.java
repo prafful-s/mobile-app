@@ -85,29 +85,28 @@ final class FormFieldFactory {
         final String id = StringUtils.defaultIfBlank(str(field.get("id")),
                 StringUtils.defaultIfBlank(str(field.get("name")), "field-" + order));
 
-        final Map<String, Object> content = new LinkedHashMap<>();
-        content.put("mode", MODE_OUTLINED);
-
-        // Only an explicit 'path' becomes a path. 'name' is the field's own key within the form and
-        // is not the same thing, even when it happens to look like one - deriving path from it
-        // claimed every field could be pre-filled from the profile, which is not true and is not
-        // something the configuration ever said.
-        final String path = str(field.get("path"));
-        content.put("path", StringUtils.defaultString(path));
-        content.put("label", StringUtils.defaultString(str(field.get("label"))));
+        // 'name' in the configuration is where the value lives in the client's profile model, which
+        // is what the target calls 'path'. An explicit 'path' wins if a schema ever sets one.
+        final String path = StringUtils.defaultString(
+                StringUtils.defaultIfBlank(str(field.get("path")), str(field.get("name"))));
+        final String label = StringUtils.defaultString(str(field.get("label")));
 
         // Only a field that knows where its value lives can be pre-filled - and a password never is,
         // whatever the configuration says.
-        content.put("prefill", StringUtils.isNotBlank(path) && !TYPE_PASSWORD.equals(type));
+        final boolean prefill = StringUtils.isNotBlank(path) && !TYPE_PASSWORD.equals(type);
 
-        addTypeSpecifics(content, component, type, id, field);
-
-        // Always emitted, even where the configuration omits them - choice fields carry no
-        // placeholder or defaultValue, and a client should not have to test for the difference.
-        content.put("value", StringUtils.defaultString(str(field.get("value"))));
-        content.put("placeholder", StringUtils.defaultString(str(field.get("placeholder"))));
-        content.put("defaultValue", StringUtils.defaultString(str(field.get("defaultValue"))));
-
+        final Map<String, Object> content;
+        if (isToggleGroup(component)) {
+            content = toggleContent(component, path, label, options(field), prefill,
+                    str(field.get("variant")));
+        } else if (DROPDOWN.equals(component)) {
+            content = dropdownContent(path, label, options(field), prefill);
+        } else {
+            content = typedContent(component, path, label, prefill,
+                    inputMode(type, id, component), TYPE_PASSWORD.equals(type),
+                    str(field.get("value")), str(field.get("placeholder")),
+                    str(field.get("defaultValue")));
+        }
         return component(id, order, component, content);
     }
 
@@ -132,36 +131,30 @@ final class FormFieldFactory {
 
         // The label is jcr:title, not title: AEM Forms stores it under the standard JCR property, so
         // reading 'title' returns nothing and every field arrives unlabelled.
-        final String label = StringUtils.defaultIfBlank(props.get("jcr:title", String.class),
-                props.get("title", String.class));
+        final String label = StringUtils.defaultString(
+                StringUtils.defaultIfBlank(props.get("jcr:title", String.class),
+                        props.get("title", String.class)));
 
-        // Same rule as the configured route: a path is only a path when the author set one. The
-        // 'name' property is the field's key within the form, not somewhere to read a value from.
-        final String path = StringUtils.defaultString(props.get("path", String.class));
+        // Same rule as the configured route: 'name' is the profile location, and an explicit 'path'
+        // property wins where an author set one.
+        final String path = StringUtils.defaultString(
+                StringUtils.defaultIfBlank(props.get("path", String.class), name));
+        final boolean prefill = StringUtils.isNotBlank(path) && !isPasswordType(fieldType);
 
-        final Map<String, Object> content = new LinkedHashMap<>();
-        content.put("mode", MODE_OUTLINED);
-        content.put("path", path);
-        content.put("label", StringUtils.defaultString(label));
-        content.put("prefill", StringUtils.isNotBlank(path) && !isPasswordType(fieldType));
-
-        if (needsOptions(component)) {
-            content.put("options", optionsFromEnum(props));
-            if (CHECKBOX_GROUP.equals(component)) {
-                content.put("variant", "switch");
-            }
-        } else if (DATE_PICKER.equals(component)) {
-            content.put("withDateFormatInLabel", false);
+        final Map<String, Object> content;
+        if (isToggleGroup(component)) {
+            content = toggleContent(component, path, label, optionsFromNode(props, path, label),
+                    prefill, props.get("variant", String.class));
+        } else if (DROPDOWN.equals(component)) {
+            content = dropdownContent(path, label, optionsFromEnum(props), prefill);
+        } else {
+            content = typedContent(component, path, label, prefill,
+                    TEXT_FIELD.equals(component) ? authoredInputMode(fieldType, name) : "none",
+                    isPasswordType(fieldType),
+                    props.get("value", String.class), props.get("placeholder", String.class),
+                    // 'default' is what the Forms editor calls a starting value.
+                    props.get("default", String.class));
         }
-        inputContent(content,
-                TEXT_FIELD.equals(component) ? authoredInputMode(fieldType, name) : "none",
-                isPasswordType(fieldType));
-
-        // Same three keys as the configured route, always present. 'default' is what the Forms
-        // editor calls a starting value.
-        content.put("value", StringUtils.defaultString(props.get("value", String.class)));
-        content.put("placeholder", StringUtils.defaultString(props.get("placeholder", String.class)));
-        content.put("defaultValue", StringUtils.defaultString(props.get("default", String.class)));
 
         if (props.get("required", false)) {
             content.put("required", true);
@@ -179,20 +172,115 @@ final class FormFieldFactory {
         return FD_BUTTON.equals(normalise(fieldType));
     }
 
-    private static void addTypeSpecifics(final Map<String, Object> content, final String component,
-                                         final String type, final String id,
-                                         final Map<String, Object> field) {
-        if (needsOptions(component)) {
-            content.put("options", options(field));
-            if (CHECKBOX_GROUP.equals(component)) {
-                // A single checkbox and a multi-select share a type; 'variant' is what tells them
-                // apart to the renderer.
-                content.put("variant", "switch");
+    /**
+     * A dropdown: what to render, where it goes, and what can be chosen. Nothing about typing,
+     * because nothing is typed into it.
+     */
+    private static Map<String, Object> dropdownContent(final String path, final String label,
+                                                       final List<Object> options,
+                                                       final boolean prefill) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("mode", MODE_OUTLINED);
+        content.put("path", path);
+        content.put("label", label);
+        content.put("options", options);
+        content.put("prefill", prefill);
+        return content;
+    }
+
+    /**
+     * A checkbox or radio group, whose shape differs from every other field: the path and the label
+     * live on each option rather than on the field.
+     *
+     * <p>That is not an inconsistency to smooth over. A group's options are separately addressable -
+     * three checkboxes write three values - so each needs to say where its own value goes and what
+     * it reads when ticked. A single label on the field could not describe three.</p>
+     */
+    private static Map<String, Object> toggleContent(final String component, final String path,
+                                                     final String label,
+                                                     final List<Object> options,
+                                                     final boolean prefill,
+                                                     final String configuredVariant) {
+        final List<Object> rewritten = new ArrayList<>(options.size());
+        for (final Object option : options) {
+            if (!(option instanceof Map)) {
+                continue;
             }
-        } else if (DATE_PICKER.equals(component)) {
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> source = (Map<String, Object>) option;
+
+            final Map<String, Object> target = new LinkedHashMap<>();
+            // An option may name its own path; otherwise every option in the group writes to the
+            // field's, which is the single-checkbox case.
+            target.put("path", StringUtils.defaultString(
+                    StringUtils.defaultIfBlank(str(source.get("path")), path)));
+            target.put("label", StringUtils.defaultString(
+                    StringUtils.defaultIfBlank(str(source.get("label")), label)));
+            target.put("checkedValue", StringUtils.defaultString(
+                    StringUtils.defaultIfBlank(str(source.get("checkedValue")),
+                            str(source.get("value")))));
+            target.put("uncheckedValue",
+                    StringUtils.defaultString(str(source.get("uncheckedValue"))));
+            rewritten.add(target);
+        }
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+
+        // A group normally says nothing about itself: one label cannot describe three separately
+        // addressable options, so each option carries its own. Two cases differ, and the difference
+        // is whether the field's label is a question or a caption. A radio group asks "How often do
+        // you get care?" and its options answer it - that is worth keeping. An authored checkbox
+        // node is titled "SMS", which is the option's own label repeated - dropping it avoids saying
+        // the same thing twice.
+        if (StringUtils.isNotBlank(label) && !labelsAnOption(rewritten, label)) {
+            content.put("label", label);
+        }
+        content.put("options", rewritten);
+        content.put("prefill", prefill);
+
+        // The configuration decides where it says so - all 25 checkbox fields declare 'switch'.
+        // Otherwise the variant is named after the control.
+        content.put("variant", StringUtils.defaultIfBlank(configuredVariant,
+                CHECKBOX_GROUP.equals(component) ? "checkbox" : "radio"));
+        return content;
+    }
+
+    /** Everything a user types into or picks a value for: text, password, date, file. */
+    private static Map<String, Object> typedContent(final String component, final String path,
+                                                    final String label, final boolean prefill,
+                                                    final String inputMode, final boolean isPassword,
+                                                    final String value, final String placeholder,
+                                                    final String defaultValue) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("mode", MODE_OUTLINED);
+        content.put("path", path);
+        content.put("label", label);
+        content.put("prefill", prefill);
+
+        if (DATE_PICKER.equals(component)) {
             content.put("withDateFormatInLabel", false);
         }
-        inputContent(content, inputMode(type, id, component), TYPE_PASSWORD.equals(type));
+        inputContent(content, inputMode, isPassword);
+
+        content.put("value", StringUtils.defaultString(value));
+        content.put("placeholder", StringUtils.defaultString(placeholder));
+        content.put("defaultValue", StringUtils.defaultString(defaultValue));
+        return content;
+    }
+
+    private static boolean isToggleGroup(final String component) {
+        return CHECKBOX_GROUP.equals(component) || RADIO_GROUP.equals(component);
+    }
+
+    /** @return true when the field's label is one of its options' labels rather than a question */
+    private static boolean labelsAnOption(final List<Object> options, final String label) {
+        for (final Object option : options) {
+            if (option instanceof Map
+                    && label.equals(((Map<?, ?>) option).get("label"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -231,15 +319,45 @@ final class FormFieldFactory {
         return TYPE_TEXT.equals(type) || TYPE_PASSWORD.equals(type) ? "text" : "none";
     }
 
-    private static boolean needsOptions(final String component) {
-        return DROPDOWN.equals(component) || RADIO_GROUP.equals(component)
-                || CHECKBOX_GROUP.equals(component);
-    }
 
     /** Options as configured. A choice field without them renders as an empty box. */
     private static List<Object> options(final Map<String, Object> field) {
         final Object configured = field.get("options");
         return configured instanceof List ? new ArrayList<>((List<?>) configured) : new ArrayList<>();
+    }
+
+    /**
+     * The choices on an authored field, which AEM Forms stores two different ways.
+     *
+     * <p>A dropdown or radio group holds them as parallel arrays - {@code enum} for the values,
+     * {@code enumNames} for the labels - which are zipped back together. A checkbox does not: it is
+     * a single node standing for one choice, carrying its own {@code jcr:title},
+     * {@code checkedValue} and {@code name}. Reading only the arrays left every authored checkbox
+     * with no options at all, which renders as nothing.</p>
+     */
+    private static List<Object> optionsFromNode(final ValueMap props, final String path,
+                                                final String label) {
+        final List<Object> fromEnum = optionsFromEnum(props);
+        if (!fromEnum.isEmpty()) {
+            return fromEnum;
+        }
+        final String checkedValue = props.get("checkedValue", String.class);
+        if (StringUtils.isBlank(checkedValue) && StringUtils.isBlank(label)) {
+            return fromEnum;
+        }
+
+        // One node, one choice. The option is built here rather than in toggleContent so it carries
+        // the node's own checkedValue instead of a value invented from the field.
+        final Map<String, Object> option = new LinkedHashMap<>();
+        option.put("path", StringUtils.defaultString(path));
+        option.put("label", StringUtils.defaultString(label));
+        option.put("checkedValue", StringUtils.defaultIfBlank(checkedValue, "true"));
+        option.put("uncheckedValue",
+                StringUtils.defaultString(props.get("uncheckedValue", String.class)));
+
+        final List<Object> options = new ArrayList<>(1);
+        options.add(option);
+        return options;
     }
 
     /**
