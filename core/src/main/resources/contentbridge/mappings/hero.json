@@ -24,5 +24,9 @@
     { "target": "contentAlignment", "from": "alignment", "default": "left" },
     { "target": "verticalAlignment", "from": "verticalalignment", "default": "middle" },
     { "target": "horizontalAlignment", "from": "alignment", "default": "left" }
+  ],
+  "styles": [
+    { "target": "color", "from": "color" },
+    { "target": "height", "from": "height", "type": "number" }
   ]
 }

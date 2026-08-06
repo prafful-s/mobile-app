@@ -661,6 +661,25 @@ class ComponentMappingTest {
     }
 
     @Test
+    @DisplayName("banner: authored color/height land in styles, not content")
+    void bannerStyles() {
+        final Map<String, Object> exported = export(true,
+                "model", "hero",
+                "image", "/content/dam/x/hero.jpg",
+                "text", "<h1>Hi</h1>",
+                "color", "#000",
+                "height", "350");
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals("#000", styles.get("color"));
+        assertEquals(350L, styles.get("height"), "coerced to number");
+
+        final Map<String, Object> content = content(exported);
+        assertFalse(content.containsKey("color"), "consumed by styles, not an extra");
+        assertFalse(content.containsKey("height"), "consumed by styles, not an extra");
+    }
+
+    @Test
     @DisplayName("image in skeleton mode")
     void imageSkeleton() {
         final Map<String, Object> exported = export(true,
