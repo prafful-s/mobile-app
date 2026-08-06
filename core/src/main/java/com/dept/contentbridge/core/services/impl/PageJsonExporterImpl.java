@@ -45,6 +45,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
 
+    /* ---- where the catalogue came from; logged, never emitted ---- */
+    private static final String SOURCE_GRAPHQL = "graphql";
+    private static final String SOURCE_FRAGMENTS = "fragments";
+    private static final String SOURCE_AUTHORED = "authored";
+    private static final String SOURCE_NONE = "none";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
             "jcr:primaryType", "jcr:mixinTypes", "jcr:createdBy", "jcr:created",
@@ -161,13 +167,23 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // and screen meta records that as includeInNavigation: false.
         final List<String> menu = buildMenu(menuPages(envelopeSource));
 
+        final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
+
+        final Catalogue catalogue = buildProducts(envelopeSource, extras, assetHost, opts);
+
+        // At INFO because it answers the one question the payload cannot: the three sources produce
+        // identical output, so a working persisted query and a silent fallback look the same.
+        LOG.info("Products for {} came from {} ({} item(s))",
+                envelopeSource.getPath(), catalogue.source, catalogue.products.size());
+
         final Map<String, Object> app = new LinkedHashMap<>();
         // v2 (hierarchical): top-level id is inside meta; omit the standalone key to match the DSN
         // reference contract. v1 keeps it for backward compatibility with existing clients.
         if (!opts.isHierarchical()) {
             app.put(SchemaConstants.KEY_ID, appId);
         }
-        app.put(SchemaConstants.KEY_META, buildMeta(envelopeSource, appId, rootProps, menu, opts));
+        app.put(SchemaConstants.KEY_META,
+                buildMeta(envelopeSource, appId, rootProps, menu, opts));
         if (opts.isHierarchical()) {
             // No AEM source for either yet, but the target shape is fixed, so a client can rely on
             // the keys being present rather than testing for them.
@@ -178,11 +194,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 buildScreens(envelopeSource, requested, assetHost, opts, menu));
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
 
-        final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
         if (opts.isHierarchical()) {
             // DSN reference order: branding, products, integrations, profileViewer
-            app.put(SchemaConstants.KEY_PRODUCTS,
-                    buildProducts(envelopeSource, extras, assetHost, opts));
+            app.put(SchemaConstants.KEY_PRODUCTS, catalogue.products);
             app.put(SchemaConstants.KEY_INTEGRATIONS,
                     readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
             app.put(SchemaConstants.KEY_PROFILE_VIEWER,
@@ -192,8 +206,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                     readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
             app.put(SchemaConstants.KEY_PROFILE_VIEWER,
                     readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON));
-            app.put(SchemaConstants.KEY_PRODUCTS,
-                    buildProducts(envelopeSource, extras, assetHost, opts));
+            app.put(SchemaConstants.KEY_PRODUCTS, catalogue.products);
         }
 
         return app;
@@ -371,14 +384,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * The cost of that leniency is that a genuinely empty catalogue is indistinguishable from a
      * broken query - which is why {@code GraphQlClient} logs the difference.</p>
      */
-    private List<Object> buildProducts(final Page root, final Resource extras, final String assetHost,
-                                       final ExportOptions options) {
+    private Catalogue buildProducts(final Page root, final Resource extras, final String assetHost,
+                                    final ExportOptions options) {
         final GraphQlQuery query = GraphQlQuery.resolve(root, options, this::isAllowed);
         if (query.isConfigured()) {
             final List<Map<String, Object>> fromQuery =
                     graphQlProducts.export(root, query, assetHost);
             if (!fromQuery.isEmpty()) {
-                return new ArrayList<>(fromQuery);
+                return new Catalogue(new ArrayList<>(fromQuery), SOURCE_GRAPHQL);
             }
             LOG.debug("Persisted query {} yielded nothing - falling back to Content Fragments", query);
         }
@@ -387,9 +400,27 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 productExporter.export(root, assetHost, options.getProductsPath());
 
         if (!fromFragments.isEmpty()) {
-            return new ArrayList<>(fromFragments);
+            return new Catalogue(new ArrayList<>(fromFragments), SOURCE_FRAGMENTS);
         }
-        return readJsonArray(extras, SchemaConstants.PN_PRODUCTS_JSON);
+        final List<Object> authored = readJsonArray(extras, SchemaConstants.PN_PRODUCTS_JSON);
+        return new Catalogue(authored, authored.isEmpty() ? SOURCE_NONE : SOURCE_AUTHORED);
+    }
+
+    /**
+     * The products and where they came from.
+     *
+     * <p>The source is carried so it can be logged. It is deliberately not emitted: the response
+     * schema is a published contract, and diagnostics do not belong in it.</p>
+     */
+    private static final class Catalogue {
+
+        private final List<Object> products;
+        private final String source;
+
+        Catalogue(final List<Object> products, final String source) {
+            this.products = products;
+            this.source = source;
+        }
     }
 
     private Map<String, Object> buildBranding(final Page root, final String assetHost) {
