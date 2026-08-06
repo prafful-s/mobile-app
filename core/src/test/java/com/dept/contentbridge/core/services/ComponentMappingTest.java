@@ -508,4 +508,21 @@ class ComponentMappingTest {
         assertEquals("Password", content.get("passwordLabel"));
         assertEquals("Email", content.get("usernameLabel"));
     }
+
+    @Test
+    @DisplayName("a separator block becomes a divider with the reference's style defaults")
+    void dividerMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "separator",
+                "showLine", "false");
+
+        assertEquals("divider", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals("S", content.get("size"));
+        assertEquals("S", content.get("length"));
+        assertEquals("normal", content.get("variant"));
+        assertEquals(Boolean.FALSE, content.get("showLine"));
+        assertEquals("center", content.get("alignment"));
+        assertEquals("vertical", content.get("orientation"));
+    }
 }
