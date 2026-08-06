@@ -1,6 +1,7 @@
 {
   "match": ["timeSlotPicker"],
   "component": "timeSlotPicker",
+  "skeleton": true,
   "fields": [
     { "target": "path", "from": "path" },
     { "target": "prefill", "from": "prefill", "type": "boolean", "default": true },

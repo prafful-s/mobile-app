@@ -1,6 +1,7 @@
 {
   "match": ["userLogin"],
   "component": "userLogin",
+  "skeleton": true,
   "fields": [
     { "target": "title", "from": "title", "default": "Login" },
     { "target": "passwordLabel", "from": "passwordLabel", "default": "Password" },

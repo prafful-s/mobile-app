@@ -1,6 +1,7 @@
 {
   "match": ["userDetails"],
   "component": "userDetails",
+  "skeleton": true,
   "fields": [
     { "target": "showLogoutButton", "from": "showLogoutButton", "type": "boolean", "default": true }
   ]

@@ -1,6 +1,7 @@
 {
   "match": ["productTitle"],
   "component": "productTitle",
+  "skeleton": true,
   "fields": [
     { "target": "size", "from": "size", "default": "large" },
     { "target": "weight", "from": "weight", "default": "bold" },

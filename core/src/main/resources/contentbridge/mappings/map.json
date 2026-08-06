@@ -1,6 +1,7 @@
 {
   "match": ["map"],
   "component": "map",
+  "skeleton": true,
   "fields": [
     { "comment": "mapCoordinates intentionally omitted - needs child-row aggregation the mapping engine does not have yet. See the design spec.",
       "target": "text", "from": "text" },

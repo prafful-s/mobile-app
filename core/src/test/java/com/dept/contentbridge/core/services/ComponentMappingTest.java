@@ -363,7 +363,8 @@ class ComponentMappingTest {
                 "model", "list",
                 "items", new String[] {"money-transfer", "currency-rates", "atm"},
                 "limit", "6",
-                "hideSubtitle", "false");
+                "hideSubtitle", "false",
+                "trackingId", "list-1");
 
         assertEquals("list", component(exported));
 
@@ -379,6 +380,7 @@ class ComponentMappingTest {
         // through the same coercion an authored value gets - Jackson reads a bare integer literal
         // as Integer, not Long, so this compares via Number rather than pinning the boxed type.
         assertEquals(8, ((Number) map(exported.get("styles")).get("gap")).intValue());
+        assertEquals("list-1", content.get("trackingId"), "extras through");
     }
 
     @Test
@@ -387,7 +389,8 @@ class ComponentMappingTest {
         final Map<String, Object> exported = export(true,
                 "model", "map",
                 "text", "ATM",
-                "buttonLabel", "Find one");
+                "buttonLabel", "Find one",
+                "trackingId", "map-1");
 
         assertEquals("map", component(exported));
 
@@ -402,6 +405,7 @@ class ComponentMappingTest {
         final Map<String, Object> styles = map(exported.get("styles"));
         assertEquals("blue", styles.get("color"));
         assertEquals("green", styles.get("locationColor"));
+        assertEquals("map-1", content.get("trackingId"), "extras through");
     }
 
     @Test
@@ -410,7 +414,8 @@ class ComponentMappingTest {
         final Map<String, Object> exported = export(true,
                 "model", "offer",
                 "linkTo", "insurance",
-                "surface", "sf_home_offer");
+                "surface", "sf_home_offer",
+                "trackingId", "offer-1");
 
         assertEquals("offer", component(exported));
 
@@ -426,6 +431,7 @@ class ComponentMappingTest {
         final Map<String, Object> styles = map(exported.get("styles"));
         assertEquals("#FFF", styles.get("color"));
         assertEquals(200, ((Number) styles.get("height")).intValue());
+        assertEquals("offer-1", content.get("trackingId"), "extras through");
     }
 
     @Test
@@ -433,13 +439,15 @@ class ComponentMappingTest {
     void productImageMapping() {
         final Map<String, Object> exported = export(true,
                 "model", "productImage",
-                "fullWidth", "true");
+                "fullWidth", "true",
+                "trackingId", "pimg-1");
 
         assertEquals("productImage", component(exported));
         final Map<String, Object> content = content(exported);
         assertEquals(Boolean.TRUE, content.get("fullWidth"));
         assertEquals("contain", content.get("imageResize"));
         assertEquals(250, ((Number) map(exported.get("styles")).get("height")).intValue());
+        assertEquals("pimg-1", content.get("trackingId"), "extras through");
     }
 
     @Test
@@ -447,7 +455,8 @@ class ComponentMappingTest {
     void productTitleMapping() {
         final Map<String, Object> exported = export(true,
                 "model", "productTitle",
-                "textAlignment", "center");
+                "textAlignment", "center",
+                "trackingId", "ptitle-1");
 
         assertEquals("productTitle", component(exported));
         final Map<String, Object> content = content(exported);
@@ -455,6 +464,7 @@ class ComponentMappingTest {
         assertEquals("bold", content.get("weight"));
         assertEquals("center", content.get("textAlignment"));
         assertEquals("#FFF", map(exported.get("styles")).get("color"));
+        assertEquals("ptitle-1", content.get("trackingId"), "extras through");
     }
 
     @Test
@@ -463,7 +473,8 @@ class ComponentMappingTest {
         final Map<String, Object> exported = export(true,
                 "model", "timeSlotPicker",
                 "path", "appointment.dateTime",
-                "timeOptions", new String[] {"09:00", "10:00", "11:00"});
+                "timeOptions", new String[] {"09:00", "10:00", "11:00"},
+                "trackingId", "tsp-1");
 
         assertEquals("timeSlotPicker", component(exported));
         final Map<String, Object> content = content(exported);
@@ -476,6 +487,7 @@ class ComponentMappingTest {
         final Map<String, Object> styles = map(exported.get("styles"));
         assertEquals(8, ((Number) styles.get("gap")).intValue());
         assertEquals(8, ((Number) styles.get("padding")).intValue());
+        assertEquals("tsp-1", content.get("trackingId"), "extras through");
     }
 
     @Test
@@ -483,11 +495,13 @@ class ComponentMappingTest {
     void userDetailsMapping() {
         final Map<String, Object> exported = export(true,
                 "model", "userDetails",
-                "showLogoutButton", "false");
+                "showLogoutButton", "false",
+                "trackingId", "ud-1");
 
         assertEquals("userDetails", component(exported));
         assertEquals(Boolean.FALSE, content(exported).get("showLogoutButton"),
                 "Edge Delivery writes booleans as strings; the rule coerces them");
+        assertEquals("ud-1", content(exported).get("trackingId"), "extras through");
     }
 
     @Test
@@ -495,13 +509,15 @@ class ComponentMappingTest {
     void userLoginMapping() {
         final Map<String, Object> exported = export(true,
                 "model", "userLogin",
-                "title", "Sign in");
+                "title", "Sign in",
+                "trackingId", "ul-1");
 
         assertEquals("userLogin", component(exported));
         final Map<String, Object> content = content(exported);
         assertEquals("Sign in", content.get("title"));
         assertEquals("Password", content.get("passwordLabel"));
         assertEquals("Email", content.get("usernameLabel"));
+        assertEquals("ul-1", content.get("trackingId"), "extras through");
     }
 
     @Test
@@ -509,7 +525,8 @@ class ComponentMappingTest {
     void dividerMapping() {
         final Map<String, Object> exported = export(true,
                 "model", "separator",
-                "showLine", "false");
+                "showLine", "false",
+                "trackingId", "div-1");
 
         assertEquals("divider", component(exported));
         final Map<String, Object> content = content(exported);
@@ -519,6 +536,9 @@ class ComponentMappingTest {
         assertEquals(Boolean.FALSE, content.get("showLine"));
         assertEquals("center", content.get("alignment"));
         assertEquals("vertical", content.get("orientation"));
+        assertTrue(content.containsKey("horizontalInset"), "nullable schema key present");
+        assertNull(content.get("horizontalInset"));
+        assertEquals("div-1", content.get("trackingId"), "extras through");
     }
 
     @Test

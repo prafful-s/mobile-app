@@ -1,6 +1,7 @@
 {
   "match": ["offer"],
   "component": "offer",
+  "skeleton": true,
   "fields": [
     { "target": "linkTo", "from": "linkTo" },
     { "target": "opacity", "from": "opacity", "type": "number", "default": 0.34 },

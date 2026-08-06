@@ -1,6 +1,7 @@
 {
   "match": ["list"],
   "component": "list",
+  "skeleton": true,
   "fields": [
     { "target": "sort", "from": "sort", "default": "none" },
     { "target": "items", "from": "items" },
