@@ -3,8 +3,10 @@ package com.dept.contentbridge.core.services.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -25,13 +27,16 @@ final class ComponentMapping {
     private final String component;
     private final List<FieldRule> fields;
     private final List<FieldRule> styleFields;
+    private final boolean skeleton;
 
     private ComponentMapping(final List<String> matches, final String component,
-                             final List<FieldRule> fields, final List<FieldRule> styleFields) {
+                             final List<FieldRule> fields, final List<FieldRule> styleFields,
+                             final boolean skeleton) {
         this.matches = matches;
         this.component = component;
         this.fields = fields;
         this.styleFields = styleFields;
+        this.skeleton = skeleton;
     }
 
     /**
@@ -46,8 +51,10 @@ final class ComponentMapping {
         }
         final List<FieldRule> fields = fieldRules(definition.get("fields"));
         final List<FieldRule> styleFields = fieldRules(definition.get("styles"));
+        final boolean skeleton = Boolean.TRUE.equals(definition.get("skeleton"));
         return new ComponentMapping(Collections.unmodifiableList(matches), component,
-                Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields));
+                Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
+                skeleton);
     }
 
     /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */
@@ -75,6 +82,31 @@ final class ComponentMapping {
     /** What the target vocabulary calls the result - {@code banner}, {@code card}, and so on. */
     String getComponent() {
         return component;
+    }
+
+    /**
+     * True when this rule opts in to fixed-shape output: every declared field is emitted
+     * always (nullable-and-absent as null, non-nullable-and-absent as an empty string) and the
+     * walker appends any authored CRX property this rule did not consume. Rules without the
+     * flag behave as they did before - only authored/defaulted keys, empty projection abandoned.
+     */
+    boolean isSkeleton() {
+        return skeleton;
+    }
+
+    /**
+     * Every CRX property this rule reads from, across every field. Used by the walker to
+     * filter extras passthrough - a property this rule consumed must not reappear as an extra.
+     */
+    Set<String> consumedProperties() {
+        final Set<String> consumed = new LinkedHashSet<>();
+        for (final FieldRule field : fields) {
+            consumed.addAll(field.consumedProperties());
+        }
+        for (final FieldRule field : styleFields) {
+            consumed.addAll(field.consumedProperties());
+        }
+        return consumed;
     }
 
     /**
@@ -106,7 +138,15 @@ final class ComponentMapping {
             }
             if (isPresent(value)) {
                 target.put(field.getTarget(), value);
+            } else if (skeleton) {
+                // Fixed-shape opt-in: emit the key anyway, using null when the field is
+                // declared nullable and an empty string otherwise. The client always sees the
+                // same key set, whatever the author left blank.
+                target.put(field.getTarget(), field.isNullable() ? null : "");
             }
+        }
+        if (skeleton) {
+            return target;
         }
         return anyAuthored ? target : Collections.emptyMap();
     }
