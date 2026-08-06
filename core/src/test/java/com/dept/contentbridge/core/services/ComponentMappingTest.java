@@ -446,4 +446,19 @@ class ComponentMappingTest {
         assertEquals("contain", content.get("imageResize"));
         assertEquals(250, ((Number) map(exported.get("styles")).get("height")).intValue());
     }
+
+    @Test
+    @DisplayName("a productTitle takes its size/weight/alignment defaults")
+    void productTitleMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "productTitle",
+                "textAlignment", "center");
+
+        assertEquals("productTitle", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals("large", content.get("size"));
+        assertEquals("bold", content.get("weight"));
+        assertEquals("center", content.get("textAlignment"));
+        assertEquals("#FFF", map(exported.get("styles")).get("color"));
+    }
 }

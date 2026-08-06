@@ -9,5 +9,6 @@
   "list",
   "map",
   "offer",
-  "productImage"
+  "productImage",
+  "productTitle"
 ]
