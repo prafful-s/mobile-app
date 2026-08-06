@@ -1,0 +1,13 @@
+{
+  "match": ["contentCards"],
+  "component": "contentCards",
+  "fields": [
+    { "target": "surface", "from": "surface" }
+  ],
+  "styles": [
+    { "target": "color", "from": "color" },
+    { "target": "borderColor", "from": "borderColor", "default": "lightgrey" },
+    { "target": "borderRadius", "from": "borderRadius", "type": "number", "default": 9 },
+    { "target": "backgroundColor", "from": "backgroundColor", "default": "white" }
+  ]
+}

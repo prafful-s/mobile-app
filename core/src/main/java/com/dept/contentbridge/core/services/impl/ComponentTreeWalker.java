@@ -205,6 +205,7 @@ final class ComponentTreeWalker {
             final String authoredName = model.getComponentName();
             String componentName = authoredName;
             Map<String, Object> content = authored;
+            Map<String, Object> styles = Collections.emptyMap();
 
             // v2 speaks the app's vocabulary, so an authored 'hero' becomes a 'banner' carrying the
             // fields the client expects. v1 is left exactly as it was: the two schemas are each a
@@ -222,6 +223,7 @@ final class ComponentTreeWalker {
                 } else {
                     componentName = mapping.getComponent();
                     content = mapped;
+                    styles = mapping.applyStyles(authored);
                 }
             }
 
@@ -243,6 +245,9 @@ final class ComponentTreeWalker {
             }
             meta.put(SchemaConstants.KEY_COMPONENT, componentName);
             entry.put(SchemaConstants.KEY_META, meta);
+            if (!styles.isEmpty()) {
+                entry.put(SchemaConstants.KEY_STYLES, styles);
+            }
             entry.put(SchemaConstants.KEY_CONTENT, content);
 
             // v1 only: the field definitions travel alongside the authored content, so a client can

@@ -24,12 +24,14 @@ final class ComponentMapping {
     private final List<String> matches;
     private final String component;
     private final List<FieldRule> fields;
+    private final List<FieldRule> styleFields;
 
     private ComponentMapping(final List<String> matches, final String component,
-                             final List<FieldRule> fields) {
+                             final List<FieldRule> fields, final List<FieldRule> styleFields) {
         this.matches = matches;
         this.component = component;
         this.fields = fields;
+        this.styleFields = styleFields;
     }
 
     /**
@@ -42,21 +44,27 @@ final class ComponentMapping {
         if (StringUtils.isBlank(component) || matches.isEmpty()) {
             return null;
         }
-        final List<FieldRule> fields = new ArrayList<>();
-        final Object declared = definition.get("fields");
+        final List<FieldRule> fields = fieldRules(definition.get("fields"));
+        final List<FieldRule> styleFields = fieldRules(definition.get("styles"));
+        return new ComponentMapping(Collections.unmodifiableList(matches), component,
+                Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields));
+    }
+
+    /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */
+    private static List<FieldRule> fieldRules(final Object declared) {
+        final List<FieldRule> rules = new ArrayList<>();
         if (declared instanceof List) {
             for (final Object entry : (List<?>) declared) {
                 if (entry instanceof Map) {
                     @SuppressWarnings("unchecked")
                     final FieldRule rule = FieldRule.of((Map<String, Object>) entry);
                     if (rule != null) {
-                        fields.add(rule);
+                        rules.add(rule);
                     }
                 }
             }
         }
-        return new ComponentMapping(Collections.unmodifiableList(matches), component,
-                Collections.unmodifiableList(fields));
+        return rules;
     }
 
     /** The authored component names this rule claims. */
@@ -101,6 +109,33 @@ final class ComponentMapping {
             }
         }
         return anyAuthored ? target : Collections.emptyMap();
+    }
+
+    /**
+     * Projects authored properties onto the rule's declared {@code styles}, the sibling of
+     * {@code content} a handful of components carry.
+     *
+     * <p>Unlike {@link #apply}, not gated on anything being authored: a component this rule already
+     * claimed (its content mapping succeeded) still gets its declared style defaults even where no
+     * style property was actually set, the same way individual {@code fields} entries already
+     * default-fill an unauthored key.</p>
+     *
+     * @param source the component's authored properties
+     * @return the target styles in the order the rule declares, or an empty map when the rule
+     *         declares no {@code styles} at all
+     */
+    Map<String, Object> applyStyles(final Map<String, Object> source) {
+        final Map<String, Object> target = new LinkedHashMap<>();
+        for (final FieldRule field : styleFields) {
+            Object value = field.fromSource(source);
+            if (!isPresent(value)) {
+                value = field.fallback();
+            }
+            if (isPresent(value)) {
+                target.put(field.getTarget(), value);
+            }
+        }
+        return target;
     }
 
     private static boolean isPresent(final Object value) {

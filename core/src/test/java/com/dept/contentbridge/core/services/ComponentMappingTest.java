@@ -316,4 +316,48 @@ class ComponentMappingTest {
                 content.get("linkTo"),
                 "the host pass runs after mapping, so derived fields are externalised too");
     }
+
+    @Test
+    @DisplayName("a mapping rule can also project a sibling 'styles' object")
+    void mappingProjectsStyles() {
+        final Map<String, Object> exported = export(true,
+                "model", "contentCards",
+                "surface", "sf_home_screen_cc",
+                "color", "#363232",
+                "borderRadius", "9");
+
+        assertEquals("contentCards", component(exported));
+        assertEquals("sf_home_screen_cc", content(exported).get("surface"));
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals("#363232", styles.get("color"));
+        assertEquals(9L, styles.get("borderRadius"), "declared as type: number");
+        assertEquals("lightgrey", styles.get("borderColor"), "unauthored style keys still get their default");
+        assertEquals("white", styles.get("backgroundColor"));
+    }
+
+    @Test
+    @DisplayName("mappings/index.json and the mappings directory agree")
+    void indexMatchesTheDirectory() throws Exception {
+        final java.net.URL dir = getClass().getResource("/contentbridge/mappings");
+        assertNotNull(dir, "mapping rule directory is missing from the classpath");
+
+        final java.io.File[] files = new java.io.File(dir.toURI()).listFiles(
+                (d, n) -> n.endsWith(".json") && !"index.json".equals(n));
+        assertNotNull(files);
+
+        final java.util.Set<String> onDisk = new java.util.TreeSet<>();
+        for (final java.io.File file : files) {
+            onDisk.add(file.getName().replace(".json", ""));
+        }
+
+        final com.fasterxml.jackson.databind.ObjectMapper mapper =
+                new com.fasterxml.jackson.databind.ObjectMapper();
+        final java.util.List<String> indexed = mapper.readValue(
+                getClass().getResourceAsStream("/contentbridge/mappings/index.json"),
+                new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() { });
+
+        assertEquals(onDisk, new java.util.TreeSet<>(indexed),
+                "index.json is out of step with the files - add or remove the name there too");
+    }
 }
