@@ -62,7 +62,7 @@ class SiteHostTest {
         final Map<String, Object> screens = map(exporter().export(home).get("screens"));
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> content =
-                (List<Map<String, Object>>) map(screens.get("Home")).get("content");
+                (List<Map<String, Object>>) map(screens.get("en")).get("content");
         return String.valueOf(map(content.get(0).get("content")).get("image"));
     }
 
@@ -113,7 +113,7 @@ class SiteHostTest {
         final Map<String, Object> screens = map(exporter().export(home).get("screens"));
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> content =
-                (List<Map<String, Object>>) map(screens.get("Home")).get("content");
+                (List<Map<String, Object>>) map(screens.get("en")).get("content");
 
         assertEquals(PUBLISH_HOST + "/content/acme/us/en/news",
                 map(content.get(0).get("content")).get("link"));

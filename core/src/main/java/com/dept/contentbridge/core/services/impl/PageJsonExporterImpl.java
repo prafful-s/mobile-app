@@ -516,7 +516,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private static String screenKey(final Page page) {
         return StringUtils.defaultIfBlank(
                 page.getProperties().get("screenName", String.class),
-                StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
+                page.getName());
     }
 
     private Resource childResource(final Page page, final String relPath) {

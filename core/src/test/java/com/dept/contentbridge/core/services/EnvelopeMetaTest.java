@@ -130,9 +130,13 @@ class EnvelopeMetaTest {
     }
 
     @Test
-    @DisplayName("a right icon needs a target; without one it is not emitted")
-    void rightIconIsOptional() {
-        assertFalse(appMeta().containsKey("rightIcon"));
+    @DisplayName("the right icon block is always present, blank when unconfigured")
+    void rightIconIsAlwaysPresent() {
+        // The shape is fixed, so the key exists either way. An icon with no name renders as
+        // nothing, which is what an unconfigured right icon should do.
+        final Map<String, Object> unset = map(appMeta().get("rightIcon"));
+        assertEquals("", unset.get("icon"));
+        assertEquals("", unset.get("target"));
 
         context.create().page(SITE + "/placeholders", "", Map.of(
                 "rightIcon", "shopping-cart", "rightIconTarget", "cart"));
@@ -141,6 +145,21 @@ class EnvelopeMetaTest {
         assertEquals("shopping-cart", icon.get("icon"));
         assertEquals("shopping-cart", icon.get("name"));
         assertEquals("cart", icon.get("target"));
+    }
+
+    @Test
+    @DisplayName("every app key the target defines is present, even on a site that configures none")
+    void appShapeIsFixed() {
+        final Map<String, Object> meta = appMeta();
+
+        for (final String key : List.of("id", "docs", "type", "brand", "title", "locale", "useCart",
+                "template", "vertical", "rightIcon", "thumbnail", "navigation", "description",
+                "displayInbox", "authentication", "enableTargetRec", "brandingMboxName",
+                "targetRecMboxName", "enableBrandingTargeting")) {
+            assertTrue(meta.containsKey(key), "meta is missing " + key + ": " + meta.keySet());
+        }
+        assertEquals("", meta.get("docs"), "blank rather than absent");
+        assertEquals("", meta.get("brand"), "this fixture sets no brand and no theme");
     }
 
     @Test
@@ -161,8 +180,8 @@ class EnvelopeMetaTest {
     @Test
     @DisplayName("the site root is flagged as the root screen and others are not")
     void rootScreenIsFlagged() {
-        assertEquals(Boolean.TRUE, screenMeta("Home").get("isRootScreen"));
-        assertEquals(Boolean.FALSE, screenMeta("Offers").get("isRootScreen"));
+        assertEquals(Boolean.TRUE, screenMeta("en").get("isRootScreen"));
+        assertEquals(Boolean.FALSE, screenMeta("offers").get("isRootScreen"));
     }
 
     @Test
@@ -174,7 +193,7 @@ class EnvelopeMetaTest {
         final Page orphan = context.pageManager().getPage(HOME + "/documents");
         final Map<String, Object> screens = map(exporter.export(orphan,
                 ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens"));
-        final Map<String, Object> meta = map(map(screens.get("Documents")).get("meta"));
+        final Map<String, Object> meta = map(map(screens.get("documents")).get("meta"));
 
         if (Boolean.FALSE.equals(meta.get("includeInNavigation"))) {
             assertNull(meta.get("navigationOrder"), "no order is honest; 0 would be a lie");
@@ -184,13 +203,13 @@ class EnvelopeMetaTest {
     @Test
     @DisplayName("screen template defaults, and an authored one wins")
     void screenTemplate() {
-        assertEquals("FreeformScreen", screenMeta("Home").get("template"));
+        assertEquals("FreeformScreen", screenMeta("en").get("template"));
 
         context.create().page(SITE + "/us/en/atm", "",
                 Map.of("jcr:title", "ATM", "template", "MapScreen", "icon", "atm"));
 
-        assertEquals("MapScreen", screenMeta("ATM").get("template"));
-        assertEquals("atm", screenMeta("ATM").get("icon"));
+        assertEquals("MapScreen", screenMeta("atm").get("template"));
+        assertEquals("atm", screenMeta("atm").get("icon"));
     }
 
     @Test
@@ -228,7 +247,7 @@ class EnvelopeMetaTest {
                 "jcr:title", "Insurance",
                 "pageCategory", "article"));
 
-        assertEquals("article", screenMeta("Insurance").get("preset"));
+        assertEquals("article", screenMeta("insurance").get("preset"));
     }
 
     @Test
@@ -239,7 +258,7 @@ class EnvelopeMetaTest {
                 "preset", "login",
                 "pageCategory", "article"));
 
-        assertEquals("login", screenMeta("Login").get("preset"));
+        assertEquals("login", screenMeta("login").get("preset"));
     }
 
     @Test
@@ -253,7 +272,7 @@ class EnvelopeMetaTest {
         assertFalse(app.containsKey("rules"));
         assertFalse(app.containsKey("modules"));
 
-        final Map<String, Object> screen = map(map(map(app.get("screens")).get("Home")).get("meta"));
+        final Map<String, Object> screen = map(map(map(app.get("screens")).get("en")).get("meta"));
         assertEquals(List.of("name", "title"), List.copyOf(screen.keySet()),
                 "v1 screen meta is exactly what it always was");
     }

@@ -66,7 +66,7 @@ class FormBlockSchemaTest {
     private List<Map<String, Object>> content() {
         final Page home = context.pageManager().getPage(SITE);
         final Map<String, Object> screens = map(exporter.export(home).get("screens"));
-        return (List<Map<String, Object>>) map(screens.get("Home")).get("content");
+        return (List<Map<String, Object>>) map(screens.get("en")).get("content");
     }
 
     @SuppressWarnings("unchecked")

@@ -67,7 +67,7 @@ class FormBlockV2Test {
         final Map<String, Object> app = v2
                 ? exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null))
                 : exporter.export(home);
-        return list(map(map(app.get("screens")).get("Home")).get("content"));
+        return list(map(map(app.get("screens")).get("en")).get("content"));
     }
 
     private Map<String, Object> form() {

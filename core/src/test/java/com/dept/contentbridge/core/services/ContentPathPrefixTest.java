@@ -67,7 +67,7 @@ class ContentPathPrefixTest {
         final Map<String, Object> screens = map(exporter.export(home).get("screens"));
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> content =
-                (List<Map<String, Object>>) map(screens.get("Home")).get("content");
+                (List<Map<String, Object>>) map(screens.get("en")).get("content");
         return map(content.get(0).get("content"));
     }
 
@@ -142,7 +142,7 @@ class ContentPathPrefixTest {
         final Map<String, Object> screens = map(exporter.export(home).get("screens"));
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> content =
-                (List<Map<String, Object>>) map(screens.get("Home")).get("content");
+                (List<Map<String, Object>>) map(screens.get("en")).get("content");
 
         assertEquals(List.of(PUBLISH + "/content/dam/acme/a.png", "https://cdn.example.com/b.png"),
                 map(content.get(0).get("content")).get("images"));

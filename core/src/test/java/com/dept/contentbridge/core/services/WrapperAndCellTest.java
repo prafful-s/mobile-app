@@ -66,7 +66,7 @@ class WrapperAndCellTest {
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> screens = map(exporter.export(home, options).get("screens"));
         final List<String> names = new ArrayList<>();
-        collect(list(map(screens.get("Home")).get("content")), names);
+        collect(list(map(screens.get("en")).get("content")), names);
         return names;
     }
 
@@ -127,7 +127,7 @@ class WrapperAndCellTest {
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> screens = map(exporter.export(home).get("screens"));
         final Map<String, Object> content =
-                map(list(map(screens.get("Home")).get("content")).get(0).get("content"));
+                map(list(map(screens.get("en")).get("content")).get(0).get("content"));
 
         assertEquals("Subscribe", content.get("button-label"));
         assertFalse(content.containsKey("aueComponentId"), "editor bookkeeping is not content");

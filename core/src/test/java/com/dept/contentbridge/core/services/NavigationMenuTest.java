@@ -102,7 +102,7 @@ class NavigationMenuTest {
         buildSite(NAV);
         final Map<String, Object> app = defaultExporter().export(home());
 
-        assertEquals(List.of("Home", "Campaigns", "News", "About Us"), menu(app));
+        assertEquals(List.of("en", "campaigns", "news", "about-us"), menu(app));
     }
 
     @Test
@@ -111,7 +111,7 @@ class NavigationMenuTest {
         buildSite(NAV);
         final Map<String, Object> screens = map(defaultExporter().export(home()).get("screens"));
 
-        assertTrue(screens.containsKey("Unlisted"),
+        assertTrue(screens.containsKey("unlisted"),
                 "the nav decides the menu, not what the app can render: " + screens.keySet());
         assertFalse(screens.containsKey("Header"), "the nav page is furniture, not a destination");
         assertFalse(screens.containsKey("Footer"), "the footer page is furniture, not a destination");
@@ -144,7 +144,7 @@ class NavigationMenuTest {
                 + "<li><a href=\"" + SITE + "/news.html\">News</a></li>"
                 + "</ul>");
 
-        assertEquals(List.of("Home", "News"), menu(defaultExporter().export(home())));
+        assertEquals(List.of("en", "news"), menu(defaultExporter().export(home())));
     }
 
     @Test
@@ -152,7 +152,7 @@ class NavigationMenuTest {
     void nestedMarkupInAnchors() {
         buildSite("<ul><li><a href=\"" + SITE + "/news.html\"><strong>News</strong></a></li></ul>");
 
-        assertTrue(menu(defaultExporter().export(home())).contains("News"));
+        assertTrue(menu(defaultExporter().export(home())).contains("news"));
     }
 
     @Test
@@ -163,7 +163,7 @@ class NavigationMenuTest {
                 + "<li><a href=\"news.html\">News</a></li>"
                 + "</ul>");
 
-        assertEquals(List.of("Home", "Campaigns", "News"), menu(defaultExporter().export(home())));
+        assertEquals(List.of("en", "campaigns", "news"), menu(defaultExporter().export(home())));
     }
 
     @Test
@@ -174,7 +174,7 @@ class NavigationMenuTest {
                 + "<li><a href=\"" + SITE + "/news\">News again</a></li>"
                 + "</ul>");
 
-        assertEquals(List.of("Home", "News"), menu(defaultExporter().export(home())));
+        assertEquals(List.of("en", "news"), menu(defaultExporter().export(home())));
     }
 
     @Test
@@ -186,7 +186,7 @@ class NavigationMenuTest {
                 "cacheMaxAge", 0,
                 "includeHomeScreen", false);
 
-        assertEquals(List.of("Campaigns", "News", "About Us"), menu(exporter.export(home())));
+        assertEquals(List.of("campaigns", "news", "about-us"), menu(exporter.export(home())));
     }
 
     @Test
@@ -197,7 +197,7 @@ class NavigationMenuTest {
         context.create().page(SITE + "/two", "", Map.of("jcr:title", "Two"));
         context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
 
-        assertEquals(List.of("Home", "One", "Two"), menu(defaultExporter().export(home())));
+        assertEquals(List.of("en", "one", "two"), menu(defaultExporter().export(home())));
     }
 
     @Test
@@ -206,7 +206,7 @@ class NavigationMenuTest {
         buildSite("<p>Coming soon</p>");
 
         final List<String> menu = menu(defaultExporter().export(home()));
-        assertTrue(menu.contains("Campaigns"), "expected the child-page fallback");
+        assertTrue(menu.contains("campaigns"), "expected the child-page fallback");
         assertTrue(menu.size() > 1);
     }
 
@@ -220,7 +220,7 @@ class NavigationMenuTest {
                 + "<li><a href=\"/content/bodea/language-masters/en/news.html\">News</a></li>"
                 + "</ul>");
 
-        assertEquals(List.of("Home", "Campaigns", "News"), menu(defaultExporter().export(home())));
+        assertEquals(List.of("en", "campaigns", "news"), menu(defaultExporter().export(home())));
     }
 
     @Test
@@ -236,6 +236,6 @@ class NavigationMenuTest {
         assertNotNull(siteContent);
         siteContent.adaptTo(ModifiableValueMap.class).put("navPath", SITE + "/custom-nav");
 
-        assertEquals(List.of("Home", "About Us"), menu(defaultExporter().export(home())));
+        assertEquals(List.of("en", "about-us"), menu(defaultExporter().export(home())));
     }
 }

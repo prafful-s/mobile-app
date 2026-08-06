@@ -78,7 +78,7 @@ class FranklinExportTest {
     @Test
     @DisplayName("sections, columns and row/col wrappers are flattened away")
     void structuralNodesAreFlattened() {
-        final List<String> names = componentNames("English");
+        final List<String> names = componentNames("en");
 
         assertEquals(List.of("hero", "text", "card", "card", "teaser", "title", "separator"), names);
         assertFalse(names.contains("section"), "sections must not appear as components");
@@ -88,7 +88,7 @@ class FranklinExportTest {
     @Test
     @DisplayName("a container block is walked through, not exported as an empty component")
     void containerBlocksAreNotExported() {
-        final List<String> names = componentNames("English");
+        final List<String> names = componentNames("en");
 
         assertFalse(names.contains("cards"), "the cards block wraps items and carries no content");
         assertEquals(2, names.stream().filter("card"::equals).count());
@@ -97,7 +97,7 @@ class FranklinExportTest {
     @Test
     @DisplayName("component identity comes from the model property")
     void modelDrivesComponentName() {
-        final Map<String, Object> hero = content("English").get(0);
+        final Map<String, Object> hero = content("en").get(0);
         assertEquals("hero", map(hero.get("meta")).get("component"));
 
         final Map<String, Object> heroContent = map(hero.get("content"));
@@ -108,10 +108,10 @@ class FranklinExportTest {
     @Test
     @DisplayName("every repository path is externalised - pages as well as assets")
     void repositoryPathsAreExternalised() {
-        final Map<String, Object> heroContent = map(content("English").get(0).get("content"));
+        final Map<String, Object> heroContent = map(content("en").get(0).get("content"));
         assertEquals(PUBLISH_DOMAIN + "/content/dam/bodea/en/images/hero.png", heroContent.get("image"));
 
-        final Map<String, Object> cardContent = map(content("English").get(2).get("content"));
+        final Map<String, Object> cardContent = map(content("en").get(2).get("content"));
         assertEquals(PUBLISH_DOMAIN + "/content/dam/bodea/en/images/card1.jpg", cardContent.get("image"));
         assertEquals(PUBLISH_DOMAIN + "/content/bodea/language-masters/en/machine-learning-in-the-digital-age",
                 cardContent.get("link"),
@@ -121,7 +121,7 @@ class FranklinExportTest {
     @Test
     @DisplayName("bookkeeping properties never leak into content")
     void bookkeepingIsStripped() {
-        for (final Map<String, Object> component : content("English")) {
+        for (final Map<String, Object> component : content("en")) {
             final Map<String, Object> payload = map(component.get("content"));
             for (final String key : payload.keySet()) {
                 assertFalse(key.startsWith("jcr:") || key.startsWith("sling:") || key.startsWith("cq:"),
@@ -135,7 +135,7 @@ class FranklinExportTest {
     @Test
     @DisplayName("modelFields drives field order, and undeclared authored fields still survive")
     void modelFieldsOrdersContent() {
-        final Map<String, Object> teaser = content("English").get(4);
+        final Map<String, Object> teaser = content("en").get(4);
         assertEquals("teaser", map(teaser.get("meta")).get("component"));
 
         final Map<String, Object> payload = map(teaser.get("content"));
@@ -148,7 +148,7 @@ class FranklinExportTest {
     @Test
     @DisplayName("a component with no authored fields still exports with an empty content object")
     void emptyComponent() {
-        final Map<String, Object> separator = content("English").get(6);
+        final Map<String, Object> separator = content("en").get(6);
         assertEquals("separator", map(separator.get("meta")).get("component"));
         assertTrue(map(separator.get("content")).isEmpty());
     }
@@ -158,9 +158,9 @@ class FranklinExportTest {
     void childPagesBecomeScreens() {
         final Map<String, Object> screens = map(exporter.export(page(HOME)).get("screens"));
 
-        assertTrue(screens.containsKey("English"));
-        assertTrue(screens.containsKey("About Us"));
-        assertEquals(List.of("newsletter"), componentNames("About Us"));
+        assertTrue(screens.containsKey("en"));
+        assertTrue(screens.containsKey("about-us"));
+        assertEquals(List.of("newsletter"), componentNames("about-us"));
     }
 
     @Test

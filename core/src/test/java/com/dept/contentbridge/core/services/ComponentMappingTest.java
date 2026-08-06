@@ -88,7 +88,7 @@ class ComponentMappingTest {
                 ? exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null))
                 : exporter.export(home);
         final Map<String, Object> screens = map(app.get("screens"));
-        return list(map(screens.get("Home")).get("content")).get(0);
+        return list(map(screens.get("en")).get("content")).get(0);
     }
 
     private Map<String, Object> content(final Map<String, Object> component) {
@@ -177,7 +177,7 @@ class ComponentMappingTest {
 
         final Page home = context.pageManager().getPage(HOME);
         final List<Map<String, Object>> all = list(map(map(exporter.export(home,
-                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens")).get("Home"))
+                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens")).get("en"))
                 .get("content"));
         final Map<String, Object> text = all.get(1);
 
@@ -243,7 +243,7 @@ class ComponentMappingTest {
 
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> exported = list(map(map(exporter.export(home,
-                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens")).get("Home"))
+                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens")).get("en"))
                 .get("content")).get(0);
 
         assertEquals("card", component(exported));

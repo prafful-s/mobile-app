@@ -93,9 +93,9 @@ class MenuVersusScreensTest {
     void menuComesFromTheNavFragment() {
         final List<String> menu = menu();
 
-        assertTrue(menu.contains("Plans"), menu.toString());
-        assertTrue(menu.contains("Contact"), menu.toString());
-        assertFalse(menu.contains("Plan Detail"), "the nav does not link it: " + menu);
+        assertTrue(menu.contains("plans"), menu.toString());
+        assertTrue(menu.contains("contact"), menu.toString());
+        assertFalse(menu.contains("plan-detail"), "the nav does not link it: " + menu);
     }
 
     @Test
@@ -103,10 +103,10 @@ class MenuVersusScreensTest {
     void screensHoldEveryPage() {
         final Map<String, Object> screens = map(app().get("screens"));
 
-        assertTrue(screens.containsKey("Home"));
-        assertTrue(screens.containsKey("Plans"));
-        assertTrue(screens.containsKey("Contact"));
-        assertTrue(screens.containsKey("Plan Detail"),
+        assertTrue(screens.containsKey("en"));
+        assertTrue(screens.containsKey("plans"));
+        assertTrue(screens.containsKey("contact"));
+        assertTrue(screens.containsKey("plan-detail"),
                 "a page off the menu is still reachable and must render: " + screens.keySet());
     }
 
@@ -124,11 +124,11 @@ class MenuVersusScreensTest {
     void screenMetaRecordsMembership() {
         final List<String> menu = menu();
 
-        final Map<String, Object> plans = screenMeta("Plans");
+        final Map<String, Object> plans = screenMeta("plans");
         assertEquals(Boolean.TRUE, plans.get("includeInNavigation"));
-        assertEquals(menu.indexOf("Plans"), plans.get("navigationOrder"));
+        assertEquals(menu.indexOf("plans"), plans.get("navigationOrder"));
 
-        final Map<String, Object> detail = screenMeta("Plan Detail");
+        final Map<String, Object> detail = screenMeta("plan-detail");
         assertEquals(Boolean.FALSE, detail.get("includeInNavigation"),
                 "off the menu, but exported all the same");
         assertEquals(null, detail.get("navigationOrder"));

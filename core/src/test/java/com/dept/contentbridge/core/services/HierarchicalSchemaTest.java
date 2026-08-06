@@ -66,7 +66,7 @@ class HierarchicalSchemaTest {
     private List<Map<String, Object>> content(final ExportOptions options) {
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> screens = map(exporter.export(home, options).get("screens"));
-        return list(map(screens.get("English")).get("content"));
+        return list(map(screens.get("en")).get("content"));
     }
 
     private String component(final Map<String, Object> entry) {

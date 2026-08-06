@@ -80,9 +80,19 @@ class PageJsonExporterImplTest {
         final List<String> menu = (List<String>) map(meta.get("navigation")).get("menu");
 
         assertEquals(menu, List.copyOf(screens.keySet()));
-        assertTrue(menu.contains("Home"));
+        assertTrue(menu.contains("en"));
         assertTrue(menu.contains("subpage-1"));
         assertTrue(menu.contains("Subpage3"), "screenName override should win over the page title");
+    }
+
+    @Test
+    @DisplayName("screen key is the page's node name, not its title")
+    void screenKeyIsNodeName() {
+        final Map<String, Object> screens =
+                map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("screens"));
+
+        assertTrue(screens.containsKey("en"), "the app root's node name is 'en', its title is 'Home'");
+        assertFalse(screens.containsKey("Home"), "title must not leak into the screen key: " + screens.keySet());
     }
 
     @Test
@@ -98,7 +108,7 @@ class PageJsonExporterImplTest {
     void screenContent() {
         final Map<String, Object> screens =
                 map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("screens"));
-        final Map<String, Object> home = map(screens.get("Home"));
+        final Map<String, Object> home = map(screens.get("en"));
 
         assertEquals(List.of("name", "title"), List.copyOf(map(home.get("meta")).keySet()),
                 "screen meta carries name and title only - no icon");
@@ -119,7 +129,7 @@ class PageJsonExporterImplTest {
 
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> content =
-                (List<Map<String, Object>>) map(screens.get("Home")).get("content");
+                (List<Map<String, Object>>) map(screens.get("en")).get("content");
 
         final Map<String, Object> unmapped = content.get(content.size() - 1);
         assertEquals("does-not-exist", map(unmapped.get("meta")).get("component"),
@@ -141,7 +151,7 @@ class PageJsonExporterImplTest {
                 map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("screens"));
         @SuppressWarnings("unchecked")
         final List<Map<String, Object>> content =
-                (List<Map<String, Object>>) map(screens.get("Home")).get("content");
+                (List<Map<String, Object>>) map(screens.get("en")).get("content");
 
         final Map<String, Object> teaser = content.stream()
                 .filter(c -> "teaser".equals(map(c.get("meta")).get("component")))
