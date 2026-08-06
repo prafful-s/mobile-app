@@ -1,6 +1,7 @@
 {
   "match": ["contentCards"],
   "component": "contentCards",
+  "skeleton": true,
   "fields": [
     { "target": "surface", "from": "surface" }
   ],

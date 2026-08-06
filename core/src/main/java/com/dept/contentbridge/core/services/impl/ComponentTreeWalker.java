@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
@@ -132,6 +133,28 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * Appends every authored property the rule did not consume, in authoring order, after the
+     * schema keys the mapping already wrote.
+     *
+     * <p>The source here is the model's own content projection, not the raw ValueMap - so JCR,
+     * Sling and CQ bookkeeping and the Edge Delivery {@code model}/{@code modelFields} markers
+     * are already filtered out, and DAM references are already externalised. All that is left
+     * to skip is what the rule consumed (its fields' source properties) and any key the schema
+     * already owns.</p>
+     */
+    private static void appendUnconsumedExtras(final Map<String, Object> target,
+                                               final Map<String, Object> authored,
+                                               final Set<String> consumed) {
+        for (final Map.Entry<String, Object> entry : authored.entrySet()) {
+            final String key = entry.getKey();
+            if (consumed.contains(key) || target.containsKey(key)) {
+                continue;
+            }
+            target.put(key, entry.getValue());
+        }
+    }
+
+    /**
      * Walks the component tree depth-first, in authoring order, flattening every structural node
      * into a single ordered list.
      *
@@ -222,8 +245,11 @@ final class ComponentTreeWalker {
                             authoredName, child.getPath());
                 } else {
                     componentName = mapping.getComponent();
-                    content = mapped;
+                    content = new LinkedHashMap<>(mapped);
                     styles = mapping.applyStyles(authored);
+                    if (mapping.isSkeleton()) {
+                        appendUnconsumedExtras(content, authored, mapping.consumedProperties());
+                    }
                 }
             }
 

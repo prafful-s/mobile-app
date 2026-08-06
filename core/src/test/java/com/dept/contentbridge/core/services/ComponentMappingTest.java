@@ -525,4 +525,42 @@ class ComponentMappingTest {
         assertEquals("center", content.get("alignment"));
         assertEquals("vertical", content.get("orientation"));
     }
+
+    @Test
+    @DisplayName("skeleton mode: unconsumed CRX properties appear as extras after schema keys")
+    void skeletonPassesThroughUnconsumedExtras() {
+        // contentCards opts in to skeleton mode. 'surface' is consumed by the rule;
+        // 'trackingId' is not - it should appear in the output verbatim.
+        final Map<String, Object> exported = export(true,
+                "model", "contentCards",
+                "surface", "sf_home",
+                "trackingId", "promo-42");
+
+        assertEquals("contentCards", component(exported));
+
+        final Map<String, Object> content = content(exported);
+        assertEquals("sf_home", content.get("surface"), "schema key comes through");
+        assertEquals("promo-42", content.get("trackingId"),
+                "unconsumed extras get appended verbatim");
+
+        final List<String> keys = List.copyOf(content.keySet());
+        assertEquals("surface", keys.get(0), "schema keys stay in declared order first");
+        assertTrue(keys.indexOf("trackingId") > keys.indexOf("surface"),
+                "extras appended after schema keys");
+    }
+
+    @Test
+    @DisplayName("skeleton mode: bookkeeping and consumed keys never leak into extras")
+    void skeletonFiltersConsumedAndBookkeeping() {
+        final Map<String, Object> exported = export(true,
+                "model", "contentCards",
+                "surface", "sf_home",
+                "modelFields", new String[] {"surface"},
+                "jcr:title", "not content");
+
+        final Map<String, Object> content = content(exported);
+        assertFalse(content.containsKey("modelFields"), "modelFields is bookkeeping");
+        assertFalse(content.containsKey("jcr:title"), "jcr: prefix is bookkeeping");
+        assertFalse(content.containsKey("model"), "the 'model' discriminator is bookkeeping");
+    }
 }
