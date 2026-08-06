@@ -679,4 +679,18 @@ class ComponentMappingTest {
         assertEquals("regular", content.get("subtitleFontWeight"));
         assertEquals("prod-1", content.get("trackingId"), "extras through");
     }
+
+    @Test
+    @DisplayName("htmlText in skeleton mode passes markup through, extras too")
+    void htmlTextSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "text",
+                "text", "<h1>Once you've picked a plan</h1>",
+                "authorNote", "reviewed");
+
+        assertEquals("htmlText", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals("<h1>Once you've picked a plan</h1>", content.get("text"));
+        assertEquals("reviewed", content.get("authorNote"), "extras through");
+    }
 }
