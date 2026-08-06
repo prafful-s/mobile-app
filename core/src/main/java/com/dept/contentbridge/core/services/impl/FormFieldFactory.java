@@ -254,12 +254,19 @@ final class FormFieldFactory {
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("mode", MODE_OUTLINED);
         content.put("path", path);
+
+        // A date picker is picked from a calendar, not typed into - none of the typed-input keys
+        // below apply to it, and it carries no free-text value/placeholder/defaultValue either.
+        if (DATE_PICKER.equals(component)) {
+            content.put("type", "single");
+            content.put("label", label);
+            content.put("prefill", prefill);
+            content.put("withDateFormatInLabel", false);
+            return content;
+        }
+
         content.put("label", label);
         content.put("prefill", prefill);
-
-        if (DATE_PICKER.equals(component)) {
-            content.put("withDateFormatInLabel", false);
-        }
         inputContent(content, inputMode, isPassword);
 
         content.put("value", StringUtils.defaultString(value));

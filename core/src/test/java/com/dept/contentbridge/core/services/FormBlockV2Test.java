@@ -378,7 +378,14 @@ class FormBlockV2Test {
                 .findFirst().orElseThrow(() -> new AssertionError("flight-date field missing"));
 
         assertEquals("datePicker", map(date.get("meta")).get("component"));
-        assertEquals(Boolean.FALSE, map(date.get("content")).get("withDateFormatInLabel"));
+
+        final Map<String, Object> content = map(date.get("content"));
+        assertEquals(List.of("mode", "path", "type", "label", "prefill", "withDateFormatInLabel"),
+                List.copyOf(content.keySet()), "a datePicker carries exactly these six keys");
+        assertEquals("single", content.get("type"));
+        assertEquals(Boolean.FALSE, content.get("withDateFormatInLabel"));
+        assertFalse(content.containsKey("inputMode"), "nothing is typed into a datePicker");
+        assertFalse(content.containsKey("value"), "a datePicker has no free-text value");
     }
 
     @Test
