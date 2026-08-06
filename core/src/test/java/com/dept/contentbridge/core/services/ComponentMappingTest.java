@@ -202,7 +202,9 @@ class ComponentMappingTest {
         assertEquals("/content/we-healthcare/language-masters/en/insurance-plans.html",
                 content(exported).get("linkTo"));
         assertEquals("cta-link", content(exported).get("variant"));
-        assertEquals(Boolean.FALSE, content(exported).get("uppercase"));
+        // 'uppercase' is no longer a schema field; the authored 'textUppercase' comes
+        // through as an extra (string, no coercion) - the whole point of passthrough.
+        assertEquals("false", content(exported).get("textUppercase"));
     }
 
     @Test
@@ -586,5 +588,29 @@ class ComponentMappingTest {
 
         assertTrue(content.containsKey("textColor"),
                 "nullable keys must be present as null, not absent");
+    }
+
+    @Test
+    @DisplayName("button in skeleton mode emits every schema key + extras")
+    void buttonSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "button",
+                "linkText", "Click me",
+                "link", "/somewhere",
+                "trackingId", "cta-1");
+
+        assertEquals("button", component(exported));
+        final Map<String, Object> content = content(exported);
+
+        assertEquals("Click me", content.get("label"));
+        assertEquals("/somewhere", content.get("linkTo"));
+        assertEquals("button", content.get("variant"), "schema default");
+        assertEquals("stretch", content.get("alignment"), "schema default");
+        assertEquals("", content.get("events"), "required but unauthored - empty string");
+        assertNull(content.get("icon"));
+        assertNull(content.get("message"));
+        assertNull(content.get("customEvent"));
+        assertNull(content.get("customStyles"));
+        assertEquals("cta-1", content.get("trackingId"), "extras through");
     }
 }

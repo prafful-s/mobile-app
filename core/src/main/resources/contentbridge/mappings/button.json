@@ -1,14 +1,17 @@
 {
   "match": ["button", "cta"],
   "component": "button",
+  "skeleton": true,
   "fields": [
     { "target": "label", "first": ["linkText", "buttonText", "text", "jcr:title"] },
-    { "target": "linkTo", "first": ["link", "btn-link", "href"] },
+    { "target": "icon", "from": "icon", "nullable": true },
+    { "target": "events", "from": "events", "default": "" },
+    { "target": "linkTo", "first": ["link", "btn-link", "href"], "nullable": true },
+    { "target": "message", "from": "message", "nullable": true },
     { "target": "variant", "first": ["linkType", "ctastyle", "style"], "default": "button" },
-    { "target": "horizontalAlignment", "from": "alignment", "default": "left" },
-    { "target": "uppercase", "from": "textUppercase", "type": "boolean" },
-    { "target": "textColor", "from": "textColor" },
-    { "target": "backgroundColor", "from": "backgroundColor" },
-    { "target": "borderColor", "from": "borderColor" }
+    { "target": "alignment", "from": "alignment", "default": "stretch" },
+    { "target": "textColor", "from": "textColor", "nullable": true },
+    { "target": "customEvent", "from": "customEvent", "nullable": true },
+    { "target": "customStyles", "from": "customStyles", "nullable": true }
   ]
 }
