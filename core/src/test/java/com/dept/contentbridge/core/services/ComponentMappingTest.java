@@ -158,7 +158,9 @@ class ComponentMappingTest {
         assertTrue(String.valueOf(content.get("subtitle")).startsWith("You'll find flexible"));
         assertEquals("image-top", content.get("cardType"));
         assertEquals("/content/we-healthcare/language-masters/en/insurance-plans", content.get("link"));
-        assertEquals(Boolean.TRUE, content.get("overlayBackground"));
+        // 'overlayBackground' is no longer a schema field with coercion - the authored
+        // 'overlaybackground' comes through as a string extra under its authored name.
+        assertEquals("true", content.get("overlaybackground"));
         assertEquals("titleMedium", content.get("titleVariant"), "supplied by the rule, not authored");
     }
 
@@ -656,5 +658,25 @@ class ComponentMappingTest {
         assertNull(content.get("linkTo"));
         assertNull(content.get("fullWidth"));
         assertEquals("cropped by design team", content.get("authorNotes"), "extras through");
+    }
+
+    @Test
+    @DisplayName("card in skeleton mode")
+    void cardSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "card",
+                "image", "/content/dam/x/pic.jpg",
+                "text", "<h2>Title</h2><p>Sub</p>",
+                "trackingId", "prod-1");
+
+        final Map<String, Object> content = content(exported);
+        assertEquals("/content/dam/x/pic.jpg", content.get("image"));
+        assertEquals("Title", content.get("title"));
+        assertEquals("stacked", content.get("cardType"));
+        assertEquals("titleMedium", content.get("titleVariant"));
+        assertEquals("titleMedium", content.get("subtitleVariant"));
+        assertEquals("regular", content.get("titleFontWeight"));
+        assertEquals("regular", content.get("subtitleFontWeight"));
+        assertEquals("prod-1", content.get("trackingId"), "extras through");
     }
 }

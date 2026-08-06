@@ -1,26 +1,18 @@
 {
   "match": ["card", "teaser"],
   "component": "card",
+  "skeleton": true,
   "fields": [
+    { "target": "link", "first": ["link", "btn-link", "linkTo"], "nullable": true },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
-    { "target": "link", "first": ["link", "btn-link", "linkTo"] },
-
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
-    { "target": "titleVariant", "const": "titleMedium" },
-
     { "target": "subtitle",
-      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true } },
-
-    { "target": "buttonLabel", "extract": { "from": "text", "select": "a", "as": "text" } },
-    { "target": "buttonVariant", "from": "ctastyle" },
-
+      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true },
+      "nullable": true },
     { "target": "cardType", "from": "style", "default": "stacked" },
-    { "target": "imageStyle", "from": "imagestyle" },
-    { "target": "textTransform", "const": "none" },
-    { "target": "horizontalAlignment", "from": "alignment", "default": "left" },
-
-    { "target": "selectable", "from": "selectable", "type": "boolean" },
-    { "target": "overlayBackground", "from": "overlaybackground", "type": "boolean" },
-    { "target": "backgroundColor", "from": "backgroundcolor" }
+    { "target": "titleVariant", "const": "titleMedium" },
+    { "target": "subtitleVariant", "const": "titleMedium" },
+    { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
+    { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "regular" }
   ]
 }
