@@ -408,4 +408,28 @@ class ComponentMappingTest {
         assertEquals("blue", styles.get("color"));
         assertEquals("green", styles.get("locationColor"));
     }
+
+    @Test
+    @DisplayName("an offer carries its authored link/surface and its defaults")
+    void offerMapping() {
+        final Map<String, Object> exported = export(true,
+                "model", "offer",
+                "linkTo", "insurance",
+                "surface", "sf_home_offer");
+
+        assertEquals("offer", component(exported));
+
+        final Map<String, Object> content = content(exported);
+        assertEquals("insurance", content.get("linkTo"));
+        assertEquals("sf_home_offer", content.get("surface"));
+        assertEquals(0.34, content.get("opacity"));
+        assertEquals(Boolean.TRUE, content.get("showTitle"));
+        assertEquals("cover", content.get("imageResize"));
+        assertEquals("titleLarge", content.get("titleVariant"));
+        assertEquals("center", content.get("horizontalAlignment"));
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals("#FFF", styles.get("color"));
+        assertEquals(200, ((Number) styles.get("height")).intValue());
+    }
 }
