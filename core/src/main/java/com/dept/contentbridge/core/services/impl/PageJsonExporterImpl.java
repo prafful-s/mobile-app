@@ -356,8 +356,16 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         if (options.isHierarchical()) {
             // DSN reference shape: meta, editor, content.
             // The editor block carries canvas layout (zIndex/position) authored in DSN Studio;
-            // AEM has no equivalent, so an empty map keeps the key present without fabricating data.
-            screen.put(SchemaConstants.KEY_EDITOR, Collections.emptyMap());
+            // AEM has no equivalent, so a zero-valued skeleton keeps the key shape fixed without
+            // fabricating a real position - the client sees the shape it expects, and the zeros
+            // read as "unpositioned" rather than "missing".
+            final Map<String, Object> position = new LinkedHashMap<>();
+            position.put("top", 0);
+            position.put("left", 0);
+            final Map<String, Object> editor = new LinkedHashMap<>();
+            editor.put("zIndex", 0);
+            editor.put("position", position);
+            screen.put(SchemaConstants.KEY_EDITOR, editor);
         }
         screen.put(SchemaConstants.KEY_CONTENT, walker.componentsOf(page, assetHost, options.isHierarchical()));
         return screen;
