@@ -8,5 +8,8 @@
     { "target": "weight", "from": "weight", "default": "regular" },
     { "target": "textColor", "from": "textColor", "nullable": true },
     { "target": "textAlignment", "first": ["alignment", "textAlignment"], "nullable": true }
+  ],
+  "styles": [
+    { "target": "color", "from": "color" }
   ]
 }

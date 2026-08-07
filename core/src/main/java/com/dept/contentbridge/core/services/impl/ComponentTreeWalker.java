@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.models.factory.ModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -318,13 +319,41 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
-
-        final Map<String, Object> styles = styleResolver.stylesOf(resource);
-        if (!styles.isEmpty()) {
-            entry.put(SchemaConstants.KEY_STYLES, styles);
-        }
+        entry.put(SchemaConstants.KEY_STYLES, panelStyles(resource));
         entry.put(SchemaConstants.KEY_CONTENT, children);
         sink.add(entry);
+    }
+
+    /**
+     * Reference contract's panel styles keyset, in field order. Every key is always emitted so
+     * the shape is fixed; missing properties fall back to an empty string (a client rendering
+     * with these as CSS then simply skips them). Values authored on the panel resource win in
+     * their raw form - a gap can be a number or a CSS length string, and coercing here would
+     * lose the author's intent.
+     */
+    private static final String[] PANEL_STYLE_KEYS = {
+        "gap", "margin", "padding", "alignItems", "justifyContent",
+        "borderRadius", "backgroundColor", "height", "marginTop",
+    };
+
+    private Map<String, Object> panelStyles(final Resource resource) {
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        final ValueMap props = resource.getValueMap();
+        for (final String key : PANEL_STYLE_KEYS) {
+            final Object value = props.get(key);
+            styles.put(key, value == null ? "" : value);
+        }
+        // The style resolver adds anything the panel picked up from its section's style tokens
+        // (a design-system class mapping); we let those overlay the raw keys so an author's
+        // token overrides the fallback but not their explicit property.
+        for (final Map.Entry<String, Object> tokenStyle : styleResolver.stylesOf(resource).entrySet()) {
+            if ("".equals(styles.get(tokenStyle.getKey()))) {
+                styles.put(tokenStyle.getKey(), tokenStyle.getValue());
+            } else if (!styles.containsKey(tokenStyle.getKey())) {
+                styles.put(tokenStyle.getKey(), tokenStyle.getValue());
+            }
+        }
+        return styles;
     }
 
     /** Columns lay their children out side by side; a section stacks them. */

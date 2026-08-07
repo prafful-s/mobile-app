@@ -139,10 +139,9 @@ final class ComponentMapping {
             if (isPresent(value)) {
                 target.put(field.getTarget(), value);
             } else if (skeleton) {
-                // Fixed-shape opt-in: emit the key anyway, using null when the field is
-                // declared nullable and an empty string otherwise. The client always sees the
-                // same key set, whatever the author left blank.
-                target.put(field.getTarget(), field.isNullable() ? null : "");
+                // Fixed-shape opt-in: emit the key anyway, typed to what the schema declared.
+                // The client always sees the same key set, whatever the author left blank.
+                target.put(field.getTarget(), field.emptyDefault());
             }
         }
         if (skeleton) {
@@ -173,6 +172,10 @@ final class ComponentMapping {
             }
             if (isPresent(value)) {
                 target.put(field.getTarget(), value);
+            } else if (skeleton) {
+                // Fixed-shape styles: emit every declared key so the reference contract's
+                // styles keyset is always present, typed to what the schema declared.
+                target.put(field.getTarget(), field.emptyDefault());
             }
         }
         return target;

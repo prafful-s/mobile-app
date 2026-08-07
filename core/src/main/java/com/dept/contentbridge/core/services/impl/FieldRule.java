@@ -117,6 +117,25 @@ final class FieldRule {
     }
 
     /**
+     * The value to emit when nothing was authored and no fallback fired, under skeleton mode.
+     * Nullable fields get {@code null}; numbers get {@code 0}; booleans get {@code false};
+     * everything else gets an empty string. The point is a fixed, typed shape - a client
+     * reading {@code styles.gap} should never have to distinguish "unset" from "wrong type".
+     */
+    Object emptyDefault() {
+        if (nullable) {
+            return null;
+        }
+        if (TYPE_NUMBER.equals(type)) {
+            return 0;
+        }
+        if (TYPE_BOOLEAN.equals(type) || TYPE_PRESENCE.equals(type)) {
+            return Boolean.FALSE;
+        }
+        return "";
+    }
+
+    /**
      * The CRX property names this rule reads from, so extras passthrough can filter them out.
      * Constant-only rules return an empty list - they consume nothing.
      */

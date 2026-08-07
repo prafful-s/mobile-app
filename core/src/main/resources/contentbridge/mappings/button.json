@@ -13,5 +13,10 @@
     { "target": "textColor", "from": "textColor", "nullable": true },
     { "target": "customEvent", "from": "customEvent", "nullable": true },
     { "target": "customStyles", "from": "customStyles", "nullable": true }
+  ],
+  "styles": [
+    { "target": "height", "from": "height", "type": "number" },
+    { "target": "marginTop", "from": "marginTop", "type": "number" },
+    { "target": "width", "from": "width", "type": "number" }
   ]
 }

@@ -88,6 +88,19 @@ class HierarchicalSchemaTest {
     }
 
     @Test
+    @DisplayName("panel styles emit the reference contract's 9-key skeleton")
+    void panelStylesSkeleton() {
+        final Map<String, Object> firstPanel = content(ExportOptions.of("v2", null)).get(0);
+        final Map<String, Object> styles = map(firstPanel.get("styles"));
+
+        for (final String key : List.of("gap", "margin", "padding", "alignItems",
+                "justifyContent", "borderRadius", "backgroundColor", "height", "marginTop")) {
+            assertTrue(styles.containsKey(key),
+                    "panel styles missing " + key + ": " + styles.keySet());
+        }
+    }
+
+    @Test
     @DisplayName("panel meta carries showBorder, defaulting to false")
     void panelShowBorderDefaultsFalse() {
         final Map<String, Object> firstPanel = content(ExportOptions.of("v2", null)).get(0);

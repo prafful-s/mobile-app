@@ -14,5 +14,8 @@
     { "target": "subtitleVariant", "const": "titleMedium" },
     { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
     { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "regular" }
+  ],
+  "styles": [
+    { "target": "border", "from": "border" }
   ]
 }

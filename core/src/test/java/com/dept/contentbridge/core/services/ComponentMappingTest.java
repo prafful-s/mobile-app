@@ -680,6 +680,47 @@ class ComponentMappingTest {
     }
 
     @Test
+    @DisplayName("styles: title emits color, defaulting to empty when unauthored")
+    void titleStylesSkeleton() {
+        final Map<String, Object> unset = export(true, "model", "title", "title", "Hi");
+        assertEquals("", map(unset.get("styles")).get("color"), "empty default for string style");
+
+        final Map<String, Object> set = export(true, "model", "title", "title", "Hi", "color", "#f00");
+        assertEquals("#f00", map(set.get("styles")).get("color"));
+    }
+
+    @Test
+    @DisplayName("styles: button emits height, marginTop, width as numbers")
+    void buttonStylesSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "button", "text", "Go",
+                "height", "40", "marginTop", "8", "width", "120");
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals(40L, styles.get("height"));
+        assertEquals(8L, styles.get("marginTop"));
+        assertEquals(120L, styles.get("width"));
+    }
+
+    @Test
+    @DisplayName("styles: image emits height, width, padding, empty when unauthored")
+    void imageStylesSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "image", "fileReference", "/content/dam/x.jpg");
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals(0, styles.get("height"), "numeric default is 0");
+        assertEquals(0, styles.get("width"));
+        assertEquals("", styles.get("padding"), "padding is passthrough string");
+    }
+
+    @Test
+    @DisplayName("styles: card emits border, empty when unauthored")
+    void cardStylesSkeleton() {
+        final Map<String, Object> exported = export(true,
+                "model", "card", "image", "/content/dam/x.jpg", "text", "<h2>Hi</h2>");
+        assertEquals("", map(exported.get("styles")).get("border"));
+    }
+
+    @Test
     @DisplayName("image in skeleton mode")
     void imageSkeleton() {
         final Map<String, Object> exported = export(true,

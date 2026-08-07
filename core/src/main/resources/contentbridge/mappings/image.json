@@ -14,5 +14,10 @@
     { "target": "resizeMode", "from": "resizeMode", "nullable": true },
     { "target": "weight", "from": "weight", "nullable": true },
     { "target": "justifyContent", "from": "justifyContent", "nullable": true }
+  ],
+  "styles": [
+    { "target": "height", "from": "height", "type": "number" },
+    { "target": "width", "from": "width", "type": "number" },
+    { "target": "padding", "from": "padding" }
   ]
 }
