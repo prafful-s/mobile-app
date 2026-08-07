@@ -222,8 +222,7 @@ final class EnvelopeMeta {
                 props.get("preset", String.class),
                 props.get(PN_PAGE_CATEGORY, String.class))));
 
-        meta.put("template", StringUtils.defaultIfBlank(
-                props.get("template", String.class), DEFAULT_SCREEN_TEMPLATE));
+        meta.put("template", screenTemplate(props));
 
         meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
 
@@ -235,6 +234,46 @@ final class EnvelopeMeta {
         meta.put("includeInNavigation", order >= 0);
 
         return meta;
+    }
+
+    /**
+     * The screen template name. Preferred source is AEM's {@code cq:template} on the page's
+     * {@code jcr:content}, so the value reflects what the page was actually built from; a
+     * {@code /conf/.../templates/freeform-screen} path becomes {@code FreeformScreen} by taking
+     * the last segment and PascalCasing it. An explicit authored {@code template} property still
+     * wins as an override, and both fall back to {@link #DEFAULT_SCREEN_TEMPLATE} so the key is
+     * never blank.
+     */
+    private static String screenTemplate(final ValueMap props) {
+        final String override = props.get("template", String.class);
+        if (StringUtils.isNotBlank(override)) {
+            return override;
+        }
+        final String cqTemplate = props.get("cq:template", String.class);
+        if (StringUtils.isNotBlank(cqTemplate)) {
+            final String tail = StringUtils.substringAfterLast(cqTemplate, "/");
+            final String segment = StringUtils.isNotBlank(tail) ? tail : cqTemplate;
+            return pascalCase(segment);
+        }
+        return DEFAULT_SCREEN_TEMPLATE;
+    }
+
+    /** Converts a kebab / snake / space-separated token to PascalCase: {@code freeform-screen -> FreeformScreen}. */
+    private static String pascalCase(final String value) {
+        if (StringUtils.isBlank(value)) {
+            return value;
+        }
+        final StringBuilder out = new StringBuilder(value.length());
+        for (final String part : value.split("[-_\\s]+")) {
+            if (part.isEmpty()) {
+                continue;
+            }
+            out.append(Character.toUpperCase(part.charAt(0)));
+            if (part.length() > 1) {
+                out.append(part.substring(1).toLowerCase(Locale.ROOT));
+            }
+        }
+        return out.length() == 0 ? value : out.toString();
     }
 
     /**

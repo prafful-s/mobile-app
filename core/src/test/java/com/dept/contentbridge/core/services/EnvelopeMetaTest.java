@@ -229,6 +229,28 @@ class EnvelopeMetaTest {
     }
 
     @Test
+    @DisplayName("template comes from cq:template's last segment, PascalCased")
+    void templateFromCqTemplate() {
+        context.create().page(SITE + "/us/en/map", "",
+                Map.of("jcr:title", "Map",
+                        "cq:template", "/conf/acme/settings/wcm/templates/map-screen"));
+
+        assertEquals("MapScreen", screenMeta("map").get("template"),
+                "cq:template's last segment kebab-to-Pascal");
+    }
+
+    @Test
+    @DisplayName("an authored template property still wins over cq:template")
+    void authoredTemplateBeatsCqTemplate() {
+        context.create().page(SITE + "/us/en/custom", "",
+                Map.of("jcr:title", "Custom",
+                        "template", "CustomScreen",
+                        "cq:template", "/conf/acme/settings/wcm/templates/freeform-screen"));
+
+        assertEquals("CustomScreen", screenMeta("custom").get("template"));
+    }
+
+    @Test
     @DisplayName("brand is derived from the theme property when not in placeholders")
     void brandFallbackFromTheme() {
         context.resourceResolver().getResource(HOME + "/jcr:content")

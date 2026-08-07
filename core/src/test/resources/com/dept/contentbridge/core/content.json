@@ -118,7 +118,7 @@
         "jcr:content": {
           "jcr:primaryType": "cq:PageContent",
           "jcr:title": "Renamed Page",
-          "screenName": "Subpage3",
+          "pageName": "Subpage3",
           "screenIcon": "file-document",
           "sling:resourceType": "contentbridge/components/page"
         }

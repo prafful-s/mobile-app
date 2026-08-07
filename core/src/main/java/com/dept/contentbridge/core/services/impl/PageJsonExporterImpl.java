@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -521,10 +522,39 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return null;
     }
 
+    /**
+     * The stable key a screen is filed under in {@code screens} and referred to by from
+     * {@code meta.navigation}.
+     *
+     * <p>Preferred source is the authored {@code pageName} property on the page's
+     * {@code jcr:content}, so an author can rename the JCR node without breaking client-side
+     * references. Falls back to the page's node name when unset.</p>
+     *
+     * <p>Normalised to lower-kebab-case regardless of source: {@code "Credit Cards"} and
+     * {@code "credit_cards"} both become {@code "credit-cards"}. That way the key that reaches a
+     * client is always a valid identifier - the shape of the value cannot depend on how neatly
+     * an author typed it.</p>
+     */
     private static String screenKey(final Page page) {
-        return StringUtils.defaultIfBlank(
-                page.getProperties().get("screenName", String.class),
+        final String raw = StringUtils.defaultIfBlank(
+                page.getProperties().get("pageName", String.class),
                 page.getName());
+        return kebab(raw);
+    }
+
+    /**
+     * Lower-kebab-cases a string: whitespace and underscores collapse to a single hyphen, the
+     * result is lower-cased, and leading/trailing hyphens are trimmed. Non-blank input always
+     * yields non-blank output.
+     */
+    private static String kebab(final String value) {
+        if (StringUtils.isBlank(value)) {
+            return value;
+        }
+        return value.trim().toLowerCase(Locale.ROOT)
+                .replaceAll("[\\s_]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^-+|-+$", "");
     }
 
     private Resource childResource(final Page page, final String relPath) {

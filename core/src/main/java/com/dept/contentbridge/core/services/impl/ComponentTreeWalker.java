@@ -312,6 +312,9 @@ final class ComponentTreeWalker {
         meta.put(SchemaConstants.KEY_ORDER, sink.size());
         meta.put(SchemaConstants.KEY_LAYOUT, layoutOf(resourceType));
         meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
+        // Reference contract carries showBorder on every panel meta. AEM has no equivalent
+        // property, so emit the target's own default rather than omit the key.
+        meta.put("showBorder", resource.getValueMap().get("showBorder", Boolean.FALSE));
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
