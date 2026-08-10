@@ -155,16 +155,20 @@ Import-Package: !org.jspecify.annotations,javax.annotation;version=0.0.0,*
 # the documented API surface, so relying on that export would be fragile across SDK versions.
 #
 # Sling servlet-helpers is embedded for a blunter reason: AEM as a Cloud Service does not export
-# org.apache.sling.servlethelpers.internalrequests at start level 20, so importing it leaves the
-# bundle unresolvable - which the aemanalyser catches at build time rather than on deploy. Only the
-# internal-request classes come along; everything they reference (org.apache.sling.api,
-# org.apache.sling.engine) is exported by AEM and is still imported normally.
+# org.apache.sling.servlethelpers at start level 20, so importing it leaves the bundle unresolvable -
+# which the aemanalyser catches at build time rather than on deploy. The full servlethelpers.* tree
+# has to come along, not just internalrequests: SlingInternalRequest's own base class holds a
+# MockSlingHttpServletRequest/MockSlingHttpServletResponse pair as the synthetic request/response it
+# actually dispatches through, so those top-level-package classes are a real runtime dependency of
+# the one class we use, not test-only dead weight. (Narrowing this to internalrequests.* alone was
+# tried and broke: the bundle then imports org.apache.sling.servlethelpers unresolvably. See git
+# history around commit 1e29a2a for the reverted attempt.)
 #
-# Scoped to the internalrequests subpackage specifically, not the whole servlethelpers.* tree: the
-# artifact's top-level package also holds MockSlingHttpServletRequest and friends, which are test
-# doubles for @ProviderType interfaces (Resource, SlingHttpServletRequest, ...) that have no
-# business inside a production bundle. A wider wildcard here embedded them anyway.
--conditionalpackage: org.jsoup.*,org.apache.sling.servlethelpers.internalrequests.*
+# The MockSlingHttpServletRequest/MockRequestParameter/etc. classes this pulls in trip a Sonar
+# CQBP-84 finding ('@ProviderType interface implemented by custom code') on every AEM analysis.
+# That's Apache Sling's own design, not ours to fix - SlingInternalRequest cannot work without them
+# embedded, so the finding is accepted rather than suppressed or engineered around.
+-conditionalpackage: org.jsoup.*,org.apache.sling.servlethelpers.*
                                 ]]></bnd>
                             </configuration>
                         </execution>
