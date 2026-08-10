@@ -1,29 +1,27 @@
-/farms {
-  /default {
-    /clientheaders {
-      "$include" "../clientheaders/default_clientheaders.any"
-    }
-    /virtualhosts {
-      "*"
-    }
-    /renders {
-      "$include" "../renders/default_renders.any"
-    }
-    /filter {
-      "$include" "../filters/default_filters.any"
-      "$include" "../filters/contentbridge_filters.any"
-    }
-    /cache {
-      /docroot "${DOCROOT}"
-      "$include" "../cache/default_rules.any"
-      "$include" "../cache/contentbridge_cache.any"
-      /invalidate {
-        "$include" "../cache/default_invalidate.any"
-      }
-      /allowedClients {
-        "$include" "../cache/default_invalidate_any"
-      }
-    }
-    /statfileslevel "2"
+/contentbridge {
+  /clientheaders {
+    $include "../clientheaders/default_clientheaders.any"
   }
+  /virtualhosts {
+    "*"
+  }
+  /renders {
+    $include "../renders/default_renders.any"
+  }
+  /filter {
+    $include "../filters/default_filters.any"
+    $include "../filters/contentbridge_filters.any"
+  }
+  /cache {
+    /docroot "${DOCROOT}"
+    $include "../cache/default_rules.any"
+    $include "../cache/contentbridge_cache.any"
+    /invalidate {
+      $include "../cache/default_invalidate.any"
+    }
+    /allowedClients {
+      $include "../cache/default_invalidate.any"
+    }
+  }
+  /statfileslevel "2"
 }
