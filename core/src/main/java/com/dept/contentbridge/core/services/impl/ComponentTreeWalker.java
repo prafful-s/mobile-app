@@ -77,7 +77,7 @@ final class ComponentTreeWalker {
         final List<Map<String, Object>> components = new ArrayList<>();
         final Resource container = resolveContainer(page);
         if (container != null) {
-            collectComponents(container, components, 0, hierarchical);
+            collectComponents(container, components, 0, hierarchical, null);
         }
         prefixAssetsDeep(components, assetHost);
         return components;
@@ -163,9 +163,18 @@ final class ComponentTreeWalker {
      * {@code root > section > columns > row > col > block > item}. Structural nodes carry layout,
      * not content, so they are descended into rather than exported - which keeps the flat
      * {@code content[]} contract identical for both authoring models.</p>
+     *
+     * @param ancestorSection the nearest enclosing section resource, or {@code null} above the
+     *                       first one - carried down so a field declared {@code fromParent} can
+     *                       read a section-level property such as {@code sec-alignment} regardless
+     *                       of how many columns/row/col wrappers sit between the section and the
+     *                       component. {@code null} until a section is actually entered; a
+     *                       {@code fromParent} field then just resolves to nothing, same as any
+     *                       other unset source.
      */
     private void collectComponents(final Resource parent, final List<Map<String, Object>> sink,
-                                   final int depth, final boolean hierarchical) {
+                                   final int depth, final boolean hierarchical,
+                                   final Resource ancestorSection) {
         if (depth > MAX_COMPONENT_DEPTH) {
             LOG.warn("Component nesting below {} exceeds {} levels - not descending further",
                     parent.getPath(), MAX_COMPONENT_DEPTH);
@@ -188,12 +197,15 @@ final class ComponentTreeWalker {
 
             // Known layout containers, and the untyped row/col wrappers, never produce a component.
             if (isKnownContainerType(resourceType) || (hasChildren && isUntyped(resourceType))) {
+                // A section becomes the new nearest ancestor for anything beneath it; a columns/
+                // row/col wrapper is not a section itself, so it just carries the existing one down.
+                final Resource nextSection = isSectionType(resourceType) ? child : ancestorSection;
                 if (hierarchical) {
                     // A section carries the spacing and alignment the target's panel wants, so it is
                     // a component in its own right rather than scaffolding to step over.
-                    emitPanel(child, sink, depth, resourceType);
+                    emitPanel(child, sink, depth, resourceType, nextSection);
                 } else {
-                    collectComponents(child, sink, depth + 1, false);
+                    collectComponents(child, sink, depth + 1, false, nextSection);
                 }
                 continue;
             }
@@ -222,7 +234,7 @@ final class ComponentTreeWalker {
             // Evaluated from the authored content, before any mapping, so that a rule cannot turn a
             // wrapper into a component by supplying constants.
             if (hasChildren && authored.isEmpty()) {
-                collectComponents(child, sink, depth + 1, hierarchical);
+                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection);
                 continue;
             }
 
@@ -230,6 +242,8 @@ final class ComponentTreeWalker {
             String componentName = authoredName;
             Map<String, Object> content = authored;
             Map<String, Object> styles = Collections.emptyMap();
+            final Map<String, Object> sectionProps = ancestorSection == null
+                    ? Collections.emptyMap() : ancestorSection.getValueMap();
 
             // v2 speaks the app's vocabulary, so an authored 'hero' becomes a 'banner' carrying the
             // fields the client expects. v1 is left exactly as it was: the two schemas are each a
@@ -237,7 +251,7 @@ final class ComponentTreeWalker {
             final ComponentMapping mapping =
                     hierarchical && !speaksTargetVocabulary ? mappings.find(authoredName) : null;
             if (mapping != null) {
-                final Map<String, Object> mapped = mapping.apply(authored);
+                final Map<String, Object> mapped = mapping.apply(authored, sectionProps);
                 if (mapped.isEmpty()) {
                     // The rule matched a component with none of its source fields authored. An empty
                     // banner tells a client less than the authored shape does, so this one component
@@ -247,7 +261,7 @@ final class ComponentTreeWalker {
                 } else {
                     componentName = mapping.getComponent();
                     content = new LinkedHashMap<>(mapped);
-                    styles = mapping.applyStyles(authored);
+                    styles = mapping.applyStyles(authored, sectionProps);
                     if (mapping.isSkeleton()) {
                         appendUnconsumedExtras(content, authored, mapping.consumedProperties());
                     }
@@ -288,7 +302,7 @@ final class ComponentTreeWalker {
             // Components that also nest (carousels, tabs, blocks with items) contribute their
             // children to the same flat list.
             if (hasChildren) {
-                collectComponents(child, sink, depth + 1, hierarchical);
+                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection);
             }
         }
     }
@@ -300,9 +314,10 @@ final class ComponentTreeWalker {
      * ended up with no content is noise to a client, not a layout instruction.</p>
      */
     private void emitPanel(final Resource resource, final List<Map<String, Object>> sink,
-                           final int depth, final String resourceType) {
+                           final int depth, final String resourceType,
+                           final Resource ancestorSection) {
         final List<Map<String, Object>> children = new ArrayList<>();
-        collectComponents(resource, children, depth + 1, true);
+        collectComponents(resource, children, depth + 1, true, ancestorSection);
 
         if (children.isEmpty()) {
             return;
@@ -465,6 +480,18 @@ final class ComponentTreeWalker {
                 || "iparsys".equals(name)
                 || "root".equals(name)
                 || "section".equals(name);
+    }
+
+    /**
+     * True for a section container specifically, as opposed to a columns/row/col wrapper - so the
+     * walker knows when to update the "nearest enclosing section" it carries down for
+     * {@code fromParent} field resolution.
+     */
+    private static boolean isSectionType(final String resourceType) {
+        if (SchemaConstants.RT_FRANKLIN_SECTION.equals(resourceType)) {
+            return true;
+        }
+        return "section".equals(StringUtils.substringAfterLast(resourceType, "/"));
     }
 
     /** @return true when no sling:resourceType is set and Sling fell back to the JCR primary type */

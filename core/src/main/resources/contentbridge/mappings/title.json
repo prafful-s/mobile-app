@@ -7,7 +7,7 @@
     { "target": "text", "first": ["title", "jcr:title", "text"] },
     { "target": "weight", "from": "weight", "default": "regular" },
     { "target": "textColor", "from": "textColor", "nullable": true },
-    { "target": "textAlignment", "first": ["alignment", "textAlignment"], "nullable": true }
+    { "target": "textAlignment", "fromParent": "sec-alignment", "nullable": true }
   ],
   "styles": [
     { "target": "color", "from": "color" }

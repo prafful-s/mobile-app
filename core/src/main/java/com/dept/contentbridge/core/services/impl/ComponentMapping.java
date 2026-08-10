@@ -121,16 +121,18 @@ final class ComponentMapping {
      * still produce a plausible-looking shell - a banner with an alignment and a button style and no
      * title. That is worse than leaving the component alone, because it looks like content.</p>
      *
-     * @param source the component's authored properties
+     * @param source       the component's own authored properties
+     * @param parentSource the nearest enclosing section's authored properties, for any field
+     *                     declared {@code fromParent}; pass an empty map when there is none
      * @return the target payload in the order the rule declares, or an empty map when the rule
      *         found nothing the author had set
      */
-    Map<String, Object> apply(final Map<String, Object> source) {
+    Map<String, Object> apply(final Map<String, Object> source, final Map<String, Object> parentSource) {
         final Map<String, Object> target = new LinkedHashMap<>();
         boolean anyAuthored = false;
 
         for (final FieldRule field : fields) {
-            Object value = field.fromSource(source);
+            Object value = field.fromSource(source, parentSource);
             if (isPresent(value)) {
                 anyAuthored = true;
             } else {
@@ -159,14 +161,16 @@ final class ComponentMapping {
      * style property was actually set, the same way individual {@code fields} entries already
      * default-fill an unauthored key.</p>
      *
-     * @param source the component's authored properties
+     * @param source       the component's own authored properties
+     * @param parentSource the nearest enclosing section's authored properties, for any field
+     *                     declared {@code fromParent}; pass an empty map when there is none
      * @return the target styles in the order the rule declares, or an empty map when the rule
      *         declares no {@code styles} at all
      */
-    Map<String, Object> applyStyles(final Map<String, Object> source) {
+    Map<String, Object> applyStyles(final Map<String, Object> source, final Map<String, Object> parentSource) {
         final Map<String, Object> target = new LinkedHashMap<>();
         for (final FieldRule field : styleFields) {
-            Object value = field.fromSource(source);
+            Object value = field.fromSource(source, parentSource);
             if (!isPresent(value)) {
                 value = field.fallback();
             }

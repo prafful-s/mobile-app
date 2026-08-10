@@ -92,6 +92,30 @@ class ComponentMappingTest {
         return list(map(screens.get("en")).get("content")).get(0);
     }
 
+    /**
+     * Authors one block inside a section (so {@code fromParent} fields have something to read)
+     * and returns the section's exported panel.
+     */
+    private Map<String, Object> exportUnderSection(final Object[] sectionProps,
+                                                    final Object... blockProps) {
+        final Object[] section = new Object[sectionProps.length + 2];
+        section[0] = "sling:resourceType";
+        section[1] = "core/franklin/components/section/v1/section";
+        System.arraycopy(sectionProps, 0, section, 2, sectionProps.length);
+        context.build().resource(HOME + "/jcr:content/root/section", section);
+
+        final Object[] block = new Object[blockProps.length + 2];
+        block[0] = "sling:resourceType";
+        block[1] = "core/franklin/components/block/v1/block";
+        System.arraycopy(blockProps, 0, block, 2, blockProps.length);
+        context.build().resource(HOME + "/jcr:content/root/section/block", block);
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null));
+        final Map<String, Object> screens = map(app.get("screens"));
+        return list(map(screens.get("en")).get("content")).get(0);
+    }
+
     private Map<String, Object> content(final Map<String, Object> component) {
         return map(component.get("content"));
     }
@@ -169,12 +193,11 @@ class ComponentMappingTest {
     void titleAndText() {
         final Map<String, Object> title = export(true,
                 "model", "title", "title", "Health Plans Just Right For Your Family",
-                "titleType", "h1", "alignment", "center");
+                "titleType", "h1");
 
         assertEquals("title", component(title));
         assertEquals("Health Plans Just Right For Your Family", content(title).get("text"));
         assertEquals("h1", content(title).get("size"));
-        assertEquals("center", content(title).get("textAlignment"));
 
         context.build().resource(HOME + "/jcr:content/root/block2",
                 "sling:resourceType", "core/franklin/components/block/v1/block",
@@ -600,6 +623,37 @@ class ComponentMappingTest {
 
         assertTrue(content.containsKey("textColor"),
                 "nullable keys must be present as null, not absent");
+    }
+
+    @Test
+    @DisplayName("title textAlignment reads the enclosing section's sec-alignment, not its own property")
+    void titleAlignmentFromParentSection() {
+        final Map<String, Object> panel = exportUnderSection(
+                new Object[] { "sec-alignment", "center" },
+                "model", "title", "title", "Popular offers and services",
+                // An own 'alignment'/'textAlignment' property must be ignored now that the field
+                // reads fromParent - proves the section wins, not merely that it's the only source.
+                "alignment", "left", "textAlignment", "right");
+
+        final Map<String, Object> title = list(panel.get("content")).get(0);
+        assertEquals("center", content(title).get("textAlignment"),
+                "sourced from the section's sec-alignment");
+    }
+
+    @Test
+    @DisplayName("title textAlignment is null with no enclosing section at all")
+    void titleAlignmentNullWithNoSection() {
+        final Map<String, Object> noSection = export(true, "model", "title", "title", "Hi");
+        assertNull(content(noSection).get("textAlignment"));
+    }
+
+    @Test
+    @DisplayName("title textAlignment is null when the enclosing section has no sec-alignment")
+    void titleAlignmentNullWhenSectionUnset() {
+        final Map<String, Object> panel = exportUnderSection(
+                new Object[] {}, "model", "title", "title", "Hi");
+        final Map<String, Object> title = list(panel.get("content")).get(0);
+        assertNull(content(title).get("textAlignment"));
     }
 
     @Test

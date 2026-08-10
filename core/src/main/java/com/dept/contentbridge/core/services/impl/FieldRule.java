@@ -45,6 +45,7 @@ final class FieldRule {
 
     private final String target;
     private final String from;
+    private final String parentFrom;
     private final List<String> first;
     private final Object constant;
     private final Extract extract;
@@ -52,11 +53,12 @@ final class FieldRule {
     private final String type;
     private final boolean nullable;
 
-    private FieldRule(final String target, final String from, final List<String> first,
-                      final Object constant, final Extract extract, final Object defaultValue,
-                      final String type, final boolean nullable) {
+    private FieldRule(final String target, final String from, final String parentFrom,
+                      final List<String> first, final Object constant, final Extract extract,
+                      final Object defaultValue, final String type, final boolean nullable) {
         this.target = target;
         this.from = from;
+        this.parentFrom = parentFrom;
         this.first = first;
         this.constant = constant;
         this.extract = extract;
@@ -76,6 +78,7 @@ final class FieldRule {
         }
         return new FieldRule(target,
                 string(definition.get("from")),
+                string(definition.get("fromParent")),
                 strings(definition.get("first")),
                 definition.get("const"),
                 Extract.of(definition.get("extract")),
@@ -93,13 +96,16 @@ final class FieldRule {
      *
      * <p>Kept separate from {@link #fallback()} so the caller can tell a mapping that read real
      * content from one that produced nothing but its own constants and defaults - see
-     * {@link ComponentMapping#apply(Map)}.</p>
+     * {@link ComponentMapping#apply(Map, Map)}.</p>
      *
-     * @param source the component's authored properties
+     * @param source       the component's own authored properties
+     * @param parentSource the nearest enclosing section's authored properties, for fields
+     *                     declared {@code fromParent} - a section carries layout settings (such
+     *                     as {@code sec-alignment}) that apply to every component inside it
      * @return the authored value, or {@code null} when this field has no source or it is unset
      */
-    Object fromSource(final Map<String, Object> source) {
-        return constant != null ? null : coerce(resolve(source));
+    Object fromSource(final Map<String, Object> source, final Map<String, Object> parentSource) {
+        return constant != null ? null : coerce(resolve(source, parentSource));
     }
 
     /** The value to use when nothing was authored: the constant, or the declared default. */
@@ -136,8 +142,10 @@ final class FieldRule {
     }
 
     /**
-     * The CRX property names this rule reads from, so extras passthrough can filter them out.
-     * Constant-only rules return an empty list - they consume nothing.
+     * The CRX property names this rule reads from <em>the component's own resource</em>, so
+     * extras passthrough can filter them out. Constant-only rules, and {@code fromParent} rules
+     * (which read the enclosing section, not the component), return an empty list - neither
+     * consumes anything from the component's own authored properties.
      */
     List<String> consumedProperties() {
         if (extract != null) {
@@ -153,9 +161,12 @@ final class FieldRule {
         return Collections.emptyList();
     }
 
-    private Object resolve(final Map<String, Object> source) {
+    private Object resolve(final Map<String, Object> source, final Map<String, Object> parentSource) {
         if (extract != null) {
             return extract.apply(source);
+        }
+        if (parentFrom != null) {
+            return blankToNull(parentSource.get(parentFrom));
         }
         if (!first.isEmpty()) {
             for (final String candidate : first) {

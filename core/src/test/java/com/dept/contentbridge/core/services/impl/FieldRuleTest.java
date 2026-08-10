@@ -47,6 +47,22 @@ class FieldRuleTest {
     }
 
     @Test
+    @DisplayName("fromParent reads the section's map, not the component's own, and consumes nothing")
+    void fromParentReadsParentSource() {
+        final FieldRule rule = FieldRule.of(Map.of(
+                "target", "textAlignment", "fromParent", "sec-alignment", "nullable", true));
+
+        assertTrue(rule.consumedProperties().isEmpty(),
+                "fromParent reads the section, not the component's own authored properties");
+
+        final Object fromOwnSource = rule.fromSource(
+                Map.of("sec-alignment", "left"), Map.of("sec-alignment", "center"));
+        assertEquals("center", fromOwnSource, "the parent map wins even if the own map has the key");
+
+        assertEquals(null, rule.fromSource(Map.of(), Map.of()), "unset in the parent stays null");
+    }
+
+    @Test
     @DisplayName("nullable defaults to false, opts in when set")
     void nullable() {
         final FieldRule off = FieldRule.of(Map.of("target", "subtitle", "from", "subtitle"));
