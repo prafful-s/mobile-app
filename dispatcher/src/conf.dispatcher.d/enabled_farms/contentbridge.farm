@@ -1,5 +1,5 @@
 /farms {
-  /contentbridge {
+  /default {
     /clientheaders {
       "$include" "../clientheaders/default_clientheaders.any"
     }
