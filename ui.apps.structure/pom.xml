@@ -29,15 +29,17 @@
                         <filter><root>/apps/contentbridge</root></filter>
                         <!-- /apps/contentbridge-packages and /apps/contentbridge-vendor-packages are
                              NOT declared here: the 'all' container package owns those as its embed
-                             targets. Declaring them a second time overlapped the two packages'
-                             filters, which Cloud Manager's PackageOverlaps check rejects - two
-                             packages claiming the same root race on install order. -->
-                        <filter><root>/conf/contentbridge</root></filter>
+                             targets. /conf/contentbridge and /content/contentbridge are NOT declared
+                             here either: the 'ui.content' package owns both, with 'merge' mode, as
+                             the package that actually authors content under them. Any of these three
+                             declared a second time overlapped the owning package's filter, which
+                             Cloud Manager's PackageOverlaps check rejects - two packages claiming the
+                             same root race on install order. This package is left declaring only the
+                             roots nothing else in the reactor owns. -->
                         <!-- 'replace' (the default) would wipe authored content under /content on
                              every redeploy of this structure package - AEMaaCS disallows it there
                              for exactly that reason. 'merge' only creates what's missing and leaves
                              anything already authored alone. -->
-                        <filter><root>/content/contentbridge</root><mode>merge</mode></filter>
                         <filter><root>/content/dam/contentbridge</root><mode>merge</mode></filter>
                     </filters>
                 </configuration>
