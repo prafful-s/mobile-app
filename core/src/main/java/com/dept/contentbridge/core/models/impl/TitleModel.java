@@ -23,8 +23,14 @@ public class TitleModel extends AbstractComponentModel {
 
     @Override
     protected void buildContent(final ContentBuilder builder) {
+        // textAlignment is inherited from the enclosing section's sec-alignment token
+        final String textAlignment = resource.getParent() != null
+                ? resource.getParent().getValueMap().get("sec-alignment", "")
+                : "";
         builder.put("text", prop("jcr:title"))
                 .put("size", prop("size", "medium"))
-                .put("textAlignment", prop("textAlignment", "left"));
+                .putOrEmpty("weight", prop("weight"))
+                .putOrEmpty("textColor", prop("textColor"))
+                .putOrEmpty("textAlignment", textAlignment);
     }
 }

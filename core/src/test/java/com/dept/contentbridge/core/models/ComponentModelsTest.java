@@ -77,6 +77,8 @@ class ComponentModelsTest {
         final Map<String, Object> content = model("title").getContent();
         assertEquals("A heading", content.get("text"));
         assertEquals("xlarge", content.get("size"));
+        assertEquals("", content.get("weight"));
+        assertEquals("", content.get("textColor"));
         assertEquals("center", content.get("textAlignment"));
     }
 

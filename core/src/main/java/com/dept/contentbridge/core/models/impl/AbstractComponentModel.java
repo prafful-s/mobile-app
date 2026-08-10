@@ -106,6 +106,12 @@ public abstract class AbstractComponentModel implements ContentBridgeComponent {
             return this;
         }
 
+        /** Always emits the key; uses {@code ""} when the value is blank or null. */
+        ContentBuilder putOrEmpty(final String key, final String value) {
+            map.put(key, StringUtils.defaultString(value));
+            return this;
+        }
+
         /** Booleans are emitted as strings to match the published contract. */
         ContentBuilder putFlag(final String key, final boolean value) {
             map.put(key, Boolean.toString(value));
