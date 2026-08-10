@@ -159,7 +159,12 @@ Import-Package: !org.jspecify.annotations,javax.annotation;version=0.0.0,*
 # bundle unresolvable - which the aemanalyser catches at build time rather than on deploy. Only the
 # internal-request classes come along; everything they reference (org.apache.sling.api,
 # org.apache.sling.engine) is exported by AEM and is still imported normally.
--conditionalpackage: org.jsoup.*,org.apache.sling.servlethelpers.*
+#
+# Scoped to the internalrequests subpackage specifically, not the whole servlethelpers.* tree: the
+# artifact's top-level package also holds MockSlingHttpServletRequest and friends, which are test
+# doubles for @ProviderType interfaces (Resource, SlingHttpServletRequest, ...) that have no
+# business inside a production bundle. A wider wildcard here embedded them anyway.
+-conditionalpackage: org.jsoup.*,org.apache.sling.servlethelpers.internalrequests.*
                                 ]]></bnd>
                             </configuration>
                         </execution>

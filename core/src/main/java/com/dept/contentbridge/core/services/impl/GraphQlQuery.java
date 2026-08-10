@@ -117,6 +117,6 @@ final class GraphQlQuery {
 
     @Override
     public String toString() {
-        return isConfigured() ? configName + "/" + queryName + " over " + path : "none";
+        return isConfigured() ? (configName + "/" + queryName + " over " + path) : "none";
     }
 }

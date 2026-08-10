@@ -186,8 +186,8 @@ final class EnvelopeMeta {
         }
         return StringUtils.isBlank(language.getCountry())
                 ? language.getLanguage().toLowerCase(Locale.ROOT)
-                : language.getLanguage().toLowerCase(Locale.ROOT) + "-"
-                        + language.getCountry().toLowerCase(Locale.ROOT);
+                : (language.getLanguage().toLowerCase(Locale.ROOT) + "-"
+                        + language.getCountry().toLowerCase(Locale.ROOT));
     }
 
     /**

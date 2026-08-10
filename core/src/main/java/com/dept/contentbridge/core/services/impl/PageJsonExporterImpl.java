@@ -490,7 +490,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     private void collectDescendants(final Page parent, final List<Page> sink, final int depth) {
-        if (depth > maxDepth) {
+        if (parent == null || depth > maxDepth) {
             return;
         }
         final Iterator<Page> children = parent.listChildren();

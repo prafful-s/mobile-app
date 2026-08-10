@@ -27,12 +27,18 @@
                     <repositoryStructurePackage>true</repositoryStructurePackage>
                     <filters>
                         <filter><root>/apps/contentbridge</root></filter>
-                        <!-- Install roots used by the 'all' container package. -->
-                        <filter><root>/apps/contentbridge-packages</root></filter>
-                        <filter><root>/apps/contentbridge-vendor-packages</root></filter>
+                        <!-- /apps/contentbridge-packages and /apps/contentbridge-vendor-packages are
+                             NOT declared here: the 'all' container package owns those as its embed
+                             targets. Declaring them a second time overlapped the two packages'
+                             filters, which Cloud Manager's PackageOverlaps check rejects - two
+                             packages claiming the same root race on install order. -->
                         <filter><root>/conf/contentbridge</root></filter>
-                        <filter><root>/content/contentbridge</root></filter>
-                        <filter><root>/content/dam/contentbridge</root></filter>
+                        <!-- 'replace' (the default) would wipe authored content under /content on
+                             every redeploy of this structure package - AEMaaCS disallows it there
+                             for exactly that reason. 'merge' only creates what's missing and leaves
+                             anything already authored alone. -->
+                        <filter><root>/content/contentbridge</root><mode>merge</mode></filter>
+                        <filter><root>/content/dam/contentbridge</root><mode>merge</mode></filter>
                     </filters>
                 </configuration>
             </plugin>

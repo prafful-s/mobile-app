@@ -307,7 +307,7 @@ final class ProductExporter {
         if (StringUtils.isBlank(raw)) {
             return StringUtils.EMPTY;
         }
-        return raw.startsWith(DAM_ROOT) && StringUtils.isNotBlank(assetHost) ? assetHost + raw : raw;
+        return raw.startsWith(DAM_ROOT) && StringUtils.isNotBlank(assetHost) ? (assetHost + raw) : raw;
     }
 
     private List<Integer> toIntegerList(final String raw) {

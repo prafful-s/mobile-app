@@ -139,7 +139,7 @@ final class SiteHostResolver {
         }
         final String remainder = path.substring(CONTENT_ROOT.length());
         final String site = StringUtils.substringBefore(remainder, "/");
-        return StringUtils.isEmpty(site) ? null : CONTENT_ROOT + site;
+        return StringUtils.isEmpty(site) ? null : (CONTENT_ROOT + site);
     }
 
     /**
