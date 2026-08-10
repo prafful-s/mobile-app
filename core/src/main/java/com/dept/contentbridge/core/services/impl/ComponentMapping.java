@@ -85,10 +85,11 @@ final class ComponentMapping {
     }
 
     /**
-     * True when this rule opts in to fixed-shape output: every declared field is emitted
-     * always (nullable-and-absent as null, non-nullable-and-absent as an empty string) and the
-     * walker appends any authored CRX property this rule did not consume. Rules without the
-     * flag behave as they did before - only authored/defaulted keys, empty projection abandoned.
+     * True when this rule opts in to fixed-shape output: every declared field is emitted always,
+     * typed to an empty default when unauthored (empty string, {@code 0}, or {@code false} - see
+     * {@link FieldRule#emptyDefault()}), and the walker appends any authored CRX property this
+     * rule did not consume. Rules without the flag behave as they did before - only
+     * authored/defaulted keys, empty projection abandoned.
      */
     boolean isSkeleton() {
         return skeleton;

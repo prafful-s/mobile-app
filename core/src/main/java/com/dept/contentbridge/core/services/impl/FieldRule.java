@@ -114,9 +114,9 @@ final class FieldRule {
     }
 
     /**
-     * True when the schema declares this field nullable. Under skeleton mode, an unauthored
-     * nullable field is emitted as {@code null} (rather than dropped), so the client sees a
-     * fixed key set.
+     * True when the schema declares this field nullable. No longer changes what
+     * {@link #emptyDefault()} emits - kept on the schema and this accessor for rule files that
+     * still declare it, and for any caller wanting to know the field's optionality.
      */
     boolean isNullable() {
         return nullable;
@@ -124,14 +124,11 @@ final class FieldRule {
 
     /**
      * The value to emit when nothing was authored and no fallback fired, under skeleton mode.
-     * Nullable fields get {@code null}; numbers get {@code 0}; booleans get {@code false};
-     * everything else gets an empty string. The point is a fixed, typed shape - a client
-     * reading {@code styles.gap} should never have to distinguish "unset" from "wrong type".
+     * Numbers get {@code 0}; booleans get {@code false}; everything else - including nullable
+     * fields - gets an empty string rather than {@code null}. The point is a fixed, typed shape a
+     * client can always index into without a null check.
      */
     Object emptyDefault() {
-        if (nullable) {
-            return null;
-        }
         if (TYPE_NUMBER.equals(type)) {
             return 0;
         }

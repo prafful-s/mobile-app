@@ -3,7 +3,6 @@ package com.dept.contentbridge.core.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -561,7 +560,7 @@ class ComponentMappingTest {
         assertEquals("center", content.get("alignment"));
         assertEquals("vertical", content.get("orientation"));
         assertTrue(content.containsKey("horizontalInset"), "nullable schema key present");
-        assertNull(content.get("horizontalInset"));
+        assertEquals(Boolean.FALSE, content.get("horizontalInset"), "unauthored boolean, typed empty default");
         assertEquals("div-1", content.get("trackingId"), "extras through");
     }
 
@@ -618,12 +617,12 @@ class ComponentMappingTest {
         assertEquals("Hello", content.get("text"));
         assertEquals("bold", content.get("weight"));
         assertEquals("medium", content.get("size"), "default from the schema");
-        assertNull(content.get("textColor"), "nullable optional, absent");
-        assertNull(content.get("textAlignment"), "nullable optional, absent");
+        assertEquals("", content.get("textColor"), "nullable optional, unauthored - empty string");
+        assertEquals("", content.get("textAlignment"), "nullable optional, unauthored - empty string");
         assertEquals("hero-title", content.get("trackingId"), "unconsumed extras pass through");
 
         assertTrue(content.containsKey("textColor"),
-                "nullable keys must be present as null, not absent");
+                "nullable keys must be present, not absent");
     }
 
     @Test
@@ -642,19 +641,19 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("title textAlignment is null with no enclosing section at all")
-    void titleAlignmentNullWithNoSection() {
+    @DisplayName("title textAlignment is empty with no enclosing section at all")
+    void titleAlignmentEmptyWithNoSection() {
         final Map<String, Object> noSection = export(true, "model", "title", "title", "Hi");
-        assertNull(content(noSection).get("textAlignment"));
+        assertEquals("", content(noSection).get("textAlignment"));
     }
 
     @Test
-    @DisplayName("title textAlignment is null when the enclosing section has no sec-alignment")
-    void titleAlignmentNullWhenSectionUnset() {
+    @DisplayName("title textAlignment is empty when the enclosing section has no sec-alignment")
+    void titleAlignmentEmptyWhenSectionUnset() {
         final Map<String, Object> panel = exportUnderSection(
                 new Object[] {}, "model", "title", "title", "Hi");
         final Map<String, Object> title = list(panel.get("content")).get(0);
-        assertNull(content(title).get("textAlignment"));
+        assertEquals("", content(title).get("textAlignment"));
     }
 
     @Test
@@ -674,10 +673,10 @@ class ComponentMappingTest {
         assertEquals("button", content.get("variant"), "schema default");
         assertEquals("stretch", content.get("alignment"), "schema default");
         assertEquals("", content.get("events"), "required but unauthored - empty string");
-        assertNull(content.get("icon"));
-        assertNull(content.get("message"));
-        assertNull(content.get("customEvent"));
-        assertNull(content.get("customStyles"));
+        assertEquals("", content.get("icon"));
+        assertEquals("", content.get("message"));
+        assertEquals("", content.get("customEvent"));
+        assertEquals("", content.get("customStyles"));
         assertEquals("cta-1", content.get("trackingId"), "extras through");
     }
 
@@ -702,9 +701,9 @@ class ComponentMappingTest {
         assertEquals("middle", content.get("verticalAlignment"));
         assertEquals("left", content.get("horizontalAlignment"));
 
-        // Nullable-and-unauthored -> null (not absent)
+        // Nullable-and-unauthored -> empty string (not absent)
         assertTrue(content.containsKey("linkTo"));
-        assertNull(content.get("linkTo"));
+        assertEquals("", content.get("linkTo"));
         assertTrue(content.containsKey("opacity"));
 
         // Extras
@@ -788,10 +787,10 @@ class ComponentMappingTest {
         assertEquals("/content/dam/x/pic.jpg", content.get("image"));
         assertEquals("A picture", content.get("alt"));
         assertEquals("contain", content.get("imageResize"), "schema default");
-        assertNull(content.get("width"));
-        assertNull(content.get("height"));
-        assertNull(content.get("linkTo"));
-        assertNull(content.get("fullWidth"));
+        assertEquals("", content.get("width"));
+        assertEquals(0, content.get("height"), "unauthored number, typed empty default");
+        assertEquals("", content.get("linkTo"));
+        assertEquals(Boolean.FALSE, content.get("fullWidth"), "unauthored boolean, typed empty default");
         assertEquals("cropped by design team", content.get("authorNotes"), "extras through");
     }
 
