@@ -9,6 +9,9 @@ ui.apps/src/main/content/jcr_root/apps/contentbridge/clientlibs/clientlib-site/
 
 docs/
 
+# AI-tool project notes (flow.md, decisions.md) - local working memory, not shipped
+.claude/
+
 # Logs - kept on disk, never committed
 *.log
 logs/
