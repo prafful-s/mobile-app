@@ -68,7 +68,11 @@ GET /content/<site>/<path>/api/<name>.json?path=/content/<site>/us/en[&pretty=tr
         │    a persisted GraphQL query in-JVM via SlingRequestProcessor (optional ref — falls back to
         │    Content Fragments if unbound). maxProducts caps the response (default 200, truncates +
         │    warns)
-        │  - StyleResolver resolves authored style tokens (sec-spacing, bg-*) → concrete
+        │  - ComponentTreeWalker.prefixAssetsDeep walks the finished tree and prepends the delivery host
+    (ContentPaths.prefix) to every `/content/...` string value - EXCEPT the `link`/`linkTo` keys,
+    which stay relative paths (client resolves them itself; see decisions.md). Runs after mapping,
+    so it also catches Franklin blocks with no mapping rule (GenericComponent's raw passthrough)
+  - StyleResolver resolves authored style tokens (sec-spacing, bg-*) → concrete
         │    {property:value} pairs for v2 schema only, via ContentBridgeConfiguration.styleTokens
         ▼
   JSON response, schema v1 (flat, default) or v2 (?schema=v2 — layout containers preserved as

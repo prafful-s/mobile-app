@@ -104,7 +104,7 @@ class SiteHostTest {
     }
 
     @Test
-    @DisplayName("page links are prefixed too, not just assets")
+    @DisplayName("page links stay relative even though assets are prefixed")
     void pageLinksArePrefixed() {
         buildSite();
         context.create().page(SITE + "/placeholders", "", Map.of("hostname", AUTHOR_HOST));
@@ -115,7 +115,7 @@ class SiteHostTest {
         final List<Map<String, Object>> content =
                 (List<Map<String, Object>>) map(screens.get("en")).get("content");
 
-        assertEquals(PUBLISH_HOST + "/content/acme/us/en/news",
+        assertEquals("/content/acme/us/en/news",
                 map(content.get(0).get("content")).get("link"));
     }
 }

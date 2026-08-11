@@ -106,15 +106,32 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * Output keys never rewritten with the delivery host, even though their value is a
+     * {@code /content/...} repository path.
+     *
+     * <p>A {@code link}/{@code linkTo} is a navigation target: the client already knows its own
+     * host and resolves the path itself (in-app routing, or its own environment's domain). Baking
+     * a specific environment's host into it would send every client to that one environment
+     * regardless of where the JSON was actually served from - unlike an image or Content Fragment
+     * reference, which names a resource that must be fetched from exactly this delivery host.</p>
+     */
+    private static final Set<String> NEVER_PREFIXED_KEYS = Set.of("link", "linkTo");
+
+    /**
      * Prefixes repository paths with the site's delivery host, in place.
      *
      * <p>Applied here rather than inside each model so that curated models and the generic fallback
      * behave identically, and so the host is resolved once per export instead of once per component.
      * Keyed on the value, not the property name, because projects use {@code image},
-     * {@code imageRef}, {@code fileReference}, {@code link} and others interchangeably.</p>
+     * {@code imageRef}, {@code fileReference} and others interchangeably - except
+     * {@link #NEVER_PREFIXED_KEYS}, which are excluded by name because a link and an asset
+     * reference need opposite treatment even when both hold a bare {@code /content/...} path.</p>
      */
     private void prefixAssets(final Map<String, Object> payload, final String assetHost) {
         for (final Map.Entry<String, Object> entry : payload.entrySet()) {
+            if (NEVER_PREFIXED_KEYS.contains(entry.getKey())) {
+                continue;
+            }
             final Object value = entry.getValue();
             if (value instanceof String) {
                 entry.setValue(prefixAsset((String) value, assetHost));

@@ -22,7 +22,9 @@ import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
  * Everything under {@code /content} gets the site's host, wherever it appears - a bare property, an
- * entry in a multi-value, or a link buried in authored rich text.
+ * entry in a multi-value, or a link buried in authored rich text - except a {@code link}/
+ * {@code linkTo} field, which stays a relative path: it is a navigation target the client resolves
+ * itself, not a resource to fetch from a specific delivery host.
  */
 @ExtendWith(AemContextExtension.class)
 class ContentPathPrefixTest {
@@ -79,9 +81,9 @@ class ContentPathPrefixTest {
     }
 
     @Test
-    @DisplayName("a page path is prefixed")
+    @DisplayName("a link is left relative - the client resolves it against its own host")
     void pagePath() {
-        assertEquals(PUBLISH + "/content/acme/en/plans.html",
+        assertEquals("/content/acme/en/plans.html",
                 exportFirstComponent("model", "hero", "link", "/content/acme/en/plans.html").get("link"));
     }
 

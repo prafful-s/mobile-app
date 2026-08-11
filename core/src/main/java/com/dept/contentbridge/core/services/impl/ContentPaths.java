@@ -10,7 +10,9 @@ import org.apache.commons.lang3.StringUtils;
  *
  * <p>Everything under {@code /content} is rewritten, not just {@code /content/dam}: a client
  * consuming this JSON has no AEM to resolve {@code /content/we-healthcare/…/plan-selection} against,
- * so a page link is exactly as unusable as a bare asset path.</p>
+ * so a page link is exactly as unusable as a bare asset path. The one exception is the {@code link}/
+ * {@code linkTo} output field, which the caller ({@link ComponentTreeWalker}) excludes before this
+ * ever runs - see {@code NEVER_PREFIXED_KEYS} there.</p>
  *
  * <p>Links also hide inside authored rich text, so {@code href} and {@code src} attributes are
  * rewritten in place. Deliberately done with a regex rather than an HTML parser: parsing and

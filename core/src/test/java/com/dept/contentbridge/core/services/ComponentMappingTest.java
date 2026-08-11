@@ -361,17 +361,16 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("extracted links are still given the site host")
+    @DisplayName("extracted links stay relative even though the site has a host configured")
     void extractedLinksAreExternalised() {
         context.create().page(SITE + "/placeholders", "",
                 Map.of("hostname", "https://author-p1-e2.adobeaemcloud.com"));
 
         final Map<String, Object> content = content(export(true, "model", "hero", "text", HERO_TEXT));
 
-        assertEquals("https://publish-p1-e2.adobeaemcloud.com"
-                        + "/content/we-healthcare/language-masters/en/medicare-plan-selection",
+        assertEquals("/content/we-healthcare/language-masters/en/medicare-plan-selection",
                 content.get("linkTo"),
-                "the host pass runs after mapping, so derived fields are externalised too");
+                "linkTo is a navigation target - the host pass explicitly skips it");
     }
 
     @Test

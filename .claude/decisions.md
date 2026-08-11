@@ -158,6 +158,32 @@ knows its own host; it only needs the path.
 **Consistent with**: the existing "don't guess, stay visible" rule - a malformed URL is returned
 as authored rather than dropped or half-parsed.
 
+## `link`/`linkTo` excluded from the global host-prefixing pass
+
+**Decision**: `ComponentTreeWalker.prefixAssets` now skips the output keys `link` and `linkTo`
+before running `ContentPaths.prefix`, so those fields keep whatever relative `/content/...` path
+they resolved to instead of getting the delivery host prepended.
+**Why**: `ComponentTreeWalker.componentsOf()` runs `prefixAssetsDeep` over the *entire* finished
+component tree, keyed only on value shape (any string starting with `/content/` gets the host) -
+by original design, deliberately, so image/DAM/CF references work without an AEM session to
+resolve them against. That pass runs **after** mapping rules, so it was silently undoing the
+`type: "path"` host-stripping added earlier the same day for `button.linkTo`/`card.link`/
+`hero.linkTo`/`image.linkTo`/`offer.linkTo`, and doing the same to any Franklin block's raw
+`link` property via the `GenericComponent` fallback (this is what a `product-card` Franklin block
+with an authored `link` field was hitting - see screenshot triage). A `link`/`linkTo` is a
+navigation target the client already knows how to resolve against its own host (in-app routing,
+or its own environment); an image/DAM/CF reference is a resource that must be fetched from
+exactly this delivery host - the two need opposite treatment even when both happen to be a bare
+`/content/...` string.
+**Reverses**: this was previously deliberate, documented, and tested behavior (see
+`ContentPaths.java`'s class doc and the now-updated `ContentPathPrefixTest`, `FranklinExportTest`,
+`SiteHostTest`, `ComponentMappingTest.extractedLinksAreExternalised`) - explicit user request to
+flip it, not a bug fix. Markup links inside authored rich text (`<a href="/content/...">` in a
+`text`/`htmlText` field) are untouched - out of scope, not requested.
+**Scope note**: keyed on the literal target key name (`link`, `linkTo`), not the resourceType or
+component - covers every mapping rule that emits one of those two names, plus the generic
+Franklin-block fallback, with a two-entry `Set` rather than per-component special-casing.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

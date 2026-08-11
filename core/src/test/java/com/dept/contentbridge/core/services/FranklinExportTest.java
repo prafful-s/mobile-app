@@ -106,16 +106,16 @@ class FranklinExportTest {
     }
 
     @Test
-    @DisplayName("every repository path is externalised - pages as well as assets")
+    @DisplayName("asset paths are externalised; link/linkTo stay relative")
     void repositoryPathsAreExternalised() {
         final Map<String, Object> heroContent = map(content("home").get(0).get("content"));
         assertEquals(PUBLISH_DOMAIN + "/content/dam/bodea/en/images/hero.png", heroContent.get("image"));
 
         final Map<String, Object> cardContent = map(content("home").get(2).get("content"));
         assertEquals(PUBLISH_DOMAIN + "/content/dam/bodea/en/images/card1.jpg", cardContent.get("image"));
-        assertEquals(PUBLISH_DOMAIN + "/content/bodea/language-masters/en/machine-learning-in-the-digital-age",
+        assertEquals("/content/bodea/language-masters/en/machine-learning-in-the-digital-age",
                 cardContent.get("link"),
-                "a page link is as unusable as a bare asset path to a client with no AEM");
+                "a link is a navigation target the client resolves itself, not a fetchable resource");
     }
 
     @Test
