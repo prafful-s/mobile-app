@@ -19,6 +19,11 @@ import org.apache.commons.lang3.StringUtils;
  *   <li>{@code from} - a straight copy</li>
  * </ul>
  *
+ * <p>Independently of the operator above, an optional {@code map} translates the resolved value
+ * through a fixed lookup (e.g. an authored heading level {@code h2} to a size token
+ * {@code xlarge}). A value with no entry in the map passes through unchanged, so an unexpected
+ * authored value is still visible in the response rather than silently dropped.</p>
+ *
  * <p>A field that resolves to blank is omitted rather than emitted empty, matching what the curated
  * models already do. {@code default} fills a value in only when the source is missing, so a
  * deliberate authored blank is not overwritten by a guess.</p>
@@ -52,10 +57,12 @@ final class FieldRule {
     private final Object defaultValue;
     private final String type;
     private final boolean nullable;
+    private final Map<String, Object> valueMap;
 
     private FieldRule(final String target, final String from, final String parentFrom,
                       final List<String> first, final Object constant, final Extract extract,
-                      final Object defaultValue, final String type, final boolean nullable) {
+                      final Object defaultValue, final String type, final boolean nullable,
+                      final Map<String, Object> valueMap) {
         this.target = target;
         this.from = from;
         this.parentFrom = parentFrom;
@@ -65,6 +72,7 @@ final class FieldRule {
         this.defaultValue = defaultValue;
         this.type = type;
         this.nullable = nullable;
+        this.valueMap = valueMap;
     }
 
     /**
@@ -84,7 +92,8 @@ final class FieldRule {
                 Extract.of(definition.get("extract")),
                 definition.get("default"),
                 string(definition.get("type")),
-                Boolean.TRUE.equals(definition.get("nullable")));
+                Boolean.TRUE.equals(definition.get("nullable")),
+                stringMap(definition.get("map")));
     }
 
     String getTarget() {
@@ -105,7 +114,16 @@ final class FieldRule {
      * @return the authored value, or {@code null} when this field has no source or it is unset
      */
     Object fromSource(final Map<String, Object> source, final Map<String, Object> parentSource) {
-        return constant != null ? null : coerce(resolve(source, parentSource));
+        return constant != null ? null : coerce(translate(resolve(source, parentSource)));
+    }
+
+    /** Looks the resolved value up in {@code map}; unmapped or absent-map values pass through as-is. */
+    private Object translate(final Object value) {
+        if (valueMap == null || value == null) {
+            return value;
+        }
+        final Object mapped = valueMap.get(String.valueOf(value));
+        return mapped != null ? mapped : value;
     }
 
     /** The value to use when nothing was authored: the constant, or the declared default. */
@@ -231,6 +249,15 @@ final class FieldRule {
             }
         }
         return names;
+    }
+
+    private static Map<String, Object> stringMap(final Object value) {
+        if (!(value instanceof Map)) {
+            return null;
+        }
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> raw = (Map<String, Object>) value;
+        return Collections.unmodifiableMap(raw);
     }
 
     /** The {@code extract} operator's parameters. */

@@ -132,3 +132,8 @@ rewrite), `productsFolderName` (`products`), `maxProducts` (200), `productFieldA
   create-account, loan-application-form, etc.) + `index.json`
 - Adding a new component/form type = add a mapping JSON file + (if needed) a Sling Model in
   `core/.../models/impl/`. No servlet/exporter code change required for a straightforward mapping.
+- Rule-file field operators (`FieldRule.java`): `const`, `extract` (CSS selector over rich text),
+  `first` (first non-blank of several candidate props), `from` (straight copy), `fromParent`
+  (reads the enclosing section instead of the component). Independent of the operator, an optional
+  `map` value-lookup translates the resolved value (e.g. title's `titleType` h1-h6 → size token
+  xlarge/large/medium/small) — unmapped values pass through unchanged.

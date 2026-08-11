@@ -188,7 +188,7 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a title keeps its heading level and a text block keeps its markup")
+    @DisplayName("a title maps its heading level to a size token and a text block keeps its markup")
     void titleAndText() {
         final Map<String, Object> title = export(true,
                 "model", "title", "title", "Health Plans Just Right For Your Family",
@@ -196,7 +196,7 @@ class ComponentMappingTest {
 
         assertEquals("title", component(title));
         assertEquals("Health Plans Just Right For Your Family", content(title).get("text"));
-        assertEquals("h1", content(title).get("size"));
+        assertEquals("xlarge", content(title).get("size"), "h1 -> xlarge, same top tier as h2");
 
         context.build().resource(HOME + "/jcr:content/root/block2",
                 "sling:resourceType", "core/franklin/components/block/v1/block",
@@ -211,6 +211,27 @@ class ComponentMappingTest {
         assertEquals("htmlText", component(text));
         assertEquals("<h1>Once you've picked a plan</h1>", content(text).get("text"),
                 "an htmlText keeps its authored markup - it is the content, not a container for it");
+    }
+
+    @Test
+    @DisplayName("title heading level maps to the size token scale")
+    void titleSizeMapping() {
+        final String[] levels = {"h2", "h3", "h4", "h5", "h6"};
+        final String[] expectedSizes = {"xlarge", "large", "medium", "small", "small"};
+        for (int i = 0; i < levels.length; i++) {
+            context.build().resource(HOME + "/jcr:content/root/block" + i,
+                    "sling:resourceType", "core/franklin/components/block/v1/block",
+                    "model", "title", "title", "Heading", "titleType", levels[i]);
+        }
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null));
+        final List<Map<String, Object>> content =
+                list(map(map(app.get("screens")).get("en")).get("content"));
+
+        for (int i = 0; i < levels.length; i++) {
+            assertEquals(expectedSizes[i], content(content.get(i)).get("size"), levels[i]);
+        }
     }
 
     @Test

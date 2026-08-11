@@ -127,6 +127,23 @@ shipped demo, so invalidation was too narrow for real multi-site use.
 dispatcher configs"), not from a failed pipeline run — worth doing occasional non-failure-driven
 audits, since the validator doesn't catch "technically valid but pointing at the wrong path".
 
+## Title size: `map` operator added to the rule engine, h1-h6 → size token
+
+**Decision**: `FieldRule` gained a generic `map` operator — a fixed value-lookup table applied
+after `from`/`first`/`extract`/`fromParent` resolve, before `type` coercion. `title.json` uses it:
+`h1`→`xlarge`, `h2`→`xlarge`, `h3`→`large`, `h4`→`medium`, `h5`→`small`, `h6`→`small`.
+**Why**: Franklin/EDS-authored title blocks carry a raw heading tag (`titleType`: h1-h6); the
+client contract wants a size token (xlarge/large/medium/small), not the tag. User only specified
+h2-h6; h1 defaulted to the same top tier as h2 (no larger token exists in the vocabulary) —
+flagged here since it's an assumption, not a given requirement.
+**Not touched**: `TitleModel.java` (the curated Sling Model for the native AEM `title` component,
+resourceType `contentbridge/components/title`) — its dialog already authors `size` directly as
+xlarge/large/medium/small, no heading tag involved, so no mapping needed there. Two separate
+title code paths exist in this codebase; this change only affects the Franklin-block mapping
+rule (`core/src/main/resources/contentbridge/mappings/title.json`).
+**Unmapped-value behavior**: an authored value with no entry in `map` passes through unchanged
+(same "visible in the response, not silently dropped" philosophy as the rest of the engine).
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

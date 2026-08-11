@@ -3,7 +3,12 @@
   "component": "title",
   "skeleton": true,
   "fields": [
-    { "target": "size", "first": ["titleType", "type", "size"], "default": "medium" },
+    {
+      "target": "size",
+      "first": ["titleType", "type", "size"],
+      "map": { "h1": "xlarge", "h2": "xlarge", "h3": "large", "h4": "medium", "h5": "small", "h6": "small" },
+      "default": "medium"
+    },
     { "target": "text", "first": ["title", "jcr:title", "text"] },
     { "target": "weight", "from": "weight", "default": "regular" },
     { "target": "textColor", "from": "textColor", "nullable": true },
