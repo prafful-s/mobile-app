@@ -1,5 +1,7 @@
 package com.dept.contentbridge.core.services.impl;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +40,14 @@ final class FieldRule {
     private static final String TYPE_BOOLEAN = "boolean";
     private static final String TYPE_NUMBER = "number";
     private static final String TYPE_STRING = "string";
+
+    /**
+     * Strips scheme and host off an absolute {@code http(s)} link, keeping only path, query and
+     * fragment - a link component should carry a site-relative target, not whichever author/preview
+     * host it happened to be authored against. A value that is not an absolute http(s) URL (already
+     * a path, an anchor, {@code mailto:}, {@code tel:}, ...) is left untouched.
+     */
+    private static final String TYPE_PATH = "path";
 
     /**
      * True when the source produced anything at all, whatever it said.
@@ -218,8 +228,30 @@ final class FieldRule {
                 return toNumber(text.trim(), value);
             case TYPE_STRING:
                 return text;
+            case TYPE_PATH:
+                return toPath(text);
             default:
                 return value;
+        }
+    }
+
+    private static Object toPath(final String text) {
+        if (!StringUtils.startsWithAny(text, "http://", "https://")) {
+            return text;
+        }
+        try {
+            final URI uri = new URI(text);
+            final StringBuilder path = new StringBuilder(StringUtils.defaultIfEmpty(uri.getRawPath(), "/"));
+            if (uri.getRawQuery() != null) {
+                path.append('?').append(uri.getRawQuery());
+            }
+            if (uri.getRawFragment() != null) {
+                path.append('#').append(uri.getRawFragment());
+            }
+            return path.toString();
+        } catch (final URISyntaxException e) {
+            // Malformed authored URL: keep what the author wrote rather than guessing at it.
+            return text;
         }
     }
 

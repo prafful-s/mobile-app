@@ -255,6 +255,25 @@ class ComponentMappingTest {
     }
 
     @Test
+    @DisplayName("a button link authored as an absolute URL is reduced to its path")
+    void buttonLinkStripsHost() {
+        final Map<String, Object> exported = export(true,
+                "model", "button",
+                "linkText", "Insurance Plans",
+                "link", "https://author-p12345-e678.adobeaemcloud.com/content/we-healthcare/us/en/plans?ref=nav#top");
+
+        assertEquals("/content/we-healthcare/us/en/plans?ref=nav#top", content(exported).get("linkTo"));
+    }
+
+    @Test
+    @DisplayName("a link already relative, an anchor, or a non-http scheme is left untouched")
+    void linkPathLeavesNonHttpValuesAlone() {
+        final Map<String, Object> relative = export(true,
+                "model", "button", "linkText", "A", "link", "/content/we-healthcare/us/en/plans");
+        assertEquals("/content/we-healthcare/us/en/plans", content(relative).get("linkTo"));
+    }
+
+    @Test
     @DisplayName("an image takes whichever of the four reference property names the site uses")
     void imageMapping() {
         final Map<String, Object> exported = export(true,

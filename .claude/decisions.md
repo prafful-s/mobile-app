@@ -144,6 +144,20 @@ rule (`core/src/main/resources/contentbridge/mappings/title.json`).
 **Unmapped-value behavior**: an authored value with no entry in `map` passes through unchanged
 (same "visible in the response, not silently dropped" philosophy as the rest of the engine).
 
+## Link fields: `path` type strips scheme+host, keeps only path/query/fragment
+
+**Decision**: `FieldRule` gained a `type: "path"` coercion — if the resolved value is an absolute
+`http://`/`https://` URL, only `path?query#fragment` is kept; anything else (already-relative
+path, anchor, `mailto:`, `tel:`, malformed URL) passes through unchanged. Wired onto every
+link-carrying field: `button.linkTo`, `card.link`, `hero.linkTo` (extracted from the anchor
+`href`), `image.linkTo`, `offer.linkTo`.
+**Why**: EDS/Franklin authoring (and rich-text anchors) can produce a link against whichever host
+was open at authoring time (author, preview, or a stale publish host) — baking that host into the
+JSON response would send clients to the wrong environment. A client consuming the API already
+knows its own host; it only needs the path.
+**Consistent with**: the existing "don't guess, stay visible" rule - a malformed URL is returned
+as authored rather than dropped or half-parsed.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

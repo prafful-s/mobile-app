@@ -7,7 +7,7 @@
     { "target": "image", "first": ["image", "fileReference", "imageRef", "src", "uri"] },
     { "target": "width", "from": "width", "nullable": true },
     { "target": "height", "from": "height", "type": "number", "nullable": true },
-    { "target": "linkTo", "first": ["linkTo", "link", "href"], "nullable": true },
+    { "target": "linkTo", "first": ["linkTo", "link", "href"], "type": "path", "nullable": true },
     { "target": "fullWidth", "from": "fullWidth", "type": "boolean", "nullable": true },
     { "target": "imageResize", "from": "imageResize", "default": "contain" },
     { "target": "imageSize", "from": "imageSize", "nullable": true },

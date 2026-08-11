@@ -3,7 +3,7 @@
   "component": "offer",
   "skeleton": true,
   "fields": [
-    { "target": "linkTo", "from": "linkTo" },
+    { "target": "linkTo", "from": "linkTo", "type": "path" },
     { "target": "opacity", "from": "opacity", "type": "number", "default": 0.34 },
     { "target": "surface", "from": "surface" },
     { "target": "showTitle", "from": "showTitle", "type": "boolean", "default": true },

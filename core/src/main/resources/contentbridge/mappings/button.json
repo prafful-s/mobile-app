@@ -6,7 +6,7 @@
     { "target": "label", "first": ["linkText", "buttonText", "text", "jcr:title"] },
     { "target": "icon", "from": "icon", "nullable": true },
     { "target": "events", "from": "events", "default": "" },
-    { "target": "linkTo", "first": ["link", "btn-link", "href"], "nullable": true },
+    { "target": "linkTo", "first": ["link", "btn-link", "href"], "type": "path", "nullable": true },
     { "target": "message", "from": "message", "nullable": true },
     { "target": "variant", "first": ["linkType", "ctastyle", "style"], "default": "button" },
     { "target": "alignment", "from": "alignment", "default": "stretch" },

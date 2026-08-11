@@ -136,4 +136,8 @@ rewrite), `productsFolderName` (`products`), `maxProducts` (200), `productFieldA
   `first` (first non-blank of several candidate props), `from` (straight copy), `fromParent`
   (reads the enclosing section instead of the component). Independent of the operator, an optional
   `map` value-lookup translates the resolved value (e.g. title's `titleType` h1-h6 → size token
-  xlarge/large/medium/small) — unmapped values pass through unchanged.
+  xlarge/large/medium/small) — unmapped values pass through unchanged. `type: "path"` strips
+  scheme+host off an absolute http(s) link, keeping only path/query/fragment — used on every
+  link-carrying field (`button.linkTo`, `card.link`, `hero.linkTo`, `image.linkTo`,
+  `offer.linkTo`) so responses never leak the author/preview host a link happened to be authored
+  against.

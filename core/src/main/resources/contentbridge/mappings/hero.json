@@ -10,7 +10,7 @@
       "nullable": true },
     { "target": "linkTo",
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
-      "nullable": true },
+      "type": "path", "nullable": true },
     { "target": "opacity", "from": "opacity", "type": "number", "nullable": true },
     { "target": "showButton",
       "extract": { "from": "text", "select": "a", "as": "text" },

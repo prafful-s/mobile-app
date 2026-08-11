@@ -3,7 +3,7 @@
   "component": "card",
   "skeleton": true,
   "fields": [
-    { "target": "link", "first": ["link", "btn-link", "linkTo"], "nullable": true },
+    { "target": "link", "first": ["link", "btn-link", "linkTo"], "type": "path", "nullable": true },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
     { "target": "subtitle",
