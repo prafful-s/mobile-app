@@ -28,15 +28,17 @@ final class ComponentMapping {
     private final List<FieldRule> fields;
     private final List<FieldRule> styleFields;
     private final boolean skeleton;
+    private final String contentFragmentRef;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final List<FieldRule> fields, final List<FieldRule> styleFields,
-                             final boolean skeleton) {
+                             final boolean skeleton, final String contentFragmentRef) {
         this.matches = matches;
         this.component = component;
         this.fields = fields;
         this.styleFields = styleFields;
         this.skeleton = skeleton;
+        this.contentFragmentRef = contentFragmentRef;
     }
 
     /**
@@ -52,9 +54,10 @@ final class ComponentMapping {
         final List<FieldRule> fields = fieldRules(definition.get("fields"));
         final List<FieldRule> styleFields = fieldRules(definition.get("styles"));
         final boolean skeleton = Boolean.TRUE.equals(definition.get("skeleton"));
+        final String contentFragmentRef = trimmed(definition.get("contentFragmentRef"));
         return new ComponentMapping(Collections.unmodifiableList(matches), component,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
-                skeleton);
+                skeleton, contentFragmentRef);
     }
 
     /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */
@@ -96,6 +99,20 @@ final class ComponentMapping {
     }
 
     /**
+     * The authored property naming a Content Fragment to dereference before this rule's fields
+     * resolve, or {@code null} when the rule reads only the component's own properties.
+     *
+     * <p>Some blocks (a {@code product-card}) carry nothing of their own beyond a reference to a
+     * Content Fragment - the actual title, image and description live on the fragment, not the
+     * component. {@link ComponentTreeWalker} reads this property off the component, resolves it to
+     * a resource, and merges the fragment's elements into the source map before calling
+     * {@link #apply} - the component's own properties still win on a name clash.</p>
+     */
+    String getContentFragmentRef() {
+        return contentFragmentRef;
+    }
+
+    /**
      * Every CRX property this rule reads from, across every field. Used by the walker to
      * filter extras passthrough - a property this rule consumed must not reappear as an extra.
      */
@@ -106,6 +123,11 @@ final class ComponentMapping {
         }
         for (final FieldRule field : styleFields) {
             consumed.addAll(field.consumedProperties());
+        }
+        if (contentFragmentRef != null) {
+            // Drives the dereference below, not itself a piece of content - it should not also leak
+            // into extras passthrough as a raw DAM path.
+            consumed.add(contentFragmentRef);
         }
         return consumed;
     }

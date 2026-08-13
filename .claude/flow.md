@@ -140,6 +140,12 @@ rewrite), `productsFolderName` (`products`), `maxProducts` (200), `productFieldA
   create-account, loan-application-form, etc.) + `index.json`
 - Adding a new component/form type = add a mapping JSON file + (if needed) a Sling Model in
   `core/.../models/impl/`. No servlet/exporter code change required for a straightforward mapping.
+- A rule can also declare `contentFragmentRef: "<own property name>"` (e.g. `productCard.json` for
+  the `product-card` block) — before fields resolve, `ComponentTreeWalker.withContentFragmentRef`
+  dereferences that property as a path, reads the fragment via `ContentFragmentReader` (shared with
+  `ProductExporter`), and merges its elements under the component's own authored properties (own
+  properties win on a name clash). Lets a block that's little more than a CF reference (title/image
+  live on the fragment, not the block) still map onto a full target shape.
 - Rule-file field operators (`FieldRule.java`): `const`, `extract` (CSS selector over rich text),
   `first` (first non-blank of several candidate props), `from` (straight copy), `fromParent`
   (reads the enclosing section instead of the component). Independent of the operator, an optional

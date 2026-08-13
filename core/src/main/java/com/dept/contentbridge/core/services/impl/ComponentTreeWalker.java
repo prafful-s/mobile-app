@@ -268,7 +268,8 @@ final class ComponentTreeWalker {
             final ComponentMapping mapping =
                     hierarchical && !speaksTargetVocabulary ? mappings.find(authoredName) : null;
             if (mapping != null) {
-                final Map<String, Object> mapped = mapping.apply(authored, sectionProps);
+                final Map<String, Object> ruleSource = withContentFragmentRef(mapping, authored, child);
+                final Map<String, Object> mapped = mapping.apply(ruleSource, sectionProps);
                 if (mapped.isEmpty()) {
                     // The rule matched a component with none of its source fields authored. An empty
                     // banner tells a client less than the authored shape does, so this one component
@@ -278,8 +279,10 @@ final class ComponentTreeWalker {
                 } else {
                     componentName = mapping.getComponent();
                     content = new LinkedHashMap<>(mapped);
-                    styles = mapping.applyStyles(authored, sectionProps);
+                    styles = mapping.applyStyles(ruleSource, sectionProps);
                     if (mapping.isSkeleton()) {
+                        // Extras come from the component's own properties only - a referenced
+                        // fragment's fields that no rule targeted stay internal, not leaked as extras.
                         appendUnconsumedExtras(content, authored, mapping.consumedProperties());
                     }
                 }
@@ -322,6 +325,45 @@ final class ComponentTreeWalker {
                 collectComponents(child, sink, depth + 1, hierarchical, ancestorSection);
             }
         }
+    }
+
+    /**
+     * Merges a referenced Content Fragment's fields into the source a rule resolves against, for
+     * rules that declare {@code contentFragmentRef} - a block such as {@code product-card} carries
+     * little more than a reference; the title, image and description a client needs live on the
+     * fragment, not the component.
+     *
+     * <p>The fragment's fields go in first, the component's own authored properties are layered on
+     * top - an authored value always wins over whatever the fragment says, the same precedence used
+     * everywhere else a shipped default and an authored override can both apply.</p>
+     *
+     * @return {@code authored} unchanged when the rule declares no {@code contentFragmentRef}, the
+     *         reference is blank, or it does not resolve to a readable fragment
+     */
+    private Map<String, Object> withContentFragmentRef(final ComponentMapping mapping,
+                                                        final Map<String, Object> authored,
+                                                        final Resource component) {
+        final String refProperty = mapping.getContentFragmentRef();
+        if (refProperty == null) {
+            return authored;
+        }
+        final Object refValue = authored.get(refProperty);
+        if (!(refValue instanceof String) || StringUtils.isBlank((String) refValue)) {
+            return authored;
+        }
+        final Resource fragment = component.getResourceResolver().getResource(((String) refValue).trim());
+        if (fragment == null) {
+            LOG.warn("{} on {} points at '{}', which does not resolve - exporting the component "
+                    + "without its fragment data", refProperty, component.getPath(), refValue);
+            return authored;
+        }
+        final Map<String, String> elements = ContentFragmentReader.read(fragment);
+        if (elements.isEmpty()) {
+            return authored;
+        }
+        final Map<String, Object> merged = new LinkedHashMap<>(elements);
+        merged.putAll(authored);
+        return merged;
     }
 
     /**

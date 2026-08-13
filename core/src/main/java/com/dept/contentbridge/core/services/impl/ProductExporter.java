@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +17,6 @@ import org.apache.sling.api.resource.ValueMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.adobe.cq.dam.cfm.ContentElement;
-import com.adobe.cq.dam.cfm.ContentFragment;
-import com.adobe.cq.dam.cfm.FragmentData;
 import com.day.cq.wcm.api.Page;
 
 /**
@@ -139,74 +135,13 @@ final class ProductExporter {
     /**
      * Reads a fragment's master variation as name/value pairs.
      *
-     * <p>The Content Fragment API is tried first, then the underlying {@code jcr:content/data/master}
-     * node directly. The direct read is not just a safety net: the CF adapter is unavailable in some
-     * contexts, and the node layout it sits on is stable, so falling back keeps the exporter working
-     * where {@code adaptTo} would return null.</p>
+     * <p>Delegates to {@link ContentFragmentReader}, shared with the component-mapping engine's
+     * single-fragment dereference so both read a Content Fragment the exact same way.</p>
      *
      * @return the element values, or null when the resource is not a content fragment at all
      */
     private Map<String, String> readElements(final Resource resource) {
-        final ContentFragment fragment = adaptQuietly(resource);
-        if (fragment != null) {
-            final Map<String, String> viaApi = readViaApi(fragment);
-            if (!viaApi.isEmpty()) {
-                return viaApi;
-            }
-            // Adapted, but exposed no elements - typically an unresolvable model. The values are
-            // still on the node, so read those rather than emitting an empty product.
-            LOG.debug("Fragment {} exposed no elements - reading its master node directly",
-                    resource.getPath());
-        }
-        final Resource master = resource.getChild("jcr:content/data/master");
-        if (master != null) {
-            return readViaNode(master);
-        }
-        return fragment == null ? null : new LinkedHashMap<>();
-    }
-
-    /**
-     * {@code adaptTo} is specified to return null when adaption fails, but the Content Fragment
-     * adapter throws instead for an asset it considers malformed - a missing {@code metadata} node is
-     * enough. One such asset in the folder would otherwise abort the whole export, so the throw is
-     * treated as "not a fragment" and the node-level read takes over.
-     */
-    private ContentFragment adaptQuietly(final Resource resource) {
-        try {
-            return resource.adaptTo(ContentFragment.class);
-        } catch (final RuntimeException e) {
-            LOG.debug("Content Fragment adapter rejected {} - falling back to a direct node read",
-                    resource.getPath(), e);
-            return null;
-        }
-    }
-
-    private Map<String, String> readViaApi(final ContentFragment fragment) {
-        final Map<String, String> values = new LinkedHashMap<>();
-        final Iterator<ContentElement> iterator = fragment.getElements();
-
-        while (iterator.hasNext()) {
-            final ContentElement element = iterator.next();
-            try {
-                final FragmentData data = element.getValue();
-                final Object value = data == null ? null : data.getValue();
-                values.put(element.getName(), stringify(value));
-            } catch (final RuntimeException e) {
-                LOG.debug("Could not read element {} of {}", element.getName(), fragment.getName(), e);
-            }
-        }
-        return values;
-    }
-
-    private Map<String, String> readViaNode(final Resource master) {
-        final Map<String, String> values = new LinkedHashMap<>();
-        for (final Map.Entry<String, Object> entry : master.getValueMap().entrySet()) {
-            if (entry.getKey().startsWith("jcr:") || entry.getKey().startsWith("cq:")) {
-                continue;
-            }
-            values.put(entry.getKey(), stringify(entry.getValue()));
-        }
-        return values;
+        return ContentFragmentReader.readElements(resource);
     }
 
     private Map<String, Object> toProduct(final Resource resource, final Map<String, String> elements,
@@ -241,23 +176,6 @@ final class ProductExporter {
             product.put(key, coerce(key, raw, assetHost));
         }
         return product;
-    }
-
-    private String stringify(final Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Object[]) {
-            final Object[] array = (Object[]) value;
-            final List<String> parts = new ArrayList<>(array.length);
-            for (final Object item : array) {
-                if (item != null) {
-                    parts.add(String.valueOf(item));
-                }
-            }
-            return String.join(",", parts);
-        }
-        return String.valueOf(value);
     }
 
     /**

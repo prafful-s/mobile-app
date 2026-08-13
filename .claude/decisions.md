@@ -233,6 +233,58 @@ config anywhere → shipped default fires) and `authoredPathOutranksShippedDefau
 property on the site root still wins) — same file, same fixture style as the rest of the product
 export tests.
 
+## `contentFragmentRef`: mapping rules can dereference a Content Fragment
+
+**Decision**: added a new rule-file key, `contentFragmentRef`, naming which of a component's own
+properties holds a path to a Content Fragment. `ComponentTreeWalker.withContentFragmentRef` reads
+that property, resolves the fragment via `ContentFragmentReader.read()` (new class, extracted from
+`ProductExporter`'s existing CF-read logic so both share one implementation), and merges the
+fragment's elements into the source map used for field resolution - the component's own authored
+properties win on a name clash (`merged = fragmentElements; merged.putAll(authored)`).
+**Why**: `product-card` blocks carry almost nothing of their own (`buttonText`, `link`, `ctastyle`,
+a `contentFragmentFolder` reference) - the title, image and description a client needs live on the
+referenced fragment, not the block. The existing rule engine only ever read the component's own
+JCR node; there was no way to express "this field comes from what the component points at."
+**Extras stay clean**: `appendUnconsumedExtras` still runs against the *original* `authored` map,
+never the CF-merged one - a fragment field no rule targeted (e.g. `productSku`, `redirectingUrl`)
+quietly doesn't appear, rather than leaking into extras. `contentFragmentRef`'s own property
+(`contentFragmentFolder`) is added to `consumedProperties()` so it doesn't leak into extras either.
+**Failure mode**: an unresolvable reference (blank, wrong path, not a fragment) logs a WARN and
+falls back to `authored` unchanged - the component still exports with whatever it has, never fails
+the whole page.
+
+## `product-card` → `banner`, via a new `productCard.json` rule
+
+**Decision**: added `core/src/main/resources/contentbridge/mappings/productCard.json` -
+`match: ["product-card"]`, `component: "banner"` (same output name as `hero.json`, deliberately a
+separate rule file since the field-sourcing is entirely different: hero/banner extracts from
+authored rich text, product-card sources image/title from its referenced CF via
+`contentFragmentRef: "contentFragmentFolder"`).
+**Two open assumptions, flagged rather than silently guessed** (per user instruction to start
+implementing before both were answered):
+- `buttonVariant` value table: authored `ctastyle` → reference `buttonVariant`, via the `map`
+  operator: `button`→`contained`, `cta-button`→`contained`, `cta-link`→`text`, unmapped values
+  default to `contained`. **Not confirmed with the user/design system** - only a defensible guess
+  from the three `ctastyle` values seen in real content.
+- `linkTo`: reference's own example uses a route+query form
+  (`"loan-application?productId=MC$1JXSft"`), not a content path. Implemented as the block's own
+  `link` property instead (already a working, relative content path per the earlier `path`-type
+  fix) - reproducing the route+query form would mean inventing a routing convention with no
+  confirmed source (which route name, is `productId` the CF's `productSku`?). **Follow-up needed**
+  if the reference's exact format is required.
+**Verified against the real CF** (`/content/dam/secur-financial/en/fragments/credit-cards/
+securfinancial-gold`, model `secur-financial-product`): fields are `productName`, `productImage`
+(plain `/content/dam/...` path - Option A, the raw JCR read, not the richer GraphQL-resolved shape
+with `_publishUrl`/`_dynamicUrl`; user explicitly chose the plain-path option), `productSku`,
+`productCategory`, `productDescription` (richtext HTML), `redirectingUrl` (unset on this variant).
+Only `productName`→`title` and `productImage`→`image` are consumed by the rule today; `subtitle`
+is left unsourced (empty by skeleton default, matching the reference example's own `subtitle: ""`)
+rather than guessed from `productCategory`.
+**Tests**: `ProductCardMappingTest` - CF fields land in the banner shape, block's own fields still
+apply, `ctastyle`→`buttonVariant` for both known values, an unresolvable fragment doesn't break the
+export (falls back to block-only fields, empty title), and `contentFragmentFolder` never leaks into
+extras.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.
