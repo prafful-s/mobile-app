@@ -70,12 +70,21 @@ final class FormFieldFactory {
     }
 
     /**
-     * Field visibility gated by an authored boolean property on the enclosing block.
+     * Field visibility gated by an authored property on the enclosing block.
      *
-     * <p>Schema entry declares {@code "visibleIf": { "prop": "showcreditcard", "default": false }}.
-     * The property is read off the block's authored properties and coerced to a boolean; when the
-     * property is not set at all, {@code default} decides - which mirrors the reference client
-     * pattern of "show unless the author explicitly turned it off", or the inverse, per field.</p>
+     * <p>Schema entry declares one of:</p>
+     * <pre>
+     *   "visibleIf": { "prop": "showcreditcard", "default": false }   // truthy check
+     *   "visibleIf": { "prop": "variant", "equals": "luma" }          // string equality
+     *   "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
+     *   "visibleIf": { "prop": "variant", "equalsAny": ["luma","wknd-fly"] }
+     * </pre>
+     *
+     * <p>The reference client uses two shapes for conditional rendering: a boolean {@code show*}
+     * property (which becomes the truthy check), and a discriminator like {@code variant} that
+     * decides whether a field even exists in the JS-built form (which becomes the string check).
+     * Both collapse to the same drop-when-false decision here. String comparisons trim and
+     * lower-case both sides to match {@code normalizeVariant} in reference code.</p>
      *
      * @param field    a schema entry
      * @param authored the block's own authored properties
@@ -91,10 +100,36 @@ final class FormFieldFactory {
         final Map<String, Object> gate = (Map<String, Object>) visibleIf;
         final String prop = str(gate.get("prop"));
         if (StringUtils.isBlank(prop)) {
-            // Malformed gate - fail open rather than dropping the field silently.
-            return true;
+            return true; // malformed gate - fail open
         }
         final Object authoredValue = authored == null ? null : authored.get(prop);
+        final String authoredStr = normaliseCompare(authoredValue);
+
+        // String-equality gates. equals: visible when authored value matches (hidden if missing,
+        // since reference JS only includes the field when the variant equals a specific value).
+        final Object equals = gate.get("equals");
+        if (equals != null) {
+            return authoredStr != null && authoredStr.equals(normaliseCompare(equals));
+        }
+        final Object notEquals = gate.get("notEquals");
+        if (notEquals != null) {
+            // Default visible - reference emits the field for every variant except the named one.
+            return authoredStr == null || !authoredStr.equals(normaliseCompare(notEquals));
+        }
+        final Object equalsAny = gate.get("equalsAny");
+        if (equalsAny instanceof List) {
+            if (authoredStr == null) {
+                return false;
+            }
+            for (final Object candidate : (List<?>) equalsAny) {
+                if (authoredStr.equals(normaliseCompare(candidate))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Truthy check (the original visibleIf semantics).
         if (authoredValue == null || (authoredValue instanceof String
                 && StringUtils.isBlank((String) authoredValue))) {
             final Object def = gate.get("default");
@@ -105,6 +140,15 @@ final class FormFieldFactory {
             return (Boolean) authoredValue;
         }
         return Boolean.parseBoolean(String.valueOf(authoredValue).trim());
+    }
+
+    /** Trim + lower-case, or null for blank/null. Mirrors reference's {@code normalizeVariant}. */
+    private static String normaliseCompare(final Object value) {
+        if (value == null) {
+            return null;
+        }
+        final String trimmed = String.valueOf(value).trim();
+        return trimmed.isEmpty() ? null : trimmed.toLowerCase(java.util.Locale.ROOT);
     }
 
     /**

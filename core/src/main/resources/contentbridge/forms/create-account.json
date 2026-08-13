@@ -51,7 +51,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "variant", "equals": "bodea" }
   },
   {
     "id": "address",
@@ -129,6 +130,7 @@
     "id": "companySize",
     "name": "companySize",
     "label": "Company size",
+    "visibleIf": { "prop": "variant", "equals": "bodea" },
     "value": "",
     "type": "select",
     "options": [
@@ -158,6 +160,7 @@
     "id": "industry",
     "name": "industry",
     "label": "Industry",
+    "visibleIf": { "prop": "variant", "equals": "bodea" },
     "value": "",
     "type": "select",
     "options": [
@@ -191,6 +194,7 @@
     "id": "topicOfInterest",
     "name": "topicOfInterest",
     "label": "Topic of interest",
+    "visibleIf": { "prop": "variant", "equals": "bodea" },
     "value": "",
     "type": "select",
     "options": [
@@ -220,6 +224,7 @@
     "id": "wkndFlyMember",
     "name": "person.wkndFlyMember",
     "label": "WKND Fly Member",
+    "visibleIf": { "prop": "variant", "equals": "wknd-fly" },
     "value": "",
     "type": "select",
     "options": [
@@ -339,6 +344,7 @@
     "id": "shoeSize",
     "name": "shoeSize",
     "label": "Shoe size",
+    "visibleIf": { "prop": "variant", "equals": "luma" },
     "value": "",
     "type": "select",
     "options": [
@@ -392,6 +398,7 @@
     "id": "shirtSize",
     "name": "shirtSize",
     "label": "Shirt size",
+    "visibleIf": { "prop": "variant", "equals": "luma" },
     "value": "",
     "type": "select",
     "options": [
@@ -425,6 +432,7 @@
     "id": "favoriteColor",
     "name": "favoriteColor",
     "label": "Favorite color",
+    "visibleIf": { "prop": "variant", "equals": "luma" },
     "value": "",
     "type": "select",
     "options": [
@@ -474,6 +482,7 @@
     "id": "frescopaOwner",
     "name": "frescopaOwner",
     "label": "Do you already have a Frescopa machine?",
+    "visibleIf": { "prop": "variant", "equals": "frescopa" },
     "value": "",
     "type": "select",
     "options": [
@@ -491,6 +500,7 @@
     "id": "favouriteNewsCategory",
     "name": "favouriteNewsCategory",
     "label": "Favourite news category",
+    "visibleIf": { "prop": "variant", "equals": "expnews" },
     "value": "",
     "type": "select",
     "options": [
@@ -524,6 +534,7 @@
     "id": "accountType",
     "name": "accountType",
     "label": "Account Type",
+    "visibleIf": { "prop": "variant", "equals": "expnews" },
     "value": "",
     "type": "select",
     "options": [

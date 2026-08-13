@@ -522,6 +522,93 @@ class FormBlockV2Test {
     }
 
     @Test
+    @DisplayName("create-account emits variant-specific fields only when variant matches")
+    void createAccountVariantGating() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account", "variant", "luma");
+
+        final List<String> ids = ids(form());
+        assertTrue(ids.contains("shoeSize"), "variant=luma reveals luma-preference fields");
+        assertTrue(ids.contains("shirtSize"));
+        assertTrue(ids.contains("favoriteColor"));
+        assertFalse(ids.contains("companyName"), "companyName is bodea-only");
+        assertFalse(ids.contains("companySize"), "companySize is bodea-only");
+        assertFalse(ids.contains("wkndFlyMember"), "wkndFlyMember is wknd-fly-only");
+        assertFalse(ids.contains("frescopaOwner"), "frescopaOwner is frescopa-only");
+        assertFalse(ids.contains("favouriteNewsCategory"), "favouriteNewsCategory is expnews-only");
+    }
+
+    @Test
+    @DisplayName("create-account bodea variant reveals company/industry/topic fields together")
+    void createAccountBodeaVariant() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account", "variant", "bodea");
+
+        final List<String> ids = ids(form());
+        assertTrue(ids.contains("companyName"));
+        assertTrue(ids.contains("companySize"));
+        assertTrue(ids.contains("industry"));
+        assertTrue(ids.contains("topicOfInterest"));
+        assertFalse(ids.contains("shoeSize"), "not luma");
+    }
+
+    @Test
+    @DisplayName("create-account without a variant hides every variant-only field")
+    void createAccountNoVariantHidesVariantFields() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account");
+
+        final List<String> ids = ids(form());
+        for (final String v : List.of("companyName", "companySize", "industry", "topicOfInterest",
+                "wkndFlyMember", "shoeSize", "shirtSize", "favoriteColor", "frescopaOwner",
+                "favouriteNewsCategory", "accountType")) {
+            assertFalse(ids.contains(v), v + " should be hidden with no variant set");
+        }
+    }
+
+    @Test
+    @DisplayName("test-drive schedule-appointment variant hides the address section (notEquals)")
+    void testDriveScheduleAppointmentHidesAddress() {
+        context.build().resource(ROOT + "/td",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "test-drive", "variant", "schedule-appointment");
+
+        final List<String> ids = ids(form());
+        assertFalse(ids.contains("address"));
+        assertFalse(ids.contains("city"));
+        assertFalse(ids.contains("zipCode"));
+        assertTrue(ids.contains("firstName"), "personal fields stay");
+    }
+
+    @Test
+    @DisplayName("test-drive default variant keeps the address section (notEquals defaults visible)")
+    void testDriveDefaultVariantKeepsAddress() {
+        context.build().resource(ROOT + "/td",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "test-drive");
+
+        final List<String> ids = ids(form());
+        assertTrue(ids.contains("address"), "no variant set - notEquals defaults visible");
+        assertTrue(ids.contains("city"));
+        assertTrue(ids.contains("zipCode"));
+    }
+
+    @Test
+    @DisplayName("checkout-shipping gates cardNumber + lumaLoyalty on show flags")
+    void checkoutShippingBooleanGates() {
+        context.build().resource(ROOT + "/cs",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "checkout-shipping");
+
+        final List<String> defaultIds = ids(form());
+        assertFalse(defaultIds.contains("cardNumber"), "showcardnumberfield defaults false");
+        assertFalse(defaultIds.contains("lumaLoyalty"), "showloyalty defaults false");
+    }
+
+    @Test
     @DisplayName("after a visibility filter, remaining fields get a contiguous 1..N order")
     void orderIsCompactedAfterFiltering() {
         context.build().resource(ROOT + "/create",

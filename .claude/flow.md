@@ -140,12 +140,19 @@ rewrite), `productsFolderName` (`products`), `maxProducts` (200), `productFieldA
   (title, button, hero→banner, image, card, text, divider, map, offer, productImage,
   productTitle, timeSlotPicker, userDetails, userLogin, list, contentCards) + `index.json`
 - `core/src/main/resources/contentbridge/forms/*.json` — one file per form type (checkout,
-  create-account, loan-application-form, etc.) + `index.json`. A field entry can carry
-  `"visibleIf": { "prop": "showcreditcard", "default": false }` — `FormFieldFactory.isVisible`
-  reads that property off the authored block; when falsy (or missing and `default` is false), the
-  field is dropped and remaining fields renumber to a contiguous 1..N. Currently used in
-  `create-account.json` (6 show flags mirroring the reference client's toggles) and
-  `join-us.json` (3 flags).
+  create-account, loan-application-form, etc.) + `index.json`. A field entry can carry a
+  `visibleIf` gate that drops the field before mapping when its condition resolves false:
+    - `{ "prop": "showcreditcard", "default": false }` — truthy check on an authored boolean;
+      `default` decides when the property is missing.
+    - `{ "prop": "variant", "equals": "luma" }` — string-equality check (case-insensitive, trimmed);
+      hidden when missing.
+    - `{ "prop": "variant", "notEquals": "schedule-appointment" }` — inequality; visible when missing.
+    - `{ "prop": "variant", "equalsAny": ["luma", "wknd-fly"] }` — value in list.
+  `FormFieldFactory.isVisible` resolves the gate against the authored block's own properties.
+  Remaining fields renumber to a contiguous 1..N so the client sees no gaps. Currently used in
+  `create-account.json` (6 truthy show flags + 8 variant equals gates), `checkout-shipping.json`
+  (2 truthy show flags), `join-us.json` (3 truthy flags), and `test-drive.json` (3 fields hidden
+  when variant=schedule-appointment via `notEquals`).
 - Adding a new component/form type = add a mapping JSON file + (if needed) a Sling Model in
   `core/.../models/impl/`. No servlet/exporter code change required for a straightforward mapping.
 - A rule can also declare `contentFragmentRef: "<own property name>"` (e.g. `productCard.json` for

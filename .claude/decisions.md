@@ -341,6 +341,34 @@ covering default resolution, drop-out on false, string-'true'/false coercion (CR
 booleans as strings), and ordering compaction. Updated `dateLookingTextStaysText` to set
 `showcreditcard=true` since it needs `cardExpiry`.
 
+## `visibleIf` extended to variant-based gates (equals / notEquals / equalsAny)
+
+**Decision**: `visibleIf` in form schema entries now supports three additional operators alongside
+the original truthy `default` check: `equals`, `notEquals`, `equalsAny`. All compare with a
+trimmed lower-case normalisation matching reference JS's `normalizeVariant`.
+**Why**: audit-pass of all 18 form blocks against `parent-repo\worksapce\migration-parent-repo\blocks\`
+turned up a second class of conditional rendering the exporter was missing - variant-based hard
+emit/omit. `create-account` alone hides 8 fields on non-matching variants (`wkndFlyMember`
+requires `wknd-fly`; `companyName`/`companySize`/`industry`/`topicOfInterest` require `bodea`;
+`shoeSize`/`shirtSize`/`favoriteColor` require `luma`; `frescopaOwner` requires `frescopa`;
+`favouriteNewsCategory`/`accountType` require `expnews`). `test-drive` hides
+address/city/zipCode when `variant=schedule-appointment`. `checkout-shipping` gates
+`cardNumber`/`lumaLoyalty` on two boolean flags (`showcardnumberfield`/`showloyalty`) - these
+were previously missed because the audit only looked at `create-account` and `join-us`.
+**Rejected — separate operator syntax**: extending the existing `visibleIf` object with
+`equals`/`notEquals`/`equalsAny` keys stays inside the one gate the schema already understood,
+so a rule reads top-to-bottom without switching between two dispatch shapes.
+**Trade-off accepted**: authors who set an unrecognised variant value get every variant-gated
+field hidden. Consistent with reference JS's behaviour (an unknown variant matches none of the
+`is*Variant` branches).
+**Scope**: 3 more schemas annotated (create-account.json for 8 variant fields,
+checkout-shipping.json for 2 boolean gates, test-drive.json for 3 notEquals gates). Engine change
+is one static method extended in FormFieldFactory - no signature changes.
+**Tests**: 6 additional in `FormBlockV2Test`
+(`createAccountVariantGating`, `createAccountBodeaVariant`,
+`createAccountNoVariantHidesVariantFields`, `testDriveScheduleAppointmentHidesAddress`,
+`testDriveDefaultVariantKeepsAddress`, `checkoutShippingBooleanGates`). 214/214 core tests green.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

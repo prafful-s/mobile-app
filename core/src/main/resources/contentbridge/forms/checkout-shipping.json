@@ -119,7 +119,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showcardnumberfield", "default": false }
   },
   {
     "id": "shippingMethod",
@@ -161,7 +162,8 @@
         "label": "I want to join Luma+ Loyalty Program",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showloyalty", "default": false }
   },
   {
     "id": "createAccount",

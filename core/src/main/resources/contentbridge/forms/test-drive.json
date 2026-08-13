@@ -42,7 +42,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
   },
   {
     "id": "city",
@@ -51,7 +52,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
   },
   {
     "id": "zipCode",
@@ -60,6 +62,7 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
   }
 ]
