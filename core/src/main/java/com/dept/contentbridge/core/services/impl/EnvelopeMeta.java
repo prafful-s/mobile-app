@@ -78,19 +78,6 @@ final class EnvelopeMeta {
     static Map<String, Object> buildFullV2Meta(final Page root, final String appId,
                                                final ValueMap props,
                                                final Map<String, Object> navigation) {
-        return buildFullV2Meta(root, appId, props, navigation, null);
-    }
-
-    /**
-     * As {@link #buildFullV2Meta(Page, String, ValueMap, Map)}, plus an optional pre-resolved
-     * {@code rightIcon} map. Passed in when the caller has already walked the nav page and found a
-     * search block there - a mapped search component carries the same {@code {icon, name, target}}
-     * shape the meta wants, so that reading wins over the placeholders-sheet fallback.
-     */
-    static Map<String, Object> buildFullV2Meta(final Page root, final String appId,
-                                               final ValueMap props,
-                                               final Map<String, Object> navigation,
-                                               final Map<String, Object> navRightIcon) {
         final Map<String, Object> meta = new LinkedHashMap<>();
 
         meta.put("id", appId);
@@ -114,7 +101,7 @@ final class EnvelopeMeta {
         // optional: template, vertical, rightIcon, thumbnail (from placeholders)
         putIfPlaceholder(meta, root, "template");
         putIfPlaceholder(meta, root, "vertical");
-        meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root));
+        meta.put("rightIcon", rightIcon(root));
         putIfPlaceholder(meta, root, "thumbnail");
 
         meta.put(SchemaConstants.KEY_NAVIGATION, navigation);

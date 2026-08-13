@@ -222,12 +222,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> navigation = buildNavigation(props, menu);
 
         if (options.isHierarchical()) {
-            // v2: build the entire meta in DSN reference field order via EnvelopeMeta. The nav
-            // page's search block, when authored, takes over meta.rightIcon from the placeholders
-            // sheet - so a header search icon can be configured by dropping a search block into
-            // the nav, no placeholder-sheet round-trip needed.
-            return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation,
-                    navPageRightIcon(root));
+            // v2: build the entire meta in DSN reference field order via EnvelopeMeta
+            return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation);
         }
 
         // v1: original field order (id, type, title, useCart, navigation)
@@ -332,55 +328,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             pages.add(0, root);
         }
         return pages;
-    }
-
-    /**
-     * Reads the {@code rightIcon} sub-object out of the nav page's first {@code search} block,
-     * if one is authored. Same {@code {icon, name, target}} shape the meta wants, which is what
-     * the {@code search.json} mapping rule already produces on that block.
-     *
-     * @return the rightIcon map to use, or null when no nav page or no search block is present -
-     *         the caller then falls back to the placeholders-sheet source
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> navPageRightIcon(final Page root) {
-        final Page navPage = resolveNavPage(root);
-        if (navPage == null) {
-            return null;
-        }
-        // hierarchical=true so mapping rules fire - the search.json rule is what turns a flat
-        // 'search' block into the { rightIcon: { icon, name, target } } shape.
-        final List<Map<String, Object>> components = walker.componentsOf(navPage, null, true);
-        for (final Map<String, Object> component : findSearchComponents(components)) {
-            final Object content = component.get(SchemaConstants.KEY_CONTENT);
-            if (!(content instanceof Map)) {
-                continue;
-            }
-            final Object rightIcon = ((Map<String, Object>) content).get("rightIcon");
-            if (rightIcon instanceof Map) {
-                return (Map<String, Object>) rightIcon;
-            }
-        }
-        return null;
-    }
-
-    /** Walks a component tree (v2 hierarchical, nested {@code content} arrays) collecting every
-     *  {@code search} component. Recursive because panels wrap child components. */
-    @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> findSearchComponents(final List<Map<String, Object>> tree) {
-        final List<Map<String, Object>> found = new ArrayList<>();
-        for (final Map<String, Object> component : tree) {
-            final Object meta = component.get(SchemaConstants.KEY_META);
-            if (meta instanceof Map && "search".equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
-                found.add(component);
-                continue;
-            }
-            final Object content = component.get(SchemaConstants.KEY_CONTENT);
-            if (content instanceof List) {
-                found.addAll(findSearchComponents((List<Map<String, Object>>) content));
-            }
-        }
-        return found;
     }
 
     /**
