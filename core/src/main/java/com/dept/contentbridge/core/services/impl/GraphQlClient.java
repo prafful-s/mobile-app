@@ -67,18 +67,28 @@ final class GraphQlClient {
             LOG.warn("No SlingRequestProcessor available - cannot run persisted queries");
             return java.util.Collections.emptyMap();
         }
-        final String path = EXECUTE_ROOT + "/" + StringUtils.strip(configName, "/")
-                + "/" + StringUtils.strip(queryName, "/");
+        // Persisted query variables MUST arrive as matrix parameters on the path itself
+        // (;name=value pairs) - request parameters via withParameter() reach the endpoint but the
+        // GraphQL query executor never reads them; the query then sees the variable as null and
+        // fails validation on NonNull types. The public URL Adobe documents also uses matrix form
+        // (;_path=/content/dam/luma3), so building the path this way matches what a caller would
+        // see going through the HTTP endpoint directly.
+        final StringBuilder pathBuilder = new StringBuilder(EXECUTE_ROOT)
+                .append('/').append(StringUtils.strip(configName, "/"))
+                .append('/').append(StringUtils.strip(queryName, "/"));
+        for (final Map.Entry<String, String> variable : variables.entrySet()) {
+            // Matrix values are appended literally: URL-encoding the forward slashes in a path
+            // value (/content/dam/foo -> %2Fcontent%2Fdam%2Ffoo) confuses Sling's routing, and the
+            // matrix delimiter itself already separates variable from path so no further escaping
+            // is needed for the character set the callers pass here (safe-name-restricted config +
+            // query + allowed-root-restricted content path).
+            pathBuilder.append(';').append(variable.getKey()).append('=').append(variable.getValue());
+        }
+        final String path = pathBuilder.toString();
 
         try {
-            // Variables are passed as request parameters rather than pasted into the path. The
-            // suffix form (;_path=...) is what the URL looks like from outside; internally the
-            // parameter map is what the endpoint reads, and it needs no escaping decisions from us.
             final SlingInternalRequest request =
                     new SlingInternalRequest(resolver, requestProcessor, path);
-            for (final Map.Entry<String, String> variable : variables.entrySet()) {
-                request.withParameter(variable.getKey(), variable.getValue());
-            }
 
             final String body = request.execute().checkStatus(200).getResponseAsString();
             return dataOf(body, configName, queryName);
