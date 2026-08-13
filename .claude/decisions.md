@@ -184,6 +184,23 @@ flip it, not a bug fix. Markup links inside authored rich text (`<a href="/conte
 component - covers every mapping rule that emits one of those two names, plus the generic
 Franklin-block fallback, with a two-entry `Set` rather than per-component special-casing.
 
+## Screen-key collision now logs a warning instead of silently dropping a page
+
+**Decision**: `PageJsonExporterImpl.buildScreens` logs a WARN when two pages resolve to the same
+`screens` key (via `screenKey()` - authored `pageName` property, falling back to the JCR node
+name) before overwriting.
+**Why**: found via a real incident - binji-site had `/content/binji-site/.../form-test`
+(jcr:title "Forms Test", a QA fixture) authored with `pageName: "movies"`, colliding with the
+actual `/content/binji-site/.../movies` page which also has `pageName: "movies"`. Both mapped to
+`screens.movies`; whichever the tree walk hit last silently overwrote the other with no trace in
+the response - the real Movies page's content vanished from the API with zero signal anything
+was wrong. The page that "went missing" per the user's report was never actually unfetched; it
+was clobbered after being fetched.
+**Not a code bug to "fix" further**: this is a content-authoring error (duplicate `pageName`) -
+the real fix is on the content side (give the QA page a distinct `pageName` or delete it). The
+warning exists so the *next* occurrence is diagnosable from logs instead of requiring a manual
+CRXDE property-by-property comparison to find.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

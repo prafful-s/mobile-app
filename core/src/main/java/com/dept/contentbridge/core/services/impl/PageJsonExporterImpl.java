@@ -263,7 +263,15 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final boolean wholeApp = requested == null || StringUtils.equals(root.getPath(), requested.getPath());
         final List<Page> pages = wholeApp ? screenPages(root) : Collections.singletonList(requested);
         for (final Page page : pages) {
-            screens.put(screenKey(page), buildScreen(page, root, assetHost, options, menu));
+            final String key = screenKey(page);
+            if (screens.containsKey(key)) {
+                // Two pages authored the same 'pageName' (or the same node name with neither set) -
+                // the later one would otherwise silently clobber the former in the response with no
+                // trace of what happened to it.
+                LOG.warn("Screen key '{}' from {} collides with an already-exported screen - "
+                        + "overwriting it. Give one of the pages a distinct 'pageName'.", key, page.getPath());
+            }
+            screens.put(key, buildScreen(page, root, assetHost, options, menu));
         }
         return screens;
     }
