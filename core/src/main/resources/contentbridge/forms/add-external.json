@@ -1,0 +1,64 @@
+[
+  {
+    "id": "type",
+    "name": "type",
+    "label": "Type",
+    "value": "",
+    "type": "select",
+    "options": [
+      { "label": "Select...", "value": "" },
+      { "label": "Bank Account", "value": "bank-account" }
+    ],
+    "visibleIf": { "prop": "variant", "notEquals": "credit-card" }
+  },
+  {
+    "id": "type",
+    "name": "type",
+    "label": "Type",
+    "value": "",
+    "type": "select",
+    "options": [
+      { "label": "Select...", "value": "" },
+      { "label": "Credit Card", "value": "credit-card" }
+    ],
+    "visibleIf": { "prop": "variant", "equals": "credit-card" }
+  },
+  {
+    "id": "origin",
+    "name": "origin",
+    "label": "Origin",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "accountNumber",
+    "name": "accountNumber",
+    "label": "Account number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "visibleIf": { "prop": "variant", "notEquals": "credit-card" }
+  },
+  {
+    "id": "cardNumber",
+    "name": "cardNumber",
+    "label": "Card number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "visibleIf": { "prop": "variant", "equals": "credit-card" }
+  },
+  {
+    "id": "authorizedUserName",
+    "name": "authorizedUserName",
+    "label": "Authorized user name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  }
+]

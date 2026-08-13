@@ -54,7 +54,7 @@ class FormSchemaServiceTest {
     @Test
     @DisplayName("every shipped schema is discovered")
     void allSchemasLoad() {
-        assertEquals(18, service.getFormNames().size(), service.getFormNames().toString());
+        assertEquals(20, service.getFormNames().size(), service.getFormNames().toString());
     }
 
     @Test

@@ -597,6 +597,49 @@ class FormBlockV2Test {
     }
 
     @Test
+    @DisplayName("insurance block becomes a form with 7 fields (no gates)")
+    void insuranceBecomesForm() {
+        context.build().resource(ROOT + "/ins",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "insurance");
+
+        final Map<String, Object> form = form();
+        assertEquals("form", map(form.get("meta")).get("component"),
+                "an insurance block is recognised as a form via its component name");
+
+        final List<String> ids = ids(form);
+        assertEquals(List.of("firstName", "lastName", "birthDate", "permanentAddress",
+                "city", "zipCode", "country"), ids);
+    }
+
+    @Test
+    @DisplayName("add-external default (account variant) shows accountNumber, hides cardNumber")
+    void addExternalAccountVariant() {
+        context.build().resource(ROOT + "/ext",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "add-external");
+
+        final List<String> ids = ids(form());
+        assertTrue(ids.contains("accountNumber"), "default variant is account");
+        assertFalse(ids.contains("cardNumber"), "cardNumber is credit-card-only");
+        assertTrue(ids.contains("type"), "type dropdown always present");
+        assertTrue(ids.contains("origin"));
+        assertTrue(ids.contains("authorizedUserName"));
+    }
+
+    @Test
+    @DisplayName("add-external credit-card variant swaps accountNumber for cardNumber")
+    void addExternalCreditCardVariant() {
+        context.build().resource(ROOT + "/ext",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "add-external", "variant", "credit-card");
+
+        final List<String> ids = ids(form());
+        assertFalse(ids.contains("accountNumber"), "hidden on credit-card variant");
+        assertTrue(ids.contains("cardNumber"));
+    }
+
+    @Test
     @DisplayName("checkout-shipping gates cardNumber + lumaLoyalty on show flags")
     void checkoutShippingBooleanGates() {
         context.build().resource(ROOT + "/cs",
