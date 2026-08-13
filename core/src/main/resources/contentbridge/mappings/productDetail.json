@@ -1,8 +1,0 @@
-{
-  "match": ["product-detail"],
-  "component": "productCard",
-  "skeleton": true,
-  "fields": [
-    { "target": "product", "type": "null" }
-  ]
-}
