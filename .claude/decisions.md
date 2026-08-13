@@ -369,6 +369,32 @@ is one static method extended in FormFieldFactory - no signature changes.
 `createAccountNoVariantHidesVariantFields`, `testDriveScheduleAppointmentHidesAddress`,
 `testDriveDefaultVariantKeepsAddress`, `checkoutShippingBooleanGates`). 214/214 core tests green.
 
+## Dot-notation field targets nest values in sub-objects (`search.json` → `rightIcon`)
+
+**Decision**: `FieldRule.getTarget()` values can now contain a single dot: `"target":
+"rightIcon.icon"` nests the value inside a `rightIcon` sub-object rather than emitting a flat
+`rightIcon.icon` key. Multiple rules targeting the same head (`rightIcon.icon`, `rightIcon.name`,
+`rightIcon.target`) extend the same sub-object.
+**Why**: reference contract for the header search widget expects a single `rightIcon` object:
+`{ "icon": "", "name": "", "target": "" }`. Authored flat block properties (`searchstyle`,
+`searchPath`) needed to collapse into that shape. Extending target strings was the smallest
+possible change - no new operator, no dispatch fork, no schema restructure.
+**Rejected — introducing a `nest` operator or a `group` field type**: those would fork the rule
+grammar just to save two dots. Every existing rule reads top-to-bottom without knowing whether
+its target lands flat or nested.
+**Trade-off accepted**: one level of nesting only. A schema wanting deeper structure is reading
+a flat authored bag the wrong way round; the correct fix would be an authoring model that carries
+that structure directly, not a rule that fabricates it.
+**Consumed-props note**: `name` is on `GenericComponent`'s skip list (block scaffolding, not
+content), so `rightIcon.name` uses `const: "Search"` rather than `from: "name"`. A search block's
+icon label is a fixed accessibility string, not per-instance content.
+**Scope**: `ComponentMapping.putTarget()` handles the split; both `apply()` and `applyStyles()`
+use it. One new mapping rule (`search.json`) with 3 dotted fields. Adds `"search"` to the live
+component types that now have a reference-shaped export.
+**Tests**: 3 in `SearchMappingTest` (nested object shape from authored props; skeleton fills icon
++ target defaults while keeping the const name; consumed source props do not leak to extras).
+217/217 core tests green.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

@@ -170,3 +170,8 @@ rewrite), `productsFolderName` (`products`), `maxProducts` (200), `productFieldA
   link-carrying field (`button.linkTo`, `card.link`, `hero.linkTo`, `image.linkTo`,
   `offer.linkTo`) so responses never leak the author/preview host a link happened to be authored
   against.
+- Field targets can be **dot-notation** to nest values inside a keyed sub-object:
+  `"target": "rightIcon.icon"` + `"target": "rightIcon.name"` + `"target": "rightIcon.target"`
+  produce `{ "rightIcon": { "icon": ..., "name": ..., "target": ... } }` in one content block.
+  Handled in `ComponentMapping.putTarget()`; one level of nesting only. Used by `search.json`
+  to project a flat block's `searchstyle` / `searchPath` properties onto a nested icon object.

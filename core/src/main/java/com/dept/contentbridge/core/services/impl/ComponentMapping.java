@@ -162,17 +162,47 @@ final class ComponentMapping {
                 value = field.fallback();
             }
             if (isPresent(value)) {
-                target.put(field.getTarget(), value);
+                putTarget(target, field.getTarget(), value);
             } else if (skeleton) {
                 // Fixed-shape opt-in: emit the key anyway, typed to what the schema declared.
                 // The client always sees the same key set, whatever the author left blank.
-                target.put(field.getTarget(), field.emptyDefault());
+                putTarget(target, field.getTarget(), field.emptyDefault());
             }
         }
         if (skeleton) {
             return target;
         }
         return anyAuthored ? target : Collections.emptyMap();
+    }
+
+    /**
+     * Places {@code value} in {@code target}, supporting dot-notation targets that nest a value
+     * inside a keyed sub-object.
+     *
+     * <p>{@code "rightIcon.icon"} produces {@code { "rightIcon": { "icon": value } }} - and a
+     * second rule targeting {@code "rightIcon.name"} extends that same sub-object rather than
+     * overwriting it. That is what lets a rule build a target like
+     * {@code { "rightIcon": { "icon": "search-icon", "name": "Search", "target": "" } }} out of a
+     * flat authored property set.</p>
+     *
+     * <p>Only one level of nesting is supported. A rule needing deeper structure would be reading a
+     * flat authored bag the wrong way round.</p>
+     */
+    private static void putTarget(final Map<String, Object> target, final String path,
+                                  final Object value) {
+        final int dot = path.indexOf('.');
+        if (dot < 0) {
+            target.put(path, value);
+            return;
+        }
+        final String head = path.substring(0, dot);
+        final String tail = path.substring(dot + 1);
+        final Object existing = target.get(head);
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> nested = existing instanceof Map
+                ? (Map<String, Object>) existing : new LinkedHashMap<>();
+        nested.put(tail, value);
+        target.put(head, nested);
     }
 
     /**
@@ -198,11 +228,11 @@ final class ComponentMapping {
                 value = field.fallback();
             }
             if (isPresent(value)) {
-                target.put(field.getTarget(), value);
+                putTarget(target, field.getTarget(), value);
             } else if (skeleton) {
                 // Fixed-shape styles: emit every declared key so the reference contract's
                 // styles keyset is always present, typed to what the schema declared.
-                target.put(field.getTarget(), field.emptyDefault());
+                putTarget(target, field.getTarget(), field.emptyDefault());
             }
         }
         return target;

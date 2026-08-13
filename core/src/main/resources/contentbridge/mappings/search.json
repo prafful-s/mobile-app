@@ -1,0 +1,10 @@
+{
+  "match": ["search"],
+  "component": "search",
+  "skeleton": true,
+  "fields": [
+    { "target": "rightIcon.icon", "from": "searchstyle", "default": "" },
+    { "target": "rightIcon.name", "const": "Search" },
+    { "target": "rightIcon.target", "from": "searchPath", "type": "path", "default": "" }
+  ]
+}
