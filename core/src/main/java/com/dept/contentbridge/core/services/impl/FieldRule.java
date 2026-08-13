@@ -40,6 +40,12 @@ final class FieldRule {
     private static final String TYPE_BOOLEAN = "boolean";
     private static final String TYPE_NUMBER = "number";
     private static final String TYPE_STRING = "string";
+    /**
+     * Emits a literal JSON {@code null} rather than an empty string as the skeleton default.
+     * Used for reference-contract keys that must show up as {@code null} to signal "no value yet"
+     * (a product-detail slot's {@code product}, for instance) rather than as an empty string.
+     */
+    private static final String TYPE_NULL = "null";
 
     /**
      * Strips scheme and host off an absolute {@code http(s)} link, keeping only path, query and
@@ -162,6 +168,9 @@ final class FieldRule {
         }
         if (TYPE_BOOLEAN.equals(type) || TYPE_PRESENCE.equals(type)) {
             return Boolean.FALSE;
+        }
+        if (TYPE_NULL.equals(type)) {
+            return null;
         }
         return "";
     }
