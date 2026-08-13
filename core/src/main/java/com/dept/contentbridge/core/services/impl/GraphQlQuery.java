@@ -13,9 +13,11 @@ import com.day.cq.wcm.api.Page;
 /**
  * Which persisted query to run for a site, and over what.
  *
- * <p>Resolved from the request first, then the site's {@code placeholders} page. The request wins so
- * one site can be pointed at a different catalogue for a demo without editing content; placeholders
- * carry the answer for everyone else, in the same place {@code hostname} already lives.</p>
+ * <p>Resolved from the request first, then the site's {@code placeholders} page, then the bundle's
+ * shipped {@link SiteProductDefaults}. The request wins so one site can be pointed at a different
+ * catalogue for a demo without editing content; placeholders carry the answer for everyone else, in
+ * the same place {@code hostname} already lives; the shipped defaults are the last resort, so a site
+ * works out of the box before anyone has authored a placeholders page for it.</p>
  *
  * <pre>
  * ?gqlConfig=dsn-eds-configuration&amp;gqlQuery=productListByPathBinji
@@ -56,13 +58,20 @@ final class GraphQlQuery {
      * @param page      any page in the site, used to find its placeholders
      * @param options   the request
      * @param isAllowed the exporter's path guard - see {@link #getPath()}
+     * @param defaults  the bundle's shipped per-site fallback, consulted only when neither the
+     *                  request nor placeholders named a query or a path
      */
     static GraphQlQuery resolve(final Page page, final ExportOptions options,
-                                final Predicate<String> isAllowed) {
+                                final Predicate<String> isAllowed, final SiteProductDefaults defaults) {
+        final SiteProductDefaults.Entry shipped =
+                defaults == null ? null : defaults.forPage(page);
+
         final String configName = pick(options.getGraphQlConfig(),
-                SiteHostResolver.placeholder(page, GraphQlProductSource.PN_CONFIG));
+                SiteHostResolver.placeholder(page, GraphQlProductSource.PN_CONFIG),
+                shipped == null ? null : shipped.getConfigName());
         final String queryName = pick(options.getGraphQlQuery(),
-                SiteHostResolver.placeholder(page, GraphQlProductSource.PN_QUERY));
+                SiteHostResolver.placeholder(page, GraphQlProductSource.PN_QUERY),
+                shipped == null ? null : shipped.getQueryName());
 
         if (StringUtils.isBlank(configName) || StringUtils.isBlank(queryName)) {
             return none();
@@ -74,7 +83,8 @@ final class GraphQlQuery {
         }
 
         final String path = pick(options.getProductsPath(),
-                SiteHostResolver.placeholder(page, GraphQlProductSource.PN_PRODUCTS_PATH));
+                SiteHostResolver.placeholder(page, GraphQlProductSource.PN_PRODUCTS_PATH),
+                shipped == null ? null : shipped.getCfFolderPath());
         if (StringUtils.isBlank(path)) {
             LOG.warn("Persisted query {}/{} is configured but no {} was given - not running it",
                     configName, queryName, GraphQlProductSource.PN_PRODUCTS_PATH);
@@ -92,9 +102,14 @@ final class GraphQlQuery {
         return new GraphQlQuery(configName.trim(), queryName.trim(), path.trim());
     }
 
-    /** Request value if present, otherwise the authored one. */
-    private static String pick(final String fromRequest, final String fromPlaceholders) {
-        return StringUtils.isNotBlank(fromRequest) ? fromRequest : fromPlaceholders;
+    /** First non-blank candidate, in the order given - request, then placeholders, then shipped default. */
+    private static String pick(final String... candidates) {
+        for (final String candidate : candidates) {
+            if (StringUtils.isNotBlank(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     boolean isConfigured() {

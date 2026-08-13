@@ -67,7 +67,11 @@ GET /content/<site>/<path>/api/<name>.json?path=/content/<site>/us/en[&pretty=tr
         │    ?gqlConfig=&gqlQuery= (or the site's placeholders sheet), GraphQlProductSource dispatches
         │    a persisted GraphQL query in-JVM via SlingRequestProcessor (optional ref — falls back to
         │    Content Fragments if unbound). maxProducts caps the response (default 200, truncates +
-        │    warns)
+        │    warns). Resolution precedence for both query name and folder path: request param >
+        │    site's placeholders page > shipped contentbridge/products/sites.json default
+        │    (SiteProductDefaults) > none — a site listed in sites.json works with zero authored
+        │    config; the shipped folder default also backstops the plain Content Fragment read if
+        │    the GraphQL query yields nothing
         │  - ComponentTreeWalker.prefixAssetsDeep walks the finished tree and prepends the delivery host
     (ContentPaths.prefix) to every `/content/...` string value - EXCEPT the `link`/`linkTo` keys,
     which stay relative paths (client resolves them itself; see decisions.md). Runs after mapping,

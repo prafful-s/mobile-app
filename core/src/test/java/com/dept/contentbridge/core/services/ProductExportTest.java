@@ -224,4 +224,41 @@ class ProductExportTest {
 
         assertEquals("MH13", products.get(0).get("sku"));
     }
+
+    @Test
+    @DisplayName("a site named in the shipped SiteProductDefaults falls back to its cfFolderPath "
+            + "when no productsPath is configured anywhere else")
+    void shippedDefaultFolderIsUsedAsLastResort() {
+        // secur-financial is one of the sites listed in contentbridge/products/sites.json; it has no
+        // 'products'-named folder, so the ordinary search finds nothing before the shipped default
+        // takes over.
+        final String site = "/content/secur-financial";
+        context.create().page(site + "/en", "", Map.of("jcr:title", "Home"));
+        createProductAt("/content/dam/secur-financial/loans/home-loan", Map.of("sku", "HOME-LOAN"));
+
+        final Page page = context.pageManager().getPage(site + "/en");
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> products =
+                (List<Map<String, Object>>) exporter().export(page).get("products");
+
+        assertEquals(1, products.size());
+        assertEquals("HOME-LOAN", products.get(0).get("sku"));
+    }
+
+    @Test
+    @DisplayName("an authored productsPath still wins over the shipped default for the same site")
+    void authoredPathOutranksShippedDefault() {
+        final String site = "/content/secur-financial";
+        context.create().page(site + "/en", "", Map.of(
+                "jcr:title", "Home", "productsPath", "/content/dam/elsewhere/catalogue"));
+        createProductAt("/content/dam/elsewhere/catalogue/mh13", Map.of("sku", "OVERRIDE"));
+        createProductAt("/content/dam/secur-financial/loans/home-loan", Map.of("sku", "HOME-LOAN"));
+
+        final Page page = context.pageManager().getPage(site + "/en");
+        @SuppressWarnings("unchecked")
+        final List<Map<String, Object>> products =
+                (List<Map<String, Object>>) exporter().export(page).get("products");
+
+        assertEquals("OVERRIDE", products.get(0).get("sku"));
+    }
 }

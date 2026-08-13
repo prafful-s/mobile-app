@@ -92,6 +92,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private SiteHostResolver hostResolver;
     private ProductExporter productExporter;
     private GraphQlProductSource graphQlProducts;
+    private SiteProductDefaults siteProductDefaults;
 
     @Activate
     protected void activate(final ContentBridgeConfiguration config) {
@@ -117,6 +118,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.productExporter = new ProductExporter(productsFolderName, maxProducts, productFieldAliases);
         this.graphQlProducts = new GraphQlProductSource(
                 new GraphQlClient(requestProcessor), productExporter);
+        this.siteProductDefaults = SiteProductDefaults.load();
     }
 
     @Override
@@ -400,10 +402,15 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * misconfigured, unregistered or simply returns nothing costs the catalogue and not the export.
      * The cost of that leniency is that a genuinely empty catalogue is indistinguishable from a
      * broken query - which is why {@code GraphQlClient} logs the difference.</p>
+     *
+     * <p>When neither the request nor the site's placeholders name a catalogue location at all, the
+     * bundle's shipped {@link SiteProductDefaults} supplies both the persisted query (via
+     * {@link GraphQlQuery#resolve}) and, if that yields nothing, the Content Fragment folder for the
+     * plain read below - so a site works out of the box before anyone authors a placeholders page.</p>
      */
     private Catalogue buildProducts(final Page root, final Resource extras, final String assetHost,
                                     final ExportOptions options) {
-        final GraphQlQuery query = GraphQlQuery.resolve(root, options, this::isAllowed);
+        final GraphQlQuery query = GraphQlQuery.resolve(root, options, this::isAllowed, siteProductDefaults);
         if (query.isConfigured()) {
             final List<Map<String, Object>> fromQuery =
                     graphQlProducts.export(root, query, assetHost);
@@ -413,8 +420,15 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             LOG.debug("Persisted query {} yielded nothing - falling back to Content Fragments", query);
         }
 
-        final List<Map<String, Object>> fromFragments =
+        List<Map<String, Object>> fromFragments =
                 productExporter.export(root, assetHost, options.getProductsPath());
+
+        if (fromFragments.isEmpty() && StringUtils.isBlank(options.getProductsPath())) {
+            final SiteProductDefaults.Entry shipped = siteProductDefaults.forPage(root);
+            if (shipped != null && StringUtils.isNotBlank(shipped.getCfFolderPath())) {
+                fromFragments = productExporter.export(root, assetHost, shipped.getCfFolderPath());
+            }
+        }
 
         if (!fromFragments.isEmpty()) {
             return new Catalogue(new ArrayList<>(fromFragments), SOURCE_FRAGMENTS);

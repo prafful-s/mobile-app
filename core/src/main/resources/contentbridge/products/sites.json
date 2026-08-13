@@ -1,0 +1,10 @@
+{
+  "secur-financial": {
+    "graphQlEndpoint": "secur-financial/product-card-information",
+    "cfFolderPath": "/content/dam/secur-financial"
+  },
+  "luma3": {
+    "graphQlEndpoint": "dsn-eds-configuration/productsListByPath",
+    "cfFolderPath": "/content/dam/luma3"
+  }
+}

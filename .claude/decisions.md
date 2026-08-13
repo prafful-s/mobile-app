@@ -201,6 +201,38 @@ the real fix is on the content side (give the QA page a distinct `pageName` or d
 warning exists so the *next* occurrence is diagnosable from logs instead of requiring a manual
 CRXDE property-by-property comparison to find.
 
+## Per-site product source defaults shipped as bundle data, not content
+
+**Decision**: added `core/src/main/resources/contentbridge/products/sites.json` (site name →
+`{graphQlEndpoint: "config/queryName", cfFolderPath}`) and a new package-private loader,
+`SiteProductDefaults` (mirrors `ComponentMappings`'s classloader-`getResourceAsStream` + Jackson
+load pattern, `EMPTY` fallback, per-entry error isolation). Wired as the **third and last**
+precedence tier in `GraphQlQuery.resolve()` — request param > site's `placeholders` page > shipped
+`sites.json` — and, separately, as the last-resort `productsPath` for the plain Content Fragment
+read in `PageJsonExporterImpl.buildProducts()` when the GraphQL branch yields nothing.
+**Why**: user asked to "maintain the configuration" under `core/src/main/resources` for known
+sites (secur-financial, and an example "luma" site) rather than requiring every environment's
+`placeholders` page to be hand-authored with `gqlConfig`/`gqlQuery`/`productsPath` before a site's
+products work at all. Matches the existing convention in this codebase (mapping rules, form
+schemas) of shipping config as bundle-resource JSON instead of Java.
+**Format**: `graphQlEndpoint` is `"<config>/<queryName>"` as one string (matches the two path
+segments of `/graphql/execute.json/<config>/<queryName>` — the same shape a pasted execute URL or
+this file both use), split on the first `/` at load time rather than as two JSON keys.
+**Verified against the running local AEM instance** (`:6502`, admin/admin):
+`/conf.1.json` → 5 conf roots, only `dsn-eds-configuration` has
+`settings/graphql/persistentQueries` (5 queries: `productsListByPath`,
+`productDescriptionByPathAndSKU`, `productListByCategory`, `productListByPathBinji`,
+`productDescriptionByPathAndSKUBinji`). `secur-financial` as a GraphQL config does **not** exist
+on this local instance — `GET /graphql/execute.json/secur-financial/product-card-information` →
+404 `PersistenceError`. It's presumed to exist on the deployed `author-p35437-e2207568` cloud
+instance the user pasted URLs from (not verifiable from here). Not a blocker: `GraphQlQuery`
+already falls through to Content Fragments on any empty/failed query, and the shipped
+`cfFolderPath` (`/content/dam/secur-financial`) backstops that fallback independently.
+**Precedence tests added** (`ProductExportTest`): `shippedDefaultFolderIsUsedAsLastResort` (no
+config anywhere → shipped default fires) and `authoredPathOutranksShippedDefault` (a `productsPath`
+property on the site root still wins) — same file, same fixture style as the rest of the product
+export tests.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.
