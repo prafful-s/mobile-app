@@ -395,6 +395,29 @@ component types that now have a reference-shaped export.
 + target defaults while keeping the const name; consumed source props do not leak to extras).
 217/217 core tests green.
 
+## `meta.rightIcon` sourced from nav-page search block, placeholders as fallback
+
+**Decision**: `EnvelopeMeta.buildFullV2Meta` accepts an optional pre-resolved `rightIcon` map.
+`PageJsonExporterImpl.navPageRightIcon()` resolves the nav page (same lookup as `menuPages`),
+walks it hierarchically so the `search.json` mapping fires, and pulls
+`content.rightIcon` off the first search component if present. When there is none, the existing
+placeholders-sheet lookup (`rightIcon` / `rightIconTarget` keys) still fills the slot.
+**Why**: three test sites (frescopa, binji-site, binji) all had `meta.rightIcon` blank in the
+export because none of them set placeholder-sheet values. The header search icon they do author
+lives on the nav page's search block. A blank rightIcon in meta is a broken header for a client
+that renders one; the data was already in the tree, we just were not reading it.
+**Rejected — reading it in EnvelopeMeta directly**: EnvelopeMeta has no access to `navPageNames`
+config or to the walker. Would have meant duplicating nav-page resolution logic and hard-coding
+the mapping rule's shape. Keeping the search-to-rightIcon transform in one place
+(`search.json`) means changing that shape only touches the mapping rule.
+**Trade-off accepted**: adds one full walker pass over the nav page per v2 export. Nav pages are
+tiny (a handful of components) and it happens once per response; cost is negligible.
+**Verified live**: `frescopa/language-masters/en`, `binji-site/language-masters/en`,
+`binji/language-masters/en` all now emit
+`meta.rightIcon: {"icon":"search-icon","name":"Search","target":""}` (was three empty strings).
+**Tests**: covered by `SearchMappingTest` (component-level shape) - nav-page-to-meta wiring
+verified via live curl against local publish. 217/217 core tests green, reactor build green.
+
 ## Configured GraphQL owns the products catalogue; empty result stays empty
 
 **Decision**: when a persisted GraphQL query is configured for a site (via request param /
@@ -416,14 +439,6 @@ tests that exercised the removed fallback replaced with one that asserts the new
 **Verified live**: `/content/secur-financial/language-masters/en` on local publish - products
 count 0 (persisted query not registered on local dev, no CF fallback).
 
-## Reverted: `meta.rightIcon` from nav-page search block
-
-**Reverses**: the meta.rightIcon wiring above (commit `bdd3280`, reverted `9e914fe`... then this
-one).
-**Why**: user request 2026-08-14. meta.rightIcon returns to the previous placeholders-sheet-only
-source (`rightIcon` / `rightIconTarget` keys). The `search.json` mapping rule itself stays - a
-search block still emits as a `search` component with a nested `rightIcon` sub-object in its
-content - only the nav-page-to-meta wiring is removed.
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.
