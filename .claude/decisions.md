@@ -310,6 +310,37 @@ WARN in `buildScreens`.
 `FranklinExportTest.childPagesBecomeScreens` (and its `content("home")` helpers all switched to
 `content("en")`), `HierarchicalSchemaTest.content()` helper. 203/203 core tests green.
 
+## Form-field visibility gated by authored `show*` properties (Option A: filter, drop)
+
+**Decision**: form schema entries can carry `"visibleIf": { "prop": "showcreditcard", "default":
+false }`. `FormFieldFactory.isVisible()` reads the property off the authored block; when falsy
+(or absent and `default` is false), the field is dropped from the emitted `content[]`. Remaining
+fields renumber to a contiguous 1..N order.
+**Why**: reference client (`parent-repo\blocks\create-account\create-account.js`,
+`blocks\join-us\join-us.js`) toggles field visibility via authored booleans
+(`showcreditcard`, `showaddress`, `showdateofbirth`, `showloyaltyprogram`, `showprivacypolicy`,
+`showcommunicationpreferences` for create-account; `showdeliverysection`, `showconsentcheckbox`,
+`show-zip-code` for join-us). Our exporter previously emitted every schema field regardless -
+verified on `form-test/create_account` where `showcreditcard=false` still produced credit-card
+fields in the payload.
+**Rejected — Option B (annotate `hidden:true` on the field)**: mirrors reference's CSS-hide
+semantics exactly but leaves the payload full-size and forces every client to honour a `hidden`
+flag. Since our render targets don't have a stateful "re-show later" case (these are page-time
+author config, not runtime state), the drop-out is safe and produces a smaller payload.
+**Trade-off accepted**: a client that expected a stable field set now sees a variable one -
+mitigated by the contiguous 1..N ordering (no gaps that would look like dropped fields), and by
+the fact that field visibility was authored in the first place, so a stable "field always
+present" contract was never really on offer.
+**Scope**: 2 schemas touched (create-account.json, join-us.json). Rest of the 18 shipped
+schemas have no toggle-style authored properties in the reference JS, so nothing to annotate.
+Engine addition is one static method on FormFieldFactory + one filter in FormBlockBuilder.
+**Tests**: 5 new tests in `FormBlockV2Test`
+(`createAccountFullSchemaWithoutFlags`, `createAccountAddressAndDobHidden`,
+`createAccountCreditCardShown`, `visibleIfAcceptsStringBooleans`, `orderIsCompactedAfterFiltering`)
+covering default resolution, drop-out on false, string-'true'/false coercion (CRXDE stores
+booleans as strings), and ordering compaction. Updated `dateLookingTextStaysText` to set
+`showcreditcard=true` since it needs `cardExpiry`.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

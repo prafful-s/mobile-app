@@ -70,6 +70,44 @@ final class FormFieldFactory {
     }
 
     /**
+     * Field visibility gated by an authored boolean property on the enclosing block.
+     *
+     * <p>Schema entry declares {@code "visibleIf": { "prop": "showcreditcard", "default": false }}.
+     * The property is read off the block's authored properties and coerced to a boolean; when the
+     * property is not set at all, {@code default} decides - which mirrors the reference client
+     * pattern of "show unless the author explicitly turned it off", or the inverse, per field.</p>
+     *
+     * @param field    a schema entry
+     * @param authored the block's own authored properties
+     * @return true when the field should be emitted; true also when the entry has no
+     *         {@code visibleIf}, so annotating a schema is opt-in per field
+     */
+    static boolean isVisible(final Map<String, Object> field, final Map<String, Object> authored) {
+        final Object visibleIf = field.get("visibleIf");
+        if (!(visibleIf instanceof Map)) {
+            return true;
+        }
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> gate = (Map<String, Object>) visibleIf;
+        final String prop = str(gate.get("prop"));
+        if (StringUtils.isBlank(prop)) {
+            // Malformed gate - fail open rather than dropping the field silently.
+            return true;
+        }
+        final Object authoredValue = authored == null ? null : authored.get(prop);
+        if (authoredValue == null || (authoredValue instanceof String
+                && StringUtils.isBlank((String) authoredValue))) {
+            final Object def = gate.get("default");
+            return def instanceof Boolean ? (Boolean) def
+                    : Boolean.parseBoolean(String.valueOf(def));
+        }
+        if (authoredValue instanceof Boolean) {
+            return (Boolean) authoredValue;
+        }
+        return Boolean.parseBoolean(String.valueOf(authoredValue).trim());
+    }
+
+    /**
      * Builds a field from one entry of a bundled schema.
      *
      * @param field the configured field

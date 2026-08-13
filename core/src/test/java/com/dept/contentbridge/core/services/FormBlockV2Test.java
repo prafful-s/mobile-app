@@ -394,9 +394,11 @@ class FormBlockV2Test {
         // create-account has both: dateOfBirth and cardExpiry are typed 'text'. The type decides the
         // widget - guessing from a label would turn 'EXPIRATION DATE' into a date picker, which is a
         // poor way to enter MM/YY.
+        // showcreditcard=true so cardExpiry is emitted (defaults to hidden otherwise).
         context.build().resource(ROOT + "/form",
                 "sling:resourceType", "core/franklin/components/block/v1/block",
-                "model", "form", "formName", "create-account");
+                "model", "form", "formName", "create-account",
+                "showcreditcard", true);
 
         for (final String id : List.of("dateOfBirth", "cardExpiry")) {
             final Map<String, Object> field = list(form().get("content")).stream()
@@ -446,5 +448,91 @@ class FormBlockV2Test {
         assertEquals("login", map(block.get("content")).get("buttoneventtype"),
                 "v1 content is still the authored properties");
         assertTrue(block.containsKey("schema"), "v1 still carries the sidecar schema");
+    }
+
+    private List<String> ids(final Map<String, Object> form) {
+        return list(form.get("content")).stream()
+                .map(f -> String.valueOf(map(f.get("meta")).get("id")))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Test
+    @DisplayName("create-account emits every field when the authored block sets no show flags")
+    void createAccountFullSchemaWithoutFlags() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account");
+        // showaddress/showdateofbirth/showcommunicationpreferences default true, so their fields
+        // stay in. showcreditcard/showloyaltyprogram/showprivacypolicy default false, so those
+        // fields drop out. Net expected: 33 - 8 (creditcard block) - 1 (loyalty) - 1 (privacy) = 23.
+        final List<String> ids = ids(form());
+
+        assertTrue(ids.contains("address"), "showaddress defaults true");
+        assertTrue(ids.contains("dateOfBirth"), "showdateofbirth defaults true");
+        assertTrue(ids.contains("marketingConsent"), "showcommunicationpreferences defaults true");
+        assertFalse(ids.contains("cardName"), "showcreditcard defaults false");
+        assertFalse(ids.contains("joinLoyaltyProgram"), "showloyaltyprogram defaults false");
+        assertFalse(ids.contains("privacyPolicy"), "showprivacypolicy defaults false");
+    }
+
+    @Test
+    @DisplayName("create-account drops address/date-of-birth fields when the author turns them off")
+    void createAccountAddressAndDobHidden() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account",
+                "showaddress", false, "showdateofbirth", false);
+
+        final List<String> ids = ids(form());
+        assertFalse(ids.contains("address"));
+        assertFalse(ids.contains("zipCode"));
+        assertFalse(ids.contains("city"));
+        assertFalse(ids.contains("dateOfBirth"));
+        assertTrue(ids.contains("firstName"), "ungated fields stay");
+    }
+
+    @Test
+    @DisplayName("create-account shows credit-card fields when the author turns showcreditcard on")
+    void createAccountCreditCardShown() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account",
+                "showcreditcard", true);
+
+        final List<String> ids = ids(form());
+        assertTrue(ids.contains("cardName"));
+        assertTrue(ids.contains("cardNumber"));
+        assertTrue(ids.contains("cardExpiry"));
+        assertTrue(ids.contains("cardCvv"));
+        assertTrue(ids.contains("trialConsent"));
+    }
+
+    @Test
+    @DisplayName("visibleIf treats the string 'true' the same as boolean true (authored props "
+            + "arrive as strings from CRXDE)")
+    void visibleIfAcceptsStringBooleans() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account",
+                "showcreditcard", "true", "showloyaltyprogram", "false");
+
+        final List<String> ids = ids(form());
+        assertTrue(ids.contains("cardName"), "string 'true' is truthy");
+        assertFalse(ids.contains("joinLoyaltyProgram"), "string 'false' is falsy");
+    }
+
+    @Test
+    @DisplayName("after a visibility filter, remaining fields get a contiguous 1..N order")
+    void orderIsCompactedAfterFiltering() {
+        context.build().resource(ROOT + "/create",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "create-account",
+                "showaddress", false, "showdateofbirth", false);
+
+        final List<Map<String, Object>> fields = list(form().get("content"));
+        for (int i = 0; i < fields.size(); i++) {
+            assertEquals(i + 1, map(fields.get(i).get("meta")).get("order"),
+                    "hidden fields must not leave gaps in the ordering");
+        }
     }
 }

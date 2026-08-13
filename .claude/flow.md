@@ -140,7 +140,12 @@ rewrite), `productsFolderName` (`products`), `maxProducts` (200), `productFieldA
   (title, button, hero→banner, image, card, text, divider, map, offer, productImage,
   productTitle, timeSlotPicker, userDetails, userLogin, list, contentCards) + `index.json`
 - `core/src/main/resources/contentbridge/forms/*.json` — one file per form type (checkout,
-  create-account, loan-application-form, etc.) + `index.json`
+  create-account, loan-application-form, etc.) + `index.json`. A field entry can carry
+  `"visibleIf": { "prop": "showcreditcard", "default": false }` — `FormFieldFactory.isVisible`
+  reads that property off the authored block; when falsy (or missing and `default` is false), the
+  field is dropped and remaining fields renumber to a contiguous 1..N. Currently used in
+  `create-account.json` (6 show flags mirroring the reference client's toggles) and
+  `join-us.json` (3 flags).
 - Adding a new component/form type = add a mapping JSON file + (if needed) a Sling Model in
   `core/.../models/impl/`. No servlet/exporter code change required for a straightforward mapping.
 - A rule can also declare `contentFragmentRef: "<own property name>"` (e.g. `productCard.json` for

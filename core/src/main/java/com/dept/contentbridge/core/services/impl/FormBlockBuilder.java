@@ -70,7 +70,7 @@ final class FormBlockBuilder {
      */
     Map<String, Object> build(final Resource resource, final String formName, final String id,
                               final int order, final Map<String, Object> authored) {
-        final List<Map<String, Object>> fields = fields(resource, formName);
+        final List<Map<String, Object>> fields = fields(resource, formName, authored);
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
@@ -103,29 +103,38 @@ final class FormBlockBuilder {
      * configuration is what lets a form appear on a page before anyone has written a schema for
      * it.</p>
      */
-    private List<Map<String, Object>> fields(final Resource resource, final String formName) {
-        final List<Map<String, Object>> configured = fromSchema(formName);
+    private List<Map<String, Object>> fields(final Resource resource, final String formName,
+                                             final Map<String, Object> authored) {
+        final List<Map<String, Object>> configured = fromSchema(formName, authored);
         if (!configured.isEmpty()) {
             return configured;
         }
-        final List<Map<String, Object>> authored = new ArrayList<>();
-        collectAuthoredFields(resource, authored, 0);
+        final List<Map<String, Object>> collected = new ArrayList<>();
+        collectAuthoredFields(resource, collected, 0);
 
-        if (authored.isEmpty()) {
+        if (collected.isEmpty()) {
             LOG.debug("Form block {} has neither a bundled schema nor authored fields", resource.getPath());
         }
-        return authored;
+        return collected;
     }
 
-    private List<Map<String, Object>> fromSchema(final String formName) {
+    private List<Map<String, Object>> fromSchema(final String formName,
+                                                 final Map<String, Object> authored) {
         if (StringUtils.isBlank(formName)) {
             return new ArrayList<>();
         }
         final List<Map<String, Object>> schema = formSchemaService.getSchema(formName);
         final List<Map<String, Object>> fields = new ArrayList<>(schema.size());
 
+        // 'order' is the visible position - increment only when the field survives the visibleIf
+        // filter, so the client renders 1..N without gaps that would look like dropped fields.
         int order = 1;
         for (final Map<String, Object> field : schema) {
+            if (!FormFieldFactory.isVisible(field, authored)) {
+                LOG.debug("Field '{}' hidden by visibleIf against authored properties",
+                        field.get("id"));
+                continue;
+            }
             fields.add(FormFieldFactory.fromConfig(field, order++));
         }
         return fields;

@@ -42,7 +42,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "show-zip-code", "default": false }
   },
   {
     "id": "streetLine1",
@@ -51,7 +52,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showdeliverysection", "default": false }
   },
   {
     "id": "streetLine2",
@@ -60,7 +62,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showdeliverysection", "default": false }
   },
   {
     "id": "city",
@@ -69,7 +72,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showdeliverysection", "default": false }
   },
   {
     "id": "postalCode",
@@ -78,7 +82,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showdeliverysection", "default": false }
   },
   {
     "id": "callBeforeDelivery",
@@ -91,7 +96,8 @@
         "label": "Call Before Delivery",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showdeliverysection", "default": false }
   },
   {
     "id": "deliveryFrequency",
@@ -116,7 +122,8 @@
         "label": "Daily",
         "value": "daily"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showdeliverysection", "default": false }
   },
   {
     "id": "consent",
@@ -129,6 +136,7 @@
         "label": "I want to join WKND Fly Club and I have read and understand the Privacy and Cookies Policy. I want to receive personalized communication by email.",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showconsentcheckbox", "default": true }
   }
 ]

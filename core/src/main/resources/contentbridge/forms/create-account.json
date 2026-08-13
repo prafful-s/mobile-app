@@ -60,7 +60,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showaddress", "default": true }
   },
   {
     "id": "zipCode",
@@ -69,7 +70,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showaddress", "default": true }
   },
   {
     "id": "city",
@@ -78,7 +80,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showaddress", "default": true }
   },
   {
     "id": "dateOfBirth",
@@ -86,7 +89,8 @@
     "label": "Date of birth (YYYY-MM-DD)",
     "value": "",
     "type": "text",
-    "withDateFormatInLabel": false
+    "withDateFormatInLabel": false,
+    "visibleIf": { "prop": "showdateofbirth", "default": true }
   },
   {
     "id": "dietaryRestrictions",
@@ -244,7 +248,8 @@
         "label": "I have read and understand the Privacy and Cookies Policy",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showprivacypolicy", "default": false }
   },
   {
     "id": "joinLoyaltyProgram",
@@ -257,7 +262,8 @@
         "label": "I want to join loyalty program",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showloyaltyprogram", "default": false }
   },
   {
     "id": "marketingConsent",
@@ -270,7 +276,8 @@
         "label": "Yes, I would like to receive special offers and updates by email.",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showcommunicationpreferences", "default": true }
   },
   {
     "id": "prefEmail",
@@ -283,7 +290,8 @@
         "label": "Email",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showcommunicationpreferences", "default": true }
   },
   {
     "id": "prefPhone",
@@ -296,7 +304,8 @@
         "label": "Phone",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showcommunicationpreferences", "default": true }
   },
   {
     "id": "prefSms",
@@ -309,7 +318,8 @@
         "label": "SMS",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showcommunicationpreferences", "default": true }
   },
   {
     "id": "prefWhatsapp",
@@ -322,7 +332,8 @@
         "label": "WhatsApp",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showcommunicationpreferences", "default": true }
   },
   {
     "id": "shoeSize",
@@ -533,7 +544,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showcreditcard", "default": false }
   },
   {
     "id": "cardNumber",
@@ -542,7 +554,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showcreditcard", "default": false }
   },
   {
     "id": "cardExpiry",
@@ -551,7 +564,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showcreditcard", "default": false }
   },
   {
     "id": "cardCvv",
@@ -560,7 +574,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "showcreditcard", "default": false }
   },
   {
     "id": "trialConsent",
@@ -573,6 +588,7 @@
         "label": "I want to start with a free 30 days trial. I won't be charged for my first month of use.",
         "value": "true"
       }
-    ]
+    ],
+    "visibleIf": { "prop": "showcreditcard", "default": false }
   }
 ]
