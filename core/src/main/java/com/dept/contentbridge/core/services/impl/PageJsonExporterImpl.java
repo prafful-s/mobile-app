@@ -463,14 +463,17 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     private Catalogue buildProducts(final Page root, final Resource extras, final String assetHost,
                                     final ExportOptions options) {
+        // Persisted GraphQL query owns the catalogue when configured. Its result stands - an empty
+        // query result means an empty catalogue, not a signal to fall back to the raw CF walk. That
+        // fallback existed to bridge sites configured before GraphQL support landed; keeping it
+        // meant a working query returning zero items was silently overwritten by a stale on-disk
+        // fragment folder. When GraphQL is not configured at all, the plain-CF read still runs.
         final GraphQlQuery query = GraphQlQuery.resolve(root, options, this::isAllowed, siteProductDefaults);
         if (query.isConfigured()) {
             final List<Map<String, Object>> fromQuery =
                     graphQlProducts.export(root, query, assetHost);
-            if (!fromQuery.isEmpty()) {
-                return new Catalogue(new ArrayList<>(fromQuery), SOURCE_GRAPHQL);
-            }
-            LOG.debug("Persisted query {} yielded nothing - falling back to Content Fragments", query);
+            return new Catalogue(new ArrayList<>(fromQuery),
+                    fromQuery.isEmpty() ? SOURCE_NONE : SOURCE_GRAPHQL);
         }
 
         List<Map<String, Object>> fromFragments =

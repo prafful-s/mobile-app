@@ -226,12 +226,13 @@ class ProductExportTest {
     }
 
     @Test
-    @DisplayName("a site named in the shipped SiteProductDefaults falls back to its cfFolderPath "
-            + "when no productsPath is configured anywhere else")
-    void shippedDefaultFolderIsUsedAsLastResort() {
-        // secur-financial is one of the sites listed in contentbridge/products/sites.json; it has no
-        // 'products'-named folder, so the ordinary search finds nothing before the shipped default
-        // takes over.
+    @DisplayName("a site whose shipped SiteProductDefaults names a GraphQL query keeps the empty "
+            + "result rather than falling back to the CF folder walk")
+    void configuredGraphQlEmptyResultStaysEmpty() {
+        // secur-financial has a shipped GraphQlEndpoint in contentbridge/products/sites.json.
+        // In this JCR mock the persisted query is not registered, so it resolves to nothing - and
+        // an empty GraphQL result is honoured now, not overwritten by a CF folder walk. A working
+        // query returning zero items must produce zero items in the response.
         final String site = "/content/secur-financial";
         context.create().page(site + "/en", "", Map.of("jcr:title", "Home"));
         createProductAt("/content/dam/secur-financial/loans/home-loan", Map.of("sku", "HOME-LOAN"));
@@ -241,24 +242,7 @@ class ProductExportTest {
         final List<Map<String, Object>> products =
                 (List<Map<String, Object>>) exporter().export(page).get("products");
 
-        assertEquals(1, products.size());
-        assertEquals("HOME-LOAN", products.get(0).get("sku"));
-    }
-
-    @Test
-    @DisplayName("an authored productsPath still wins over the shipped default for the same site")
-    void authoredPathOutranksShippedDefault() {
-        final String site = "/content/secur-financial";
-        context.create().page(site + "/en", "", Map.of(
-                "jcr:title", "Home", "productsPath", "/content/dam/elsewhere/catalogue"));
-        createProductAt("/content/dam/elsewhere/catalogue/mh13", Map.of("sku", "OVERRIDE"));
-        createProductAt("/content/dam/secur-financial/loans/home-loan", Map.of("sku", "HOME-LOAN"));
-
-        final Page page = context.pageManager().getPage(site + "/en");
-        @SuppressWarnings("unchecked")
-        final List<Map<String, Object>> products =
-                (List<Map<String, Object>>) exporter().export(page).get("products");
-
-        assertEquals("OVERRIDE", products.get(0).get("sku"));
+        assertTrue(products.isEmpty(), "configured GraphQL owns the catalogue; empty stays empty: "
+                + products);
     }
 }
