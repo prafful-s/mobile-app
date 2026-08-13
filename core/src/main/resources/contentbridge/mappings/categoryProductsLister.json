@@ -1,0 +1,21 @@
+{
+  "match": ["category-products-lister"],
+  "component": "list",
+  "skeleton": true,
+  "contentFragmentFolderRef": {
+    "property": "folder",
+    "collectField": "sku",
+    "injectAs": "items"
+  },
+  "fields": [
+    { "target": "items", "from": "items" },
+    { "target": "filter", "default": "" },
+    { "target": "layout", "const": "vertical/grid" },
+    { "target": "listType", "const": "productList" },
+    { "target": "itemsInRow", "from": "cards-per-row", "type": "number", "default": 1 },
+    { "target": "itemRenderer", "const": "image-text-one-line" },
+    { "target": "filterProperty", "const": "Category" },
+    { "target": "titleFontWeight", "const": "regular" },
+    { "target": "subtitleFontWeight", "const": "light" }
+  ]
+}

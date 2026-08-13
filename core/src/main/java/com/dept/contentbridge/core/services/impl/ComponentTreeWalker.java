@@ -268,7 +268,8 @@ final class ComponentTreeWalker {
             final ComponentMapping mapping =
                     hierarchical && !speaksTargetVocabulary ? mappings.find(authoredName) : null;
             if (mapping != null) {
-                final Map<String, Object> ruleSource = withContentFragmentRef(mapping, authored, child);
+                final Map<String, Object> ruleSource =
+                        withContentFragmentFolderRef(mapping, withContentFragmentRef(mapping, authored, child), child);
                 final Map<String, Object> mapped = mapping.apply(ruleSource, sectionProps);
                 if (mapped.isEmpty()) {
                     // The rule matched a component with none of its source fields authored. An empty
@@ -364,6 +365,63 @@ final class ComponentTreeWalker {
         final Map<String, Object> merged = new LinkedHashMap<>(elements);
         merged.putAll(authored);
         return merged;
+    }
+
+    /**
+     * Enumerates a folder of Content Fragments referenced by an authored property, and injects an
+     * array of one specified field per child fragment into the source map. Companion to
+     * {@link #withContentFragmentRef} for the collection case (a
+     * {@code category-products-lister} references a folder of product fragments, and the target
+     * component wants a {@code items: [sku1, sku2, ...]} list rather than merged fields).
+     *
+     * <p>The authored value may be a full URL (as EDS blocks often store it) - the scheme and host
+     * are stripped so it resolves as a JCR path. Values that do not resolve, that point at a
+     * non-folder, or that yield no child fragments leave {@code authored} unchanged.</p>
+     */
+    private Map<String, Object> withContentFragmentFolderRef(final ComponentMapping mapping,
+                                                              final Map<String, Object> authored,
+                                                              final Resource component) {
+        final ComponentMapping.ContentFragmentFolderRef ref = mapping.getContentFragmentFolderRef();
+        if (ref == null) {
+            return authored;
+        }
+        final Object raw = authored.get(ref.getProperty());
+        if (!(raw instanceof String) || StringUtils.isBlank((String) raw)) {
+            return authored;
+        }
+        final String path = stripHost(((String) raw).trim());
+        final Resource folder = component.getResourceResolver().getResource(path);
+        if (folder == null) {
+            LOG.warn("{} on {} points at '{}', which does not resolve - exporting the component "
+                    + "without its folder data", ref.getProperty(), component.getPath(), raw);
+            return authored;
+        }
+        final List<String> collected = new ArrayList<>();
+        for (final Resource child : folder.getChildren()) {
+            final Map<String, String> elements = ContentFragmentReader.read(child);
+            final String value = elements.get(ref.getCollectField());
+            if (StringUtils.isNotBlank(value)) {
+                collected.add(value);
+            }
+        }
+        if (collected.isEmpty()) {
+            return authored;
+        }
+        final Map<String, Object> merged = new LinkedHashMap<>(authored);
+        merged.put(ref.getInjectAs(), collected);
+        return merged;
+    }
+
+    /** Strips scheme+host off an absolute http(s) URL, keeping only path. Idempotent on paths. */
+    private static String stripHost(final String value) {
+        if (!StringUtils.startsWithAny(value, "http://", "https://")) {
+            return value;
+        }
+        try {
+            return java.net.URI.create(value).getPath();
+        } catch (final IllegalArgumentException e) {
+            return value; // malformed - keep as-is, the getResource below will just return null
+        }
     }
 
     /**

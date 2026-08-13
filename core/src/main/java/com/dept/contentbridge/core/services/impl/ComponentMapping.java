@@ -29,16 +29,19 @@ final class ComponentMapping {
     private final List<FieldRule> styleFields;
     private final boolean skeleton;
     private final String contentFragmentRef;
+    private final ContentFragmentFolderRef contentFragmentFolderRef;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final List<FieldRule> fields, final List<FieldRule> styleFields,
-                             final boolean skeleton, final String contentFragmentRef) {
+                             final boolean skeleton, final String contentFragmentRef,
+                             final ContentFragmentFolderRef contentFragmentFolderRef) {
         this.matches = matches;
         this.component = component;
         this.fields = fields;
         this.styleFields = styleFields;
         this.skeleton = skeleton;
         this.contentFragmentRef = contentFragmentRef;
+        this.contentFragmentFolderRef = contentFragmentFolderRef;
     }
 
     /**
@@ -55,9 +58,54 @@ final class ComponentMapping {
         final List<FieldRule> styleFields = fieldRules(definition.get("styles"));
         final boolean skeleton = Boolean.TRUE.equals(definition.get("skeleton"));
         final String contentFragmentRef = trimmed(definition.get("contentFragmentRef"));
+        final ContentFragmentFolderRef contentFragmentFolderRef =
+                ContentFragmentFolderRef.of(definition.get("contentFragmentFolderRef"));
         return new ComponentMapping(Collections.unmodifiableList(matches), component,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
-                skeleton, contentFragmentRef);
+                skeleton, contentFragmentRef, contentFragmentFolderRef);
+    }
+
+    /**
+     * Declares a folder of Content Fragments to enumerate before the rule's fields resolve.
+     *
+     * <p>Where {@link #contentFragmentRef} points at a single fragment and merges its elements
+     * into the source map, this points at a folder of fragments and collects one specified field
+     * off each child into an array. That array is then exposed under {@code injectAs} for a
+     * {@code from} field to project onto the target - the shape a reference contract's list
+     * component wants ({@code items: [sku1, sku2, ...]}) built from a folder walk without the
+     * rule engine growing a list-mapping vocabulary.</p>
+     */
+    static final class ContentFragmentFolderRef {
+
+        private final String property;
+        private final String collectField;
+        private final String injectAs;
+
+        private ContentFragmentFolderRef(final String property, final String collectField,
+                                          final String injectAs) {
+            this.property = property;
+            this.collectField = collectField;
+            this.injectAs = injectAs;
+        }
+
+        static ContentFragmentFolderRef of(final Object definition) {
+            if (!(definition instanceof Map)) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> map = (Map<String, Object>) definition;
+            final String property = trimmed(map.get("property"));
+            final String collectField = trimmed(map.get("collectField"));
+            final String injectAs = trimmed(map.get("injectAs"));
+            if (property == null || collectField == null || injectAs == null) {
+                return null;
+            }
+            return new ContentFragmentFolderRef(property, collectField, injectAs);
+        }
+
+        String getProperty() { return property; }
+        String getCollectField() { return collectField; }
+        String getInjectAs() { return injectAs; }
     }
 
     /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */
@@ -112,6 +160,11 @@ final class ComponentMapping {
         return contentFragmentRef;
     }
 
+    /** @see ContentFragmentFolderRef */
+    ContentFragmentFolderRef getContentFragmentFolderRef() {
+        return contentFragmentFolderRef;
+    }
+
     /**
      * Every CRX property this rule reads from, across every field. Used by the walker to
      * filter extras passthrough - a property this rule consumed must not reappear as an extra.
@@ -128,6 +181,9 @@ final class ComponentMapping {
             // Drives the dereference below, not itself a piece of content - it should not also leak
             // into extras passthrough as a raw DAM path.
             consumed.add(contentFragmentRef);
+        }
+        if (contentFragmentFolderRef != null) {
+            consumed.add(contentFragmentFolderRef.getProperty());
         }
         return consumed;
     }
