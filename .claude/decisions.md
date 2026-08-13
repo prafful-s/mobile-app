@@ -418,6 +418,27 @@ tiny (a handful of components) and it happens once per response; cost is negligi
 **Tests**: covered by `SearchMappingTest` (component-level shape) - nav-page-to-meta wiring
 verified via live curl against local publish. 217/217 core tests green, reactor build green.
 
+## Configured GraphQL owns the products catalogue; empty result stays empty
+
+**Decision**: when a persisted GraphQL query is configured for a site (via request param /
+placeholders sheet / shipped `sites.json`), its result is authoritative. An empty query result
+produces an empty `products[]`, not a fallback to the raw CF folder walk. The plain-CF path still
+runs for sites that have no GraphQL configuration at all.
+**Why**: user request 2026-08-14. Old fallback masked a working query that legitimately returned
+zero items with stale on-disk fragment data - a query owner tuning the response could not tell
+whether their query fired at all. Two sources for the same slot is confusing; one wins, cleanly.
+**Rejected — keeping the fallback as a safety net**: safety nets that fire silently are the ones
+that hide real bugs. The GraphQL client already logs whether a query is registered vs empty; that
+diagnostic is enough.
+**Trade-off accepted**: a site with a shipped GraphQL endpoint but a broken query gets an empty
+catalogue instead of a stale-but-nonzero one. That is the point - a broken query should be
+visible, not papered over.
+**Scope**: one branch removed in `PageJsonExporterImpl.buildProducts`. Two ProductExportTest
+tests that exercised the removed fallback replaced with one that asserts the new behavior
+(`configuredGraphQlEmptyResultStaysEmpty`). 219/219 core tests green.
+**Verified live**: `/content/secur-financial/language-masters/en` on local publish - products
+count 0 (persisted query not registered on local dev, no CF fallback).
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.
