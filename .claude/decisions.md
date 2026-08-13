@@ -285,6 +285,31 @@ apply, `ctastyle`→`buttonVariant` for both known values, an unresolvable fragm
 export (falls back to block-only fields, empty title), and `contentFragmentFolder` never leaks into
 extras.
 
+## Screen/menu key is the JCR node name, `pageName` property dropped
+
+**Decision**: `screenKey()` returns `kebab(page.getName())` only - the `jcr:content/pageName`
+property is no longer read anywhere. Both the `screens` map keys and the `meta.navigation.menu`
+array come from the same node-name source.
+**Why**: on a live secur-financial pull, `menu` returned `["home","credit-cards","credit-cards","credit-cards","loans","dashboard","settings"]` - three distinct nav-linked
+pages all carrying `pageName=credit-cards`. Same failure class as the earlier `form-test` /
+`movies` screens-map collision, just surfacing in the menu instead. Diagnosis was always "an
+author typed the same override into two different pages" - not a real feature request. Dropping
+the property removes the collision surface entirely: JCR forbids sibling nodes with the same
+name, so two same-key screens now means the exact same path is listed twice, which is a bug in
+the nav authoring rather than a silent overwrite.
+**Rejected**: (a) menu-only scope - would let a page's menu entry no longer match its screens
+key whenever a legit `pageName` override existed, i.e. break every historically-honoured
+override rather than just the collision cases; (b) validate uniqueness at read time - defers the
+problem to a runtime WARN when we can just stop reading the property.
+**Trade-off accepted**: any author who was renaming JCR nodes freely while pinning the client
+key via `pageName` no longer can. On this codebase, the only `pageName` value in tests was
+`home` on the `en` root - not a real override, just documenting the fallback. Same-name pages
+under different parents (unrelated to `pageName`) still collide and still emit the existing
+WARN in `buildScreens`.
+**Tests**: updated `PageJsonExporterImplTest.menuMatchesScreens`,
+`FranklinExportTest.childPagesBecomeScreens` (and its `content("home")` helpers all switched to
+`content("en")`), `HierarchicalSchemaTest.content()` helper. 203/203 core tests green.
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

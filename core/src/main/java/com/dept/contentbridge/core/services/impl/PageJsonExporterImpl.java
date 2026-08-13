@@ -267,11 +267,11 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         for (final Page page : pages) {
             final String key = screenKey(page);
             if (screens.containsKey(key)) {
-                // Two pages authored the same 'pageName' (or the same node name with neither set) -
-                // the later one would otherwise silently clobber the former in the response with no
-                // trace of what happened to it.
+                // Same node name reused under two different parents (siblings can't collide - JCR
+                // forbids it) - the later one would otherwise silently clobber the former in the
+                // response with no trace of what happened to it.
                 LOG.warn("Screen key '{}' from {} collides with an already-exported screen - "
-                        + "overwriting it. Give one of the pages a distinct 'pageName'.", key, page.getPath());
+                        + "overwriting it. Give one of the pages a distinct node name.", key, page.getPath());
             }
             screens.put(key, buildScreen(page, root, assetHost, options, menu));
         }
@@ -548,20 +548,18 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * The stable key a screen is filed under in {@code screens} and referred to by from
      * {@code meta.navigation}.
      *
-     * <p>Preferred source is the authored {@code pageName} property on the page's
-     * {@code jcr:content}, so an author can rename the JCR node without breaking client-side
-     * references. Falls back to the page's node name when unset.</p>
+     * <p>Always the page's JCR node name, never the authored {@code pageName} property. JCR
+     * guarantees sibling node names are unique, so this key cannot collide the way {@code pageName}
+     * did - two authors are free to type the same value into that property (or leave it blank,
+     * which used to fall back to the node name anyway, so most sites saw no difference). The
+     * {@code pageName} property itself is no longer read here.</p>
      *
-     * <p>Normalised to lower-kebab-case regardless of source: {@code "Credit Cards"} and
-     * {@code "credit_cards"} both become {@code "credit-cards"}. That way the key that reaches a
-     * client is always a valid identifier - the shape of the value cannot depend on how neatly
-     * an author typed it.</p>
+     * <p>Normalised to lower-kebab-case: {@code "Credit_Cards"} becomes {@code "credit-cards"}. That
+     * way the key that reaches a client is always a valid identifier regardless of how the node was
+     * named.</p>
      */
     private static String screenKey(final Page page) {
-        final String raw = StringUtils.defaultIfBlank(
-                page.getProperties().get("pageName", String.class),
-                page.getName());
-        return kebab(raw);
+        return kebab(page.getName());
     }
 
     /**

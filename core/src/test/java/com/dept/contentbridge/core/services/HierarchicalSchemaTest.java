@@ -66,8 +66,8 @@ class HierarchicalSchemaTest {
     private List<Map<String, Object>> content(final ExportOptions options) {
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> screens = map(exporter.export(home, options).get("screens"));
-        // franklin.json's root has pageName=home, which now wins over the node name 'en'.
-        return list(map(screens.get("home")).get("content"));
+        // franklin.json's root node name is 'en'; jcr:content/pageName ('home') is not read.
+        return list(map(screens.get("en")).get("content"));
     }
 
     private String component(final Map<String, Object> entry) {

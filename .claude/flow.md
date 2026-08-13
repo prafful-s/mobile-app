@@ -53,7 +53,10 @@ GET /content/<site>/<path>/api/<name>.json?path=/content/<site>/us/en[&pretty=tr
         │  - builds page meta (title, template, hostname author→publish segment swap, navigation
         │    menu from navPageNames fragment)
         │  - walks child pages up to maxDepth to collect "screens", skipping excludedPageNames and
-        │    pages flagged excludeFromApp
+        │    pages flagged excludeFromApp. Each screen (and every menu entry) is keyed by the page's
+        │    JCR node name, kebab-cased (`screenKey()`) - the authored `pageName` property is not read,
+        │    so two pages can no longer collide by typing the same override into it (JCR forbids
+        │    sibling name collisions; a same-name pair under different parents still WARNs)
         │  - ComponentTreeWalker walks each screen's component tree, MAX_COMPONENT_DEPTH=12 guard
         │  - ComponentMappings/ComponentMapping (rule engine, driven by
         │    core/src/main/resources/contentbridge/mappings/*.json) maps each Sling resource type to

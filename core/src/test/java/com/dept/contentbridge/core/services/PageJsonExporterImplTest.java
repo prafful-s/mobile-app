@@ -70,7 +70,7 @@ class PageJsonExporterImplTest {
     }
 
     @Test
-    @DisplayName("menu and screens use the same keys, honouring pageName overrides")
+    @DisplayName("menu and screens use the same keys, both from the node name")
     void menuMatchesScreens() {
         final Map<String, Object> app = exporter.export(page(ContentBridgeTestContext.APP_ROOT));
         final Map<String, Object> meta = map(app.get("meta"));
@@ -82,8 +82,8 @@ class PageJsonExporterImplTest {
         assertEquals(menu, List.copyOf(screens.keySet()));
         assertTrue(menu.contains("en"));
         assertTrue(menu.contains("subpage-1"));
-        assertTrue(menu.contains("subpage3"),
-                "pageName override should win over the node name, kebab-cased");
+        assertTrue(menu.contains("renamed"),
+                "the pageName property is no longer read - the key is the node name, kebab-cased");
     }
 
     @Test
