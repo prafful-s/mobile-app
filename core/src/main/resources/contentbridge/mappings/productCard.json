@@ -1,6 +1,7 @@
 {
   "match": ["product-card"],
   "component": "banner",
+  "subtype": "productCard",
   "skeleton": true,
   "contentFragmentRef": "contentFragmentFolder",
   "fields": [

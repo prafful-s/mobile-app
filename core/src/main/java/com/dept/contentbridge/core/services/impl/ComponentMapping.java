@@ -25,6 +25,7 @@ final class ComponentMapping {
 
     private final List<String> matches;
     private final String component;
+    private final String subtype;
     private final List<FieldRule> fields;
     private final List<FieldRule> styleFields;
     private final boolean skeleton;
@@ -32,11 +33,13 @@ final class ComponentMapping {
     private final ContentFragmentFolderRef contentFragmentFolderRef;
 
     private ComponentMapping(final List<String> matches, final String component,
+                             final String subtype,
                              final List<FieldRule> fields, final List<FieldRule> styleFields,
                              final boolean skeleton, final String contentFragmentRef,
                              final ContentFragmentFolderRef contentFragmentFolderRef) {
         this.matches = matches;
         this.component = component;
+        this.subtype = subtype;
         this.fields = fields;
         this.styleFields = styleFields;
         this.skeleton = skeleton;
@@ -54,13 +57,14 @@ final class ComponentMapping {
         if (StringUtils.isBlank(component) || matches.isEmpty()) {
             return null;
         }
+        final String subtype = trimmed(definition.get("subtype"));
         final List<FieldRule> fields = fieldRules(definition.get("fields"));
         final List<FieldRule> styleFields = fieldRules(definition.get("styles"));
         final boolean skeleton = Boolean.TRUE.equals(definition.get("skeleton"));
         final String contentFragmentRef = trimmed(definition.get("contentFragmentRef"));
         final ContentFragmentFolderRef contentFragmentFolderRef =
                 ContentFragmentFolderRef.of(definition.get("contentFragmentFolderRef"));
-        return new ComponentMapping(Collections.unmodifiableList(matches), component,
+        return new ComponentMapping(Collections.unmodifiableList(matches), component, subtype,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
                 skeleton, contentFragmentRef, contentFragmentFolderRef);
     }
@@ -133,6 +137,14 @@ final class ComponentMapping {
     /** What the target vocabulary calls the result - {@code banner}, {@code card}, and so on. */
     String getComponent() {
         return component;
+    }
+
+    /**
+     * Discriminator for AEM sources that share a {@link #getComponent() component name}.
+     * {@code null} when the rule declares none; emitted as {@code meta.subtype} otherwise.
+     */
+    String getSubtype() {
+        return subtype;
     }
 
     /**

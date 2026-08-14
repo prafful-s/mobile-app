@@ -1,6 +1,7 @@
 {
   "match": ["hero", "banner", "masthead"],
   "component": "banner",
+  "subtype": "hero",
   "skeleton": true,
   "fields": [
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
