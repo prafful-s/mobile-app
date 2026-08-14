@@ -431,7 +431,11 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             editor.put("position", position);
             screen.put(SchemaConstants.KEY_EDITOR, editor);
         }
-        screen.put(SchemaConstants.KEY_CONTENT, walker.componentsOf(page, assetHost, options.isHierarchical()));
+        // applyScreenExclusions=true drops unmapped components (fileUpload/iframe/loan-calculator/
+        // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
+        // needs 'search' visible so meta.rightIcon can pick it up.
+        screen.put(SchemaConstants.KEY_CONTENT,
+                walker.componentsOf(page, assetHost, options.isHierarchical(), true));
         return screen;
     }
 

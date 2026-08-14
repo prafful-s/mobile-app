@@ -2,6 +2,7 @@ package com.dept.contentbridge.core.services.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,8 +65,27 @@ final class ComponentTreeWalker {
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
+    /**
+     * Components with no reference-contract counterpart that ship on this repo's sites but that
+     * a downstream client will not render - kept out of screens.content[] so the payload stays
+     * small and predictable. Applied only to the top-level screen walk; the nav-page walk that
+     * feeds {@code meta.rightIcon} still sees {@code search} (excluding it there would drop the
+     * header icon).
+     *
+     * <p>{@code fileUpload} is deliberately NOT in this list even though the sf audit flagged it
+     * as ref-unmapped: every emitted {@code fileUpload} is a field inside a form's
+     * {@code content[]}, and dropping it removes real file-input widgets from forms
+     * (name-change-request's {@code identityDocument} etc.). Dropped only if a truly orphan
+     * top-level {@code fileUpload} ever gets authored.</p>
+     *
+     * <p>Temporary shipping cleanup while these blocks either grow a mapping rule or an
+     * equivalent lands in the reference contract; see decisions.md.</p>
+     */
+    private static final Set<String> SCREEN_EXCLUDED_COMPONENTS =
+            Set.of("iframe", "loan-calculator", "search");
+
     List<Map<String, Object>> componentsOf(final Page page, final String assetHost) {
-        return componentsOf(page, assetHost, false);
+        return componentsOf(page, assetHost, false, false);
     }
 
     /**
@@ -74,13 +94,52 @@ final class ComponentTreeWalker {
      */
     List<Map<String, Object>> componentsOf(final Page page, final String assetHost,
                                            final boolean hierarchical) {
+        return componentsOf(page, assetHost, hierarchical, false);
+    }
+
+    /**
+     * @param applyScreenExclusions when true, {@link #SCREEN_EXCLUDED_COMPONENTS} are filtered
+     *                              out of the returned tree - set by the screen walk, not the
+     *                              nav-page walk
+     */
+    List<Map<String, Object>> componentsOf(final Page page, final String assetHost,
+                                           final boolean hierarchical,
+                                           final boolean applyScreenExclusions) {
         final List<Map<String, Object>> components = new ArrayList<>();
         final Resource container = resolveContainer(page);
         if (container != null) {
             collectComponents(container, components, 0, hierarchical, null);
         }
+        if (applyScreenExclusions) {
+            dropExcludedDeep(components);
+        }
         prefixAssetsDeep(components, assetHost);
         return components;
+    }
+
+    /**
+     * Removes screen-excluded components from the tree in place. Recursive because a panel's
+     * children may hold them just as often as a top-level component.
+     */
+    private static void dropExcludedDeep(final List<Map<String, Object>> components) {
+        final Iterator<Map<String, Object>> iterator = components.iterator();
+        while (iterator.hasNext()) {
+            final Map<String, Object> component = iterator.next();
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (meta instanceof Map) {
+                final Object name = ((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT);
+                if (SCREEN_EXCLUDED_COMPONENTS.contains(name)) {
+                    iterator.remove();
+                    continue;
+                }
+            }
+            final Object content = component.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof List) {
+                @SuppressWarnings("unchecked")
+                final List<Map<String, Object>> children = (List<Map<String, Object>>) content;
+                dropExcludedDeep(children);
+            }
+        }
     }
 
     /**

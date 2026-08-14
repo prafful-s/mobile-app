@@ -439,6 +439,38 @@ tests that exercised the removed fallback replaced with one that asserts the new
 **Verified live**: `/content/secur-financial/language-masters/en` on local publish - products
 count 0 (persisted query not registered on local dev, no CF fallback).
 
+## Ref-unmapped sf components (`iframe`, `loan-calculator`, `search`) filtered from screens.content
+
+**Decision**: `ComponentTreeWalker.SCREEN_EXCLUDED_COMPONENTS` = `{iframe, loan-calculator, search}`.
+Applied only in the top-level screen walk via new `applyScreenExclusions=true` overload; nav-page
+walk that feeds `meta.rightIcon` still sees `search`.
+**Why**: user request 2026-08-14 - drop the sf blocks that carry no reference-contract
+counterpart so the client gets a smaller, predictable payload while the mappings (or
+reference-contract entries) get sorted out. Tracked here so re-inclusion is one Set edit away
+once each block either grows a mapping rule or its shape lands in the reference.
+**Rejected — dropping `fileUpload` as well** (user's original list included it): every emitted
+`fileUpload` is a form field inside `form.content[]`, not an orphan block. Live-verified: the
+first cut with fileUpload in the exclusion set dropped `identityDocument` from
+name-change-request and other file-input fields from insurance-application etc. - real form data
+loss. fileUpload stays out of the exclusion set until an actual orphan case appears.
+**Rejected — OSGi config for the excluded list**: single hardcoded Set is simpler; user framed
+this as "for now" so churn-cost matters more than deploy-time configurability. If per-site
+overrides ever become needed, promote to an OSGi array property.
+**Scope**: one Set + one overload on `walker.componentsOf` + one call-site change in
+`PageJsonExporterImpl.buildScreen`. `SearchMappingTest` collapsed from 3 shape-checking tests to
+1 exclusion-asserting test (search's mapping still fires for the nav-page path; screens content
+never sees it). 217/217 core tests green.
+**Verified live**: `/content/secur-financial/language-masters/en` on local publish - iframe /
+loan-calculator / search all 0 in screens; fileUpload still 13 (all inside forms);
+name-change-request still carries `identityDocument`; `meta.rightIcon` still populated from nav.
+**Re-inclusion path** for each component:
+- `iframe` - map to a reference component that carries an embed URL (none in sf ref yet) or add
+  one to the client contract
+- `loan-calculator` - sf-specific calculator widget; either add to ref contract or write a rule
+  projecting its authored props onto an existing generic shape
+- `search` - stays in screens if the client wants a per-screen search widget; today it's only
+  used at the app-envelope level via `meta.rightIcon`
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.
