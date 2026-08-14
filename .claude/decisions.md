@@ -471,6 +471,35 @@ name-change-request still carries `identityDocument`; `meta.rightIcon` still pop
 - `search` - stays in screens if the client wants a per-screen search widget; today it's only
   used at the app-envelope level via `meta.rightIcon`
 
+## Mobile testing-phase screen allowlist (banner only, expand as rendering clears)
+
+**Context**: mobile app is the sole live consumer of the v2 API and is not rendering as
+expected. To isolate defects the mobile team asked to receive one component type at a time,
+starting with `banner`, and expand the set as each type clears their renderer.
+
+**Decision**: filter `screens.content[]` in the flat v2 walk down to a hardcoded allowlist,
+default `Set.of("banner")`. Ships in the main JSON - no query param, no per-consumer branching.
+Override via system property `contentbridge.screen.allowlist` (comma list, or `off`/empty to
+disable). Surefire sets the property to `off` so the 217 shape-asserting tests keep passing.
+
+**Applies only when** `applyScreenExclusions=true` (the screen walk) AND `hierarchical=false`.
+Nav-page walk unaffected (still feeds `meta.rightIcon`). Hierarchical mode unaffected (dropping
+panels would collapse structure the schema depends on).
+
+**Rollout**: edit `SCREEN_ALLOWED_COMPONENTS` in `ComponentTreeWalker` to add each newly-cleared
+component name. Suggested cadence:
+1. `banner` (shipped)
+2. `banner, button, image`
+3. `banner, button, image, card, text`
+4. ...
+5. remove the constant (or leave empty via `-Dcontentbridge.screen.allowlist=off` on the AEM JVM)
+
+**Not** an OSGi config: transient gate that the codebase should shed cleanly, not a knob to
+persist. Removing the constant later is one commit.
+
+**Also fixed inline**: `create-account.phone` gained `visibleIf notEquals bodea` to match source
+repo's `!isBodeaVariant` field-emit gate (previously always emitted regardless of variant).
+
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 
 **Decision**: user twice asked whether the Build Images / code-quality gate could be bypassed.

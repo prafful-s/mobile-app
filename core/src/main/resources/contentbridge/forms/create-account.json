@@ -42,7 +42,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "visibleIf": { "prop": "variant", "notEquals": "bodea" }
   },
   {
     "id": "companyName",
