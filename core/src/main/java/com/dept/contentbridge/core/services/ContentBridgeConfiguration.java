@@ -40,10 +40,11 @@ public @interface ContentBridgeConfiguration {
     @AttributeDefinition(
             name = "Non-screen page names",
             description = "Pages never exported as screens. Header, navigation and footer fragments "
-                    + "are site furniture rather than destinations, and a placeholders sheet is "
-                    + "configuration. Everything else under the site root becomes a screen.")
+                    + "are site furniture rather than destinations, a placeholders sheet is "
+                    + "configuration, and language-masters/redirects are structural containers. Their "
+                    + "descendants are still walked, so the screens beneath a container are not hidden.")
     String[] excludedPageNames() default {
-        "nav", "header", "navigation", "footer", "placeholders",
+        "nav", "header", "navigation", "footer", "placeholders", "language-masters", "redirects",
     };
 
     @AttributeDefinition(

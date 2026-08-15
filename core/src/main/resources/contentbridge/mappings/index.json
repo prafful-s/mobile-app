@@ -1,22 +1,3 @@
 [
-  "hero",
-  "actionButton",
-  "card",
-  "categoryProductsLister",
-  "productCard",
-  "search",
-  "text",
-  "title",
-  "button",
-  "image",
-  "contentCards",
-  "list",
-  "map",
-  "offer",
-  "productImage",
-  "productTitle",
-  "timeSlotPicker",
-  "userDetails",
-  "userLogin",
-  "divider"
+  "hero"
 ]

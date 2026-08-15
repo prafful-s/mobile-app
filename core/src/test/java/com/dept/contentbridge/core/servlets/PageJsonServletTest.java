@@ -56,7 +56,7 @@ class PageJsonServletTest {
         assertEquals(HttpServletResponse.SC_OK, context.response().getStatus());
         assertTrue(context.response().getContentType().startsWith("application/json"));
         assertEquals("max-age=300", context.response().getHeader("Cache-Control"));
-        assertEquals("ContentBridge: test-app", body().get("id"));
+        assertEquals("en", body().get("id"));
     }
 
     @Test

@@ -1,33 +1,21 @@
 {
   "match": ["hero", "banner", "masthead"],
   "component": "banner",
-  "subtype": "hero",
-  "skeleton": true,
   "fields": [
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
+    { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitle",
-      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true },
+      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "html", "all": true },
       "nullable": true },
-    { "target": "linkTo",
-      "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
-      "type": "path", "nullable": true },
-    { "target": "opacity", "from": "opacity", "type": "number", "nullable": true },
-    { "target": "showButton",
-      "extract": { "from": "text", "select": "a", "as": "text" },
-      "type": "presence", "nullable": true },
     { "target": "buttonLabel",
       "extract": { "from": "text", "select": "a", "as": "text" }, "nullable": true },
-    { "target": "buttonVariant", "from": "ctastyle", "nullable": true },
-    { "target": "imageResize", "from": "imageResize", "default": "cover" },
-    { "target": "titleVariant", "const": "titleLarge" },
-    { "target": "subtitleVariant", "const": "titleSmall", "nullable": true },
-    { "target": "contentAlignment", "from": "alignment", "default": "left" },
-    { "target": "verticalAlignment", "from": "verticalalignment", "default": "middle" },
-    { "target": "horizontalAlignment", "from": "alignment", "default": "left" }
-  ],
-  "styles": [
-    { "target": "color", "from": "color" },
-    { "target": "height", "from": "height", "type": "number" }
+    { "target": "linkTo", "const": "#" },
+    { "target": "buttonIcon", "const": "." },
+    { "target": "showButton", "const": "true" },
+    { "target": "horizontalAlignment", "const": "left" },
+    { "target": "verticalAlignment", "const": " middle" },
+    { "target": "contentAlignment", "const": "left" },
+    { "target": "isSubtitleRichText", "const": "true" }
   ]
 }

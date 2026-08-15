@@ -15,10 +15,11 @@ public interface PageJsonExporter {
     /**
      * Builds the full app envelope.
      *
-     * @param requested the page named by the caller. The envelope (meta, branding, integrations) is
-     *                  always read from the nearest ancestor carrying an {@code appId}; when the
-     *                  requested page <em>is</em> that root, every descendant screen is included,
-     *                  otherwise only the requested page is returned.
+     * @param requested the page named by the caller, treated as the root of the export. The
+     *                  envelope (meta, branding, integrations) is read from it, and every content
+     *                  page beneath it is exported as a screen. Structural containers such as
+     *                  {@code language-masters} are walked through rather than emitted, so the
+     *                  screens start at the first real content page below the root.
      * @return an insertion-ordered map ready for serialisation
      */
     Map<String, Object> export(Page requested);

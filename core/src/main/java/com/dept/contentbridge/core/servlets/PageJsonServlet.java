@@ -77,6 +77,9 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
     private static final String PARAM_PATH = "path";
     private static final String PARAM_PRETTY = "pretty";
 
+    /** Products are omitted (empty array) unless {@code products=true} is passed; no product source runs otherwise. */
+    private static final String PARAM_PRODUCTS = "products";
+
     /** Overrides where product Content Fragments are read from, for testing and one-off exports. */
     private static final String PARAM_PRODUCTS_PATH = "productsPath";
 
@@ -168,7 +171,8 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
                     request.getParameter(PARAM_SCHEMA),
                     request.getParameter(PARAM_PRODUCTS_PATH),
                     request.getParameter(PARAM_GQL_CONFIG),
-                    request.getParameter(PARAM_GQL_QUERY)));
+                    request.getParameter(PARAM_GQL_QUERY),
+                    "true".equalsIgnoreCase(request.getParameter(PARAM_PRODUCTS))));
             final int maxAge = exporter.getCacheMaxAge();
             if (maxAge > 0) {
                 response.setHeader("Cache-Control", "max-age=" + maxAge);

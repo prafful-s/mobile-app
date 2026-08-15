@@ -49,7 +49,7 @@ class PageJsonExporterImplTest {
 
         assertEquals(List.of("id", "meta", "screens", "branding", "integrations", "profileViewer", "products"),
                 List.copyOf(app.keySet()));
-        assertEquals("ContentBridge: test-app", app.get("id"));
+        assertEquals("en", app.get("id"), "the id is derived from the requested path's node name");
     }
 
     @Test
@@ -57,7 +57,7 @@ class PageJsonExporterImplTest {
     void meta() {
         final Map<String, Object> meta = map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("meta"));
 
-        assertEquals("ContentBridge: test-app", meta.get("id"));
+        assertEquals("en", meta.get("id"));
         assertEquals("mobile-v2", meta.get("type"));
         assertEquals("Test App", meta.get("title"));
         assertEquals(Boolean.TRUE, meta.get("useCart"));
@@ -167,11 +167,11 @@ class PageJsonExporterImplTest {
     }
 
     @Test
-    @DisplayName("requesting a sub page returns the app envelope with only that screen")
+    @DisplayName("requesting a sub page treats that page as the root of its own export")
     void singleScreenExport() {
         final Map<String, Object> app = exporter.export(page(ContentBridgeTestContext.APP_ROOT + "/subpage-1"));
 
-        assertEquals("ContentBridge: test-app", app.get("id"), "envelope still comes from the app root");
+        assertEquals("subpage-1", app.get("id"), "the requested path is the root of the export");
         final Map<String, Object> screens = map(app.get("screens"));
         assertEquals(1, screens.size());
         assertTrue(screens.containsKey("subpage-1"));

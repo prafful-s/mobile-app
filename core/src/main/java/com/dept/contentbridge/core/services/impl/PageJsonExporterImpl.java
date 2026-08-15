@@ -154,11 +154,21 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Override
     public Map<String, Object> export(final Page requested, final ExportOptions options) {
         final ExportOptions opts = options == null ? ExportOptions.defaults() : options;
-        final Page appRoot = findAppRoot(requested);
-        final Page envelopeSource = appRoot != null ? appRoot : requested;
+        // Whatever path the caller names is the root of this export: everything under it is the app.
+        // There is no appId hunt up the tree - the provided path stands on its own.
+        final Page envelopeSource = requested;
         final ValueMap rootProps = envelopeSource.getProperties();
 
-        final String appId = rootProps.get(SchemaConstants.PN_APP_ID, envelopeSource.getName());
+        // The app identifier is derived from the path, not authored: the node name of the provided
+        // root (e.g. 'secur-financial').
+        final String appId = envelopeSource.getName();
+
+        // The screens, and the home screen among them. The provided root can be a bare site
+        // container (holding language-masters and nothing of its own), so the home screen is the
+        // first real content page below it - nav resolution, home-screen inclusion and the
+        // isRootScreen flag are all relative to this, not to the container above it.
+        final List<Page> screenList = collectScreens(envelopeSource);
+        final Page homeRoot = screenList.isEmpty() ? envelopeSource : screenList.get(0);
 
         // Resolved once per export: every screen in one response belongs to the same site, so the
         // placeholders lookup should not be repeated per page.
@@ -168,7 +178,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // an author curated on the nav page; the screens are every page the app can reach. A page
         // can be a screen without being in the menu - a plan detail page reached from a card, say -
         // and screen meta records that as includeInNavigation: false.
-        final List<String> menu = buildMenu(menuPages(envelopeSource));
+        final List<String> menu = buildMenu(menuPages(homeRoot));
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
 
@@ -186,7 +196,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             app.put(SchemaConstants.KEY_ID, appId);
         }
         app.put(SchemaConstants.KEY_META,
-                buildMeta(envelopeSource, appId, rootProps, menu, opts));
+                buildMeta(envelopeSource, homeRoot, appId, rootProps, menu, opts));
         if (opts.isHierarchical()) {
             // No AEM source for either yet, but the target shape is fixed, so a client can rely on
             // the keys being present rather than testing for them.
@@ -194,7 +204,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
         }
         app.put(SchemaConstants.KEY_SCREENS,
-                buildScreens(envelopeSource, requested, assetHost, opts, menu));
+                buildScreens(screenList, homeRoot, assetHost, opts, menu));
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
 
         if (opts.isHierarchical()) {
@@ -217,17 +227,19 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /* ------------------------------------------------------------------ meta */
 
-    private Map<String, Object> buildMeta(final Page root, final String appId, final ValueMap props,
-                                          final List<String> menu, final ExportOptions options) {
+    private Map<String, Object> buildMeta(final Page root, final Page homeRoot, final String appId,
+                                          final ValueMap props, final List<String> menu,
+                                          final ExportOptions options) {
         final Map<String, Object> navigation = buildNavigation(props, menu);
 
         if (options.isHierarchical()) {
             // v2: build the entire meta in DSN reference field order via EnvelopeMeta. The nav
             // page's search block, when authored, takes over meta.rightIcon from the placeholders
             // sheet - so a header search icon can be configured by dropping a search block into
-            // the nav, no placeholder-sheet round-trip needed.
+            // the nav, no placeholder-sheet round-trip needed. The nav lives under the home
+            // screen, not the site container, so it is resolved from there.
             return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation,
-                    navPageRightIcon(root));
+                    navPageRightIcon(homeRoot));
         }
 
         // v1: original field order (id, type, title, useCart, navigation)
@@ -263,11 +275,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /* --------------------------------------------------------------- screens */
 
-    private Map<String, Object> buildScreens(final Page root, final Page requested, final String assetHost,
-                                            final ExportOptions options, final List<String> menu) {
+    private Map<String, Object> buildScreens(final List<Page> pages, final Page homeRoot,
+                                            final String assetHost, final ExportOptions options,
+                                            final List<String> menu) {
         final Map<String, Object> screens = new LinkedHashMap<>();
-        final boolean wholeApp = requested == null || StringUtils.equals(root.getPath(), requested.getPath());
-        final List<Page> pages = wholeApp ? screenPages(root) : Collections.singletonList(requested);
         for (final Page page : pages) {
             final String key = screenKey(page);
             if (screens.containsKey(key)) {
@@ -277,26 +288,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 LOG.warn("Screen key '{}' from {} collides with an already-exported screen - "
                         + "overwriting it. Give one of the pages a distinct node name.", key, page.getPath());
             }
-            screens.put(key, buildScreen(page, root, assetHost, options, menu));
+            screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu));
         }
         return screens;
-    }
-
-    /**
-     * Every page the app can reach: the site root and its descendants, minus the fragments that are
-     * furniture rather than destinations.
-     *
-     * <p>Deliberately not the menu. A site has pages a client must be able to render but that no
-     * author put in the navigation - a plan detail page opened from a card, a confirmation screen
-     * after a form. Exporting only the menu would leave those unreachable; exporting them without
-     * distinction would make the menu meaningless. So both are produced, and screen meta says which
-     * screens the menu contains.</p>
-     *
-     * <p>{@code header}, {@code footer} and the nav fragment are excluded by name through
-     * {@code excludedPageNames}, along with any page flagged with {@code excludeFromApp}.</p>
-     */
-    private List<Page> screenPages(final Page root) {
-        return collectScreens(root);
     }
 
     /**
@@ -467,6 +461,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     private Catalogue buildProducts(final Page root, final Resource extras, final String assetHost,
                                     final ExportOptions options) {
+        if (!options.isIncludeProducts()) {
+            return new Catalogue(new ArrayList<>(), SOURCE_NONE);
+        }
         // Persisted GraphQL query owns the catalogue when configured. Its result stands - an empty
         // query result means an empty catalogue, not a signal to fall back to the raw CF walk. That
         // fallback existed to bridge sites configured before GraphQL support landed; keeping it
@@ -562,12 +559,30 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /* ----------------------------------------------------------------- utils */
 
+    /**
+     * Every page the app can reach: the home screen and its descendants, minus the fragments that
+     * are furniture rather than destinations.
+     *
+     * <p>The provided path may be a bare site container - a page whose only job is to hold
+     * {@code language-masters} - so it is emitted only when it carries authored content of its own.
+     * Otherwise the walk descends through it, and through the structural containers below it, until
+     * it reaches the first real content page, which becomes the home screen.</p>
+     *
+     * <p>{@code header}, {@code footer}, the nav fragment, {@code placeholders},
+     * {@code language-masters} and {@code redirects} are excluded by name through
+     * {@code excludedPageNames}, along with any page flagged with {@code excludeFromApp}. Excluded
+     * pages are still descended into, so a container never hides the screens beneath it.</p>
+     */
     private List<Page> collectScreens(final Page root) {
         final List<Page> pages = new ArrayList<>();
-        if (isExported(root)) {
+        if (isScreen(root) && !isBareContainer(root)) {
             pages.add(root);
+            collectDescendants(root, pages, 1);
+        } else {
+            // Transparent: descend without emitting and without spending a depth level, so the
+            // depth limit measures content depth below the home screen rather than repository depth.
+            collectDescendants(root, pages, 0);
         }
-        collectDescendants(root, pages, 1);
         return pages;
     }
 
@@ -578,7 +593,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Iterator<Page> children = parent.listChildren();
         while (children.hasNext()) {
             final Page child = children.next();
-            if (!isExported(child)) {
+            if (child.getProperties().get(SchemaConstants.PN_EXCLUDE_FROM_APP, false)) {
+                // Explicitly removed from the app, subtree and all.
+                continue;
+            }
+            if (!isScreen(child) || child.getContentResource() == null) {
+                // Furniture, a structural container, or a page with no content of its own: never a
+                // screen, but its descendants may be - so descend without spending a depth level.
+                collectDescendants(child, sink, depth);
                 continue;
             }
             sink.add(child);
@@ -586,22 +608,41 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
     }
 
-    private boolean isExported(final Page page) {
-        return page != null && page.getContentResource() != null
-                && !page.getProperties().get(SchemaConstants.PN_EXCLUDE_FROM_APP, false)
-                // nav and footer are site furniture, not destinations
-                && !excludedPageNames.contains(page.getName());
+    /** A page that could stand as a screen: not furniture, not excluded from the app. */
+    private boolean isScreen(final Page page) {
+        return page != null
+                && !excludedPageNames.contains(page.getName())
+                && !page.getProperties().get(SchemaConstants.PN_EXCLUDE_FROM_APP, false);
     }
 
-    private Page findAppRoot(final Page page) {
-        Page current = page;
-        while (current != null) {
-            if (StringUtils.isNotBlank(current.getProperties().get(SchemaConstants.PN_APP_ID, String.class))) {
-                return current;
-            }
-            current = current.getParent();
+    /**
+     * A page acting purely as a structural container: it has no authored components of its own and
+     * every child page is itself an excluded container or furniture (e.g. {@code language-masters},
+     * {@code placeholders}). Such a page is a wrapper rather than a destination, so the export
+     * descends through it to the home screen below.
+     *
+     * <p>Deliberately narrow: the home screen often has child screens but no components of its own,
+     * and it must still be emitted. Only a page whose children are <em>all</em> structural counts as
+     * a container, which is what distinguishes a bare site root from the home page beneath it.</p>
+     */
+    private boolean isBareContainer(final Page page) {
+        if (page.getContentResource() == null) {
+            return true;
         }
-        return null;
+        if (!walker.componentsOf(page, null).isEmpty()) {
+            return false;
+        }
+        final Iterator<Page> children = page.listChildren();
+        if (!children.hasNext()) {
+            // An empty leaf page is still a screen, just an empty one.
+            return false;
+        }
+        while (children.hasNext()) {
+            if (isScreen(children.next())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

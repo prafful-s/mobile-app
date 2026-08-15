@@ -25,17 +25,20 @@ public final class ExportOptions {
     private final String productsPath;
     private final String graphQlConfig;
     private final String graphQlQuery;
+    private final boolean includeProducts;
 
     private ExportOptions(final String schemaVersion, final String productsPath,
-                          final String graphQlConfig, final String graphQlQuery) {
+                          final String graphQlConfig, final String graphQlQuery,
+                          final boolean includeProducts) {
         this.schemaVersion = schemaVersion;
         this.productsPath = productsPath;
         this.graphQlConfig = graphQlConfig;
         this.graphQlQuery = graphQlQuery;
+        this.includeProducts = includeProducts;
     }
 
     public static ExportOptions defaults() {
-        return new ExportOptions(SCHEMA_V1, null, null, null);
+        return new ExportOptions(SCHEMA_V1, null, null, null, true);
     }
 
     /**
@@ -57,10 +60,20 @@ public final class ExportOptions {
      */
     public static ExportOptions of(final String schemaVersion, final String productsPath,
                                    final String graphQlConfig, final String graphQlQuery) {
+        return of(schemaVersion, productsPath, graphQlConfig, graphQlQuery, true);
+    }
+
+    /**
+     * @param includeProducts when false the {@code products} array is emitted empty and no product
+     *                        source (GraphQL, Content Fragments or authored JSON) is consulted
+     */
+    public static ExportOptions of(final String schemaVersion, final String productsPath,
+                                   final String graphQlConfig, final String graphQlQuery,
+                                   final boolean includeProducts) {
         return new ExportOptions(
                 SCHEMA_V2.equalsIgnoreCase(StringUtils.trimToEmpty(schemaVersion))
                         ? SCHEMA_V2 : SCHEMA_V1,
-                productsPath, graphQlConfig, graphQlQuery);
+                productsPath, graphQlConfig, graphQlQuery, includeProducts);
     }
 
     public String getSchemaVersion() {
@@ -77,6 +90,11 @@ public final class ExportOptions {
 
     public String getGraphQlQuery() {
         return graphQlQuery;
+    }
+
+    /** @return false when the caller asked for the {@code products} array to be left empty */
+    public boolean isIncludeProducts() {
+        return includeProducts;
     }
 
     /** @return true when layout containers should be preserved rather than flattened */
