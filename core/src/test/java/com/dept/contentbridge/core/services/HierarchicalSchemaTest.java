@@ -88,16 +88,18 @@ class HierarchicalSchemaTest {
     }
 
     @Test
-    @DisplayName("panel styles emit the reference contract's 9-key skeleton")
+    @DisplayName("panel styles emit the reference contract's skeleton, without padding")
     void panelStylesSkeleton() {
         final Map<String, Object> firstPanel = content(ExportOptions.of("v2", null)).get(0);
         final Map<String, Object> styles = map(firstPanel.get("styles"));
 
-        for (final String key : List.of("gap", "margin", "padding", "alignItems",
+        for (final String key : List.of("gap", "margin", "alignItems",
                 "justifyContent", "borderRadius", "backgroundColor", "height", "marginTop")) {
             assertTrue(styles.containsKey(key),
                     "panel styles missing " + key + ": " + styles.keySet());
         }
+        assertFalse(styles.containsKey("padding"),
+                "padding is never emitted on a panel: " + styles.keySet());
     }
 
     @Test
@@ -165,7 +167,7 @@ class HierarchicalSchemaTest {
 
         // section_2 carries sec-custom-styles=bodea-banner (unmapped) and sec-spacing=section-large
         final Map<String, Object> styles = map(firstPanel.get("styles"));
-        assertEquals(24L, styles.get("padding"));
+        assertFalse(styles.containsKey("padding"), "padding is suppressed on panels");
         assertFalse(styles.containsValue("bodea-banner"), "an unmapped token must not leak through");
     }
 

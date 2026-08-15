@@ -1,21 +1,20 @@
 {
-  "match": ["card", "teaser"],
+  "match": ["card"],
   "component": "card",
-  "skeleton": true,
   "fields": [
-    { "target": "link", "first": ["link", "btn-link", "linkTo"], "type": "path", "nullable": true },
+    { "target": "link",
+      "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
+      "default": "#" },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
+    { "target": "cardType", "const": "stacked" },
     { "target": "subtitle",
       "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true },
       "nullable": true },
-    { "target": "cardType", "from": "style", "default": "stacked" },
-    { "target": "titleVariant", "const": "titleMedium" },
+    { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitleVariant", "const": "titleMedium" },
-    { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
-    { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "regular" }
-  ],
-  "styles": [
-    { "target": "border", "from": "border" }
+    { "target": "titleFontWeight", "const": "regular" },
+    { "target": "subtitleFontWeight", "const": "regular" }
   ]
 }
+

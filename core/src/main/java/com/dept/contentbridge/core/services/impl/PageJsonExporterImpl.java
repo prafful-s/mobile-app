@@ -436,10 +436,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Temporary hero-only filter: keeps only {@code banner} components (a hero maps to a banner) and
-     * drops panels left empty once their non-banner children are removed. Remove this call and method
-     * when the other component mappings are re-enabled.
+     * Temporary reduced-output filter: keeps only the components whose mappings are currently
+     * enabled ({@code banner}, {@code card}) and drops panels left empty once their other children
+     * are removed. Extend {@link #ENABLED_COMPONENTS} as more mappings are re-enabled; remove this
+     * call and method when the full component set is restored.
      */
+    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card");
+
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepOnlyBanners(final List<Map<String, Object>> tree) {
         final List<Map<String, Object>> kept = new ArrayList<>();
@@ -456,7 +459,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
             final Object meta = component.get(SchemaConstants.KEY_META);
             if (meta instanceof Map
-                    && "banner".equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                    && ENABLED_COMPONENTS.contains(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
                 kept.add(component);
             }
         }

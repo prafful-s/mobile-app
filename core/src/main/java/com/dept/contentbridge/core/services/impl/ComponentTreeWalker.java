@@ -587,9 +587,12 @@ final class ComponentTreeWalker {
      * lose the author's intent.
      */
     private static final String[] PANEL_STYLE_KEYS = {
-        "gap", "margin", "padding", "alignItems", "justifyContent",
+        "gap", "margin", "alignItems", "justifyContent",
         "borderRadius", "backgroundColor", "height", "marginTop",
     };
+
+    /** Style keys never emitted on a panel, regardless of authored properties or section tokens. */
+    private static final Set<String> SUPPRESSED_PANEL_STYLES = Set.of("padding");
 
     private Map<String, Object> panelStyles(final Resource resource) {
         final Map<String, Object> styles = new LinkedHashMap<>();
@@ -602,6 +605,9 @@ final class ComponentTreeWalker {
         // (a design-system class mapping); we let those overlay the raw keys so an author's
         // token overrides the fallback but not their explicit property.
         for (final Map.Entry<String, Object> tokenStyle : styleResolver.stylesOf(resource).entrySet()) {
+            if (SUPPRESSED_PANEL_STYLES.contains(tokenStyle.getKey())) {
+                continue;
+            }
             if ("".equals(styles.get(tokenStyle.getKey()))) {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
             } else if (!styles.containsKey(tokenStyle.getKey())) {

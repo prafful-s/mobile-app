@@ -45,10 +45,6 @@ class ComponentMappingTest {
             + "<p><a href=\"/content/we-healthcare/language-masters/en/medicare-plan-selection\" "
             + "title=\"Select your plan\">Select your plan</a></p>";
 
-    private static final String CARD_TEXT =
-            "<h2>Individual &amp; Family Plans</h2>\n"
-            + "<p>You'll find flexible health, dental, and vision options for you and your family.</p>";
-
     private final AemContext context = new AemContext(ResourceResolverType.JCR_MOCK);
 
     private PageJsonExporter exporter;
@@ -143,8 +139,8 @@ class ComponentMappingTest {
         final Map<String, Object> content = content(exported);
         assertEquals("Medicare options for over 20 years", content.get("title"),
                 "the headline is the h1, not the whole blob");
-        assertEquals("<strong>Providing affordable</strong>", content.get("subtitle"),
-                "the eyebrow paragraph as rich text, and not the one holding the link");
+        assertEquals("Providing affordable", content.get("subtitle"),
+                "the eyebrow paragraph as plain text, and not the one holding the link");
         assertEquals("Select your plan", content.get("buttonLabel"));
         assertEquals("/content/dam/we-healthcare/en/images/banner-medicare-hero.jpg",
                 content.get("image"));
@@ -164,15 +160,15 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a card takes its title from the heading and its subtitle from the paragraph")
-    @Disabled("mapping temporarily removed from index.json; re-enable when the rule is restored")
+    @DisplayName("a card takes its title/subtitle from rich text, its link from the anchor, and fixed style constants")
     void cardMapping() {
         final Map<String, Object> exported = export(true,
                 "model", "card",
                 "image", "/content/dam/we-healthcare/en/images/family.jpeg",
-                "text", CARD_TEXT,
+                "text", "<h2>Individual &amp; Family Plans</h2>\n"
+                        + "<p>You'll find flexible health, dental, and vision options for you and your family.</p>\n"
+                        + "<p><a href=\"/content/we-healthcare/language-masters/en/insurance-plans\">Learn More</a></p>",
                 "style", "image-top",
-                "link", "/content/we-healthcare/language-masters/en/insurance-plans",
                 "selectable", "false",
                 "overlaybackground", "true");
 
@@ -182,12 +178,31 @@ class ComponentMappingTest {
         assertEquals("Individual & Family Plans", content.get("title"),
                 "entities are decoded when text is read out, not left as &amp;");
         assertTrue(String.valueOf(content.get("subtitle")).startsWith("You'll find flexible"));
-        assertEquals("image-top", content.get("cardType"));
-        assertEquals("/content/we-healthcare/language-masters/en/insurance-plans", content.get("link"));
-        // 'overlayBackground' is no longer a schema field with coercion - the authored
-        // 'overlaybackground' comes through as a string extra under its authored name.
-        assertEquals("true", content.get("overlaybackground"));
-        assertEquals("titleMedium", content.get("titleVariant"), "supplied by the rule, not authored");
+        assertEquals("/content/we-healthcare/language-masters/en/insurance-plans", content.get("link"),
+                "link comes from the anchor href, kept in its authored relative form");
+        assertEquals("/content/dam/we-healthcare/en/images/family.jpeg", content.get("image"));
+
+        // Fixed constants supplied by the rule regardless of what was authored.
+        assertEquals("stacked", content.get("cardType"));
+        assertEquals("titleLarge", content.get("titleVariant"));
+        assertEquals("titleMedium", content.get("subtitleVariant"));
+        assertEquals("regular", content.get("titleFontWeight"));
+        assertEquals("regular", content.get("subtitleFontWeight"));
+
+        assertFalse(content.containsKey("overlaybackground"), "authored extras do not pass through");
+        assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
+    }
+
+    @Test
+    @DisplayName("a card with no anchor in its text falls back to a '#' link")
+    void cardLinkDefaultsToHash() {
+        final Map<String, Object> exported = export(true,
+                "model", "card",
+                "image", "/content/dam/we-healthcare/en/images/family.jpeg",
+                "text", "<h2>Mortgage Loans</h2>\n<p>Get an awesome mortgage offer.</p>");
+
+        assertEquals("#", content(exported).get("link"),
+                "no authored anchor, so the link defaults to '#'");
     }
 
     @Test
