@@ -26,19 +26,21 @@ public final class ExportOptions {
     private final String graphQlConfig;
     private final String graphQlQuery;
     private final boolean includeProducts;
+    private final boolean bannersOnly;
 
     private ExportOptions(final String schemaVersion, final String productsPath,
                           final String graphQlConfig, final String graphQlQuery,
-                          final boolean includeProducts) {
+                          final boolean includeProducts, final boolean bannersOnly) {
         this.schemaVersion = schemaVersion;
         this.productsPath = productsPath;
         this.graphQlConfig = graphQlConfig;
         this.graphQlQuery = graphQlQuery;
         this.includeProducts = includeProducts;
+        this.bannersOnly = bannersOnly;
     }
 
     public static ExportOptions defaults() {
-        return new ExportOptions(SCHEMA_V1, null, null, null, true);
+        return new ExportOptions(SCHEMA_V1, null, null, null, true, false);
     }
 
     /**
@@ -70,10 +72,20 @@ public final class ExportOptions {
     public static ExportOptions of(final String schemaVersion, final String productsPath,
                                    final String graphQlConfig, final String graphQlQuery,
                                    final boolean includeProducts) {
+        return of(schemaVersion, productsPath, graphQlConfig, graphQlQuery, includeProducts, false);
+    }
+
+    /**
+     * @param bannersOnly when true (v2 only) only {@code banner} components are kept in screen
+     *                    content and panels left empty are pruned - a temporary hero-only view
+     */
+    public static ExportOptions of(final String schemaVersion, final String productsPath,
+                                   final String graphQlConfig, final String graphQlQuery,
+                                   final boolean includeProducts, final boolean bannersOnly) {
         return new ExportOptions(
                 SCHEMA_V2.equalsIgnoreCase(StringUtils.trimToEmpty(schemaVersion))
                         ? SCHEMA_V2 : SCHEMA_V1,
-                productsPath, graphQlConfig, graphQlQuery, includeProducts);
+                productsPath, graphQlConfig, graphQlQuery, includeProducts, bannersOnly);
     }
 
     public String getSchemaVersion() {
@@ -95,6 +107,11 @@ public final class ExportOptions {
     /** @return false when the caller asked for the {@code products} array to be left empty */
     public boolean isIncludeProducts() {
         return includeProducts;
+    }
+
+    /** @return true when screen content should be reduced to {@code banner} components only */
+    public boolean isBannersOnly() {
+        return bannersOnly;
     }
 
     /** @return true when layout containers should be preserved rather than flattened */

@@ -172,7 +172,9 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
                     request.getParameter(PARAM_PRODUCTS_PATH),
                     request.getParameter(PARAM_GQL_CONFIG),
                     request.getParameter(PARAM_GQL_QUERY),
-                    "true".equalsIgnoreCase(request.getParameter(PARAM_PRODUCTS))));
+                    "true".equalsIgnoreCase(request.getParameter(PARAM_PRODUCTS)),
+                    // Temporary hero-only mode: v2 screens carry only banner components.
+                    true));
             final int maxAge = exporter.getCacheMaxAge();
             if (maxAge > 0) {
                 response.setHeader("Cache-Control", "max-age=" + maxAge);

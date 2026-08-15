@@ -1,5 +1,5 @@
 {
-  "match": ["hero", "banner", "masthead"],
+  "match": ["hero"],
   "component": "banner",
   "fields": [
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
@@ -10,12 +10,14 @@
       "nullable": true },
     { "target": "buttonLabel",
       "extract": { "from": "text", "select": "a", "as": "text" }, "nullable": true },
-    { "target": "linkTo", "const": "#" },
-    { "target": "buttonIcon", "const": "." },
-    { "target": "showButton", "const": "true" },
+    { "target": "imageResize", "const": "cover" },
+    { "target": "linkTo", "const": "" },
+    { "target": "showButton", "const": "false" },
     { "target": "horizontalAlignment", "const": "left" },
-    { "target": "verticalAlignment", "const": " middle" },
-    { "target": "contentAlignment", "const": "left" },
-    { "target": "isSubtitleRichText", "const": "true" }
+    { "target": "verticalAlignment", "const": " top" },
+    { "target": "contentAlignment", "const": "left" }
+  ],
+  "styles": [
+    { "target": "color", "from": "color", "default": "#FFF" }
   ]
 }

@@ -151,13 +151,12 @@ class ComponentMappingTest {
 
         // Every hero renders with this fixed set of constants regardless of what was authored.
         assertEquals("titleLarge", content.get("titleVariant"));
-        assertEquals("#", content.get("linkTo"));
-        assertEquals(".", content.get("buttonIcon"));
-        assertEquals("true", content.get("showButton"));
+        assertEquals("cover", content.get("imageResize"));
+        assertFalse(content.containsKey("linkTo"), "const empty string is blank-filtered out");
+        assertEquals("false", content.get("showButton"));
         assertEquals("left", content.get("horizontalAlignment"));
-        assertEquals(" middle", content.get("verticalAlignment"));
+        assertEquals(" top", content.get("verticalAlignment"));
         assertEquals("left", content.get("contentAlignment"));
-        assertEquals("true", content.get("isSubtitleRichText"));
 
         assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
         assertFalse(content.containsKey("herolayout"), "unconsumed authored fields no longer pass through");
@@ -378,8 +377,8 @@ class ComponentMappingTest {
 
         final Map<String, Object> content = content(export(true, "model", "hero", "text", HERO_TEXT));
 
-        assertEquals("#", content.get("linkTo"),
-                "linkTo is a constant under the hero contract, so no host pass applies");
+        assertFalse(content.containsKey("linkTo"),
+                "linkTo is a const empty string and is blank-filtered out of the output");
     }
 
     @Test
@@ -762,35 +761,47 @@ class ComponentMappingTest {
         assertEquals("Hi", content.get("title"));
         assertEquals("Sub", content.get("subtitle"));
         assertEquals("titleLarge", content.get("titleVariant"));
-        assertEquals("#", content.get("linkTo"));
-        assertEquals(".", content.get("buttonIcon"));
-        assertEquals("true", content.get("showButton"));
+        assertEquals("cover", content.get("imageResize"));
+        assertFalse(content.containsKey("linkTo"), "const empty string is blank-filtered out");
+        assertEquals("false", content.get("showButton"));
         assertEquals("left", content.get("contentAlignment"));
-        assertEquals(" middle", content.get("verticalAlignment"));
+        assertEquals(" top", content.get("verticalAlignment"));
         assertEquals("left", content.get("horizontalAlignment"));
-        assertEquals("true", content.get("isSubtitleRichText"));
 
         assertFalse(content.containsKey("someAuthoredExtra"), "extras no longer pass through");
-        assertFalse(content.containsKey("imageResize"), "dropped from the hero contract");
+        assertFalse(content.containsKey("buttonIcon"), "dropped from the hero contract");
         assertFalse(content.containsKey("text"),
                 "extract-source blob is consumed and must not reappear as an extra");
     }
 
     @Test
-    @DisplayName("banner: the hero rule no longer projects a styles object")
-    void bannerNoStyles() {
-        final Map<String, Object> exported = export(true,
+    @DisplayName("banner: an authored color is projected into styles.color")
+    void bannerColorFromAuthored() {
+        final Map<String, Object> authored = export(true,
                 "model", "hero",
                 "image", "/content/dam/x/hero.jpg",
                 "text", "<h1>Hi</h1>",
                 "color", "#000",
                 "height", "350");
 
-        assertFalse(exported.containsKey("styles"), "hero carries no styles under the new contract");
+        assertEquals("#000", map(authored.get("styles")).get("color"),
+                "an authored color is projected into styles.color");
 
-        final Map<String, Object> content = content(exported);
-        assertFalse(content.containsKey("color"), "not a hero field and extras do not pass through");
+        final Map<String, Object> content = content(authored);
+        assertFalse(content.containsKey("color"), "color lives under styles, not content");
         assertFalse(content.containsKey("height"), "not a hero field and extras do not pass through");
+    }
+
+    @Test
+    @DisplayName("banner: an unauthored color defaults to white")
+    void bannerColorDefaultsToWhite() {
+        final Map<String, Object> unset = export(true,
+                "model", "hero",
+                "image", "/content/dam/x/hero.jpg",
+                "text", "<h1>Hi</h1>");
+
+        assertEquals("#FFF", map(unset.get("styles")).get("color"),
+                "an unauthored color defaults to white");
     }
 
     @Test

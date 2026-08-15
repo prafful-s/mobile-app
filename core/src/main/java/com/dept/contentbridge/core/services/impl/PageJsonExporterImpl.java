@@ -428,9 +428,39 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // applyScreenExclusions=true drops unmapped components (fileUpload/iframe/loan-calculator/
         // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
         // needs 'search' visible so meta.rightIcon can pick it up.
+        final List<Map<String, Object>> content =
+                walker.componentsOf(page, assetHost, options.isHierarchical(), true);
         screen.put(SchemaConstants.KEY_CONTENT,
-                walker.componentsOf(page, assetHost, options.isHierarchical(), true));
+                options.isHierarchical() && options.isBannersOnly() ? keepOnlyBanners(content) : content);
         return screen;
+    }
+
+    /**
+     * Temporary hero-only filter: keeps only {@code banner} components (a hero maps to a banner) and
+     * drops panels left empty once their non-banner children are removed. Remove this call and method
+     * when the other component mappings are re-enabled.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> keepOnlyBanners(final List<Map<String, Object>> tree) {
+        final List<Map<String, Object>> kept = new ArrayList<>();
+        for (final Map<String, Object> component : tree) {
+            final Object content = component.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof List) {
+                final List<Map<String, Object>> children =
+                        keepOnlyBanners((List<Map<String, Object>>) content);
+                if (!children.isEmpty()) {
+                    component.put(SchemaConstants.KEY_CONTENT, children);
+                    kept.add(component);
+                }
+                continue;
+            }
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (meta instanceof Map
+                    && "banner".equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                kept.add(component);
+            }
+        }
+        return kept;
     }
 
 
