@@ -838,7 +838,7 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("banner: an authored color is projected into styles.color")
+    @DisplayName("banner: color is forced to white regardless of the authored color")
     void bannerColorFromAuthored() {
         final Map<String, Object> authored = export(true,
                 "model", "hero",
@@ -847,8 +847,8 @@ class ComponentMappingTest {
                 "color", "#000",
                 "height", "350");
 
-        assertEquals("#000", map(authored.get("styles")).get("color"),
-                "an authored color is projected into styles.color");
+        assertEquals("#FFF", map(authored.get("styles")).get("color"),
+                "the banner color is forced to white, ignoring the authored color");
         assertEquals(8, ((Number) map(authored.get("styles")).get("gap")).intValue(),
                 "every banner carries a gap of 8");
 
@@ -858,7 +858,7 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("banner: an unauthored color defaults to white")
+    @DisplayName("banner: color is white when nothing is authored")
     void bannerColorDefaultsToWhite() {
         final Map<String, Object> unset = export(true,
                 "model", "hero",
@@ -866,7 +866,7 @@ class ComponentMappingTest {
                 "text", "<h1>Hi</h1>");
 
         assertEquals("#FFF", map(unset.get("styles")).get("color"),
-                "an unauthored color defaults to white");
+                "the banner color is always white");
     }
 
     @Test
