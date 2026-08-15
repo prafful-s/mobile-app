@@ -31,12 +31,17 @@ final class ComponentMapping {
     private final boolean skeleton;
     private final String contentFragmentRef;
     private final ContentFragmentFolderRef contentFragmentFolderRef;
+    private final String requiresField;
+    private final ComponentMapping fallback;
+    private final List<Variant> variants;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final String subtype,
                              final List<FieldRule> fields, final List<FieldRule> styleFields,
                              final boolean skeleton, final String contentFragmentRef,
-                             final ContentFragmentFolderRef contentFragmentFolderRef) {
+                             final ContentFragmentFolderRef contentFragmentFolderRef,
+                             final String requiresField, final ComponentMapping fallback,
+                             final List<Variant> variants) {
         this.matches = matches;
         this.component = component;
         this.subtype = subtype;
@@ -45,6 +50,9 @@ final class ComponentMapping {
         this.skeleton = skeleton;
         this.contentFragmentRef = contentFragmentRef;
         this.contentFragmentFolderRef = contentFragmentFolderRef;
+        this.requiresField = requiresField;
+        this.fallback = fallback;
+        this.variants = variants;
     }
 
     /**
@@ -64,9 +72,119 @@ final class ComponentMapping {
         final String contentFragmentRef = trimmed(definition.get("contentFragmentRef"));
         final ContentFragmentFolderRef contentFragmentFolderRef =
                 ContentFragmentFolderRef.of(definition.get("contentFragmentFolderRef"));
+        final String requiresField = trimmed(definition.get("requires"));
+        final ComponentMapping fallback = fallbackOf(definition.get("fallback"), matches);
+        final List<Variant> variants = variants(definition.get("variants"));
         return new ComponentMapping(Collections.unmodifiableList(matches), component, subtype,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
-                skeleton, contentFragmentRef, contentFragmentFolderRef);
+                skeleton, contentFragmentRef, contentFragmentFolderRef, requiresField, fallback,
+                variants);
+    }
+
+    /**
+     * Builds the alternate mapping applied when {@code requires} is unmet - it shares the parent's
+     * {@code match} names but has its own component and fields, and carries no further fallback.
+     */
+    private static ComponentMapping fallbackOf(final Object declared, final List<String> matches) {
+        if (!(declared instanceof Map)) {
+            return null;
+        }
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> map = (Map<String, Object>) declared;
+        final String component = trimmed(map.get("component"));
+        if (component == null) {
+            return null;
+        }
+        return new ComponentMapping(Collections.unmodifiableList(matches), component,
+                trimmed(map.get("subtype")),
+                Collections.unmodifiableList(fieldRules(map.get("fields"))),
+                Collections.unmodifiableList(fieldRules(map.get("styles"))),
+                Boolean.TRUE.equals(map.get("skeleton")), trimmed(map.get("contentFragmentRef")),
+                ContentFragmentFolderRef.of(map.get("contentFragmentFolderRef")), null, null,
+                Collections.emptyList());
+    }
+
+    /**
+     * The mapping that actually applies to {@code source}: this rule when its {@code requires}
+     * field is authored (or none is declared), otherwise its {@code fallback} - a card with no
+     * image, for instance, is a rich-text block, not an empty card.
+     */
+    ComponentMapping effectiveFor(final Map<String, Object> source) {
+        if (requiresField == null || fallback == null) {
+            return this;
+        }
+        final Object value = source.get(requiresField);
+        final boolean present = value != null
+                && !(value instanceof String && StringUtils.isBlank((String) value));
+        return present ? this : fallback;
+    }
+
+    /**
+     * The name of another rule this component should be handled by, chosen from {@code variants} on
+     * an authored value (a hero with {@code herolayout=image-right} is handled by the card rule), or
+     * {@code null} when no variant condition matches.
+     */
+    String variantRuleFor(final Map<String, Object> source) {
+        for (final Variant variant : variants) {
+            if (variant.matches(source)) {
+                return variant.useRule;
+            }
+        }
+        return null;
+    }
+
+    /** One {@code variants} entry: when an authored field equals a value, defer to another rule. */
+    private static final class Variant {
+
+        private final String field;
+        private final String equals;
+        private final String useRule;
+
+        private Variant(final String field, final String equals, final String useRule) {
+            this.field = field;
+            this.equals = equals;
+            this.useRule = useRule;
+        }
+
+        static Variant of(final Object declared) {
+            if (!(declared instanceof Map)) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> map = (Map<String, Object>) declared;
+            final Object when = map.get("when");
+            final String useRule = trimmed(map.get("useRule"));
+            if (!(when instanceof Map) || useRule == null) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> condition = (Map<String, Object>) when;
+            final String field = trimmed(condition.get("field"));
+            final String equals = trimmed(condition.get("equals"));
+            if (field == null || equals == null) {
+                return null;
+            }
+            return new Variant(field, equals, useRule);
+        }
+
+        boolean matches(final Map<String, Object> source) {
+            final Object value = source.get(field);
+            return value != null && equals.equals(String.valueOf(value));
+        }
+    }
+
+    private static List<Variant> variants(final Object declared) {
+        if (!(declared instanceof List)) {
+            return Collections.emptyList();
+        }
+        final List<Variant> parsed = new ArrayList<>();
+        for (final Object entry : (List<?>) declared) {
+            final Variant variant = Variant.of(entry);
+            if (variant != null) {
+                parsed.add(variant);
+            }
+        }
+        return Collections.unmodifiableList(parsed);
     }
 
     /**

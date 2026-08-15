@@ -384,8 +384,20 @@ final class ComponentTreeWalker {
             // v2 speaks the app's vocabulary, so an authored 'hero' becomes a 'banner' carrying the
             // fields the client expects. v1 is left exactly as it was: the two schemas are each a
             // published contract, and a mapping rule must not silently change the older one.
-            final ComponentMapping mapping =
+            final ComponentMapping matched =
                     hierarchical && !speaksTargetVocabulary ? mappings.find(authoredName) : null;
+            // A rule may redirect to a different rule based on an authored value (a hero laid out
+            // image-right is really a card), then switch to its own fallback based on what was
+            // authored (a card with no image is a rich-text block) - resolve both before applying.
+            ComponentMapping base = matched;
+            if (matched != null) {
+                final String variantRule = matched.variantRuleFor(authored);
+                final ComponentMapping redirected = variantRule == null ? null : mappings.find(variantRule);
+                if (redirected != null) {
+                    base = redirected;
+                }
+            }
+            final ComponentMapping mapping = base == null ? null : base.effectiveFor(authored);
             if (mapping != null) {
                 final Map<String, Object> ruleSource =
                         withContentFragmentFolderRef(mapping, withContentFragmentRef(mapping, authored, child), child);

@@ -1,6 +1,9 @@
 {
   "match": ["hero"],
   "component": "banner",
+  "variants": [
+    { "when": { "field": "herolayout", "equals": "image-right" }, "useRule": "card" }
+  ],
   "fields": [
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
@@ -18,6 +21,7 @@
     { "target": "contentAlignment", "const": "left" }
   ],
   "styles": [
+    { "target": "gap", "const": 8 },
     { "target": "color", "from": "color", "default": "#FFF" }
   ]
 }

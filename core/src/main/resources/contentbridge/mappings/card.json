@@ -1,6 +1,13 @@
 {
   "match": ["card"],
   "component": "card",
+  "requires": "image",
+  "fallback": {
+    "component": "htmlText",
+    "fields": [
+      { "target": "text", "first": ["text", "richText", "jcr:text"] }
+    ]
+  },
   "fields": [
     { "target": "link",
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
@@ -15,6 +22,10 @@
     { "target": "subtitleVariant", "const": "titleMedium" },
     { "target": "titleFontWeight", "const": "regular" },
     { "target": "subtitleFontWeight", "const": "regular" }
+  ],
+  "styles": [
+    { "target": "gap", "const": 8 },
+    { "target": "padding", "const": 8 }
   ]
 }
 

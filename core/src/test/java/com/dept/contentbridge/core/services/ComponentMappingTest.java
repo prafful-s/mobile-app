@@ -191,6 +191,10 @@ class ComponentMappingTest {
 
         assertFalse(content.containsKey("overlaybackground"), "authored extras do not pass through");
         assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals(8, ((Number) styles.get("gap")).intValue(), "every card carries a gap of 8");
+        assertEquals(8, ((Number) styles.get("padding")).intValue(), "every card carries a padding of 8");
     }
 
     @Test
@@ -203,6 +207,50 @@ class ComponentMappingTest {
 
         assertEquals("#", content(exported).get("link"),
                 "no authored anchor, so the link defaults to '#'");
+    }
+
+    @Test
+    @DisplayName("a hero laid out image-right is rendered as a card, not a banner")
+    void heroImageRightBecomesCard() {
+        final Map<String, Object> exported = export(true,
+                "model", "hero",
+                "herolayout", "image-right",
+                "image", "/content/dam/x/hero-6.jpg",
+                "text", "<h2>Connecting accounts made easy</h2>\n<p>By consolidating your accounts.</p>\n"
+                        + "<p><a href=\"/content/secur-financial/language-masters/en/how-to-consolidate-bank-accounts\">Know More</a></p>");
+
+        assertEquals("card", component(exported), "image-right hero defers to the card rule");
+        final Map<String, Object> content = content(exported);
+        assertEquals("Connecting accounts made easy", content.get("title"));
+        assertEquals("/content/dam/x/hero-6.jpg", content.get("image"));
+        assertEquals("/content/secur-financial/language-masters/en/how-to-consolidate-bank-accounts",
+                content.get("link"));
+        assertEquals("stacked", content.get("cardType"), "the card contract's constants apply");
+    }
+
+    @Test
+    @DisplayName("a hero with any other layout stays a banner")
+    void heroOtherLayoutStaysBanner() {
+        final Map<String, Object> exported = export(true,
+                "model", "hero",
+                "herolayout", "image-background-text-left",
+                "image", "/content/dam/x/hero.jpg",
+                "text", "<h1>Hi</h1>");
+
+        assertEquals("banner", component(exported));
+    }
+
+    @Test
+    @DisplayName("a card with no authored image is exported as an htmlText block instead")
+    void cardWithoutImageBecomesHtmlText() {
+        final Map<String, Object> exported = export(true,
+                "model", "card",
+                "text", "<h2>Mortgage Loans</h2>\n<p>Get an awesome mortgage offer.</p>");
+
+        assertEquals("htmlText", component(exported), "no image, so it is a rich-text block");
+        final Map<String, Object> content = content(exported);
+        assertEquals("<h2>Mortgage Loans</h2>\n<p>Get an awesome mortgage offer.</p>", content.get("text"));
+        assertFalse(content.containsKey("title"), "the card fields do not apply to the fallback");
     }
 
     @Test
@@ -801,6 +849,8 @@ class ComponentMappingTest {
 
         assertEquals("#000", map(authored.get("styles")).get("color"),
                 "an authored color is projected into styles.color");
+        assertEquals(8, ((Number) map(authored.get("styles")).get("gap")).intValue(),
+                "every banner carries a gap of 8");
 
         final Map<String, Object> content = content(authored);
         assertFalse(content.containsKey("color"), "color lives under styles, not content");
