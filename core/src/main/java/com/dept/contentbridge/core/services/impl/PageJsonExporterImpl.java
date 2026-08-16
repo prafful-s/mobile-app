@@ -437,16 +437,25 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /**
      * Temporary reduced-output filter: keeps only the components whose mappings are currently
-     * enabled ({@code banner}, {@code card}) and drops panels left empty once their other children
-     * are removed. Extend {@link #ENABLED_COMPONENTS} as more mappings are re-enabled; remove this
-     * call and method when the full component set is restored.
+     * enabled ({@code banner}, {@code card}, {@code htmlText}, {@code form}) and drops panels left
+     * empty once their other children are removed. Extend {@link #ENABLED_COMPONENTS} as more
+     * mappings are re-enabled; remove this call and method when the full component set is restored.
      */
-    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText");
+    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepOnlyBanners(final List<Map<String, Object>> tree) {
         final List<Map<String, Object>> kept = new ArrayList<>();
         for (final Map<String, Object> component : tree) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            final Object name = meta instanceof Map
+                    ? ((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT) : null;
+            // A form's content is its ordered field list, not child components - keep the whole
+            // block rather than descending into it as though it were a panel.
+            if (ENABLED_COMPONENTS.contains(name)) {
+                kept.add(component);
+                continue;
+            }
             final Object content = component.get(SchemaConstants.KEY_CONTENT);
             if (content instanceof List) {
                 final List<Map<String, Object>> children =
@@ -455,12 +464,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                     component.put(SchemaConstants.KEY_CONTENT, children);
                     kept.add(component);
                 }
-                continue;
-            }
-            final Object meta = component.get(SchemaConstants.KEY_META);
-            if (meta instanceof Map
-                    && ENABLED_COMPONENTS.contains(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
-                kept.add(component);
             }
         }
         return kept;

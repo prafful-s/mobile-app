@@ -70,6 +70,14 @@ class FormBlockV2Test {
         return list(map(map(app.get("screens")).get("en")).get("content"));
     }
 
+    /** The reduced-output view the servlet serves - only the currently enabled components survive. */
+    private List<Map<String, Object>> bannersOnlyContent() {
+        final Page home = context.pageManager().getPage(SITE);
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(
+                ExportOptions.SCHEMA_V2, null, null, null, true, true));
+        return list(map(map(app.get("screens")).get("en")).get("content"));
+    }
+
     private Map<String, Object> form() {
         return content(true).stream()
                 .filter(c -> "form".equals(map(c.get("meta")).get("component")))
@@ -99,6 +107,20 @@ class FormBlockV2Test {
         assertEquals(Boolean.TRUE, meta.get("hideResetButton"));
         assertEquals("", meta.get("webhookUrl"), "always present so the client need not test for it");
         assertEquals("", meta.get("toastMessage"));
+    }
+
+    @Test
+    @DisplayName("a form survives the reduced-output banners-only filter, fields intact")
+    void formSurvivesBannersOnlyFilter() {
+        signInBlock();
+
+        final Map<String, Object> form = bannersOnlyContent().stream()
+                .filter(c -> "form".equals(map(c.get("meta")).get("component")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("the form was dropped by the banners-only filter"));
+
+        assertEquals("form", map(form.get("meta")).get("component"));
+        assertEquals(2, list(form.get("content")).size(), "the form's fields are not treated as a panel");
     }
 
     @Test
