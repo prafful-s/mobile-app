@@ -37,7 +37,6 @@ class ComponentMappingTest {
 
     private static final String SITE = "/content/we-healthcare";
     private static final String HOME = SITE + "/language-masters/en";
-
     /** Verbatim from the authored hero on the we-healthcare home page. */
     private static final String HERO_TEXT =
             "<p><strong>Providing affordable</strong></p>\n"
@@ -178,8 +177,8 @@ class ComponentMappingTest {
         assertEquals("Individual & Family Plans", content.get("title"),
                 "entities are decoded when text is read out, not left as &amp;");
         assertTrue(String.valueOf(content.get("subtitle")).startsWith("You'll find flexible"));
-        assertEquals("/content/we-healthcare/language-masters/en/insurance-plans", content.get("link"),
-                "link comes from the anchor href, kept in its authored relative form");
+        assertEquals("insurance-plans", content.get("link"),
+                "link is reduced to the screen the anchor points at");
         assertEquals("/content/dam/we-healthcare/en/images/family.jpeg", content.get("image"));
 
         // Fixed constants supplied by the rule regardless of what was authored.
@@ -223,8 +222,7 @@ class ComponentMappingTest {
         final Map<String, Object> content = content(exported);
         assertEquals("Connecting accounts made easy", content.get("title"));
         assertEquals("/content/dam/x/hero-6.jpg", content.get("image"));
-        assertEquals("/content/secur-financial/language-masters/en/how-to-consolidate-bank-accounts",
-                content.get("link"));
+        assertEquals("how-to-consolidate-bank-accounts", content.get("link"));
         assertEquals("stacked", content.get("cardType"), "the card contract's constants apply");
     }
 
@@ -251,6 +249,10 @@ class ComponentMappingTest {
         final Map<String, Object> content = content(exported);
         assertEquals("<h2>Mortgage Loans</h2>\n<p>Get an awesome mortgage offer.</p>", content.get("text"));
         assertFalse(content.containsKey("title"), "the card fields do not apply to the fallback");
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals(8, ((Number) styles.get("gap")).intValue(), "the fallback keeps the card's gap");
+        assertEquals(8, ((Number) styles.get("padding")).intValue(), "the fallback keeps the card's padding");
     }
 
     @Test

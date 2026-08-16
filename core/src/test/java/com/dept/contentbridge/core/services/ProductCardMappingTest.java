@@ -9,7 +9,6 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,11 +25,9 @@ import io.wcm.testing.mock.aem.junit5.AemContextExtension;
  * {@code product-card} carries little of its own: the title, image and description a client needs
  * live on the Content Fragment it references via {@code contentFragmentFolder}, not on the block
  * itself. The {@code productCard} rule dereferences that fragment and projects the result onto the
- * reference contract's {@code banner} shape - authored fields like {@code buttonText}/{@code ctastyle}
- * still come from the block itself.
+ * reference contract's {@code card} shape - the {@code link} still comes from the block itself.
  */
 @ExtendWith(AemContextExtension.class)
-@Disabled("productCard mapping temporarily removed from index.json; re-enable when the rule is restored")
 class ProductCardMappingTest {
 
     private static final String SITE = "/content/secur-financial";
@@ -99,13 +96,14 @@ class ProductCardMappingTest {
     }
 
     @Test
-    @DisplayName("a product-card is projected onto the reference contract's banner shape, sourced "
+    @DisplayName("a product-card is projected onto the reference contract's card shape, sourced "
             + "from the fragment it references")
-    void productCardBecomesBanner() {
+    void productCardBecomesCard() {
         createFragment(FRAGMENT, Map.of(
                 "productName", "SecurFinancial GOLD",
                 "productImage", "/content/dam/secur-financial/en/images/Secure-credit-cards/card-gold.png",
-                "productSku", "QCjXPYxvM"));
+                "productSku", "QCjXPYxvM",
+                "productDescription", "<p>Premium rewards.</p><ul><li>No annual fee</li></ul>"));
 
         final Map<String, Object> exported = exportProductCard(
                 "model", "product-card",
@@ -114,37 +112,31 @@ class ProductCardMappingTest {
                 "link", "/content/secur-financial/language-masters/en/credit-cards/credit-card-application",
                 "ctastyle", "button");
 
-        assertEquals("banner", map(exported.get("meta")).get("component"));
+        assertEquals("card", map(exported.get("meta")).get("component"));
 
         final Map<String, Object> content = map(exported.get("content"));
         assertEquals("SecurFinancial GOLD", content.get("title"), "title comes from the fragment's productName");
         assertEquals("/content/dam/secur-financial/en/images/Secure-credit-cards/card-gold.png",
                 content.get("image"), "image comes from the fragment's productImage");
-        assertEquals("Apply Now", content.get("buttonLabel"), "buttonLabel comes from the block itself");
-        assertEquals("/content/secur-financial/language-masters/en/credit-cards/credit-card-application",
-                content.get("linkTo"), "linkTo comes from the block itself and stays relative");
-        assertEquals(true, content.get("showButton"));
-        assertEquals(0, content.get("opacity"));
+        assertEquals("Premium rewards.\nNo annual fee", content.get("subtitle"),
+                "subtitle text comes from the fragment's productDescription");
+        assertEquals("credit-card-application?productId=QCjXPYxvM", content.get("link"),
+                "link is the screen key with the fragment's sku appended as productId");
+        assertEquals("stacked", content.get("cardType"));
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals(8, ((Number) styles.get("gap")).intValue());
+        assertEquals(8, ((Number) styles.get("padding")).intValue());
     }
 
     @Test
-    @DisplayName("ctastyle 'button' is translated to the reference contract's buttonVariant 'contained'")
-    void ctaStyleButtonMapsToContained() {
+    @DisplayName("a product-card with no link on the block falls back to '#'")
+    void productCardLinkDefaultsToHash() {
         createFragment(FRAGMENT, Map.of("productName", "GOLD"));
 
-        assertEquals("contained", map(exportProductCard(
-                "model", "product-card", "contentFragmentFolder", FRAGMENT, "ctastyle", "button")
-                .get("content")).get("buttonVariant"));
-    }
-
-    @Test
-    @DisplayName("ctastyle 'cta-link' is translated to the reference contract's buttonVariant 'text'")
-    void ctaStyleLinkMapsToText() {
-        createFragment(FRAGMENT, Map.of("productName", "GOLD"));
-
-        assertEquals("text", map(exportProductCard(
-                "model", "product-card", "contentFragmentFolder", FRAGMENT, "ctastyle", "cta-link")
-                .get("content")).get("buttonVariant"));
+        assertEquals("#", map(exportProductCard(
+                "model", "product-card", "contentFragmentFolder", FRAGMENT)
+                .get("content")).get("link"));
     }
 
     @Test
@@ -154,16 +146,37 @@ class ProductCardMappingTest {
         final Map<String, Object> exported = exportProductCard(
                 "model", "product-card",
                 "contentFragmentFolder", "/content/dam/secur-financial/en/fragments/does-not-exist",
-                "buttonText", "Apply Now");
+                "link", "/content/secur-financial/language-masters/en/credit-cards/credit-card-application");
 
-        assertEquals("banner", map(exported.get("meta")).get("component"));
+        assertEquals("card", map(exported.get("meta")).get("component"));
         final Map<String, Object> content = map(exported.get("content"));
-        assertEquals("Apply Now", content.get("buttonLabel"));
-        assertEquals("", content.get("title"), "no fragment resolved, so skeleton mode fills the empty default");
+        assertEquals("credit-card-application",
+                content.get("link"), "the block's own link still projects, reduced to its screen key");
+        assertFalse(content.containsKey("title"), "no fragment resolved, so there is no title");
     }
 
     @Test
-    @DisplayName("the block's own contentFragmentFolder path never leaks into extras")
+    @DisplayName("a product-card with only text and a link (no image) still renders as a card")
+    void productCardWithTextAndLinkOnlyStillCard() {
+        createFragment(FRAGMENT, Map.of(
+                "productName", "SecurFinancial GOLD",
+                "productDescription", "<p>Premium rewards.</p>"));
+
+        final Map<String, Object> exported = exportProductCard(
+                "model", "product-card",
+                "contentFragmentFolder", FRAGMENT,
+                "link", "/content/secur-financial/language-masters/en/credit-cards/credit-card-application");
+
+        assertEquals("card", map(exported.get("meta")).get("component"), "no image, but still a card");
+        final Map<String, Object> content = map(exported.get("content"));
+        assertEquals("SecurFinancial GOLD", content.get("title"));
+        assertEquals("Premium rewards.", content.get("subtitle"));
+        assertEquals("credit-card-application", content.get("link"));
+        assertFalse(content.containsKey("image"), "no image was authored on the fragment");
+    }
+
+    @Test
+    @DisplayName("the block's own contentFragmentFolder path never leaks into the card content")
     void contentFragmentFolderIsConsumedNotPassedThrough() {
         createFragment(FRAGMENT, Map.of("productName", "GOLD"));
 

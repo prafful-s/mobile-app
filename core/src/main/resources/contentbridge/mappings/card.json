@@ -6,6 +6,10 @@
     "component": "htmlText",
     "fields": [
       { "target": "text", "first": ["text", "richText", "jcr:text"] }
+    ],
+    "styles": [
+      { "target": "gap", "const": 8 },
+      { "target": "padding", "const": 8 }
     ]
   },
   "fields": [

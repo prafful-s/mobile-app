@@ -34,6 +34,7 @@ final class ComponentMapping {
     private final String requiresField;
     private final ComponentMapping fallback;
     private final List<Variant> variants;
+    private final LinkQuery linkQuery;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final String subtype,
@@ -41,7 +42,7 @@ final class ComponentMapping {
                              final boolean skeleton, final String contentFragmentRef,
                              final ContentFragmentFolderRef contentFragmentFolderRef,
                              final String requiresField, final ComponentMapping fallback,
-                             final List<Variant> variants) {
+                             final List<Variant> variants, final LinkQuery linkQuery) {
         this.matches = matches;
         this.component = component;
         this.subtype = subtype;
@@ -53,6 +54,7 @@ final class ComponentMapping {
         this.requiresField = requiresField;
         this.fallback = fallback;
         this.variants = variants;
+        this.linkQuery = linkQuery;
     }
 
     /**
@@ -75,10 +77,11 @@ final class ComponentMapping {
         final String requiresField = trimmed(definition.get("requires"));
         final ComponentMapping fallback = fallbackOf(definition.get("fallback"), matches);
         final List<Variant> variants = variants(definition.get("variants"));
+        final LinkQuery linkQuery = LinkQuery.of(definition.get("linkQuery"));
         return new ComponentMapping(Collections.unmodifiableList(matches), component, subtype,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
                 skeleton, contentFragmentRef, contentFragmentFolderRef, requiresField, fallback,
-                variants);
+                variants, linkQuery);
     }
 
     /**
@@ -101,7 +104,7 @@ final class ComponentMapping {
                 Collections.unmodifiableList(fieldRules(map.get("styles"))),
                 Boolean.TRUE.equals(map.get("skeleton")), trimmed(map.get("contentFragmentRef")),
                 ContentFragmentFolderRef.of(map.get("contentFragmentFolderRef")), null, null,
-                Collections.emptyList());
+                Collections.emptyList(), null);
     }
 
     /**
@@ -348,7 +351,7 @@ final class ComponentMapping {
                 value = field.fallback();
             }
             if (isPresent(value)) {
-                putTarget(target, field.getTarget(), value);
+                putTarget(target, field.getTarget(), screenTarget(field.getTarget(), value, source));
             } else if (skeleton) {
                 // Fixed-shape opt-in: emit the key anyway, typed to what the schema declared.
                 // The client always sees the same key set, whatever the author left blank.
@@ -359,6 +362,62 @@ final class ComponentMapping {
             return target;
         }
         return anyAuthored ? target : Collections.emptyMap();
+    }
+
+    /**
+     * A {@code link} names a destination screen, so it carries that screen's key - the last path
+     * segment, the same key the export files a page under - not the whole authoring path. A value
+     * that is not a {@code /content} path (a bare {@code #}, an anchor, {@code mailto:}, ...) is
+     * left as authored. When the rule declares a {@code linkQuery}, its parameter is appended so a
+     * product card's link carries the product it opens (e.g. {@code credit-card-basic?productId=…}).
+     */
+    private Object screenTarget(final String targetKey, final Object value,
+                                final Map<String, Object> source) {
+        if (!"link".equals(targetKey) || !(value instanceof String)) {
+            return value;
+        }
+        final String text = ((String) value).trim();
+        final int cut = StringUtils.indexOfAny(text, '?', '#');
+        final String path = StringUtils.stripEnd(cut >= 0 ? text.substring(0, cut) : text, "/");
+        if (path.indexOf('/') < 0) {
+            return value;
+        }
+        final String leaf = StringUtils.substringAfterLast(path, "/");
+        if (leaf.isEmpty()) {
+            return value;
+        }
+        return linkQuery == null ? leaf : linkQuery.appendedTo(leaf, source);
+    }
+
+    /** A query parameter appended to the {@code link}, sourced from another authored field. */
+    private static final class LinkQuery {
+
+        private final String param;
+        private final String from;
+
+        private LinkQuery(final String param, final String from) {
+            this.param = param;
+            this.from = from;
+        }
+
+        static LinkQuery of(final Object declared) {
+            if (!(declared instanceof Map)) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> map = (Map<String, Object>) declared;
+            final String param = trimmed(map.get("param"));
+            final String from = trimmed(map.get("from"));
+            return param == null || from == null ? null : new LinkQuery(param, from);
+        }
+
+        String appendedTo(final String link, final Map<String, Object> source) {
+            final Object value = source.get(from);
+            if (value == null || StringUtils.isBlank(String.valueOf(value))) {
+                return link;
+            }
+            return link + '?' + param + '=' + String.valueOf(value).trim();
+        }
     }
 
     /**

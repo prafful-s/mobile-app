@@ -1,32 +1,23 @@
 {
   "match": ["product-card"],
-  "component": "banner",
-  "subtype": "productCard",
-  "skeleton": true,
+  "component": "card",
   "contentFragmentRef": "contentFragmentFolder",
+  "linkQuery": { "param": "productId", "from": "productSku" },
   "fields": [
+    { "target": "link", "from": "link", "default": "#" },
     { "target": "image", "from": "productImage" },
     { "target": "title", "from": "productName" },
-    { "target": "subtitle", "nullable": true },
-    { "target": "linkTo", "from": "link", "type": "path", "nullable": true },
-    { "target": "opacity", "const": 0 },
-    { "target": "showButton", "const": true },
-    { "target": "buttonLabel", "from": "buttonText", "nullable": true },
-    {
-      "target": "buttonVariant",
-      "from": "ctastyle",
-      "map": { "button": "contained", "cta-button": "contained", "cta-link": "text" },
-      "default": "contained"
-    },
-    { "target": "imageResize", "default": "cover" },
+    { "target": "cardType", "const": "stacked" },
+    { "target": "subtitle",
+      "extract": { "from": "productDescription", "select": "p, li", "as": "text", "all": true },
+      "nullable": true },
     { "target": "titleVariant", "const": "titleLarge" },
-    { "target": "subtitleVariant", "const": "titleSmall" },
-    { "target": "contentAlignment", "default": "left" },
-    { "target": "verticalAlignment", "default": "middle" },
-    { "target": "horizontalAlignment", "default": "left" }
+    { "target": "subtitleVariant", "const": "titleMedium" },
+    { "target": "titleFontWeight", "const": "regular" },
+    { "target": "subtitleFontWeight", "const": "regular" }
   ],
   "styles": [
-    { "target": "color", "const": "#FFF" },
-    { "target": "height", "const": 200 }
+    { "target": "gap", "const": 8 },
+    { "target": "padding", "const": 8 }
   ]
 }
