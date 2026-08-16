@@ -13,13 +13,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Turns the style <em>tokens</em> AEM authors choose into the concrete values a client renders.
  *
- * <p>Authors do not set pixels. They pick {@code sec-spacing="section-large"} or
- * {@code style="bg-default"} from a dropdown, and the site's CSS decides what that means. A consuming
- * app has no CSS, so the token has to be resolved here - and only the design system knows the real
- * numbers, which is why the table is OSGi-configurable rather than compiled in.</p>
+ * <p>Authors do not set pixels. They pick {@code style="bg-default"} from a dropdown, and the site's
+ * CSS decides what that means. A consuming app has no CSS, so the token has to be resolved here - and
+ * only the design system knows the real numbers, which is why the table is OSGi-configurable rather
+ * than compiled in.</p>
  *
  * <pre>
- * section-large=padding:24
  * bg-default=backgroundColor:#F5F8FA
  * </pre>
  *

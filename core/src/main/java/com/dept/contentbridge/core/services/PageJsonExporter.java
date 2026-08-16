@@ -25,20 +25,10 @@ public interface PageJsonExporter {
     Map<String, Object> export(Page requested);
 
     /**
-     * As {@link #export(Page)}, but with an explicit catalogue location.
-     *
-     * @param requested    the page named by the caller
-     * @param productsPath overrides where product Content Fragments are read from; when blank the
-     *                     site's placeholders page, then its page properties, then a DAM search decide
-     * @return an insertion-ordered map ready for serialisation
-     */
-    Map<String, Object> export(Page requested, String productsPath);
-
-    /**
      * As {@link #export(Page)}, with explicit per-request options.
      *
      * @param requested the page named by the caller
-     * @param options   schema version and catalogue override; never null
+     * @param options   per-request options; never null
      * @return an insertion-ordered map ready for serialisation
      */
     Map<String, Object> export(Page requested, ExportOptions options);

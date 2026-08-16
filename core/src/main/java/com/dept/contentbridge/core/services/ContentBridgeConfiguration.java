@@ -69,36 +69,13 @@ public @interface ContentBridgeConfiguration {
     String publishHostSegment() default "publish";
 
     @AttributeDefinition(
-            name = "Products folder name",
-            description = "Folder name searched for under /content/dam/<site> to find the site's product "
-                    + "Content Fragments. A 'productsPath' property on the site root overrides the search.")
-    String productsFolderName() default "products";
-
-    @AttributeDefinition(
-            name = "Maximum products",
-            description = "Upper bound on products read per response, so a large catalogue cannot stall "
-                    + "the endpoint. The response is truncated and a warning logged when hit.")
-    int maxProducts() default 200;
-
-    @AttributeDefinition(
-            name = "Product field aliases",
-            description = "Maps the fixed product keys onto Content Fragment element names, as "
-                    + "key=alias1,alias2 - first match wins. Only needed when a site's model uses names "
-                    + "the defaults do not already cover, e.g. sku=productCode,itemNumber")
-    String[] productFieldAliases() default {};
-
-    @AttributeDefinition(
             name = "Style tokens",
-            description = "Resolves the style tokens authors pick (sec-spacing=section-large) into the "
+            description = "Resolves the style tokens authors pick (style=bg-default) into the "
                     + "concrete values a client renders, as token=key:value or token=k1:v1;k2:v2. Only "
-                    + "used by the v2 schema. An unmapped token is dropped rather than guessed at.")
+                    + "used by the v2 schema, on panel styles. An unmapped token is dropped rather than "
+                    + "guessed at. Keys the panel suppresses (e.g. padding) never surface, so only map "
+                    + "tokens to keys a panel actually emits.")
     String[] styleTokens() default {
-        "section-none=padding:0",
-        "section-small=padding:8",
-        "section-medium=padding:16",
-        "section-large=padding:24",
-        "section-huge=padding:32",
-        "section-xhuge=padding:48",
         "bg-default=backgroundColor:#F5F8FA"
     };
 

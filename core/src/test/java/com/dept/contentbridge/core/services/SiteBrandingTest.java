@@ -53,7 +53,7 @@ class SiteBrandingTest {
 
     private Map<String, Object> branding() {
         final Page home = context.pageManager().getPage(SITE);
-        return map(exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("branding"));
+        return map(exporter.export(home, ExportOptions.of(false)).get("branding"));
     }
 
     @Test

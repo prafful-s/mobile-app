@@ -1,0 +1,11 @@
+{
+  "match": ["/conf/secur-financial/settings/dam/cfm/models/secur-financial-product"],
+  "component": "product",
+  "fields": [
+    { "target": "id", "from": "productSku" },
+    { "target": "name", "from": "productName" },
+    { "target": "category", "from": "productCategory" },
+    { "target": "description", "from": "productDescription" },
+    { "target": "image", "from": "productImage" }
+  ]
+}

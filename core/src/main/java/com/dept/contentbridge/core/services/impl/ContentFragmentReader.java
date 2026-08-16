@@ -17,10 +17,8 @@ import com.adobe.cq.dam.cfm.FragmentData;
 /**
  * Reads a single Content Fragment's master variation as flat name/value pairs.
  *
- * <p>Extracted out of {@link ProductExporter} so a component mapping rule can dereference one
- * fragment (e.g. a {@code product-card} block's {@code contentFragmentFolder} reference) with the
- * exact same read strategy the product catalogue export already relies on, rather than a second,
- * subtly different implementation.</p>
+ * <p>Lets a component mapping rule dereference one fragment (e.g. a {@code product-card} block's
+ * {@code contentFragmentFolder} reference) with a single, consistent read strategy.</p>
  */
 final class ContentFragmentReader {
 
@@ -52,7 +50,7 @@ final class ContentFragmentReader {
      * contexts, and the node layout it sits on is stable, so falling back keeps the caller working
      * where {@code adaptTo} would return null.
      *
-     * <p>Nullable rather than folded into {@link #read} because {@link ProductExporter} needs to tell
+     * <p>Nullable rather than folded into {@link #read} so a caller can tell
      * "not a fragment at all" (null - recurse into children, this might be a category folder) apart
      * from "a fragment with nothing on it" (empty map - a real, if empty, product).</p>
      *

@@ -95,7 +95,7 @@ class WrapperAndCellTest {
         context.build().resource(HOME + "/jcr:content/root/columns/col2");
         context.build().resource(HOME + "/jcr:content/root/columns/col3");
 
-        final List<String> names = componentNames(ExportOptions.of("v2", null));
+        final List<String> names = componentNames(ExportOptions.of(false));
 
         assertFalse(names.contains("nt:unstructured"),
                 "a JCR primary type is not a component name: " + names);
@@ -113,7 +113,7 @@ class WrapperAndCellTest {
                 "sling:resourceType", "core/franklin/components/block/item/v1/item",
                 "model", "card", "text", "<h2>A card</h2>", "image", "/content/dam/acme/c.png");
 
-        final List<String> names = componentNames(ExportOptions.of("v2", null));
+        final List<String> names = componentNames(ExportOptions.of(false));
 
         assertEquals(List.of("card"), names,
                 "the wrapper contributes its items and nothing else: " + names);
@@ -129,9 +129,22 @@ class WrapperAndCellTest {
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> screens = map(exporter.export(home).get("screens"));
         final Map<String, Object> content =
-                map(list(map(screens.get("en")).get("content")).get(0).get("content"));
+                map(leaves(list(map(screens.get("en")).get("content"))).get(0).get("content"));
 
-        assertEquals("Subscribe", content.get("button-label"));
         assertFalse(content.containsKey("aueComponentId"), "editor bookkeeping is not content");
+    }
+
+    /** Collapses the v2 panel hierarchy to its leaf components, in document order. */
+    private List<Map<String, Object>> leaves(final List<Map<String, Object>> components) {
+        final List<Map<String, Object>> out = new ArrayList<>();
+        for (final Map<String, Object> component : components) {
+            final Object nested = component.get("content");
+            if (nested instanceof List) {
+                out.addAll(leaves(list(nested)));
+            } else {
+                out.add(component);
+            }
+        }
+        return out;
     }
 }

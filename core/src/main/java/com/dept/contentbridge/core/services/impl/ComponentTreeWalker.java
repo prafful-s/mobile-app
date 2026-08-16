@@ -84,40 +84,6 @@ final class ComponentTreeWalker {
     private static final Set<String> SCREEN_EXCLUDED_COMPONENTS =
             Set.of("iframe", "loan-calculator", "search");
 
-    /**
-     * Testing-phase allowlist for the mobile app render smoke tests. When non-empty and
-     * {@code applyScreenExclusions} is on, only components whose {@code meta.component} appears
-     * in this set survive the top-level flat screen walk - everything else is dropped. Edit this
-     * default set as new component types clear mobile rendering (add {@code "button"},
-     * {@code "image"}, ...). Applied to flat v2 screens only; hierarchical mode still returns
-     * the full tree because dropping panels would collapse structure the schema depends on.
-     *
-     * <p>Overridable via the {@code contentbridge.screen.allowlist} system property - a
-     * comma-separated list of component names, or the literal string {@code off} (or empty) to
-     * disable the allowlist entirely. Test suites set {@code -Dcontentbridge.screen.allowlist=off}
-     * so full shape assertions keep passing while prod defaults to banner-only.</p>
-     */
-    private static final Set<String> SCREEN_ALLOWED_COMPONENTS = resolveAllowlist("banner");
-
-    private static Set<String> resolveAllowlist(final String... defaults) {
-        final String override = System.getProperty("contentbridge.screen.allowlist");
-        if (override == null) {
-            return Set.of(defaults);
-        }
-        final String trimmed = override.trim();
-        if (trimmed.isEmpty() || "off".equalsIgnoreCase(trimmed)) {
-            return Set.of();
-        }
-        final Set<String> parsed = new java.util.HashSet<>();
-        for (final String name : trimmed.split(",")) {
-            final String candidate = name.trim();
-            if (!candidate.isEmpty()) {
-                parsed.add(candidate);
-            }
-        }
-        return Set.copyOf(parsed);
-    }
-
     List<Map<String, Object>> componentsOf(final Page page, final String assetHost) {
         return componentsOf(page, assetHost, false, false);
     }
@@ -146,34 +112,9 @@ final class ComponentTreeWalker {
         }
         if (applyScreenExclusions) {
             dropExcludedDeep(components);
-            if (!hierarchical && !SCREEN_ALLOWED_COMPONENTS.isEmpty()) {
-                keepAllowedTopLevel(components);
-            }
         }
         prefixAssetsDeep(components, assetHost);
         return components;
-    }
-
-    /**
-     * Keeps only components whose {@code meta.component} is in {@link #SCREEN_ALLOWED_COMPONENTS}.
-     * Top-level only - hierarchical panels are excluded from the call site so structure survives.
-     */
-    private static void keepAllowedTopLevel(final List<Map<String, Object>> components) {
-        final Iterator<Map<String, Object>> iterator = components.iterator();
-        while (iterator.hasNext()) {
-            final Map<String, Object> component = iterator.next();
-            final Object meta = component.get(SchemaConstants.KEY_META);
-            String name = null;
-            if (meta instanceof Map) {
-                final Object value = ((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT);
-                if (value instanceof String) {
-                    name = (String) value;
-                }
-            }
-            if (name == null || !SCREEN_ALLOWED_COMPONENTS.contains(name)) {
-                iterator.remove();
-            }
-        }
     }
 
     /**

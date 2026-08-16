@@ -39,7 +39,6 @@ final class FormFieldFactory {
     static final String RADIO_GROUP = "radioGroup";
     static final String CHECKBOX_GROUP = "checkboxGroup";
     static final String DATE_PICKER = "datePicker";
-    static final String FILE_UPLOAD = "fileUpload";
 
     /* ---- configuration field types ---- */
     private static final String TYPE_TEXT = "text";
@@ -160,6 +159,10 @@ final class FormFieldFactory {
     static Map<String, Object> fromConfig(final Map<String, Object> field, final int order) {
         final String type = StringUtils.lowerCase(str(field.get("type")), java.util.Locale.ROOT);
         final String component = componentFor(type);
+        // File upload is not rendered as a client field, so it produces no mapping.
+        if (component == null) {
+            return null;
+        }
 
         // Not every configured field carries an id - twenty of the checkout fields do not. An empty
         // id would leave the client unable to address the field at all, so the profile path stands
@@ -482,7 +485,8 @@ final class FormFieldFactory {
             case TYPE_DATE:
                 return DATE_PICKER;
             case TYPE_FILE:
-                return FILE_UPLOAD;
+                // File upload is intentionally not rendered - no field mapping is produced.
+                return null;
             case TYPE_TEXT:
             case TYPE_PASSWORD:
             default:
@@ -524,7 +528,8 @@ final class FormFieldFactory {
                 return CHECKBOX_GROUP;
             case "fileinput":
             case "fileupload":
-                return FILE_UPLOAD;
+                // File upload is intentionally not rendered - no field mapping is produced.
+                return null;
             default:
                 return null;
         }

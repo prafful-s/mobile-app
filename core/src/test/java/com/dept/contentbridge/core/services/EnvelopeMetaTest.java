@@ -61,7 +61,7 @@ class EnvelopeMetaTest {
 
     private Map<String, Object> export(final boolean v2) {
         final Page home = context.pageManager().getPage(HOME);
-        return v2 ? exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null))
+        return v2 ? exporter.export(home, ExportOptions.of(false))
                 : exporter.export(home);
     }
 
@@ -86,7 +86,7 @@ class EnvelopeMetaTest {
 
         final Page page = context.pageManager().getPage("/content/beta/fr");
         assertEquals("fr", map(exporter.export(page,
-                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("meta")).get("locale"));
+                ExportOptions.of(false)).get("meta")).get("locale"));
     }
 
     @Test
@@ -208,7 +208,7 @@ class EnvelopeMetaTest {
         // Exporting a single page that is not in the menu still has to produce valid screen meta.
         final Page orphan = context.pageManager().getPage(HOME + "/documents");
         final Map<String, Object> screens = map(exporter.export(orphan,
-                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens"));
+                ExportOptions.of(false)).get("screens"));
         final Map<String, Object> meta = map(map(screens.get("documents")).get("meta"));
 
         if (Boolean.FALSE.equals(meta.get("includeInNavigation"))) {
@@ -297,21 +297,5 @@ class EnvelopeMetaTest {
                 "pageCategory", "article"));
 
         assertEquals("login", screenMeta("login").get("preset"));
-    }
-
-    @Test
-    @DisplayName("v1 gains none of this")
-    void v1IsUnchanged() {
-        final Map<String, Object> app = export(false);
-        final Map<String, Object> meta = map(app.get("meta"));
-
-        assertFalse(meta.containsKey("locale"));
-        assertFalse(meta.containsKey("authentication"));
-        assertFalse(app.containsKey("rules"));
-        assertFalse(app.containsKey("modules"));
-
-        final Map<String, Object> screen = map(map(map(app.get("screens")).get("en")).get("meta"));
-        assertEquals(List.of("name", "title"), List.copyOf(screen.keySet()),
-                "v1 screen meta is exactly what it always was");
     }
 }

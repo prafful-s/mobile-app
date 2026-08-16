@@ -135,7 +135,11 @@ final class FormBlockBuilder {
                         field.get("id"));
                 continue;
             }
-            fields.add(FormFieldFactory.fromConfig(field, order++));
+            final Map<String, Object> built = FormFieldFactory.fromConfig(field, order);
+            if (built != null) {
+                fields.add(built);
+                order++;
+            }
         }
         return fields;
     }

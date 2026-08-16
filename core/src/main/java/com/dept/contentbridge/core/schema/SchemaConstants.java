@@ -10,7 +10,6 @@ public final class SchemaConstants {
     }
 
     /* ---- resource types ---- */
-    public static final String RT_PAGE = "contentbridge/components/page";
     public static final String RT_BANNER = "contentbridge/components/banner";
     public static final String RT_TITLE = "contentbridge/components/title";
     public static final String RT_HTML_TEXT = "contentbridge/components/htmlText";
@@ -24,7 +23,6 @@ public final class SchemaConstants {
      * generic 'block' or a 'block/item', and the actual component identity lives in the 'model'
      * property. Structural nodes (root, section, columns and the row/col nodes beneath them) carry
      * no content of their own and are walked through rather than exported. */
-    public static final String RT_FRANKLIN_PAGE = "core/franklin/components/page/v1/page";
     public static final String RT_FRANKLIN_ROOT = "core/franklin/components/root/v1/root";
     public static final String RT_FRANKLIN_SECTION = "core/franklin/components/section/v1/section";
     public static final String RT_FRANKLIN_COLUMNS = "core/franklin/components/columns/v1/columns";
@@ -50,8 +48,6 @@ public final class SchemaConstants {
     public static final String COMPONENT_CARD = "card";
     public static final String COMPONENT_DIVIDER = "divider";
     public static final String COMPONENT_IMAGE = "image";
-    /** Emitted by the mapping rules; there is no curated model for a standalone button. */
-    public static final String COMPONENT_BUTTON = "button";
 
     /* ---- envelope keys ---- */
     public static final String KEY_ID = "id";
@@ -101,7 +97,6 @@ public final class SchemaConstants {
     public static final String PN_FORM = "form";
 
     /* ---- page / app properties authored in AEM ---- */
-    public static final String PN_APP_ID = "appId";
     public static final String PN_APP_TYPE = "appType";
     public static final String PN_APP_TITLE = "appTitle";
     public static final String PN_USE_CART = "useCart";
@@ -109,7 +104,6 @@ public final class SchemaConstants {
     public static final String PN_PROFILE_SCREEN = "profileScreen";
     public static final String PN_REGISTRATION_SCREEN = "registrationScreen";
     public static final String PN_AUTHORIZED_MENU = "authorizedMenu";
-    public static final String PN_SCREEN_ICON = "screenIcon";
     /** Explicit path to the navigation page, overriding the configured name lookup. */
     public static final String PN_NAV_PATH = "navPath";
     public static final String PN_EXCLUDE_FROM_APP = "excludeFromApp";
@@ -121,13 +115,10 @@ public final class SchemaConstants {
 
     public static final String PN_INTEGRATIONS_JSON = "integrationsJson";
     public static final String PN_PROFILE_VIEWER_JSON = "profileViewerJson";
-    public static final String PN_PRODUCTS_JSON = "productsJson";
 
     /** Name of the responsive/container node holding the authored components on a page. */
     public static final String NN_CONTAINER = "root/container";
 
     /* ---- defaults ---- */
     public static final String DEFAULT_APP_TYPE = "mobile-v2";
-    public static final String DEFAULT_HOME_ICON = "home";
-    public static final String DEFAULT_SCREEN_ICON = "file-document";
 }

@@ -71,7 +71,7 @@ See [README.md](README.md) for the full API contract. Core services:
 
 - **Insertion order is the contract** — use `LinkedHashMap` for any map that ends up in JSON output.
 - **Blank-filtering output** — `ContentBuilder.put(key, value)` silently skips blank strings. This is intentional; do not add null checks around it.
-- **Static factory methods** on value objects (`ExportOptions.defaults()`, `ExportOptions.of(...)`) — no public constructors.
+- **Static factory methods** on value objects (`ExportOptions.of(...)`) — no public constructors.
 - **`@ProviderType`** on service interfaces the project owns; **`@ConsumerType`** on interfaces third parties implement (`ContentBridgeComponent`).
 - Sling Models: all component models are in `models/impl/`, adapt `Resource.class`, and implement `ContentBridgeComponent`.
 

@@ -76,7 +76,7 @@ class MenuVersusScreensTest {
 
     private Map<String, Object> app() {
         return exporter.export(context.pageManager().getPage(SITE),
-                ExportOptions.of(ExportOptions.SCHEMA_V2, null));
+                ExportOptions.of(false));
     }
 
     @SuppressWarnings("unchecked")

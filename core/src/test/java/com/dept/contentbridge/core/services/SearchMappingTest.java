@@ -65,7 +65,7 @@ class SearchMappingTest {
         context.build().resource(HOME + "/jcr:content/root/block", all);
 
         final Page home = context.pageManager().getPage(HOME);
-        final Map<String, Object> app = exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null));
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(false));
         final Map<String, Object> screens = map(app.get("screens"));
         return list(map(screens.get("en")).get("content"));
     }

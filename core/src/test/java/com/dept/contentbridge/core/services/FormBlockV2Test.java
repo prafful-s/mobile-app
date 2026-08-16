@@ -65,16 +65,15 @@ class FormBlockV2Test {
     private List<Map<String, Object>> content(final boolean v2) {
         final Page home = context.pageManager().getPage(SITE);
         final Map<String, Object> app = v2
-                ? exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null))
+                ? exporter.export(home, ExportOptions.of(false))
                 : exporter.export(home);
         return list(map(map(app.get("screens")).get("en")).get("content"));
     }
 
     /** The reduced-output view the servlet serves - only the currently enabled components survive. */
-    private List<Map<String, Object>> bannersOnlyContent() {
+    private List<Map<String, Object>> reducedContent() {
         final Page home = context.pageManager().getPage(SITE);
-        final Map<String, Object> app = exporter.export(home, ExportOptions.of(
-                ExportOptions.SCHEMA_V2, null, null, null, true, true));
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(true));
         return list(map(map(app.get("screens")).get("en")).get("content"));
     }
 
@@ -110,14 +109,14 @@ class FormBlockV2Test {
     }
 
     @Test
-    @DisplayName("a form survives the reduced-output banners-only filter, fields intact")
-    void formSurvivesBannersOnlyFilter() {
+    @DisplayName("a form survives the reduced-output filter, fields intact")
+    void formSurvivesReducedFilter() {
         signInBlock();
 
-        final Map<String, Object> form = bannersOnlyContent().stream()
+        final Map<String, Object> form = reducedContent().stream()
                 .filter(c -> "form".equals(map(c.get("meta")).get("component")))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("the form was dropped by the banners-only filter"));
+                .orElseThrow(() -> new AssertionError("the form was dropped by the reduced-output filter"));
 
         assertEquals("form", map(form.get("meta")).get("component"));
         assertEquals(2, list(form.get("content")).size(), "the form's fields are not treated as a panel");
@@ -458,18 +457,6 @@ class FormBlockV2Test {
         assertTrue(content(true).stream()
                 .noneMatch(c -> "form".equals(map(c.get("meta")).get("component"))),
                 "guessing a block is a form would turn unrelated content into an empty form");
-    }
-
-    @Test
-    @DisplayName("v1 keeps the flat block with a schema beside it")
-    void v1IsUnchanged() {
-        signInBlock();
-
-        final Map<String, Object> block = content(false).get(0);
-        assertEquals("sign-in", map(block.get("meta")).get("component"));
-        assertEquals("login", map(block.get("content")).get("buttoneventtype"),
-                "v1 content is still the authored properties");
-        assertTrue(block.containsKey("schema"), "v1 still carries the sidecar schema");
     }
 
     private List<String> ids(final Map<String, Object> form) {

@@ -81,7 +81,7 @@ class ComponentMappingTest {
 
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> app = v2
-                ? exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null))
+                ? exporter.export(home, ExportOptions.of(false))
                 : exporter.export(home);
         final Map<String, Object> screens = map(app.get("screens"));
         return list(map(screens.get("en")).get("content")).get(0);
@@ -106,7 +106,7 @@ class ComponentMappingTest {
         context.build().resource(HOME + "/jcr:content/root/section/block", block);
 
         final Page home = context.pageManager().getPage(HOME);
-        final Map<String, Object> app = exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null));
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(false));
         final Map<String, Object> screens = map(app.get("screens"));
         return list(map(screens.get("en")).get("content")).get(0);
     }
@@ -273,7 +273,7 @@ class ComponentMappingTest {
 
         final Page home = context.pageManager().getPage(HOME);
         final List<Map<String, Object>> all = list(map(map(exporter.export(home,
-                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens")).get("en"))
+                ExportOptions.of(false)).get("screens")).get("en"))
                 .get("content"));
         final Map<String, Object> text = all.get(1);
 
@@ -295,7 +295,7 @@ class ComponentMappingTest {
         }
 
         final Page home = context.pageManager().getPage(HOME);
-        final Map<String, Object> app = exporter.export(home, ExportOptions.of(ExportOptions.SCHEMA_V2, null));
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(false));
         final List<Map<String, Object>> content =
                 list(map(map(app.get("screens")).get("en")).get("content"));
 
@@ -362,17 +362,6 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("v1 is untouched by the mapping rules")
-    void v1IsUnchanged() {
-        final Map<String, Object> exported = export(false,
-                "model", "hero", "text", HERO_TEXT, "herolayout", "overlay");
-
-        assertEquals("hero", component(exported), "v1 still reports the authored component name");
-        assertEquals(HERO_TEXT, content(exported).get("text"), "v1 still carries the whole blob");
-        assertFalse(content(exported).containsKey("title"), "v1 gained no derived fields");
-    }
-
-    @Test
     @DisplayName("a curated model is never re-mapped, even when a rule claims its name")
     void curatedModelsAreNotRemapped() {
         // CardModel already emits the target vocabulary. The card rule matches the name 'card', so
@@ -386,7 +375,7 @@ class ComponentMappingTest {
 
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> exported = list(map(map(exporter.export(home,
-                ExportOptions.of(ExportOptions.SCHEMA_V2, null)).get("screens")).get("en"))
+                ExportOptions.of(false)).get("screens")).get("en"))
                 .get("content")).get(0);
 
         assertEquals("card", component(exported));

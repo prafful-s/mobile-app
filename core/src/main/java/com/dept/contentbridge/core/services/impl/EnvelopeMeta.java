@@ -37,17 +37,6 @@ import com.day.cq.wcm.api.Page;
  */
 final class EnvelopeMeta {
 
-    /* ---- app meta: placeholder key -> emitted key, where the two differ in nothing but intent ---- */
-    private static final String[] APP_PLACEHOLDER_KEYS = {
-        "docs", "brand", "template", "vertical", "thumbnail", "description",
-        "displayInbox", "authentication", "brandingMboxName", "targetRecMboxName",
-    };
-
-    /** App flags, emitted as real booleans so a client need not parse strings. */
-    private static final String[] APP_FLAG_KEYS = {
-        "enableTargetRec", "enableBrandingTargeting",
-    };
-
     private static final String DEFAULT_AUTHENTICATION = "optional";
     private static final String DEFAULT_DISPLAY_INBOX = "mainNavigation";
     private static final String DEFAULT_SCREEN_TEMPLATE = "FreeformScreen";
@@ -137,49 +126,6 @@ final class EnvelopeMeta {
                 flag(SiteHostResolver.placeholder(root, "enableBrandingTargeting")));
 
         return meta;
-    }
-
-    /**
-     * Adds v2 app fields to a pre-built meta block (legacy call path).
-     *
-     * @deprecated Prefer {@link #buildFullV2Meta} which emits keys in reference order.
-     *             This method is retained so that any existing call sites compile without changes.
-     */
-    @Deprecated
-    static void addAppMeta(final Map<String, Object> meta, final Page root) {
-        for (final String key : APP_PLACEHOLDER_KEYS) {
-            final String value = SiteHostResolver.placeholder(root, key);
-            if (StringUtils.isNotBlank(value)) {
-                meta.put(key, value);
-            }
-        }
-        if (!meta.containsKey("brand")) {
-            final String theme = root.getProperties().get("theme", String.class);
-            if (StringUtils.isNotBlank(theme)) {
-                meta.put("brand", themeToLabel(theme));
-            }
-        }
-        if (!meta.containsKey("description")) {
-            final String desc = root.getDescription();
-            if (StringUtils.isNotBlank(desc)) {
-                meta.put("description", desc);
-            }
-        }
-        meta.putIfAbsent("authentication", DEFAULT_AUTHENTICATION);
-        meta.putIfAbsent("displayInbox", DEFAULT_DISPLAY_INBOX);
-        for (final String key : APP_FLAG_KEYS) {
-            meta.put(key, flag(SiteHostResolver.placeholder(root, key)));
-        }
-        meta.putIfAbsent("brandingMboxName", StringUtils.EMPTY);
-        meta.putIfAbsent("targetRecMboxName", StringUtils.EMPTY);
-        final String locale = locale(root);
-        if (StringUtils.isNotBlank(locale)) {
-            meta.put(SchemaConstants.KEY_LOCALE, locale);
-        }
-        final Map<String, Object> rightIcon = rightIcon(root);
-        if (!rightIcon.isEmpty()) {
-            meta.put("rightIcon", rightIcon);
-        }
     }
 
     /**
