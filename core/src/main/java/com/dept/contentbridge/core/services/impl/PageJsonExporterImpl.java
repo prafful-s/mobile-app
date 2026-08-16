@@ -93,6 +93,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private ProductExporter productExporter;
     private GraphQlProductSource graphQlProducts;
     private SiteProductDefaults siteProductDefaults;
+    private SiteBranding siteBranding;
 
     @Activate
     protected void activate(final ContentBridgeConfiguration config) {
@@ -119,6 +120,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.graphQlProducts = new GraphQlProductSource(
                 new GraphQlClient(requestProcessor), productExporter);
         this.siteProductDefaults = SiteProductDefaults.load();
+        this.siteBranding = SiteBranding.load();
     }
 
     @Override
@@ -548,6 +550,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     private Map<String, Object> buildBranding(final Page root, final String assetHost) {
+        // Branding never derives from a page, so the shipped per-site object wins and is emitted
+        // verbatim; the authored node is only a fallback for sites that ship none.
+        final Map<String, Object> shipped = siteBranding == null ? null : siteBranding.forPage(root);
+        if (shipped != null) {
+            return prefixAssets(shipped, assetHost);
+        }
         final Resource branding = childResource(root, SchemaConstants.NN_BRANDING);
         final Map<String, Object> result = new LinkedHashMap<>();
         if (branding == null) {
@@ -591,6 +599,27 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     private String prefixAsset(final String value, final String assetHost) {
         return ContentPaths.prefix(value, assetHost);
+    }
+
+    /**
+     * Walks the shipped branding object making logo paths absolute, in place per level. The prefixer
+     * keys on the value, so colour tokens and absolute logo URLs are left untouched and only
+     * repository paths are rewritten - no need to know which keys are which.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> prefixAssets(final Map<String, Object> branding, final String assetHost) {
+        final Map<String, Object> result = new LinkedHashMap<>();
+        for (final Map.Entry<String, Object> entry : branding.entrySet()) {
+            final Object value = entry.getValue();
+            if (value instanceof Map) {
+                result.put(entry.getKey(), prefixAssets((Map<String, Object>) value, assetHost));
+            } else if (value instanceof String) {
+                result.put(entry.getKey(), prefixAsset((String) value, assetHost));
+            } else {
+                result.put(entry.getKey(), value);
+            }
+        }
+        return result;
     }
 
     /* ----------------------------------------------------------------- utils */
