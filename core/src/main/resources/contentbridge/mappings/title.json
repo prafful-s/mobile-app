@@ -1,20 +1,12 @@
 {
-  "match": ["title", "heading"],
+  "match": ["title"],
   "component": "title",
-  "skeleton": true,
   "fields": [
-    {
-      "target": "size",
-      "first": ["titleType", "type", "size"],
-      "map": { "h1": "xlarge", "h2": "xlarge", "h3": "large", "h4": "medium", "h5": "small", "h6": "small" },
-      "default": "medium"
-    },
-    { "target": "text", "first": ["title", "jcr:title", "text"] },
-    { "target": "weight", "from": "weight", "default": "regular" },
-    { "target": "textColor", "from": "textColor", "nullable": true },
-    { "target": "textAlignment", "fromParent": "sec-alignment", "nullable": true }
-  ],
-  "styles": [
-    { "target": "color", "from": "color" }
+    { "target": "size", "from": "titleType",
+      "map": { "h1": "large", "h2": "large", "h3": "medium", "h4": "small", "h5": "small", "h6": "small" },
+      "default": "medium" },
+    { "target": "text", "from": "title", "default": "" },
+    { "target": "weight", "from": "weight", "default": "bold" },
+    { "target": "textAlignment", "from": "textAlignment", "default": "left" }
   ]
 }
