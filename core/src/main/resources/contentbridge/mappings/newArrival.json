@@ -3,7 +3,7 @@
   "component": "list",
   "fields": [
     { "target": "items", "from": "skus", "default": [] },
-    { "target": "layout", "from": "layout", "default": "horizontal" },
+    { "target": "layout", "const": "vertical/grid" },
     { "target": "filter", "from": "folder", "type": "basename", "default": "New" },
     { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
     { "target": "listType", "from": "listType", "default": "productList" },
