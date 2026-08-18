@@ -50,6 +50,12 @@ final class FieldRule {
     private static final String TYPE_PATH = "path";
 
     /**
+     * Substring after the last {@code /}, trimmed of a trailing slash. Turns
+     * {@code .../fragments/luma-common-cf-products/men} into {@code men}. Non-strings pass through.
+     */
+    private static final String TYPE_BASENAME = "basename";
+
+    /**
      * True when the source produced anything at all, whatever it said.
      *
      * <p>Distinct from {@code boolean}, which reads the value: a banner's {@code showButton} is true
@@ -230,9 +236,18 @@ final class FieldRule {
                 return text;
             case TYPE_PATH:
                 return toPath(text);
+            case TYPE_BASENAME:
+                return basename(text);
             default:
                 return value;
         }
+    }
+
+    /** Last path segment of a URL or path. Trailing slashes stripped. */
+    private static String basename(final String text) {
+        final String trimmed = StringUtils.stripEnd(text, "/");
+        final int slash = trimmed.lastIndexOf('/');
+        return slash < 0 ? trimmed : trimmed.substring(slash + 1);
     }
 
     private static Object toPath(final String text) {
