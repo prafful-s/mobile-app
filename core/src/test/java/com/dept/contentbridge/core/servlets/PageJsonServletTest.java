@@ -9,7 +9,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.sling.api.resource.Resource;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,9 +21,6 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 @ExtendWith(AemContextExtension.class)
-@Disabled("Temporary: servlet returns /contentbridge/mock/luma-mobile.json verbatim on every "
-        + "request, so the real path/status assertions do not apply. Re-enable after removing "
-        + "the mock short-circuit in PageJsonServlet.")
 class PageJsonServletTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
