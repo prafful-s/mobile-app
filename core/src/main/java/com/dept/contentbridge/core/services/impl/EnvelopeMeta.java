@@ -171,7 +171,9 @@ final class EnvelopeMeta {
         final Map<String, Object> meta = new LinkedHashMap<>();
         final ValueMap props = page.getProperties();
 
-        meta.put("icon", StringUtils.defaultString(props.get("icon", String.class)));
+        meta.put("icon", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                props.get("mobileIcon", String.class),
+                props.get("icon", String.class))));
         meta.put("name", screenKey);
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
         meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
