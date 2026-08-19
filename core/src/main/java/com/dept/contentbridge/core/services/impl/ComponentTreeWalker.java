@@ -478,34 +478,52 @@ final class ComponentTreeWalker {
                     + "without its folder data", ref.getProperty(), component.getPath(), raw);
             return authored;
         }
-        final List<String> collected = new ArrayList<>();
+        // One walk of the folder feeds every collect entry, so a rule that needs both product SKUs
+        // and their category tags reads the tree once instead of N times.
+        final Map<String, List<String>> collected = new LinkedHashMap<>();
+        for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
+            collected.put(c.getInjectAs(), new ArrayList<>());
+        }
         for (final Resource child : folder.getChildren()) {
             final Map<String, String> elements = ContentFragmentReader.readElements(child);
             if (elements == null) {
                 // Not a Content Fragment - skip so a stray asset does not become an empty entry.
                 continue;
             }
-            String value = null;
-            for (final String field : ref.getCollectFields()) {
-                final String candidate = elements.get(field);
-                if (StringUtils.isNotBlank(candidate)) {
-                    value = candidate;
-                    break;
+            for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
+                String value = null;
+                for (final String field : c.getFields()) {
+                    final String candidate = elements.get(field);
+                    if (StringUtils.isNotBlank(candidate)) {
+                        value = candidate;
+                        break;
+                    }
+                }
+                if (value != null) {
+                    collected.get(c.getInjectAs()).add(value);
+                } else if (c.keepBlank()) {
+                    // Preserve item count/order alignment with the folder even when a fragment
+                    // carries none of the requested fields; client can still show a placeholder.
+                    collected.get(c.getInjectAs()).add("");
                 }
             }
-            if (value != null) {
-                collected.add(value);
-            } else if (ref.keepBlank()) {
-                // Preserve item count/order alignment with the folder even when a fragment carries
-                // none of the requested fields; the client can still show a placeholder in that slot.
-                collected.add("");
+        }
+        boolean anyPopulated = false;
+        for (final List<String> values : collected.values()) {
+            if (!values.isEmpty()) {
+                anyPopulated = true;
+                break;
             }
         }
-        if (collected.isEmpty()) {
+        if (!anyPopulated) {
             return authored;
         }
         final Map<String, Object> merged = new LinkedHashMap<>(authored);
-        merged.put(ref.getInjectAs(), collected);
+        for (final Map.Entry<String, List<String>> entry : collected.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                merged.put(entry.getKey(), entry.getValue());
+            }
+        }
         return merged;
     }
 

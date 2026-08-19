@@ -40,6 +40,13 @@ final class FieldRule {
     private static final String TYPE_BOOLEAN = "boolean";
     private static final String TYPE_NUMBER = "number";
     private static final String TYPE_STRING = "string";
+    /**
+     * Turns a {@code List} (or a {@code String[]}, or any {@code Iterable}) into a single comma-
+     * separated string, joining non-blank elements with {@code ", "}. Non-collections and already
+     * scalar values pass through unchanged, so a folder-ref that injected a list of category tags
+     * can be flattened onto a single string field without a code change.
+     */
+    private static final String TYPE_CSV = "csv";
 
     /**
      * Strips scheme and host off an absolute {@code http(s)} link, keeping only path, query and
@@ -239,6 +246,9 @@ final class FieldRule {
         if (value == null || type == null) {
             return value;
         }
+        if (TYPE_CSV.equals(type)) {
+            return toCsv(value);
+        }
         final String text = String.valueOf(value);
         switch (type) {
             case TYPE_PRESENCE:
@@ -258,6 +268,30 @@ final class FieldRule {
             default:
                 return value;
         }
+    }
+
+    /** See {@link #TYPE_CSV}. */
+    private static Object toCsv(final Object value) {
+        final Iterable<?> items;
+        if (value instanceof Iterable) {
+            items = (Iterable<?>) value;
+        } else if (value instanceof Object[]) {
+            items = java.util.Arrays.asList((Object[]) value);
+        } else {
+            // Already a scalar - the join is a no-op, keep as authored.
+            return value;
+        }
+        final List<String> parts = new ArrayList<>();
+        for (final Object item : items) {
+            if (item == null) {
+                continue;
+            }
+            final String text = String.valueOf(item).trim();
+            if (!text.isEmpty()) {
+                parts.add(text);
+            }
+        }
+        return String.join(", ", parts);
     }
 
     /** Last path segment of a URL or path. Trailing slashes stripped. */

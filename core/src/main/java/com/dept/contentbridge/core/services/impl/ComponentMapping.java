@@ -207,16 +207,11 @@ final class ComponentMapping {
     static final class ContentFragmentFolderRef {
 
         private final String property;
-        private final List<String> collectFields;
-        private final String injectAs;
-        private final boolean keepBlank;
+        private final List<Collect> collects;
 
-        private ContentFragmentFolderRef(final String property, final List<String> collectFields,
-                                          final String injectAs, final boolean keepBlank) {
+        private ContentFragmentFolderRef(final String property, final List<Collect> collects) {
             this.property = property;
-            this.collectFields = collectFields;
-            this.injectAs = injectAs;
-            this.keepBlank = keepBlank;
+            this.collects = collects;
         }
 
         static ContentFragmentFolderRef of(final Object definition) {
@@ -226,26 +221,79 @@ final class ComponentMapping {
             @SuppressWarnings("unchecked")
             final Map<String, Object> map = (Map<String, Object>) definition;
             final String property = trimmed(map.get("property"));
-            final List<String> collectFields = names(map.get("collectField"));
-            final String injectAs = trimmed(map.get("injectAs"));
-            if (property == null || collectFields.isEmpty() || injectAs == null) {
+            if (property == null) {
                 return null;
             }
-            final boolean keepBlank = Boolean.TRUE.equals(map.get("keepBlank"));
-            return new ContentFragmentFolderRef(property, Collections.unmodifiableList(collectFields),
-                    injectAs, keepBlank);
+            // Two shapes accepted, chosen by which key the rule uses:
+            //   collect: [{fields:[...], injectAs:"...", keepBlank:true}, ...]  (multi-column)
+            //   collectField + injectAs (+ keepBlank)                           (single column)
+            final List<Collect> collects = new ArrayList<>();
+            final Object multi = map.get("collect");
+            if (multi instanceof List) {
+                for (final Object entry : (List<?>) multi) {
+                    final Collect c = Collect.of(entry);
+                    if (c != null) {
+                        collects.add(c);
+                    }
+                }
+            } else {
+                final Collect single = Collect.ofFlat(map);
+                if (single != null) {
+                    collects.add(single);
+                }
+            }
+            if (collects.isEmpty()) {
+                return null;
+            }
+            return new ContentFragmentFolderRef(property, Collections.unmodifiableList(collects));
         }
 
         String getProperty() { return property; }
-        List<String> getCollectFields() { return collectFields; }
-        String getInjectAs() { return injectAs; }
+        List<Collect> getCollects() { return collects; }
 
-        /**
-         * True when every fragment in the folder should contribute one item even if none of the
-         * {@link #getCollectFields() candidate fields} yielded a value - the empty CF appears as
-         * an empty string, so item order and count match the folder order and count.
-         */
-        boolean keepBlank() { return keepBlank; }
+        /** One (fields, injectAs, keepBlank) tuple - the folder-ref applies each in turn per fragment. */
+        static final class Collect {
+
+            private final List<String> fields;
+            private final String injectAs;
+            private final boolean keepBlank;
+
+            private Collect(final List<String> fields, final String injectAs, final boolean keepBlank) {
+                this.fields = fields;
+                this.injectAs = injectAs;
+                this.keepBlank = keepBlank;
+            }
+
+            static Collect of(final Object definition) {
+                if (!(definition instanceof Map)) {
+                    return null;
+                }
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> map = (Map<String, Object>) definition;
+                final List<String> fields = names(map.get("fields"));
+                final String injectAs = trimmed(map.get("injectAs"));
+                if (fields.isEmpty() || injectAs == null) {
+                    return null;
+                }
+                return new Collect(Collections.unmodifiableList(fields), injectAs,
+                        Boolean.TRUE.equals(map.get("keepBlank")));
+            }
+
+            /** Parses the flat legacy shape - collectField + injectAs on the parent object. */
+            static Collect ofFlat(final Map<String, Object> map) {
+                final List<String> fields = names(map.get("collectField"));
+                final String injectAs = trimmed(map.get("injectAs"));
+                if (fields.isEmpty() || injectAs == null) {
+                    return null;
+                }
+                return new Collect(Collections.unmodifiableList(fields), injectAs,
+                        Boolean.TRUE.equals(map.get("keepBlank")));
+            }
+
+            List<String> getFields() { return fields; }
+            String getInjectAs() { return injectAs; }
+            boolean keepBlank() { return keepBlank; }
+        }
     }
 
     /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */
