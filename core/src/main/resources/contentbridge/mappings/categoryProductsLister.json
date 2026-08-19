@@ -5,7 +5,7 @@
   "contentFragmentFolderRef": {
     "property": "folder",
     "collect": [
-      { "fields": ["sku", "id"], "injectAs": "_items", "keepBlank": true },
+      { "fields": ["sku", "id"], "injectAs": "_items" },
       { "fields": ["category"], "injectAs": "_categories" }
     ]
   },
