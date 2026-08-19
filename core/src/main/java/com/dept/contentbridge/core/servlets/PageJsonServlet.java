@@ -101,6 +101,7 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
         final String path = StringUtils.trimToEmpty(request.getParameter(PARAM_PATH));
+        logConsumer(request, path);
 
         if (StringUtils.isEmpty(path)) {
             writeError(response, SlingHttpServletResponse.SC_BAD_REQUEST,
@@ -149,7 +150,11 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
                 response.setHeader("Cache-Control", "no-store");
             }
             response.setStatus(SlingHttpServletResponse.SC_OK);
-            writer(request).writeValue(response.getWriter(), payload);
+            // Serialise once to a string so the same bytes go to both the response and the
+            // "excessive" access log below - avoids Jackson streaming the payload twice.
+            final String body = writer(request).writeValueAsString(payload);
+            response.getWriter().write(body);
+            LOG.info("ContentBridge served path={} bytes={} body={}", path, body.length(), body);
 
         } catch (final IOException e) {
             LOG.error("Failed to serialise ContentBridge payload for {}", path, e);
@@ -169,6 +174,22 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
      * Opens the service-user resolver, or null when it cannot be obtained. A missing or misconfigured
      * service user degrades to the requesting user rather than taking the endpoint down.
      */
+    /**
+     * Excessive access log: who called the API and with what. Emitted at INFO so it shows up
+     * without a debug config change. Reads only headers the servlet API already exposes -
+     * request line, remote address, User-Agent, Referer, authenticated user - and includes the
+     * decoded query string so a consumer can be traced back to what they asked for.
+     */
+    private static void logConsumer(final SlingHttpServletRequest request, final String path) {
+        LOG.info("ContentBridge request path={} remote={} user={} ua={} referer={} query={}",
+                path,
+                StringUtils.defaultIfEmpty(request.getRemoteAddr(), "-"),
+                StringUtils.defaultIfEmpty(request.getRemoteUser(), "-"),
+                StringUtils.defaultIfEmpty(request.getHeader("User-Agent"), "-"),
+                StringUtils.defaultIfEmpty(request.getHeader("Referer"), "-"),
+                StringUtils.defaultIfEmpty(request.getQueryString(), "-"));
+    }
+
     private ResourceResolver openServiceResolver() {
         try {
             return resolverFactory.getServiceResourceResolver(
