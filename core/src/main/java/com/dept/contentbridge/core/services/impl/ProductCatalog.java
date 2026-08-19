@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.day.cq.wcm.api.Page;
-import com.dept.contentbridge.core.services.GraphQLSiteConfig;
 
 /**
  * Builds a site's product list from its Content Fragments.
@@ -60,59 +59,12 @@ final class ProductCatalog {
      * @return the site's products in document order, or an empty list when it has none
      */
     List<Map<String, Object>> export(final Page site, final String assetHost) {
-        return export(site, assetHost, null, null);
-    }
-
-    /**
-     * When {@code graphqlConfig} and {@code graphqlClient} are supplied, the site's persisted
-     * GraphQL query is asked first - one call the CF authors control, versus a walk of every
-     * fragment under the DAM root. The JCR walk fires as fallback for sites without a GraphQL
-     * config or when the query returned nothing.
-     */
-    List<Map<String, Object>> export(final Page site, final String assetHost,
-                                     final GraphQLSiteConfig graphqlConfig,
-                                     final GraphQLProductClient graphqlClient) {
-        final List<Map<String, Object>> viaGraphql = fetchViaGraphql(site, assetHost, graphqlConfig, graphqlClient);
-        if (!viaGraphql.isEmpty()) {
-            return viaGraphql;
-        }
         final List<Map<String, Object>> products = new ArrayList<>();
         final Resource root = productsRoot(site);
         if (root != null) {
             collect(root, products, assetHost, new int[] {0});
         }
         return products;
-    }
-
-    private List<Map<String, Object>> fetchViaGraphql(final Page site, final String assetHost,
-                                                      final GraphQLSiteConfig graphqlConfig,
-                                                      final GraphQLProductClient graphqlClient) {
-        if (graphqlConfig == null || graphqlClient == null || site == null) {
-            return Collections.emptyList();
-        }
-        final Resource siteContent = site.getContentResource();
-        if (siteContent == null) {
-            return Collections.emptyList();
-        }
-        final ResourceResolver resolver = siteContent.getResourceResolver();
-        final String path = SiteHostResolver.placeholder(site, PN_CF_FOLDER);
-        final List<Map<String, Object>> raw = graphqlClient.fetch(graphqlConfig,
-                StringUtils.defaultIfBlank(path, graphqlConfig.getDefaultPath()), resolver);
-        if (raw.isEmpty()) {
-            return raw;
-        }
-        // Prefix DAM references so the client gets absolute publish URLs, same as the JCR walk.
-        final List<Map<String, Object>> out = new ArrayList<>(raw.size());
-        for (final Map<String, Object> product : raw) {
-            final Map<String, Object> copy = new LinkedHashMap<>(product);
-            for (final Map.Entry<String, Object> entry : copy.entrySet()) {
-                if (entry.getValue() instanceof String) {
-                    entry.setValue(ContentPaths.prefix((String) entry.getValue(), assetHost));
-                }
-            }
-            out.add(copy);
-        }
-        return out;
     }
 
     /**

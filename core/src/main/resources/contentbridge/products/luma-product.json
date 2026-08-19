@@ -1,7 +1,6 @@
 {
   "match": ["/conf/dsn-eds-configuration/settings/dam/cfm/models/product-model"],
   "component": "product",
-  "skeleton": true,
   "fields": [
     { "target": "id", "first": ["sku", "id"] },
     { "target": "sku", "first": ["sku", "id"] },
@@ -9,12 +8,8 @@
     { "target": "image", "first": ["image", "damImageURL"] },
     { "target": "thumbnail", "first": ["image", "damImageURL"] },
     { "target": "price", "from": "price", "type": "number" },
-    { "target": "type_id", "from": "type_id", "default": "" },
     { "target": "category", "from": "category", "type": "categoryLabel" },
     { "target": "description", "from": "description" },
-    { "target": "category_ids", "from": "category_ids", "default": [] },
-    { "target": "importedFrom", "from": "importedFrom", "default": "" },
-    { "target": "category_uids", "from": "category_uids", "default": [] },
     { "target": "short_description", "from": "short_description", "default": "" }
   ]
 }

@@ -1,8 +1,0 @@
-{
-  "siteRoot": "/content/luma-site",
-  "configName": "dsn-eds-configuration",
-  "queryName": "productsListByPath",
-  "pathVariable": "_path",
-  "defaultPath": "/content/dam/luma3",
-  "collectFields": ["sku", "id"]
-}
