@@ -5,7 +5,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.slf4j.Logger;
@@ -32,6 +34,16 @@ final class ProductCatalog {
     private static final String CONTENT_ROOT = "/content/";
     private static final String DAM_ROOT = "/content/dam/";
 
+    /**
+     * Placeholder entry naming the Content Fragment folder to scan for products. When present, wins
+     * over the DAM-root fallback so a site whose fragments live outside {@code /content/dam/<site>}
+     * (e.g. Luma stores products under {@code /content/dam/luma3/en/fragments}) still resolves.
+     */
+    private static final String PN_CF_FOLDER = "cf-folder-path";
+
+    /** Subfolder names skipped during the scan - non-product fragments that would just waste budget. */
+    private static final Set<String> EXCLUDED_FOLDERS = Set.of("brand-themes", "dynamic-media-template");
+
     /** Node visit budget, so a pathological DAM tree cannot stall the export. */
     private static final int MAX_NODES_SCANNED = 5000;
 
@@ -48,24 +60,39 @@ final class ProductCatalog {
      */
     List<Map<String, Object>> export(final Page site, final String assetHost) {
         final List<Map<String, Object>> products = new ArrayList<>();
-        final Resource damRoot = damRoot(site);
-        if (damRoot != null) {
-            collect(damRoot, products, assetHost, new int[] {0});
+        final Resource root = productsRoot(site);
+        if (root != null) {
+            collect(root, products, assetHost, new int[] {0});
         }
         return products;
     }
 
-    /** The site's DAM tree, {@code /content/dam/<site>}, or null when the page is not under a site. */
-    private Resource damRoot(final Page site) {
+    /**
+     * Where the product scan starts. Prefers the site's {@code cf-folder-path} placeholder, which lets
+     * a site point at a fragment folder outside its own {@code /content/dam/<site>} tree. Falls back
+     * to that DAM root when no placeholder is set, so sites that follow the convention keep working.
+     */
+    private Resource productsRoot(final Page site) {
         final String path = site.getPath();
         if (path == null || !path.startsWith(CONTENT_ROOT)) {
             return null;
         }
+        final ResourceResolver resolver = site.getContentResource().getResourceResolver();
+
+        final String configured = StringUtils.trimToNull(SiteHostResolver.placeholder(site, PN_CF_FOLDER));
+        if (configured != null) {
+            final Resource root = resolver.getResource(configured);
+            if (root != null) {
+                return root;
+            }
+            LOG.warn("Placeholder '{}' on site {} points at {} which does not resolve - falling back to DAM root",
+                    PN_CF_FOLDER, path, configured);
+        }
+
         final String siteName = path.substring(CONTENT_ROOT.length()).split("/", 2)[0];
         if (siteName.isEmpty()) {
             return null;
         }
-        final ResourceResolver resolver = site.getContentResource().getResourceResolver();
         return resolver.getResource(DAM_ROOT + siteName);
     }
 
@@ -77,6 +104,9 @@ final class ProductCatalog {
                 LOG.warn("Product scan hit the {}-node budget under {} - some fragments may be skipped",
                         MAX_NODES_SCANNED, folder.getPath());
                 return;
+            }
+            if (EXCLUDED_FOLDERS.contains(child.getName())) {
+                continue;
             }
             final ComponentMapping mapping = mappings.find(modelOf(child));
             if (mapping != null) {

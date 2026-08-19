@@ -56,6 +56,15 @@ final class FieldRule {
     private static final String TYPE_BASENAME = "basename";
 
     /**
+     * Turns a taxonomy tag list into a human label. Splits on commas, strips the taxonomy prefix
+     * before {@code :}, replaces {@code -} with spaces, splits nested paths on {@code /}, title-cases
+     * every segment and joins them with {@code  / }. Multiple tags are joined with {@code , }.
+     * {@code lumaproducts:men/tops,lumaproducts:summer-collection} becomes
+     * {@code Men / Tops, Summer Collection}.
+     */
+    private static final String TYPE_CATEGORY_LABEL = "categoryLabel";
+
+    /**
      * True when the source produced anything at all, whatever it said.
      *
      * <p>Distinct from {@code boolean}, which reads the value: a banner's {@code showButton} is true
@@ -158,11 +167,17 @@ final class FieldRule {
 
     /**
      * The value to emit when nothing was authored and no fallback fired, under skeleton mode.
-     * Numbers get {@code 0}; booleans get {@code false}; everything else - including nullable
-     * fields - gets an empty string rather than {@code null}. The point is a fixed, typed shape a
-     * client can always index into without a null check.
+     *
+     * <p>A field that explicitly declared {@code default} keeps that value even when the resolved
+     * default was blank - a rule saying {@code "default": ""} on a number field is asking for the
+     * empty string as its placeholder, not a typed zero. Otherwise the type decides: numbers get
+     * {@code 0}, booleans get {@code false}, everything else gets an empty string. The point is a
+     * fixed, typed shape a client can always index into without a null check.</p>
      */
     Object emptyDefault() {
+        if (defaultValue != null) {
+            return defaultValue;
+        }
         if (TYPE_NUMBER.equals(type)) {
             return 0;
         }
@@ -238,6 +253,8 @@ final class FieldRule {
                 return toPath(text);
             case TYPE_BASENAME:
                 return basename(text);
+            case TYPE_CATEGORY_LABEL:
+                return categoryLabel(text);
             default:
                 return value;
         }
@@ -248,6 +265,48 @@ final class FieldRule {
         final String trimmed = StringUtils.stripEnd(text, "/");
         final int slash = trimmed.lastIndexOf('/');
         return slash < 0 ? trimmed : trimmed.substring(slash + 1);
+    }
+
+    /** See {@link #TYPE_CATEGORY_LABEL}. */
+    private static String categoryLabel(final String text) {
+        final List<String> labels = new ArrayList<>();
+        for (final String raw : text.split(",")) {
+            final String tag = StringUtils.trimToNull(raw);
+            if (tag == null) {
+                continue;
+            }
+            final String tail = StringUtils.substringAfter(tag, ":");
+            final String body = StringUtils.defaultIfEmpty(tail, tag);
+            final List<String> segments = new ArrayList<>();
+            for (final String seg : body.split("/")) {
+                final String spaced = seg.replace('-', ' ').trim();
+                if (!spaced.isEmpty()) {
+                    segments.add(titleCase(spaced));
+                }
+            }
+            if (!segments.isEmpty()) {
+                labels.add(String.join(" / ", segments));
+            }
+        }
+        return String.join(", ", labels);
+    }
+
+    private static String titleCase(final String text) {
+        final StringBuilder sb = new StringBuilder(text.length());
+        boolean atStart = true;
+        for (int i = 0; i < text.length(); i++) {
+            final char c = text.charAt(i);
+            if (Character.isWhitespace(c)) {
+                atStart = true;
+                sb.append(c);
+            } else if (atStart) {
+                sb.append(Character.toUpperCase(c));
+                atStart = false;
+            } else {
+                sb.append(Character.toLowerCase(c));
+            }
+        }
+        return sb.toString();
     }
 
     private static Object toPath(final String text) {

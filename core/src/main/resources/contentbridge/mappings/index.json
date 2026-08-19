@@ -3,5 +3,8 @@
   "card",
   "productCard",
   "newArrival",
-  "title"
+  "title",
+  "image",
+  "button",
+  "text"
 ]

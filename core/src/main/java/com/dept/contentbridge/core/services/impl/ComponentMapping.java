@@ -35,6 +35,7 @@ final class ComponentMapping {
     private final ComponentMapping fallback;
     private final List<Variant> variants;
     private final LinkQuery linkQuery;
+    private final Set<String> ignoreExtras;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final String subtype,
@@ -42,7 +43,8 @@ final class ComponentMapping {
                              final boolean skeleton, final String contentFragmentRef,
                              final ContentFragmentFolderRef contentFragmentFolderRef,
                              final String requiresField, final ComponentMapping fallback,
-                             final List<Variant> variants, final LinkQuery linkQuery) {
+                             final List<Variant> variants, final LinkQuery linkQuery,
+                             final Set<String> ignoreExtras) {
         this.matches = matches;
         this.component = component;
         this.subtype = subtype;
@@ -55,6 +57,7 @@ final class ComponentMapping {
         this.fallback = fallback;
         this.variants = variants;
         this.linkQuery = linkQuery;
+        this.ignoreExtras = ignoreExtras;
     }
 
     /**
@@ -78,10 +81,11 @@ final class ComponentMapping {
         final ComponentMapping fallback = fallbackOf(definition.get("fallback"), matches);
         final List<Variant> variants = variants(definition.get("variants"));
         final LinkQuery linkQuery = LinkQuery.of(definition.get("linkQuery"));
+        final Set<String> ignoreExtras = new LinkedHashSet<>(names(definition.get("ignoreExtras")));
         return new ComponentMapping(Collections.unmodifiableList(matches), component, subtype,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
                 skeleton, contentFragmentRef, contentFragmentFolderRef, requiresField, fallback,
-                variants, linkQuery);
+                variants, linkQuery, Collections.unmodifiableSet(ignoreExtras));
     }
 
     /**
@@ -104,7 +108,7 @@ final class ComponentMapping {
                 Collections.unmodifiableList(fieldRules(map.get("styles"))),
                 Boolean.TRUE.equals(map.get("skeleton")), trimmed(map.get("contentFragmentRef")),
                 ContentFragmentFolderRef.of(map.get("contentFragmentFolderRef")), null, null,
-                Collections.emptyList(), null);
+                Collections.emptyList(), null, Collections.emptySet());
     }
 
     /**
@@ -318,6 +322,7 @@ final class ComponentMapping {
         if (contentFragmentFolderRef != null) {
             consumed.add(contentFragmentFolderRef.getProperty());
         }
+        consumed.addAll(ignoreExtras);
         return consumed;
     }
 
@@ -373,7 +378,7 @@ final class ComponentMapping {
      */
     private Object screenTarget(final String targetKey, final Object value,
                                 final Map<String, Object> source) {
-        if (!"link".equals(targetKey) || !(value instanceof String)) {
+        if ((!"link".equals(targetKey) && !"linkTo".equals(targetKey)) || !(value instanceof String)) {
             return value;
         }
         final String text = ((String) value).trim();
