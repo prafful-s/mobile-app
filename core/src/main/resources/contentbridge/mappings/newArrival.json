@@ -4,7 +4,7 @@
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
-    { "target": "items", "const": ["products"] },
+    { "target": "items", "const": ["product"] },
     { "target": "limit", "const": 5 },
     { "target": "filter", "const": "New" },
     { "target": "layout", "const": "horizontal" },
