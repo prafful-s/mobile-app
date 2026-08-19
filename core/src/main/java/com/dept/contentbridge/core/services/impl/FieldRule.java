@@ -49,6 +49,14 @@ final class FieldRule {
     private static final String TYPE_CSV = "csv";
 
     /**
+     * Empties to a literal JSON {@code null} rather than a typed zero, for reference fields whose
+     * contract is exactly {@code "product": null} (a slot the client fills at runtime). A field
+     * declared {@code type: "null"} that resolves to nothing emits {@code null}; one that resolves
+     * to an authored value keeps that value as-is.
+     */
+    private static final String TYPE_NULL = "null";
+
+    /**
      * Turns a collection of taxonomy tags (e.g. {@code lumaproducts:women/bottoms}) into a comma-
      * separated string of unique lowercase tokens. Each tag has any prefix before {@code :} stripped
      * and is then split on {@code /}, so {@code lumaproducts:women/bottoms} contributes both
@@ -201,7 +209,19 @@ final class FieldRule {
         if (TYPE_BOOLEAN.equals(type) || TYPE_PRESENCE.equals(type)) {
             return Boolean.FALSE;
         }
+        if (TYPE_NULL.equals(type)) {
+            return null;
+        }
         return "";
+    }
+
+    /**
+     * True when the mapping should still emit the field on skeleton pass even when
+     * {@link #emptyDefault()} evaluates to {@code null} - a JSON {@code null} is the reference
+     * shape's chosen placeholder for {@code type:"null"} fields, distinct from "not authored".
+     */
+    boolean emitsNullDefault() {
+        return TYPE_NULL.equals(type) && defaultValue == null;
     }
 
     /**
