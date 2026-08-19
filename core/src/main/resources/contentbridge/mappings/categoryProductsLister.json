@@ -11,7 +11,7 @@
   },
   "fields": [
     { "target": "items", "from": "_items", "default": [] },
-    { "target": "filter", "from": "_categories", "type": "csv", "default": "" },
+    { "target": "filter", "from": "_categories", "type": "categoryTokens", "default": "" },
     { "target": "layout", "from": "layout",
       "map": { "horizontal": "horizontal", "vertical": "vertical/grid" },
       "default": "vertical/grid" },

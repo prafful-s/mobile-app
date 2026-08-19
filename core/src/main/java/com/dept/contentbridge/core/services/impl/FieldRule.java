@@ -49,6 +49,16 @@ final class FieldRule {
     private static final String TYPE_CSV = "csv";
 
     /**
+     * Turns a collection of taxonomy tags (e.g. {@code lumaproducts:women/bottoms}) into a comma-
+     * separated string of unique lowercase tokens. Each tag has any prefix before {@code :} stripped
+     * and is then split on {@code /}, so {@code lumaproducts:women/bottoms} contributes both
+     * {@code women} and {@code bottoms}. Order is insertion order of first sight, duplicates dropped.
+     * Scalar strings are split on {@code ,} first, then processed the same way, so the operator is
+     * idempotent on its own output.
+     */
+    private static final String TYPE_CATEGORY_TOKENS = "categoryTokens";
+
+    /**
      * Strips scheme and host off an absolute {@code http(s)} link, keeping only path, query and
      * fragment - a link component should carry a site-relative target, not whichever author/preview
      * host it happened to be authored against. A value that is not an absolute http(s) URL (already
@@ -249,6 +259,9 @@ final class FieldRule {
         if (TYPE_CSV.equals(type)) {
             return toCsv(value);
         }
+        if (TYPE_CATEGORY_TOKENS.equals(type)) {
+            return toCategoryTokens(value);
+        }
         final String text = String.valueOf(value);
         switch (type) {
             case TYPE_PRESENCE:
@@ -268,6 +281,37 @@ final class FieldRule {
             default:
                 return value;
         }
+    }
+
+    /** See {@link #TYPE_CATEGORY_TOKENS}. */
+    private static Object toCategoryTokens(final Object value) {
+        final Iterable<?> items;
+        if (value instanceof Iterable) {
+            items = (Iterable<?>) value;
+        } else if (value instanceof Object[]) {
+            items = java.util.Arrays.asList((Object[]) value);
+        } else {
+            // Scalar - treat as an already-joined string and re-tokenise it.
+            items = java.util.Arrays.asList(String.valueOf(value).split(","));
+        }
+        final java.util.LinkedHashSet<String> tokens = new java.util.LinkedHashSet<>();
+        for (final Object item : items) {
+            if (item == null) {
+                continue;
+            }
+            final String raw = String.valueOf(item).trim();
+            if (raw.isEmpty()) {
+                continue;
+            }
+            final String body = raw.indexOf(':') >= 0 ? StringUtils.substringAfter(raw, ":") : raw;
+            for (final String token : body.split("/")) {
+                final String cleaned = token.trim();
+                if (!cleaned.isEmpty()) {
+                    tokens.add(cleaned);
+                }
+            }
+        }
+        return String.join(", ", tokens);
     }
 
     /** See {@link #TYPE_CSV}. */
