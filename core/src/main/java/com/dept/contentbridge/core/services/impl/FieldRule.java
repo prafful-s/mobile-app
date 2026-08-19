@@ -83,11 +83,12 @@ final class FieldRule {
     private final String type;
     private final boolean nullable;
     private final Map<String, Object> valueMap;
+    private final boolean mapStrict;
 
     private FieldRule(final String target, final String from, final String parentFrom,
                       final List<String> first, final Object constant, final Extract extract,
                       final Object defaultValue, final String type, final boolean nullable,
-                      final Map<String, Object> valueMap) {
+                      final Map<String, Object> valueMap, final boolean mapStrict) {
         this.target = target;
         this.from = from;
         this.parentFrom = parentFrom;
@@ -98,6 +99,7 @@ final class FieldRule {
         this.type = type;
         this.nullable = nullable;
         this.valueMap = valueMap;
+        this.mapStrict = mapStrict;
     }
 
     /**
@@ -118,7 +120,8 @@ final class FieldRule {
                 definition.get("default"),
                 string(definition.get("type")),
                 Boolean.TRUE.equals(definition.get("nullable")),
-                stringMap(definition.get("map")));
+                stringMap(definition.get("map")),
+                Boolean.TRUE.equals(definition.get("mapStrict")));
     }
 
     String getTarget() {
@@ -139,16 +142,23 @@ final class FieldRule {
      * @return the authored value, or {@code null} when this field has no source or it is unset
      */
     Object fromSource(final Map<String, Object> source, final Map<String, Object> parentSource) {
-        return constant != null ? null : coerce(translate(resolve(source, parentSource)));
+        return constant != null ? null : translate(coerce(resolve(source, parentSource)));
     }
 
-    /** Looks the resolved value up in {@code map}; unmapped or absent-map values pass through as-is. */
+    /**
+     * Looks the resolved value up in {@code map}. By default unmapped or absent-map values pass
+     * through as-is; when {@code mapStrict} is set on the rule, an unmapped value is dropped to
+     * {@code null} so the field's declared {@code default} (or the skeleton empty) takes over.
+     */
     private Object translate(final Object value) {
         if (valueMap == null || value == null) {
             return value;
         }
         final Object mapped = valueMap.get(String.valueOf(value));
-        return mapped != null ? mapped : value;
+        if (mapped != null) {
+            return mapped;
+        }
+        return mapStrict ? null : value;
     }
 
     /** The value to use when nothing was authored: the constant, or the declared default. */

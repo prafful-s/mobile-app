@@ -57,6 +57,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Reference
     private FormSchemaService formSchemaService;
 
+    @Reference(cardinality = org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL)
+    private com.dept.contentbridge.core.services.GraphQLSiteConfigService graphqlSiteConfigService;
+
+    @Reference(cardinality = org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL)
+    private GraphQLProductClient graphqlProductClient;
+
     private String[] allowedRoots;
     private String[] navPageNames;
     private Set<String> excludedPageNames;
@@ -158,7 +164,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         app.put(SchemaConstants.KEY_SCREENS,
                 buildScreens(screenList, homeRoot, assetHost, opts, menu));
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
-        app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
+        final com.dept.contentbridge.core.services.GraphQLSiteConfig graphqlConfig =
+                graphqlSiteConfigService == null ? null : graphqlSiteConfigService.forPage(envelopeSource);
+        app.put(SchemaConstants.KEY_PRODUCTS,
+                productCatalog.export(envelopeSource, assetHost, graphqlConfig, graphqlProductClient));
         app.put(SchemaConstants.KEY_INTEGRATIONS,
                 readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
         app.put(SchemaConstants.KEY_PROFILE_VIEWER,
