@@ -479,35 +479,15 @@ final class ComponentTreeWalker {
             return authored;
         }
         // One walk of the folder feeds every collect entry, so a rule that needs both product SKUs
-        // and their category tags reads the tree once instead of N times.
+        // and their category tags reads the tree once instead of N times. A subfolder that is not
+        // itself a Content Fragment is recursed into (bounded depth) so a category folder holding
+        // per-subcategory folders of fragments (e.g. .../women/tops, .../women/bottoms) still yields
+        // its fragments to the caller.
         final Map<String, List<String>> collected = new LinkedHashMap<>();
         for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
             collected.put(c.getInjectAs(), new ArrayList<>());
         }
-        for (final Resource child : folder.getChildren()) {
-            final Map<String, String> elements = ContentFragmentReader.readElements(child);
-            if (elements == null) {
-                // Not a Content Fragment - skip so a stray asset does not become an empty entry.
-                continue;
-            }
-            for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
-                String value = null;
-                for (final String field : c.getFields()) {
-                    final String candidate = elements.get(field);
-                    if (StringUtils.isNotBlank(candidate)) {
-                        value = candidate;
-                        break;
-                    }
-                }
-                if (value != null) {
-                    collected.get(c.getInjectAs()).add(value);
-                } else if (c.keepBlank()) {
-                    // Preserve item count/order alignment with the folder even when a fragment
-                    // carries none of the requested fields; client can still show a placeholder.
-                    collected.get(c.getInjectAs()).add("");
-                }
-            }
-        }
+        collectFragments(folder, ref, collected, 0);
         boolean anyPopulated = false;
         for (final List<String> values : collected.values()) {
             if (!values.isEmpty()) {
@@ -525,6 +505,45 @@ final class ComponentTreeWalker {
             }
         }
         return merged;
+    }
+
+    /**
+     * Walks {@code folder} and every descendant folder, adding each Content Fragment child's
+     * collected fields to {@code sink}. Recursion is bounded so a malformed DAM tree cannot loop.
+     */
+    private static final int FRAGMENT_FOLDER_MAX_DEPTH = 5;
+
+    private void collectFragments(final Resource folder,
+                                  final ComponentMapping.ContentFragmentFolderRef ref,
+                                  final Map<String, List<String>> sink,
+                                  final int depth) {
+        for (final Resource child : folder.getChildren()) {
+            final Map<String, String> elements = ContentFragmentReader.readElements(child);
+            if (elements == null) {
+                // Not a Content Fragment - if it looks like a container, recurse; otherwise skip.
+                if (depth < FRAGMENT_FOLDER_MAX_DEPTH && child.hasChildren()) {
+                    collectFragments(child, ref, sink, depth + 1);
+                }
+                continue;
+            }
+            for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
+                String value = null;
+                for (final String field : c.getFields()) {
+                    final String candidate = elements.get(field);
+                    if (StringUtils.isNotBlank(candidate)) {
+                        value = candidate;
+                        break;
+                    }
+                }
+                if (value != null) {
+                    sink.get(c.getInjectAs()).add(value);
+                } else if (c.keepBlank()) {
+                    // Preserve item count/order alignment with the folder even when a fragment
+                    // carries none of the requested fields; client can still show a placeholder.
+                    sink.get(c.getInjectAs()).add("");
+                }
+            }
+        }
     }
 
     /** Strips scheme+host off an absolute http(s) URL, keeping only path. Idempotent on paths. */
