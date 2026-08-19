@@ -1,10 +1,12 @@
 package com.dept.contentbridge.core.servlets;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 import javax.servlet.Servlet;
 
@@ -93,6 +95,13 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
     @Reference
     private transient ResourceResolverFactory resolverFactory;
 
+    /**
+     * Classpath resource served verbatim in place of the exporter output. Temporary bridge so the
+     * mobile-app team can wire against a stable JSON shape while the real content authoring lands
+     * in AEM. Delete this constant and the short-circuit below to restore the exporter path.
+     */
+    private static final String MOCK_RESOURCE = "/contentbridge/mock/luma-mobile.json";
+
     @Override
     protected void doGet(final SlingHttpServletRequest request, final SlingHttpServletResponse response)
             throws IOException {
@@ -102,6 +111,18 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
 
         final String path = StringUtils.trimToEmpty(request.getParameter(PARAM_PATH));
         logConsumer(request, path);
+
+        // ponytail: temporary hardcoded response. Servlet returns the mock JSON on every request
+        // for every path the exporter would otherwise handle. Remove this block to reinstate the
+        // real export path.
+        final String mock = readMock();
+        if (mock != null) {
+            response.setHeader("Cache-Control", "no-store");
+            response.setStatus(SlingHttpServletResponse.SC_OK);
+            response.getWriter().write(mock);
+            LOG.info("ContentBridge served MOCK path={} bytes={} body={}", path, mock.length(), mock);
+            return;
+        }
 
         if (StringUtils.isEmpty(path)) {
             writeError(response, SlingHttpServletResponse.SC_BAD_REQUEST,
@@ -174,6 +195,25 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
      * Opens the service-user resolver, or null when it cannot be obtained. A missing or misconfigured
      * service user degrades to the requesting user rather than taking the endpoint down.
      */
+    /**
+     * Reads the mock JSON off the bundle classpath. Returns null when the resource is absent so
+     * a redeploy without the file quietly falls through to the real exporter. Read on every
+     * request so a `mvn -PautoInstallBundle` refresh reloads the file without an OSGi restart.
+     */
+    private static String readMock() {
+        try (InputStream in = PageJsonServlet.class.getResourceAsStream(MOCK_RESOURCE)) {
+            if (in == null) {
+                return null;
+            }
+            try (Scanner scanner = new Scanner(in, StandardCharsets.UTF_8.name()).useDelimiter("\\A")) {
+                return scanner.hasNext() ? scanner.next() : "";
+            }
+        } catch (final IOException e) {
+            LOG.warn("Could not read mock resource {}", MOCK_RESOURCE, e);
+            return null;
+        }
+    }
+
     /**
      * Excessive access log: who called the API and with what. Emitted at INFO so it shows up
      * without a debug config change. Reads only headers the servlet API already exposes -
