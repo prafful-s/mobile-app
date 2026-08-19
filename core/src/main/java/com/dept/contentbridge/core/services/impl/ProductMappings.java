@@ -116,4 +116,9 @@ final class ProductMappings {
     Map<String, ComponentMapping> all() {
         return byModel;
     }
+
+    /** Number of distinct fragment models currently mapped - surfaced in the access log per request. */
+    int knownModelCount() {
+        return byModel.size();
+    }
 }

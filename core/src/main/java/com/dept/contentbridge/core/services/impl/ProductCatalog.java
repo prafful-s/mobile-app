@@ -60,10 +60,17 @@ final class ProductCatalog {
      */
     List<Map<String, Object>> export(final Page site, final String assetHost) {
         final List<Map<String, Object>> products = new ArrayList<>();
+        final String sitePath = site.getPath();
         final Resource root = productsRoot(site);
-        if (root != null) {
-            collect(root, products, assetHost, new int[] {0});
+        if (root == null) {
+            LOG.info("ContentBridge product scan: site={} FOLDER=null (placeholder + DAM fallback both unresolved) - 0 products",
+                    sitePath);
+            return products;
         }
+        final int[] budget = {0};
+        collect(root, products, assetHost, budget);
+        LOG.info("ContentBridge product scan: site={} folder={} nodesVisited={} knownModels={} productsEmitted={}",
+                sitePath, root.getPath(), budget[0], mappings.knownModelCount(), products.size());
         return products;
     }
 
@@ -80,20 +87,26 @@ final class ProductCatalog {
         final ResourceResolver resolver = site.getContentResource().getResourceResolver();
 
         final String configured = StringUtils.trimToNull(SiteHostResolver.placeholder(site, PN_CF_FOLDER));
+        LOG.info("ContentBridge product scan: site={} placeholder[{}]={}", path, PN_CF_FOLDER, configured);
         if (configured != null) {
             final Resource root = resolver.getResource(configured);
             if (root != null) {
+                LOG.info("ContentBridge product scan: site={} using placeholder folder {}", path, configured);
                 return root;
             }
-            LOG.warn("Placeholder '{}' on site {} points at {} which does not resolve - falling back to DAM root",
+            LOG.warn("ContentBridge product scan: placeholder '{}' on site {} points at {} which does not resolve - falling back to DAM root",
                     PN_CF_FOLDER, path, configured);
         }
 
         final String siteName = path.substring(CONTENT_ROOT.length()).split("/", 2)[0];
         if (siteName.isEmpty()) {
+            LOG.info("ContentBridge product scan: site={} has no site segment - skipping", path);
             return null;
         }
-        return resolver.getResource(DAM_ROOT + siteName);
+        final String fallback = DAM_ROOT + siteName;
+        final Resource root = resolver.getResource(fallback);
+        LOG.info("ContentBridge product scan: site={} fallback DAM path={} resolved={}", path, fallback, root != null);
+        return root;
     }
 
     /** Depth-first so fragments organised into sub-folders (accounts, loans, ...) are still found. */
@@ -106,19 +119,29 @@ final class ProductCatalog {
                 return;
             }
             if (EXCLUDED_FOLDERS.contains(child.getName())) {
+                LOG.debug("ContentBridge product scan: skip excluded folder {}", child.getPath());
                 continue;
             }
-            final ComponentMapping mapping = mappings.find(modelOf(child));
+            final String model = modelOf(child);
+            final ComponentMapping mapping = mappings.find(model);
             if (mapping != null) {
                 final Map<String, String> elements = ContentFragmentReader.readElements(child);
-                if (elements != null) {
+                if (elements == null) {
+                    LOG.debug("ContentBridge product scan: CF {} model={} elements=null - skipped", child.getPath(), model);
+                } else {
                     final Map<String, Object> product = toProduct(mapping, elements, assetHost);
-                    if (!product.isEmpty()) {
+                    if (product.isEmpty()) {
+                        LOG.debug("ContentBridge product scan: CF {} model={} mapped to empty - dropped", child.getPath(), model);
+                    } else {
+                        LOG.debug("ContentBridge product scan: CF {} model={} -> product OK", child.getPath(), model);
                         sink.add(product);
                     }
                 }
                 // A recognised fragment has no product children to descend into.
                 continue;
+            }
+            if (model != null) {
+                LOG.debug("ContentBridge product scan: CF {} model={} unmapped - no rule matches", child.getPath(), model);
             }
             if (child.hasChildren()) {
                 collect(child, sink, assetHost, budget);
