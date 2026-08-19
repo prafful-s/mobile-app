@@ -45,7 +45,10 @@ final class ProductCatalog {
     private static final Set<String> EXCLUDED_FOLDERS = Set.of("brand-themes", "dynamic-media-template");
 
     /** Node visit budget, so a pathological DAM tree cannot stall the export. */
-    private static final int MAX_NODES_SCANNED = 5000;
+    private static final int MAX_NODES_SCANNED = 20000;
+
+    /** Marks a rendered image asset - has jcr:content/renditions we must NOT walk into. */
+    private static final String DAM_ASSET = "dam:Asset";
 
     private final ProductMappings mappings;
 
@@ -142,8 +145,13 @@ final class ProductCatalog {
             }
             if (model != null) {
                 LOG.debug("ContentBridge product scan: CF {} model={} unmapped - no rule matches", child.getPath(), model);
+                // A fragment we do not export still has no product children to descend into.
+                continue;
             }
-            if (child.hasChildren()) {
+            // Plain DAM assets carry jcr:content/renditions with thousands of metadata sub-nodes
+            // per asset. Recursing into them stalls the walk against MAX_NODES_SCANNED before we
+            // ever reach a fragment folder, so we only descend into real folder nodes.
+            if (isFolder(child) && child.hasChildren()) {
                 collect(child, sink, assetHost, budget);
             }
         }
@@ -153,6 +161,18 @@ final class ProductCatalog {
     private String modelOf(final Resource resource) {
         final Resource data = resource.getChild("jcr:content/data");
         return data == null ? null : data.getValueMap().get("cq:model", String.class);
+    }
+
+    /**
+     * True when {@code resource} is a container the walker should recurse into. Anything but a
+     * plain {@code dam:Asset} node is walked (folders under any primary type, nt:unstructured mock
+     * nodes in tests, and so on). Assets are stopped at because their {@code jcr:content/renditions}
+     * subtree carries hundreds of metadata sub-nodes per file, which stalls the walk against the
+     * scan budget before it reaches any Content Fragment folder.
+     */
+    private static boolean isFolder(final Resource resource) {
+        final String primaryType = resource.getValueMap().get("jcr:primaryType", String.class);
+        return !DAM_ASSET.equals(primaryType);
     }
 
     private Map<String, Object> toProduct(final ComponentMapping mapping,
