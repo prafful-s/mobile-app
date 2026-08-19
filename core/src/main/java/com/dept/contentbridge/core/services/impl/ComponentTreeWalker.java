@@ -222,6 +222,12 @@ final class ComponentTreeWalker {
     private static void appendUnconsumedExtras(final Map<String, Object> target,
                                                final Map<String, Object> authored,
                                                final Set<String> consumed) {
+        // Wildcard opt-out: a rule declaring ignoreExtras: ["*"] freezes its output to exactly what
+        // the rule wrote - a hardcoded reference shape must not gain keys from whatever the author
+        // happened to leave on the resource.
+        if (consumed.contains("*")) {
+            return;
+        }
         for (final Map.Entry<String, Object> entry : authored.entrySet()) {
             final String key = entry.getKey();
             if (consumed.contains(key) || target.containsKey(key)) {

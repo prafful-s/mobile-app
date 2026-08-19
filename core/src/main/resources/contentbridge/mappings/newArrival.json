@@ -2,6 +2,7 @@
   "match": ["new-arrival"],
   "component": "list",
   "skeleton": true,
+  "ignoreExtras": ["*"],
   "fields": [
     { "target": "items", "const": ["product"] },
     { "target": "limit", "const": 5 },
