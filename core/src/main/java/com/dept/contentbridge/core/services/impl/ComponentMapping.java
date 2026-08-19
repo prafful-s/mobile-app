@@ -207,14 +207,16 @@ final class ComponentMapping {
     static final class ContentFragmentFolderRef {
 
         private final String property;
-        private final String collectField;
+        private final List<String> collectFields;
         private final String injectAs;
+        private final boolean keepBlank;
 
-        private ContentFragmentFolderRef(final String property, final String collectField,
-                                          final String injectAs) {
+        private ContentFragmentFolderRef(final String property, final List<String> collectFields,
+                                          final String injectAs, final boolean keepBlank) {
             this.property = property;
-            this.collectField = collectField;
+            this.collectFields = collectFields;
             this.injectAs = injectAs;
+            this.keepBlank = keepBlank;
         }
 
         static ContentFragmentFolderRef of(final Object definition) {
@@ -224,17 +226,26 @@ final class ComponentMapping {
             @SuppressWarnings("unchecked")
             final Map<String, Object> map = (Map<String, Object>) definition;
             final String property = trimmed(map.get("property"));
-            final String collectField = trimmed(map.get("collectField"));
+            final List<String> collectFields = names(map.get("collectField"));
             final String injectAs = trimmed(map.get("injectAs"));
-            if (property == null || collectField == null || injectAs == null) {
+            if (property == null || collectFields.isEmpty() || injectAs == null) {
                 return null;
             }
-            return new ContentFragmentFolderRef(property, collectField, injectAs);
+            final boolean keepBlank = Boolean.TRUE.equals(map.get("keepBlank"));
+            return new ContentFragmentFolderRef(property, Collections.unmodifiableList(collectFields),
+                    injectAs, keepBlank);
         }
 
         String getProperty() { return property; }
-        String getCollectField() { return collectField; }
+        List<String> getCollectFields() { return collectFields; }
         String getInjectAs() { return injectAs; }
+
+        /**
+         * True when every fragment in the folder should contribute one item even if none of the
+         * {@link #getCollectFields() candidate fields} yielded a value - the empty CF appears as
+         * an empty string, so item order and count match the folder order and count.
+         */
+        boolean keepBlank() { return keepBlank; }
     }
 
     /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */

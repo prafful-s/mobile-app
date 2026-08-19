@@ -2,6 +2,12 @@
   "match": ["new-arrival"],
   "component": "list",
   "skeleton": true,
+  "contentFragmentFolderRef": {
+    "property": "folder",
+    "collectField": ["sku", "id"],
+    "injectAs": "skus",
+    "keepBlank": true
+  },
   "fields": [
     { "target": "items", "from": "skus", "default": [] },
     { "target": "limit", "from": "limit", "type": "number", "default": "" },

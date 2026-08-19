@@ -480,10 +480,25 @@ final class ComponentTreeWalker {
         }
         final List<String> collected = new ArrayList<>();
         for (final Resource child : folder.getChildren()) {
-            final Map<String, String> elements = ContentFragmentReader.read(child);
-            final String value = elements.get(ref.getCollectField());
-            if (StringUtils.isNotBlank(value)) {
+            final Map<String, String> elements = ContentFragmentReader.readElements(child);
+            if (elements == null) {
+                // Not a Content Fragment - skip so a stray asset does not become an empty entry.
+                continue;
+            }
+            String value = null;
+            for (final String field : ref.getCollectFields()) {
+                final String candidate = elements.get(field);
+                if (StringUtils.isNotBlank(candidate)) {
+                    value = candidate;
+                    break;
+                }
+            }
+            if (value != null) {
                 collected.add(value);
+            } else if (ref.keepBlank()) {
+                // Preserve item count/order alignment with the folder even when a fragment carries
+                // none of the requested fields; the client can still show a placeholder in that slot.
+                collected.add("");
             }
         }
         if (collected.isEmpty()) {
