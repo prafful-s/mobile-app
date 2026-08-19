@@ -4,23 +4,15 @@
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
-    { "target": "items", "const": ["product"] },
-    { "target": "limit", "const": 5 },
-    { "target": "filter", "const": "New" },
-    { "target": "layout", "const": "horizontal" },
+    { "target": "items", "const": ["MS01", "MP11"] },
+    { "target": "filter", "const": "Men" },
+    { "target": "layout", "const": "vertical/grid" },
     { "target": "listType", "const": "productList" },
-    { "target": "textColor", "const": "#BBB" },
-    { "target": "imageWidth", "const": 120 },
-    { "target": "itemHeight", "const": 120 },
+    { "target": "textColor", "const": "#8B8B8B" },
     { "target": "itemsInRow", "const": 1 },
-    { "target": "itemRenderer", "const": "stacked" },
+    { "target": "itemRenderer", "const": "image-text-one-line" },
     { "target": "filterProperty", "const": "Category" },
-    { "target": "imageResizeMode", "const": "cover" },
     { "target": "titleFontWeight", "const": "regular" },
     { "target": "subtitleFontWeight", "const": "light" }
-  ],
-  "styles": [
-    { "target": "gap", "const": 12 },
-    { "target": "marginHorizontal", "const": "12" }
   ]
 }
