@@ -63,6 +63,21 @@ class FieldRuleTest {
     }
 
     @Test
+    @DisplayName("categoryPath: multi-tag list, prefix stripped, hyphen->space, title-cased, unique, joined with ' / '")
+    void categoryPath() {
+        final FieldRule rule = FieldRule.of(Map.of(
+                "target", "filter", "from", "cats", "type", "categoryPath"));
+        // Value is a list; some items are themselves comma-joined multi-value tag strings.
+        final Object out = rule.fromSource(
+                Map.of("cats", List.of(
+                        "lumaproducts:women",
+                        "lumaproducts:women/bottoms",
+                        "lumaproducts:new-luma-yoga-collection")),
+                Map.of());
+        assertEquals("Women / Bottoms / New Luma Yoga Collection", out);
+    }
+
+    @Test
     @DisplayName("nullable defaults to false, opts in when set")
     void nullable() {
         final FieldRule off = FieldRule.of(Map.of("target", "subtitle", "from", "subtitle"));

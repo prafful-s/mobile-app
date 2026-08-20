@@ -67,6 +67,14 @@ final class FieldRule {
     private static final String TYPE_CATEGORY_TOKENS = "categoryTokens";
 
     /**
+     * Same tokenisation as {@link #TYPE_CATEGORY_TOKENS} but title-cased and joined with
+     * {@code " / "}, producing the human-readable {@code "Tag1 / Tag2 / Tag3"} shape a mobile client
+     * shows as the category path label. Hyphens inside a token become spaces so
+     * {@code new-luma-yoga-collection} reads as {@code New Luma Yoga Collection}.
+     */
+    private static final String TYPE_CATEGORY_PATH = "categoryPath";
+
+    /**
      * Strips scheme and host off an absolute {@code http(s)} link, keeping only path, query and
      * fragment - a link component should carry a site-relative target, not whichever author/preview
      * host it happened to be authored against. A value that is not an absolute http(s) URL (already
@@ -282,6 +290,9 @@ final class FieldRule {
         if (TYPE_CATEGORY_TOKENS.equals(type)) {
             return toCategoryTokens(value);
         }
+        if (TYPE_CATEGORY_PATH.equals(type)) {
+            return toCategoryPath(value);
+        }
         final String text = String.valueOf(value);
         switch (type) {
             case TYPE_PRESENCE:
@@ -332,6 +343,40 @@ final class FieldRule {
             }
         }
         return String.join(", ", tokens);
+    }
+
+    /** See {@link #TYPE_CATEGORY_PATH}. */
+    private static Object toCategoryPath(final Object value) {
+        final Iterable<?> items;
+        if (value instanceof Iterable) {
+            items = (Iterable<?>) value;
+        } else if (value instanceof Object[]) {
+            items = java.util.Arrays.asList((Object[]) value);
+        } else {
+            items = java.util.Arrays.asList(String.valueOf(value).split(","));
+        }
+        final java.util.LinkedHashSet<String> tokens = new java.util.LinkedHashSet<>();
+        for (final Object item : items) {
+            if (item == null) {
+                continue;
+            }
+            // A single element may itself be a comma-joined string (multi-value tag arrays serialise
+            // that way in ContentFragmentReader), so split on commas first.
+            for (final String raw : String.valueOf(item).split(",")) {
+                final String tag = raw.trim();
+                if (tag.isEmpty()) {
+                    continue;
+                }
+                final String body = tag.indexOf(':') >= 0 ? StringUtils.substringAfter(tag, ":") : tag;
+                for (final String seg : body.split("/")) {
+                    final String cleaned = seg.replace('-', ' ').trim();
+                    if (!cleaned.isEmpty()) {
+                        tokens.add(titleCase(cleaned));
+                    }
+                }
+            }
+        }
+        return String.join(" / ", tokens);
     }
 
     /** See {@link #TYPE_CSV}. */

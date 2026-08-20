@@ -5,12 +5,13 @@
   "contentFragmentFolderRef": {
     "property": "folder",
     "collect": [
-      { "fields": ["sku", "id"], "injectAs": "_items" }
+      { "fields": ["sku", "id"], "injectAs": "_items" },
+      { "fields": ["category"], "injectAs": "_categories" }
     ]
   },
   "fields": [
     { "target": "items", "from": "_items", "default": [] },
-    { "target": "filter", "from": "folder", "type": "basename", "default": "" },
+    { "target": "filter", "from": "_categories", "type": "categoryPath", "default": "" },
     { "target": "layout", "from": "layout",
       "map": { "horizontal": "horizontal", "vertical": "vertical/grid" },
       "default": "vertical/grid" },
