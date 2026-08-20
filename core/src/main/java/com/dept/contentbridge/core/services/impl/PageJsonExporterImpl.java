@@ -89,7 +89,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.maxDepth = Math.max(1, config.maxDepth());
         this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
         this.metaDefaults = EnvelopeMeta.MetaDefaults.of(
-                config.brand(), config.thumbnail(), config.rightIcon(), config.rightIconTarget());
+                config.brand(), config.thumbnail(), config.rightIcon(), config.rightIconTarget(),
+                config.template(), config.vertical());
 
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,

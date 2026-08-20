@@ -300,6 +300,21 @@ class EnvelopeMetaTest {
     }
 
     @Test
+    @DisplayName("template and vertical fall back to the site-level config defaults")
+    void templateAndVerticalFromConfigDefault() {
+        final PageJsonExporter configured = context.registerInjectActivateService(
+                new PageJsonExporterImpl(),
+                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
+                "template", "mobile-v2/generic-fsi-v4", "vertical", "FSI");
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
+
+        assertEquals("mobile-v2/generic-fsi-v4", meta.get("template"), "config template fills in when unauthored");
+        assertEquals("FSI", meta.get("vertical"), "config vertical fills in when unauthored");
+    }
+
+    @Test
     @DisplayName("description falls back to jcr:description on the root page when not in placeholders")
     void descriptionFallbackFromPage() {
         context.resourceResolver().getResource(HOME + "/jcr:content")

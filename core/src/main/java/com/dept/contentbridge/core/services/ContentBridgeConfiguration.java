@@ -108,4 +108,18 @@ public @interface ContentBridgeConfiguration {
             description = "Screen the right icon opens, for meta.rightIcon.target. Defaults to the icon name "
                     + "when blank. Only meaningful when a right icon is configured.")
     String rightIconTarget() default "";
+
+    @AttributeDefinition(
+            name = "App template",
+            description = "Site-level value for meta.template, applied when the placeholders sheet sets no "
+                    + "'template'. This is the DSN app template the mobile client renders its chrome against "
+                    + "(e.g. 'mobile-v2/generic-fsi-v4'); a blank value leaves the client on its bare default. "
+                    + "An authored placeholder still wins.")
+    String template() default "";
+
+    @AttributeDefinition(
+            name = "Vertical",
+            description = "Site-level value for meta.vertical, applied when the placeholders sheet sets no "
+                    + "'vertical' (e.g. 'FSI'). An authored placeholder still wins.")
+    String vertical() default "";
 }

@@ -119,9 +119,11 @@ final class EnvelopeMeta {
 
         meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
 
-        // optional: template, vertical, rightIcon, thumbnail (from placeholders)
-        putIfPlaceholder(meta, root, "template");
-        putIfPlaceholder(meta, root, "vertical");
+        // optional: template, vertical, rightIcon, thumbnail (placeholders win, then site-level config)
+        meta.put("template", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "template"), defaults.template())));
+        meta.put("vertical", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "vertical"), defaults.vertical())));
         meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root, defaults));
         meta.put("thumbnail", StringUtils.defaultString(StringUtils.defaultIfBlank(
                 SiteHostResolver.placeholder(root, "thumbnail"), defaults.thumbnail())));
@@ -293,24 +295,30 @@ final class EnvelopeMeta {
      */
     static final class MetaDefaults {
 
-        private static final MetaDefaults EMPTY = new MetaDefaults("", "", "", "");
+        private static final MetaDefaults EMPTY = new MetaDefaults("", "", "", "", "", "");
 
         private final String brand;
         private final String thumbnail;
         private final String rightIcon;
         private final String rightIconTarget;
+        private final String template;
+        private final String vertical;
 
         private MetaDefaults(final String brand, final String thumbnail,
-                             final String rightIcon, final String rightIconTarget) {
+                             final String rightIcon, final String rightIconTarget,
+                             final String template, final String vertical) {
             this.brand = StringUtils.trimToEmpty(brand);
             this.thumbnail = StringUtils.trimToEmpty(thumbnail);
             this.rightIcon = StringUtils.trimToEmpty(rightIcon);
             this.rightIconTarget = StringUtils.trimToEmpty(rightIconTarget);
+            this.template = StringUtils.trimToEmpty(template);
+            this.vertical = StringUtils.trimToEmpty(vertical);
         }
 
         static MetaDefaults of(final String brand, final String thumbnail,
-                               final String rightIcon, final String rightIconTarget) {
-            return new MetaDefaults(brand, thumbnail, rightIcon, rightIconTarget);
+                               final String rightIcon, final String rightIconTarget,
+                               final String template, final String vertical) {
+            return new MetaDefaults(brand, thumbnail, rightIcon, rightIconTarget, template, vertical);
         }
 
         static MetaDefaults empty() {
@@ -331,6 +339,14 @@ final class EnvelopeMeta {
 
         String rightIconTarget() {
             return rightIconTarget;
+        }
+
+        String template() {
+            return template;
+        }
+
+        String vertical() {
+            return vertical;
         }
     }
 }
