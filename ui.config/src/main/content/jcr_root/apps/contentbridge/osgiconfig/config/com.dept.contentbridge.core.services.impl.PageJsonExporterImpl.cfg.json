@@ -3,5 +3,6 @@
     "/content"
   ],
   "maxDepth": 5,
-  "cacheMaxAge": 300
+  "cacheMaxAge": 300,
+  "brand": "SecurFinancial"
 }

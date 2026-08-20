@@ -83,4 +83,29 @@ public @interface ContentBridgeConfiguration {
             name = "Cache max-age (seconds)",
             description = "Value used for the Cache-Control header on successful responses. 0 disables caching.")
     int cacheMaxAge() default 300;
+
+    @AttributeDefinition(
+            name = "Brand name",
+            description = "Site-level brand label for meta.brand, applied when the placeholders sheet sets no "
+                    + "'brand'. Lets the brand be fixed by configuration rather than authored content; an "
+                    + "authored placeholder still wins, and a blank value falls back to the theme name.")
+    String brand() default "";
+
+    @AttributeDefinition(
+            name = "Thumbnail URL",
+            description = "Site-level value for meta.thumbnail, applied when the placeholders sheet sets no "
+                    + "'thumbnail'. An authored placeholder still wins.")
+    String thumbnail() default "";
+
+    @AttributeDefinition(
+            name = "Right icon",
+            description = "Site-level app-bar icon for meta.rightIcon, applied when neither a nav search block "
+                    + "nor a placeholder 'rightIcon' is set. Blank leaves the icon unconfigured.")
+    String rightIcon() default "";
+
+    @AttributeDefinition(
+            name = "Right icon target",
+            description = "Screen the right icon opens, for meta.rightIcon.target. Defaults to the icon name "
+                    + "when blank. Only meaningful when a right icon is configured.")
+    String rightIconTarget() default "";
 }

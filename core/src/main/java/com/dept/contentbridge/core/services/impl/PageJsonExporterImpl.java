@@ -65,6 +65,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private String publishHostSegment;
     private int maxDepth;
     private int cacheMaxAge;
+    private EnvelopeMeta.MetaDefaults metaDefaults;
 
     // Built once at activation rather than per request: they are stateless, and rebuilding them for
     // every page re-parsed the alias table and re-read configuration that cannot have changed.
@@ -87,6 +88,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.publishHostSegment = StringUtils.defaultIfBlank(config.publishHostSegment(), "publish");
         this.maxDepth = Math.max(1, config.maxDepth());
         this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
+        this.metaDefaults = EnvelopeMeta.MetaDefaults.of(
+                config.brand(), config.thumbnail(), config.rightIcon(), config.rightIconTarget());
 
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
@@ -181,7 +184,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // placeholder-sheet round-trip needed. The nav lives under the home screen, not the site
         // container, so it is resolved from there.
         return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation,
-                navPageRightIcon(homeRoot));
+                navPageRightIcon(homeRoot), metaDefaults);
     }
 
     /**

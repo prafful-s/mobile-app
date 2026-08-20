@@ -6,7 +6,7 @@
   "fields": [
     { "target": "link", "from": "link", "default": "#" },
     { "target": "image", "from": "productImage" },
-    { "target": "imageResize", "from": "imageResize" },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
     { "target": "title", "from": "productName" },
     { "target": "cardType", "const": "stacked" },
     { "target": "subtitle",

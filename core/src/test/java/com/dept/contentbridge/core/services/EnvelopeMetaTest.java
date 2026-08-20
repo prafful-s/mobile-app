@@ -270,6 +270,36 @@ class EnvelopeMetaTest {
     }
 
     @Test
+    @DisplayName("brand falls back to the site-level config default when placeholders set none")
+    void brandFromConfigDefault() {
+        final PageJsonExporter configured = context.registerInjectActivateService(
+                new PageJsonExporterImpl(),
+                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
+                "brand", "SecurFinancial");
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
+
+        assertEquals("SecurFinancial", meta.get("brand"), "config brand fills in when nothing is authored");
+    }
+
+    @Test
+    @DisplayName("placeholders brand wins over the site-level config default")
+    void placeholdersBrandWinsOverConfig() {
+        context.create().page(SITE + "/placeholders", "", Map.of("brand", "Authored Brand"));
+
+        final PageJsonExporter configured = context.registerInjectActivateService(
+                new PageJsonExporterImpl(),
+                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
+                "brand", "Config Brand");
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
+
+        assertEquals("Authored Brand", meta.get("brand"), "an authored placeholder still wins");
+    }
+
+    @Test
     @DisplayName("description falls back to jcr:description on the root page when not in placeholders")
     void descriptionFallbackFromPage() {
         context.resourceResolver().getResource(HOME + "/jcr:content")

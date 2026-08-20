@@ -84,6 +84,20 @@ final class EnvelopeMeta {
                                                final ValueMap props,
                                                final Map<String, Object> navigation,
                                                final Map<String, Object> navRightIcon) {
+        return buildFullV2Meta(root, appId, props, navigation, navRightIcon, MetaDefaults.empty());
+    }
+
+    /**
+     * As {@link #buildFullV2Meta(Page, String, ValueMap, Map, Map)}, plus site-level defaults from
+     * OSGi configuration. These fill {@code brand}, {@code thumbnail} and {@code rightIcon} when the
+     * placeholders sheet leaves them blank, so a site can be branded without any authored content -
+     * an authored placeholder (or a nav search block, for the icon) still wins.
+     */
+    static Map<String, Object> buildFullV2Meta(final Page root, final String appId,
+                                               final ValueMap props,
+                                               final Map<String, Object> navigation,
+                                               final Map<String, Object> navRightIcon,
+                                               final MetaDefaults defaults) {
         final Map<String, Object> meta = new LinkedHashMap<>();
 
         meta.put("id", appId);
@@ -92,10 +106,11 @@ final class EnvelopeMeta {
 
         meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
 
-        // brand: placeholders wins, then the theme name, then blank - but always present.
+        // brand: placeholders wins, then site-level config, then the theme name, then blank.
         final String brand = SiteHostResolver.placeholder(root, "brand");
         meta.put("brand", StringUtils.defaultString(StringUtils.defaultIfBlank(brand,
-                themeToLabel(root.getProperties().get("theme", String.class)))));
+                StringUtils.defaultIfBlank(defaults.brand(),
+                        themeToLabel(root.getProperties().get("theme", String.class))))));
 
         meta.put("title", props.get(SchemaConstants.PN_APP_TITLE,
                 StringUtils.defaultIfBlank(root.getTitle(), root.getName())));
@@ -107,8 +122,9 @@ final class EnvelopeMeta {
         // optional: template, vertical, rightIcon, thumbnail (from placeholders)
         putIfPlaceholder(meta, root, "template");
         putIfPlaceholder(meta, root, "vertical");
-        meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root));
-        putIfPlaceholder(meta, root, "thumbnail");
+        meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root, defaults));
+        meta.put("thumbnail", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "thumbnail"), defaults.thumbnail())));
 
         meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
 
@@ -220,16 +236,18 @@ final class EnvelopeMeta {
      * The optional icon in the app bar. Emitted only when an author named one - a right icon with no
      * target is a button that does nothing.
      */
-    private static Map<String, Object> rightIcon(final Page root) {
-        final String icon = StringUtils.defaultString(SiteHostResolver.placeholder(root, "rightIcon"));
-        final String target = SiteHostResolver.placeholder(root, "rightIconTarget");
+    private static Map<String, Object> rightIcon(final Page root, final MetaDefaults defaults) {
+        final String icon = StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "rightIcon"), defaults.rightIcon());
+        final String target = StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "rightIconTarget"), defaults.rightIconTarget());
 
         // Emitted even when unset, for the same reason as the flat keys: the shape is fixed. An
         // icon with no name renders as nothing, which is what an unconfigured right icon should do.
         final Map<String, Object> rightIcon = new LinkedHashMap<>();
-        rightIcon.put("icon", icon);
-        rightIcon.put("name", icon);
-        rightIcon.put("target", StringUtils.defaultIfBlank(target, icon));
+        rightIcon.put("icon", StringUtils.defaultString(icon));
+        rightIcon.put("name", StringUtils.defaultString(icon));
+        rightIcon.put("target", StringUtils.defaultString(StringUtils.defaultIfBlank(target, icon)));
         return rightIcon;
     }
 
@@ -266,5 +284,53 @@ final class EnvelopeMeta {
         final String base = THEME_SUFFIX.matcher(theme).replaceFirst("");
         final String label = StringUtils.isBlank(base) ? theme : base;
         return Character.toUpperCase(label.charAt(0)) + label.substring(1);
+    }
+
+    /**
+     * Site-level meta defaults sourced from OSGi configuration, used when the placeholders sheet
+     * leaves a field blank. Lets a site be branded through configuration rather than authored
+     * content.
+     */
+    static final class MetaDefaults {
+
+        private static final MetaDefaults EMPTY = new MetaDefaults("", "", "", "");
+
+        private final String brand;
+        private final String thumbnail;
+        private final String rightIcon;
+        private final String rightIconTarget;
+
+        private MetaDefaults(final String brand, final String thumbnail,
+                             final String rightIcon, final String rightIconTarget) {
+            this.brand = StringUtils.trimToEmpty(brand);
+            this.thumbnail = StringUtils.trimToEmpty(thumbnail);
+            this.rightIcon = StringUtils.trimToEmpty(rightIcon);
+            this.rightIconTarget = StringUtils.trimToEmpty(rightIconTarget);
+        }
+
+        static MetaDefaults of(final String brand, final String thumbnail,
+                               final String rightIcon, final String rightIconTarget) {
+            return new MetaDefaults(brand, thumbnail, rightIcon, rightIconTarget);
+        }
+
+        static MetaDefaults empty() {
+            return EMPTY;
+        }
+
+        String brand() {
+            return brand;
+        }
+
+        String thumbnail() {
+            return thumbnail;
+        }
+
+        String rightIcon() {
+            return rightIcon;
+        }
+
+        String rightIconTarget() {
+            return rightIconTarget;
+        }
     }
 }
