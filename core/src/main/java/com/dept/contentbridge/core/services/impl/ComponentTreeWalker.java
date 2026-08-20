@@ -560,6 +560,15 @@ final class ComponentTreeWalker {
             return;
         }
 
+        // A section whose only child is a banner must render full-bleed, so it is emitted as a
+        // direct sibling rather than boxed in a panel that would inset and constrain it.
+        if (children.size() == 1 && isBanner(children.get(0))) {
+            final Map<String, Object> banner = children.get(0);
+            asMeta(banner.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, sink.size());
+            sink.add(banner);
+            return;
+        }
+
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
         meta.put(SchemaConstants.KEY_ORDER, sink.size());
@@ -580,6 +589,16 @@ final class ComponentTreeWalker {
         sink.add(entry);
     }
 
+    private static boolean isBanner(final Map<String, Object> entry) {
+        return SchemaConstants.COMPONENT_BANNER.equals(asMeta(entry.get(SchemaConstants.KEY_META))
+                .get(SchemaConstants.KEY_COMPONENT));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asMeta(final Object meta) {
+        return meta instanceof Map ? (Map<String, Object>) meta : Collections.emptyMap();
+    }
+
     /**
      * Reference contract's panel styles keyset, in field order. Every key is always emitted so
      * the shape is fixed; missing properties fall back to an empty string (a client rendering
@@ -591,6 +610,15 @@ final class ComponentTreeWalker {
         "gap", "margin", "padding", "alignItems", "justifyContent",
         "borderRadius", "backgroundColor", "height", "marginTop",
     };
+
+    /**
+     * Spacing the reference contract carries on every content panel. AEM sections rarely author
+     * these, and without them the panel manages no spacing - cards touch and the client cannot
+     * size them, so images crop. Applied last, after authored values and style tokens, so both
+     * still win.
+     */
+    private static final Map<String, Object> PANEL_SPACING_DEFAULTS = Map.of(
+            "gap", 8, "margin", 8, "padding", 0);
 
     private Map<String, Object> panelStyles(final Resource resource) {
         final Map<String, Object> styles = new LinkedHashMap<>();
@@ -607,6 +635,13 @@ final class ComponentTreeWalker {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
             } else if (!styles.containsKey(tokenStyle.getKey())) {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
+            }
+        }
+        // The panel is the sole owner of card spacing, so fill any gap/margin/padding the author
+        // and tokens both left blank with the reference contract's values.
+        for (final Map.Entry<String, Object> spacing : PANEL_SPACING_DEFAULTS.entrySet()) {
+            if ("".equals(styles.get(spacing.getKey()))) {
+                styles.put(spacing.getKey(), spacing.getValue());
             }
         }
         return styles;

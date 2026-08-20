@@ -212,9 +212,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         navigation.put("menu", menu);
         navigation.put("loginScreen",
                 resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
-        // No dedicated profile page exists here, so profileScreen defaults to the registration page.
+        // No dedicated profile page exists here, so the logged-in account icon lands on settings.
         navigation.put("profileScreen",
-                resolveScreenRef(props, SchemaConstants.PN_PROFILE_SCREEN, "create-account", screens, homeRoot));
+                resolveScreenRef(props, SchemaConstants.PN_PROFILE_SCREEN, "settings", screens, homeRoot));
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
         navigation.put("registrationScreen",
