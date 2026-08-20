@@ -87,6 +87,14 @@ final class FieldRule {
     private static final String TYPE_CATEGORY_ROOT = "categoryRoot";
 
     /**
+     * {@link #TYPE_CATEGORY_ROOT} with a trailing {@code .*} appended, producing the regex-shaped
+     * filter the client applies with a starts-with match (e.g. {@code Women.*} matches
+     * {@code Women / Bottoms}, {@code Women / Tops}, ...). Empty when the vote produced nothing so
+     * the field falls back to its declared default rather than emitting an unusable {@code .*}.
+     */
+    private static final String TYPE_CATEGORY_ROOT_REGEX = "categoryRootRegex";
+
+    /**
      * Strips scheme and host off an absolute {@code http(s)} link, keeping only path, query and
      * fragment - a link component should carry a site-relative target, not whichever author/preview
      * host it happened to be authored against. A value that is not an absolute http(s) URL (already
@@ -307,6 +315,11 @@ final class FieldRule {
         }
         if (TYPE_CATEGORY_ROOT.equals(type)) {
             return toCategoryRoot(value);
+        }
+        if (TYPE_CATEGORY_ROOT_REGEX.equals(type)) {
+            final Object root = toCategoryRoot(value);
+            final String text = root == null ? "" : String.valueOf(root);
+            return text.isEmpty() ? "" : text + ".*";
         }
         final String text = String.valueOf(value);
         switch (type) {

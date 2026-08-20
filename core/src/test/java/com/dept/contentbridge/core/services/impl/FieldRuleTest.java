@@ -113,6 +113,21 @@ class FieldRuleTest {
     }
 
     @Test
+    @DisplayName("categoryRootRegex: majority-voted root with a trailing .*")
+    void categoryRootRegex() {
+        final FieldRule rule = FieldRule.of(Map.of(
+                "target", "filter", "from", "cats", "type", "categoryRootRegex"));
+        assertEquals("Women.*", rule.fromSource(
+                Map.of("cats", List.of(
+                        "lumaproducts:women/tops",
+                        "lumaproducts:women/bottoms",
+                        "lumaproducts:women/jackets")),
+                Map.of()));
+        // Empty input keeps the empty string so the default (not ".*") wins.
+        assertEquals(null, rule.fromSource(Map.of(), Map.of()));
+    }
+
+    @Test
     @DisplayName("nullable defaults to false, opts in when set")
     void nullable() {
         final FieldRule off = FieldRule.of(Map.of("target", "subtitle", "from", "subtitle"));
