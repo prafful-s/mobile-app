@@ -612,14 +612,13 @@ final class ComponentTreeWalker {
     };
 
     /**
-     * Layout the reference contract carries on every content panel. AEM sections rarely author
-     * these, and without them the panel manages no spacing or alignment - cards touch, stay
-     * unaligned and the client cannot size them, so images crop. Applied last, after authored
-     * values and style tokens, so both still win.
+     * Spacing the reference contract carries on every content panel. AEM sections rarely author
+     * these, and without them the panel manages no spacing - cards touch and the client cannot
+     * size them, so images crop. Applied last, after authored values and style tokens, so both
+     * still win.
      */
-    private static final Map<String, Object> PANEL_LAYOUT_DEFAULTS = Map.of(
-            "gap", 8, "margin", 8, "padding", 0,
-            "alignItems", "center", "justifyContent", "space-between");
+    private static final Map<String, Object> PANEL_SPACING_DEFAULTS = Map.of(
+            "gap", 8, "margin", 8, "padding", 0);
 
     private Map<String, Object> panelStyles(final Resource resource) {
         final Map<String, Object> styles = new LinkedHashMap<>();
@@ -638,11 +637,11 @@ final class ComponentTreeWalker {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
             }
         }
-        // The panel is the sole owner of card spacing and alignment, so fill any key the author
+        // The panel is the sole owner of card spacing, so fill any gap/margin/padding the author
         // and tokens both left blank with the reference contract's values.
-        for (final Map.Entry<String, Object> layout : PANEL_LAYOUT_DEFAULTS.entrySet()) {
-            if ("".equals(styles.get(layout.getKey()))) {
-                styles.put(layout.getKey(), layout.getValue());
+        for (final Map.Entry<String, Object> spacing : PANEL_SPACING_DEFAULTS.entrySet()) {
+            if ("".equals(styles.get(spacing.getKey()))) {
+                styles.put(spacing.getKey(), spacing.getValue());
             }
         }
         return styles;

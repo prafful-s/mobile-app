@@ -197,38 +197,6 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a content panel fills unauthored alignItems/justifyContent with the reference defaults")
-    void panelAlignmentDefaults() {
-        final Map<String, Object> panel = exportUnderSection(
-                new Object[] {},
-                "model", "card",
-                "image", "/content/dam/x/card.jpg",
-                "text", "<h2>Hi</h2><p>Sub</p>");
-
-        assertEquals("panel", component(panel));
-        final Map<String, Object> styles = map(panel.get("styles"));
-        assertEquals("center", styles.get("alignItems"), "unauthored alignItems falls back to center");
-        assertEquals("space-between", styles.get("justifyContent"),
-                "unauthored justifyContent falls back to space-between");
-        assertEquals(8, ((Number) styles.get("gap")).intValue(), "spacing defaults still apply");
-    }
-
-    @Test
-    @DisplayName("an authored panel alignment wins over the reference default")
-    void panelAlignmentAuthoredWins() {
-        final Map<String, Object> panel = exportUnderSection(
-                new Object[] { "alignItems", "flex-start", "justifyContent", "flex-end" },
-                "model", "card",
-                "image", "/content/dam/x/card.jpg",
-                "text", "<h2>Hi</h2><p>Sub</p>");
-
-        assertEquals("panel", component(panel));
-        final Map<String, Object> styles = map(panel.get("styles"));
-        assertEquals("flex-start", styles.get("alignItems"), "an authored value is not overwritten");
-        assertEquals("flex-end", styles.get("justifyContent"), "an authored value is not overwritten");
-    }
-
-    @Test
     @DisplayName("a card with no anchor in its text falls back to a '#' link")
     void cardLinkDefaultsToHash() {
         final Map<String, Object> exported = export(true,
