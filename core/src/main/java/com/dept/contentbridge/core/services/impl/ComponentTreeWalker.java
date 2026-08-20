@@ -513,6 +513,9 @@ final class ComponentTreeWalker {
      */
     private static final int FRAGMENT_FOLDER_MAX_DEPTH = 5;
 
+    /** Marks a DAM asset's node - has jcr:content/renditions we must NOT walk into. */
+    private static final String DAM_ASSET = "dam:Asset";
+
     private void collectFragments(final Resource folder,
                                   final ComponentMapping.ContentFragmentFolderRef ref,
                                   final Map<String, Object> authored,
@@ -521,8 +524,10 @@ final class ComponentTreeWalker {
         for (final Resource child : folder.getChildren()) {
             final Map<String, String> elements = ContentFragmentReader.readElements(child);
             if (elements == null) {
-                // Not a Content Fragment - if it looks like a container, recurse; otherwise skip.
-                if (depth < FRAGMENT_FOLDER_MAX_DEPTH && child.hasChildren()) {
+                // Not a Content Fragment. Recurse only into real folders - a dam:Asset's
+                // jcr:content/renditions subtree carries hundreds of metadata sub-nodes per file
+                // and stalls the walk against a page-load budget without ever finding a fragment.
+                if (depth < FRAGMENT_FOLDER_MAX_DEPTH && isFolderContainer(child) && child.hasChildren()) {
                     collectFragments(child, ref, authored, sink, depth + 1);
                 }
                 continue;
@@ -548,6 +553,15 @@ final class ComponentTreeWalker {
                 }
             }
         }
+    }
+
+    /**
+     * True when {@code child} is a container the folder walk should descend into. Everything
+     * except a plain {@code dam:Asset} node counts (folders under any primary type, and
+     * {@code nt:unstructured} mock nodes used in tests).
+     */
+    private static boolean isFolderContainer(final Resource child) {
+        return !DAM_ASSET.equals(child.getValueMap().get("jcr:primaryType", String.class));
     }
 
     /**
