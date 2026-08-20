@@ -17,6 +17,7 @@
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "default": "#" },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
     { "target": "cardType", "const": "stacked" },
     { "target": "subtitle",
