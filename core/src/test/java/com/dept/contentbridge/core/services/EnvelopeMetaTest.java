@@ -173,7 +173,7 @@ class EnvelopeMetaTest {
         }
         assertEquals("", meta.get("icon"), "blank rather than absent");
         assertEquals("", meta.get("event"));
-        assertEquals("", meta.get("preset"));
+        assertEquals("home", meta.get("preset"), "content default when no role or authored preset");
         assertEquals("", meta.get("customEvent"));
         assertFalse(meta.containsKey("thumbnail"), "not part of the reference contract");
     }
@@ -229,23 +229,23 @@ class EnvelopeMetaTest {
     }
 
     @Test
-    @DisplayName("template comes from cq:template's last segment, PascalCased")
-    void templateFromCqTemplate() {
+    @DisplayName("the Franklin page template maps to the DSN FreeformScreen, not \"Page\"")
+    void templateIgnoresCqTemplate() {
         context.create().page(SITE + "/us/en/map", "",
                 Map.of("jcr:title", "Map",
-                        "cq:template", "/conf/acme/settings/wcm/templates/map-screen"));
+                        "cq:template", "/libs/core/franklin/templates/page"));
 
-        assertEquals("MapScreen", screenMeta("map").get("template"),
-                "cq:template's last segment kebab-to-Pascal");
+        assertEquals("FreeformScreen", screenMeta("map").get("template"),
+                "the app only understands DSN screen templates, so cq:template is not surfaced");
     }
 
     @Test
-    @DisplayName("an authored template property still wins over cq:template")
+    @DisplayName("an authored template property still wins over the default")
     void authoredTemplateBeatsCqTemplate() {
         context.create().page(SITE + "/us/en/custom", "",
                 Map.of("jcr:title", "Custom",
                         "template", "CustomScreen",
-                        "cq:template", "/conf/acme/settings/wcm/templates/freeform-screen"));
+                        "cq:template", "/libs/core/franklin/templates/page"));
 
         assertEquals("CustomScreen", screenMeta("custom").get("template"));
     }
@@ -289,7 +289,7 @@ class EnvelopeMetaTest {
 
         assertEquals("login", screenMeta("my-login").get("preset"));
         assertEquals("registration", screenMeta("my-register").get("preset"));
-        assertEquals("", screenMeta("offers").get("preset"), "no role, no preset");
+        assertEquals("home", screenMeta("offers").get("preset"), "no role falls back to the content default");
     }
 
     @Test

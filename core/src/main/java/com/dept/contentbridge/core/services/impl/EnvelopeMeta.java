@@ -41,6 +41,13 @@ final class EnvelopeMeta {
     private static final String DEFAULT_DISPLAY_INBOX = "mainNavigation";
     private static final String DEFAULT_SCREEN_TEMPLATE = "FreeformScreen";
 
+    /**
+     * Preset a content screen gets when neither an author nor a navigation role names one. The DSN
+     * app renders every screen against a preset; a blank preset leaves it with no layout to apply,
+     * so the reference falls back to {@code home} - the banner-plus-cards layout most screens use.
+     */
+    private static final String DEFAULT_SCREEN_PRESET = "home";
+
     /** Suffix stripped from the AEM theme property when deriving a brand display label. */
     private static final Pattern THEME_SUFFIX = Pattern.compile("-theme$", Pattern.CASE_INSENSITIVE);
 
@@ -177,10 +184,11 @@ final class EnvelopeMeta {
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
         meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
-        // preset: explicit prop wins, then the screen's navigation role, else blank.
-        meta.put("preset", StringUtils.defaultString(StringUtils.defaultIfBlank(
+        // preset: explicit prop wins, then the screen's navigation role, else the content default.
+        meta.put("preset", StringUtils.firstNonBlank(
                 props.get("preset", String.class),
-                rolePreset)));
+                rolePreset,
+                DEFAULT_SCREEN_PRESET));
 
         meta.put("template", screenTemplate(props));
 
@@ -197,43 +205,15 @@ final class EnvelopeMeta {
     }
 
     /**
-     * The screen template name. Preferred source is AEM's {@code cq:template} on the page's
-     * {@code jcr:content}, so the value reflects what the page was actually built from; a
-     * {@code /conf/.../templates/freeform-screen} path becomes {@code FreeformScreen} by taking
-     * the last segment and PascalCasing it. An explicit authored {@code template} property still
-     * wins as an override, and both fall back to {@link #DEFAULT_SCREEN_TEMPLATE} so the key is
-     * never blank.
+     * The screen template name the DSN app renders against. Every screen here is authored on the
+     * same Franklin page template, whose PascalCased last segment ({@code Page}) is not a template
+     * the app understands - it only knows the DSN screen templates ({@code FreeformScreen} and
+     * friends). So the value defaults to {@link #DEFAULT_SCREEN_TEMPLATE}, with an explicit authored
+     * {@code template} property winning as an override for the rare screen that needs a different one.
      */
     private static String screenTemplate(final ValueMap props) {
         final String override = props.get("template", String.class);
-        if (StringUtils.isNotBlank(override)) {
-            return override;
-        }
-        final String cqTemplate = props.get("cq:template", String.class);
-        if (StringUtils.isNotBlank(cqTemplate)) {
-            final String tail = StringUtils.substringAfterLast(cqTemplate, "/");
-            final String segment = StringUtils.isNotBlank(tail) ? tail : cqTemplate;
-            return pascalCase(segment);
-        }
-        return DEFAULT_SCREEN_TEMPLATE;
-    }
-
-    /** Converts a kebab / snake / space-separated token to PascalCase: {@code freeform-screen -> FreeformScreen}. */
-    private static String pascalCase(final String value) {
-        if (StringUtils.isBlank(value)) {
-            return value;
-        }
-        final StringBuilder out = new StringBuilder(value.length());
-        for (final String part : value.split("[-_\\s]+")) {
-            if (part.isEmpty()) {
-                continue;
-            }
-            out.append(Character.toUpperCase(part.charAt(0)));
-            if (part.length() > 1) {
-                out.append(part.substring(1).toLowerCase(Locale.ROOT));
-            }
-        }
-        return out.length() == 0 ? value : out.toString();
+        return StringUtils.isNotBlank(override) ? override : DEFAULT_SCREEN_TEMPLATE;
     }
 
     /**

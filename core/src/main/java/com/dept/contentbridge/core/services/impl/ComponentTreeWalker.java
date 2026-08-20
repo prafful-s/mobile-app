@@ -565,9 +565,13 @@ final class ComponentTreeWalker {
         meta.put(SchemaConstants.KEY_ORDER, sink.size());
         meta.put(SchemaConstants.KEY_LAYOUT, layoutOf(resourceType));
         meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
-        // Reference contract carries showBorder on every panel meta. AEM has no equivalent
-        // property, so emit the target's own default rather than omit the key.
-        meta.put("showBorder", resource.getValueMap().get("showBorder", Boolean.FALSE));
+        // Reference contract carries showBorder/itemsFillWidth/wrapOverflowing on every panel
+        // meta. AEM has no equivalent property, so emit the target's own defaults rather than omit
+        // them - itemsFillWidth true is what stretches cards to the panel width.
+        final ValueMap panelProps = resource.getValueMap();
+        meta.put("showBorder", panelProps.get("showBorder", Boolean.FALSE));
+        meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
+        meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
@@ -584,12 +588,9 @@ final class ComponentTreeWalker {
      * lose the author's intent.
      */
     private static final String[] PANEL_STYLE_KEYS = {
-        "gap", "margin", "alignItems", "justifyContent",
+        "gap", "margin", "padding", "alignItems", "justifyContent",
         "borderRadius", "backgroundColor", "height", "marginTop",
     };
-
-    /** Style keys never emitted on a panel, regardless of authored properties or section tokens. */
-    private static final Set<String> SUPPRESSED_PANEL_STYLES = Set.of("padding");
 
     private Map<String, Object> panelStyles(final Resource resource) {
         final Map<String, Object> styles = new LinkedHashMap<>();
@@ -602,9 +603,6 @@ final class ComponentTreeWalker {
         // (a design-system class mapping); we let those overlay the raw keys so an author's
         // token overrides the fallback but not their explicit property.
         for (final Map.Entry<String, Object> tokenStyle : styleResolver.stylesOf(resource).entrySet()) {
-            if (SUPPRESSED_PANEL_STYLES.contains(tokenStyle.getKey())) {
-                continue;
-            }
             if ("".equals(styles.get(tokenStyle.getKey()))) {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
             } else if (!styles.containsKey(tokenStyle.getKey())) {
