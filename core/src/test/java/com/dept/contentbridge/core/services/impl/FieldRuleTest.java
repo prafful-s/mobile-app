@@ -78,6 +78,22 @@ class FieldRuleTest {
     }
 
     @Test
+    @DisplayName("categoryRoot: top-level segment of first tag, title-cased, single string")
+    void categoryRoot() {
+        final FieldRule rule = FieldRule.of(Map.of(
+                "target", "filter", "from", "cats", "type", "categoryRoot"));
+        // First fragment's tag list ordered as author placed them; take root of first tag.
+        assertEquals("Men", rule.fromSource(
+                Map.of("cats", List.of("lumaproducts:men/tops", "lumaproducts:men/bottoms")),
+                Map.of()));
+        // Root-only tag (no '/') passes through with hyphens turned to spaces + title case.
+        assertEquals("New Luma Yoga Collection", rule.fromSource(
+                Map.of("cats", List.of("lumaproducts:new-luma-yoga-collection")), Map.of()));
+        // Empty list resolves to null via blank-to-null; the caller falls back to default.
+        assertEquals(null, rule.fromSource(Map.of(), Map.of()));
+    }
+
+    @Test
     @DisplayName("nullable defaults to false, opts in when set")
     void nullable() {
         final FieldRule off = FieldRule.of(Map.of("target", "subtitle", "from", "subtitle"));

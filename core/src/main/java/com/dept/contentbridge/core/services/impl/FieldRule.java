@@ -75,6 +75,15 @@ final class FieldRule {
     private static final String TYPE_CATEGORY_PATH = "categoryPath";
 
     /**
+     * The top-level segment of the first taxonomy tag, title-cased - the single-word category the
+     * mobile client uses as a filter expression (e.g. {@code Men} matches any product whose
+     * {@code category} starts with {@code Men}). {@code lumaproducts:men/tops} becomes {@code Men},
+     * {@code lumaproducts:new-luma-yoga-collection} becomes {@code New Luma Yoga Collection}. Later
+     * tags and later segments are ignored on purpose - the client wants a single anchor, not a path.
+     */
+    private static final String TYPE_CATEGORY_ROOT = "categoryRoot";
+
+    /**
      * Strips scheme and host off an absolute {@code http(s)} link, keeping only path, query and
      * fragment - a link component should carry a site-relative target, not whichever author/preview
      * host it happened to be authored against. A value that is not an absolute http(s) URL (already
@@ -293,6 +302,9 @@ final class FieldRule {
         if (TYPE_CATEGORY_PATH.equals(type)) {
             return toCategoryPath(value);
         }
+        if (TYPE_CATEGORY_ROOT.equals(type)) {
+            return toCategoryRoot(value);
+        }
         final String text = String.valueOf(value);
         switch (type) {
             case TYPE_PRESENCE:
@@ -377,6 +389,37 @@ final class FieldRule {
             }
         }
         return String.join(" / ", tokens);
+    }
+
+    /** See {@link #TYPE_CATEGORY_ROOT}. */
+    private static Object toCategoryRoot(final Object value) {
+        final Iterable<?> items;
+        if (value instanceof Iterable) {
+            items = (Iterable<?>) value;
+        } else if (value instanceof Object[]) {
+            items = java.util.Arrays.asList((Object[]) value);
+        } else {
+            items = java.util.Arrays.asList(String.valueOf(value).split(","));
+        }
+        for (final Object item : items) {
+            if (item == null) {
+                continue;
+            }
+            for (final String raw : String.valueOf(item).split(",")) {
+                final String tag = raw.trim();
+                if (tag.isEmpty()) {
+                    continue;
+                }
+                final String body = tag.indexOf(':') >= 0 ? StringUtils.substringAfter(tag, ":") : tag;
+                final int slash = body.indexOf('/');
+                final String root = (slash < 0 ? body : body.substring(0, slash))
+                        .replace('-', ' ').trim();
+                if (!root.isEmpty()) {
+                    return titleCase(root);
+                }
+            }
+        }
+        return "";
     }
 
     /** See {@link #TYPE_CSV}. */

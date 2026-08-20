@@ -2,6 +2,7 @@
   "match": ["new-arrival"],
   "component": "list",
   "skeleton": true,
+  "ignoreExtras": ["*"],
   "contentFragmentFolderRef": {
     "property": "folder",
     "collect": [
@@ -12,7 +13,7 @@
   "fields": [
     { "target": "items", "from": "skus", "default": [] },
     { "target": "limit", "from": "limit", "type": "number", "default": 5 },
-    { "target": "filter", "from": "_categories", "type": "categoryPath", "default": "" },
+    { "target": "filter", "from": "_categories", "type": "categoryRoot", "default": "" },
     { "target": "layout", "from": "layout",
       "map": { "horizontal": "horizontal", "vertical": "vertical/grid" },
       "default": "horizontal" },
