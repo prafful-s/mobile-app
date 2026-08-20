@@ -78,18 +78,37 @@ class FieldRuleTest {
     }
 
     @Test
-    @DisplayName("categoryRoot: top-level segment of first tag, title-cased, single string")
+    @DisplayName("categoryRoot: majority vote across items, ignore prefix-only tags, tie-break by first appearance")
     void categoryRoot() {
         final FieldRule rule = FieldRule.of(Map.of(
                 "target", "filter", "from", "cats", "type", "categoryRoot"));
-        // First fragment's tag list ordered as author placed them; take root of first tag.
+        // Five items, all Men-rooted -> "Men".
         assertEquals("Men", rule.fromSource(
-                Map.of("cats", List.of("lumaproducts:men/tops", "lumaproducts:men/bottoms")),
+                Map.of("cats", List.of(
+                        "lumaproducts:men/tops",
+                        "lumaproducts:men/tops",
+                        "lumaproducts:men/bottoms",
+                        "lumaproducts:men/bottoms",
+                        "lumaproducts:men/bottoms")),
                 Map.of()));
-        // Root-only tag (no '/') passes through with hyphens turned to spaces + title case.
+        // Mixed with a stray Women item, Men wins by majority.
+        assertEquals("Men", rule.fromSource(
+                Map.of("cats", List.of(
+                        "lumaproducts:men/tops",
+                        "lumaproducts:women/tops",
+                        "lumaproducts:men/bottoms",
+                        "lumaproducts:men/bottoms")),
+                Map.of()));
+        // Prefix-only garbage tag contributes no vote so the real category still wins.
+        assertEquals("Men", rule.fromSource(
+                Map.of("cats", List.of(
+                        "luma-products:,luma-products:sample-tag-1,lumaproducts:men/tops",
+                        "lumaproducts:men/bottoms")),
+                Map.of()));
+        // Hyphenated single-segment tag (no '/') passes through as title-cased words.
         assertEquals("New Luma Yoga Collection", rule.fromSource(
                 Map.of("cats", List.of("lumaproducts:new-luma-yoga-collection")), Map.of()));
-        // Empty list resolves to null via blank-to-null; the caller falls back to default.
+        // Empty input -> null (blank-to-null), caller falls back to default.
         assertEquals(null, rule.fromSource(Map.of(), Map.of()));
     }
 

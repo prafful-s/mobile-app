@@ -75,11 +75,14 @@ final class FieldRule {
     private static final String TYPE_CATEGORY_PATH = "categoryPath";
 
     /**
-     * The top-level segment of the first taxonomy tag, title-cased - the single-word category the
-     * mobile client uses as a filter expression (e.g. {@code Men} matches any product whose
-     * {@code category} starts with {@code Men}). {@code lumaproducts:men/tops} becomes {@code Men},
-     * {@code lumaproducts:new-luma-yoga-collection} becomes {@code New Luma Yoga Collection}. Later
-     * tags and later segments are ignored on purpose - the client wants a single anchor, not a path.
+     * The single top-level category the mobile client uses as a filter expression (e.g. {@code Men}
+     * matches any product whose {@code category} starts with {@code Men}). Runs a majority vote
+     * across every input element: each element (one Content Fragment's tag string, possibly
+     * comma-joined multi-value) contributes its first tag's first segment, title-cased and with
+     * hyphens turned to spaces. The most frequent segment wins; ties break by first appearance so
+     * the output is deterministic. Blank/prefix-only tags (e.g. {@code luma-products:}) contribute
+     * no vote. Later segments after the first {@code /} are ignored on purpose - one anchor, not a
+     * path.
      */
     private static final String TYPE_CATEGORY_ROOT = "categoryRoot";
 
@@ -399,27 +402,62 @@ final class FieldRule {
         } else if (value instanceof Object[]) {
             items = java.util.Arrays.asList((Object[]) value);
         } else {
+            // A scalar: each comma-split segment counts as one item's vote.
             items = java.util.Arrays.asList(String.valueOf(value).split(","));
         }
+        // Majority vote across every item. LinkedHashMap keeps first-seen order so a tie breaks
+        // deterministically toward the first appearance.
+        final Map<String, Integer> votes = new java.util.LinkedHashMap<>();
         for (final Object item : items) {
             if (item == null) {
                 continue;
             }
-            for (final String raw : String.valueOf(item).split(",")) {
-                final String tag = raw.trim();
-                if (tag.isEmpty()) {
-                    continue;
-                }
-                final String body = tag.indexOf(':') >= 0 ? StringUtils.substringAfter(tag, ":") : tag;
-                final int slash = body.indexOf('/');
-                final String root = (slash < 0 ? body : body.substring(0, slash))
-                        .replace('-', ' ').trim();
-                if (!root.isEmpty()) {
-                    return titleCase(root);
-                }
+            final String root = firstRoot(String.valueOf(item));
+            if (!root.isEmpty()) {
+                votes.merge(root, 1, Integer::sum);
             }
         }
-        return "";
+        String winner = "";
+        int best = 0;
+        for (final Map.Entry<String, Integer> vote : votes.entrySet()) {
+            if (vote.getValue() > best) {
+                best = vote.getValue();
+                winner = vote.getKey();
+            }
+        }
+        return winner;
+    }
+
+    /**
+     * One item's contribution to a {@link #TYPE_CATEGORY_ROOT} vote: the first-segment of the most
+     * category-shaped tag inside a possibly comma-joined multi-value tag string, title-cased with
+     * hyphens turned to spaces. Prefers a tag whose body contains a {@code /} (a real
+     * {@code Men/Tops}-style category path) over a flat marker tag ({@code sample-tag-1}) so noise
+     * tags on the same fragment cannot outvote the category itself. Falls back to the first
+     * non-empty tag when nothing has a slash. Empty when no tag has a usable root.
+     */
+    private static String firstRoot(final String multiTag) {
+        String fallback = "";
+        for (final String raw : multiTag.split(",")) {
+            final String tag = raw.trim();
+            if (tag.isEmpty()) {
+                continue;
+            }
+            final String body = tag.indexOf(':') >= 0 ? StringUtils.substringAfter(tag, ":") : tag;
+            final int slash = body.indexOf('/');
+            final String head = (slash < 0 ? body : body.substring(0, slash))
+                    .replace('-', ' ').trim();
+            if (head.isEmpty()) {
+                continue;
+            }
+            if (slash >= 0) {
+                return titleCase(head);
+            }
+            if (fallback.isEmpty()) {
+                fallback = titleCase(head);
+            }
+        }
+        return fallback;
     }
 
     /** See {@link #TYPE_CSV}. */
