@@ -126,7 +126,7 @@ class ProductCardMappingTest {
 
         final Map<String, Object> styles = map(exported.get("styles"));
         assertEquals(8, ((Number) styles.get("gap")).intValue());
-        assertEquals(8, ((Number) styles.get("padding")).intValue());
+        assertEquals(12, ((Number) styles.get("borderRadius")).intValue());
     }
 
     @Test

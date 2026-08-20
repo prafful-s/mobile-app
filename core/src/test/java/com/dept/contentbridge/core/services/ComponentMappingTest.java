@@ -193,7 +193,7 @@ class ComponentMappingTest {
 
         final Map<String, Object> styles = map(exported.get("styles"));
         assertEquals(8, ((Number) styles.get("gap")).intValue(), "every card carries a gap of 8");
-        assertEquals(8, ((Number) styles.get("padding")).intValue(), "every card carries a padding of 8");
+        assertEquals(12, ((Number) styles.get("borderRadius")).intValue(), "every card carries a borderRadius of 12");
     }
 
     @Test
@@ -252,7 +252,7 @@ class ComponentMappingTest {
 
         final Map<String, Object> styles = map(exported.get("styles"));
         assertEquals(8, ((Number) styles.get("gap")).intValue(), "the fallback keeps the card's gap");
-        assertEquals(8, ((Number) styles.get("padding")).intValue(), "the fallback keeps the card's padding");
+        assertFalse(styles.containsKey("padding"), "the card no longer forces its own padding");
     }
 
     @Test
