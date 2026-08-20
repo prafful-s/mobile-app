@@ -44,9 +44,6 @@ final class EnvelopeMeta {
     /** Suffix stripped from the AEM theme property when deriving a brand display label. */
     private static final Pattern THEME_SUFFIX = Pattern.compile("-theme$", Pattern.CASE_INSENSITIVE);
 
-    /** Page property holding the category/preset for a screen (e.g. "home", "article"). */
-    private static final String PN_PAGE_CATEGORY = "pageCategory";
-
     private EnvelopeMeta() {
         // static helpers only
     }
@@ -165,9 +162,11 @@ final class EnvelopeMeta {
      * @param screenKey  the key this screen is filed under, which is also its {@code name}
      * @param menu       the app menu, in order, so navigation membership and order are consistent
      *                   with what {@code meta.navigation.menu} already says
+     * @param rolePreset the preset implied by this screen's navigation role (login/registration/
+     *                   profile), or blank when it has none; an explicit {@code preset} prop wins
      */
     static Map<String, Object> screenMeta(final Page page, final Page root, final String screenKey,
-                                          final List<String> menu) {
+                                          final List<String> menu, final String rolePreset) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         final ValueMap props = page.getProperties();
 
@@ -178,10 +177,10 @@ final class EnvelopeMeta {
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
         meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
-        // preset: explicit prop wins, then pageCategory fallback, else blank.
+        // preset: explicit prop wins, then the screen's navigation role, else blank.
         meta.put("preset", StringUtils.defaultString(StringUtils.defaultIfBlank(
                 props.get("preset", String.class),
-                props.get(PN_PAGE_CATEGORY, String.class))));
+                rolePreset)));
 
         meta.put("template", screenTemplate(props));
 

@@ -1,0 +1,38 @@
+{
+  "aep": {
+    "id": 11507,
+    "imsOrg": {
+      "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+      "name": "Adobe Demo System Shared",
+      "tenantID": "demosystem4",
+      "__typename": "IMSOrg",
+      "targetClientCode": "demosystem4"
+    },
+    "sandbox": "public-securfinancial",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "__typename": "AEP",
+    "sandboxName": "public-securfinancial"
+  },
+  "imsOrg": {
+    "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "name": "Adobe Demo System Shared",
+    "tenantID": "demosystem4",
+    "__typename": "IMSOrg",
+    "targetClientCode": "demosystem4"
+  },
+  "launch": {
+    "id": 8664,
+    "type": "mobile",
+    "aepID": 11507,
+    "appID": "59610d662d36/76e5c0ade5eb/launch-f096dc76d62a-development",
+    "appId": "59610d662d36/76e5c0ade5eb/launch-f096dc76d62a-development",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "companyId": "CO248bee8aabe04648b1421ee94f8e416b",
+    "createdAt": 1649762771104,
+    "__typename": "Launch",
+    "propertyID": "PR4b8b2aefbdf8475da4d857b793d50625",
+    "sandboxName": "public-securfinancial",
+    "propertyName": "Securfinacial (DO NOT DELETE) (mobile)",
+    "primarySolution": "AEP"
+  }
+}

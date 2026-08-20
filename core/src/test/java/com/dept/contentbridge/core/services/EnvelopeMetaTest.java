@@ -279,23 +279,29 @@ class EnvelopeMetaTest {
     }
 
     @Test
-    @DisplayName("screen preset comes from pageCategory when not explicitly set as preset")
-    void screenPresetFromPageCategory() {
-        context.create().page(HOME + "/insurance", "", Map.of(
-                "jcr:title", "Insurance",
-                "pageCategory", "article"));
+    @DisplayName("screen preset is derived from the screen's navigation role")
+    void screenPresetFromNavigationRole() {
+        context.create().page(HOME + "/my-login", "", Map.of("jcr:title", "Login"));
+        context.create().page(HOME + "/my-register", "", Map.of("jcr:title", "Register"));
+        context.resourceResolver().getResource(HOME + "/jcr:content")
+                .adaptTo(ModifiableValueMap.class)
+                .putAll(Map.of("loginScreen", "my-login", "registrationScreen", "my-register"));
 
-        assertEquals("article", screenMeta("insurance").get("preset"));
+        assertEquals("login", screenMeta("my-login").get("preset"));
+        assertEquals("registration", screenMeta("my-register").get("preset"));
+        assertEquals("", screenMeta("offers").get("preset"), "no role, no preset");
     }
 
     @Test
-    @DisplayName("explicit preset property wins over pageCategory")
-    void explicitPresetWinsOverPageCategory() {
-        context.create().page(HOME + "/login", "", Map.of(
+    @DisplayName("an explicit preset property wins over the navigation role")
+    void explicitPresetWinsOverRole() {
+        context.create().page(HOME + "/my-login", "", Map.of(
                 "jcr:title", "Login",
-                "preset", "login",
-                "pageCategory", "article"));
+                "preset", "custom"));
+        context.resourceResolver().getResource(HOME + "/jcr:content")
+                .adaptTo(ModifiableValueMap.class)
+                .put("loginScreen", "my-login");
 
-        assertEquals("login", screenMeta("login").get("preset"));
+        assertEquals("custom", screenMeta("my-login").get("preset"));
     }
 }

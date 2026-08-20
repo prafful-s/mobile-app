@@ -71,6 +71,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private ComponentTreeWalker walker;
     private SiteHostResolver hostResolver;
     private SiteBranding siteBranding;
+    private SiteProfileViewer siteProfileViewer;
+    private SiteIntegrations siteIntegrations;
     private ProductCatalog productCatalog;
 
     @Activate
@@ -91,6 +93,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 new StyleResolver(config.styleTokens()), ComponentMappings.load());
         this.hostResolver = new SiteHostResolver(authorHostSegment, publishHostSegment);
         this.siteBranding = SiteBranding.load();
+        this.siteProfileViewer = SiteProfileViewer.load();
+        this.siteIntegrations = SiteIntegrations.load();
         this.productCatalog = new ProductCatalog(ProductMappings.load());
     }
 
@@ -145,24 +149,24 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // can be a screen without being in the menu - a plan detail page reached from a card, say -
         // and screen meta records that as includeInNavigation: false.
         final List<String> menu = buildMenu(menuPages(homeRoot));
+        final Map<String, Object> navigation = buildNavigation(rootProps, menu, screenList, homeRoot);
+        final Map<String, String> screenPresets = screenPresets(navigation);
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
 
         final Map<String, Object> app = new LinkedHashMap<>();
         app.put(SchemaConstants.KEY_META,
-                buildMeta(envelopeSource, homeRoot, appId, rootProps, menu, screenList));
+                buildMeta(envelopeSource, homeRoot, appId, rootProps, navigation));
         // No AEM source for either yet, but the target shape is fixed, so a client can rely on
         // the keys being present rather than testing for them.
         app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_SCREENS,
-                buildScreens(screenList, homeRoot, assetHost, opts, menu));
+                buildScreens(screenList, homeRoot, assetHost, opts, menu, screenPresets));
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
-        app.put(SchemaConstants.KEY_INTEGRATIONS,
-                readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
-        app.put(SchemaConstants.KEY_PROFILE_VIEWER,
-                readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON));
+        app.put(SchemaConstants.KEY_INTEGRATIONS, buildIntegrations(envelopeSource, extras));
+        app.put(SchemaConstants.KEY_PROFILE_VIEWER, buildProfileViewer(envelopeSource, extras));
 
         return app;
     }
@@ -170,10 +174,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /* ------------------------------------------------------------------ meta */
 
     private Map<String, Object> buildMeta(final Page root, final Page homeRoot, final String appId,
-                                          final ValueMap props, final List<String> menu,
-                                          final List<Page> screens) {
-        final Map<String, Object> navigation = buildNavigation(props, menu, screens, homeRoot);
-
+                                          final ValueMap props, final Map<String, Object> navigation) {
         // The entire meta is built in DSN reference field order via EnvelopeMeta. The nav page's
         // search block, when authored, takes over meta.rightIcon from the placeholders sheet - so a
         // header search icon can be configured by dropping a search block into the nav, no
@@ -183,13 +184,37 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 navPageRightIcon(homeRoot));
     }
 
+    /**
+     * The {@code preset} each screen carries, keyed by screen name, derived from the navigation
+     * roles rather than an authored page property. The screen the nav points at as its login,
+     * registration or profile destination is tagged {@code login}, {@code registration} or
+     * {@code profile} respectively - the same identity the client uses to switch on those screens.
+     * A screen with no navigation role gets no entry here and stays blank.
+     */
+    private static Map<String, String> screenPresets(final Map<String, Object> navigation) {
+        final Map<String, String> presets = new LinkedHashMap<>();
+        addScreenPreset(presets, navigation.get(SchemaConstants.PN_LOGIN_SCREEN), "login");
+        addScreenPreset(presets, navigation.get(SchemaConstants.PN_REGISTRATION_SCREEN), "registration");
+        addScreenPreset(presets, navigation.get(SchemaConstants.PN_PROFILE_SCREEN), "profile");
+        return presets;
+    }
+
+    private static void addScreenPreset(final Map<String, String> presets, final Object screenKey,
+                                        final String preset) {
+        if (screenKey instanceof String && StringUtils.isNotBlank((String) screenKey)) {
+            presets.putIfAbsent((String) screenKey, preset);
+        }
+    }
+
     private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu,
                                                 final List<Page> screens, final Page homeRoot) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
         navigation.put("loginScreen",
                 resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
-        navigation.put("profileScreen", props.get(SchemaConstants.PN_PROFILE_SCREEN, "user-details"));
+        // No dedicated profile page exists here, so profileScreen defaults to the registration page.
+        navigation.put("profileScreen",
+                resolveScreenRef(props, SchemaConstants.PN_PROFILE_SCREEN, "create-account", screens, homeRoot));
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
         navigation.put("registrationScreen",
@@ -242,7 +267,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private Map<String, Object> buildScreens(final List<Page> pages, final Page homeRoot,
                                             final String assetHost, final ExportOptions options,
-                                            final List<String> menu) {
+                                            final List<String> menu,
+                                            final Map<String, String> screenPresets) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         for (final Page page : pages) {
             final String key = screenKey(page);
@@ -253,7 +279,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 LOG.warn("Screen key '{}' from {} collides with an already-exported screen - "
                         + "overwriting it. Give one of the pages a distinct node name.", key, page.getPath());
             }
-            screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu));
+            screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu,
+                    screenPresets.getOrDefault(key, StringUtils.EMPTY)));
         }
         return screens;
     }
@@ -364,10 +391,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     private Map<String, Object> buildScreen(final Page page, final Page root, final String assetHost,
-                                           final ExportOptions options, final List<String> menu) {
+                                           final ExportOptions options, final List<String> menu,
+                                           final String rolePreset) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
-        screen.put(SchemaConstants.KEY_META, EnvelopeMeta.screenMeta(page, root, screenKey(page), menu));
+        screen.put(SchemaConstants.KEY_META,
+                EnvelopeMeta.screenMeta(page, root, screenKey(page), menu, rolePreset));
         // DSN reference shape: meta, editor, content.
         // The editor block carries canvas layout (zIndex/position) authored in DSN Studio;
         // AEM has no equivalent, so a zero-valued skeleton keeps the key shape fixed without
@@ -424,6 +453,36 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return kept;
     }
 
+
+    /* -------------------------------------- integrations / profileViewer */
+
+    /**
+     * The {@code integrations} block: the shipped per-site object wins and is emitted verbatim,
+     * with the authored {@code integrationsJson} blob as the only fallback for sites that ship
+     * none. Mirrors {@link #buildBranding} - integrations is site configuration, not page content.
+     */
+    private Map<String, Object> buildIntegrations(final Page root, final Resource extras) {
+        final Map<String, Object> shipped =
+                siteIntegrations == null ? null : siteIntegrations.forPage(root);
+        if (shipped != null) {
+            return shipped;
+        }
+        return readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON);
+    }
+
+    /**
+     * The {@code profileViewer} block: the shipped per-site object wins and is emitted verbatim,
+     * with the authored {@code profileViewerJson} blob as the only fallback for sites that ship
+     * none. Mirrors {@link #buildBranding} - profileViewer is site configuration, not page content.
+     */
+    private Map<String, Object> buildProfileViewer(final Page root, final Resource extras) {
+        final Map<String, Object> shipped =
+                siteProfileViewer == null ? null : siteProfileViewer.forPage(root);
+        if (shipped != null) {
+            return shipped;
+        }
+        return readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON);
+    }
 
     /* -------------------------------------------------------------- branding */
 
