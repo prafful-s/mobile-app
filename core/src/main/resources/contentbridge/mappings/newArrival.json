@@ -2,16 +2,10 @@
   "match": ["new-arrival"],
   "component": "list",
   "skeleton": true,
-  "contentFragmentFolderRef": {
-    "property": "folder",
-    "collect": [
-      { "fields": ["category"], "injectAs": "_categories" }
-    ]
-  },
   "fields": [
     { "target": "items", "from": "skus", "default": [] },
     { "target": "limit", "from": "limit", "type": "number", "default": "" },
-    { "target": "filter", "from": "_categories", "type": "categoryTokens", "default": "" },
+    { "target": "filter", "first": ["filter", "category"], "default": "" },
     { "target": "layout", "from": "layout",
       "map": { "horizontal": "horizontal", "vertical": "vertical/grid" },
       "default": "horizontal" },
