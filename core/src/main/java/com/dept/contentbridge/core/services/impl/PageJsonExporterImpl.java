@@ -150,7 +150,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
         final Map<String, Object> app = new LinkedHashMap<>();
         app.put(SchemaConstants.KEY_META,
-                buildMeta(envelopeSource, homeRoot, appId, rootProps, menu));
+                buildMeta(envelopeSource, homeRoot, appId, rootProps, menu, screenList));
         // No AEM source for either yet, but the target shape is fixed, so a client can rely on
         // the keys being present rather than testing for them.
         app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
@@ -170,8 +170,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /* ------------------------------------------------------------------ meta */
 
     private Map<String, Object> buildMeta(final Page root, final Page homeRoot, final String appId,
-                                          final ValueMap props, final List<String> menu) {
-        final Map<String, Object> navigation = buildNavigation(props, menu);
+                                          final ValueMap props, final List<String> menu,
+                                          final List<Page> screens) {
+        final Map<String, Object> navigation = buildNavigation(props, menu, screens, homeRoot);
 
         // The entire meta is built in DSN reference field order via EnvelopeMeta. The nav page's
         // search block, when authored, takes over meta.rightIcon from the placeholders sheet - so a
@@ -182,16 +183,51 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 navPageRightIcon(homeRoot));
     }
 
-    private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu) {
+    private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu,
+                                                final List<Page> screens, final Page homeRoot) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
-        navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "login"));
+        navigation.put("loginScreen",
+                resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
         navigation.put("profileScreen", props.get(SchemaConstants.PN_PROFILE_SCREEN, "user-details"));
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
         navigation.put("registrationScreen",
-                props.get(SchemaConstants.PN_REGISTRATION_SCREEN, "registration"));
+                resolveScreenRef(props, SchemaConstants.PN_REGISTRATION_SCREEN, "create-account", screens, homeRoot));
         return navigation;
+    }
+
+    /**
+     * The screen an authored property names, or - when none is authored - the screen whose own
+     * content actually carries the given form, found by scanning rather than hard-coding a page
+     * name. The home screen and any {@code *-test} page are skipped; a page named exactly after the
+     * form (e.g. {@code sign-in}) wins over any other page carrying it, so the canonical screen is
+     * chosen regardless of authoring order. Falls back to the form name itself when none carries it.
+     */
+    private String resolveScreenRef(final ValueMap props, final String property,
+                                    final String formName, final List<Page> screens,
+                                    final Page homeRoot) {
+        final String authored = props.get(property, String.class);
+        if (StringUtils.isNotBlank(authored)) {
+            return authored;
+        }
+        String firstMatch = null;
+        for (final Page page : screens) {
+            if (page.equals(homeRoot) || page.getName().endsWith("-test")) {
+                continue;
+            }
+            if (!walker.formSchemasOn(page).contains(formName)) {
+                continue;
+            }
+            final String key = screenKey(page);
+            if (formName.equals(key)) {
+                return key;
+            }
+            if (firstMatch == null) {
+                firstMatch = key;
+            }
+        }
+        return firstMatch != null ? firstMatch : formName;
     }
 
     private List<String> buildMenu(final List<Page> screens) {

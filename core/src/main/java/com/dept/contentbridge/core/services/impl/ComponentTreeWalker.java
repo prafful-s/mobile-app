@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,6 +116,49 @@ final class ComponentTreeWalker {
         }
         prefixAssetsDeep(components, assetHost);
         return components;
+    }
+
+    /**
+     * The form schema names a page's own content carries, if any.
+     *
+     * <p>Lets navigation resolve which screen is the login/registration screen by looking for the
+     * page that actually holds a {@code sign-in} or {@code create-account} form, rather than
+     * hard-coding a page name. Scans the page's own component tree only - not its child pages - so
+     * an aggregating container that holds no form of its own yields an empty set.</p>
+     */
+    Set<String> formSchemasOn(final Page page) {
+        final Set<String> names = new LinkedHashSet<>();
+        final Resource container = resolveContainer(page);
+        if (container != null) {
+            collectFormSchemas(container, names, 0);
+        }
+        return names;
+    }
+
+    private void collectFormSchemas(final Resource parent, final Set<String> sink, final int depth) {
+        if (depth > MAX_COMPONENT_DEPTH) {
+            return;
+        }
+        for (final Resource child : parent.getChildren()) {
+            if (isSystemNode(child)) {
+                continue;
+            }
+            ContentBridgeComponent model = adaptStrictly(child);
+            if (model == null) {
+                model = new GenericComponent(child, urlService);
+            }
+            final String componentName = model.getComponentName();
+            final Map<String, Object> authored = model.getContent();
+            if (isFormBlock(child, componentName, authored)) {
+                final String formName = formNameOf(componentName, authored);
+                if (StringUtils.isNotBlank(formName)) {
+                    sink.add(formName);
+                }
+            }
+            if (child.hasChildren()) {
+                collectFormSchemas(child, sink, depth + 1);
+            }
+        }
     }
 
     /**
