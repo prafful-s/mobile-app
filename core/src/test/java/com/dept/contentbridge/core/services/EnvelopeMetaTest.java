@@ -167,11 +167,13 @@ class EnvelopeMetaTest {
     void screenShapeIsFixed() {
         final Map<String, Object> meta = screenMeta("en");
 
-        for (final String key : List.of("icon", "name", "event", "title", "preset", "template",
-                "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation")) {
+        for (final String key : List.of("icon", "iconInactive", "name", "event", "title", "preset",
+                "template", "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation")) {
             assertTrue(meta.containsKey(key), "screen meta is missing " + key + ": " + meta.keySet());
         }
-        assertEquals("", meta.get("icon"), "blank rather than absent");
+        // icon/iconInactive fall back to the fixed screen-key -> pair map when the page has none.
+        assertEquals("home", meta.get("icon"), "home screen falls back to the 'home' icon");
+        assertEquals("home-outline", meta.get("iconInactive"));
         assertEquals("", meta.get("event"));
         assertEquals("", meta.get("preset"));
         assertEquals("", meta.get("customEvent"));
