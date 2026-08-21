@@ -191,9 +191,7 @@ class ComponentMappingTest {
         assertFalse(content.containsKey("overlaybackground"), "authored extras do not pass through");
         assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
 
-        final Map<String, Object> styles = map(exported.get("styles"));
-        assertEquals(8, ((Number) styles.get("gap")).intValue(), "every card carries a gap of 8");
-        assertEquals(12, ((Number) styles.get("borderRadius")).intValue(), "every card carries a borderRadius of 12");
+        assertFalse(exported.containsKey("styles"), "cards carry no styles block");
     }
 
     @Test
@@ -250,9 +248,7 @@ class ComponentMappingTest {
         assertEquals("<h2>Mortgage Loans</h2>\n<p>Get an awesome mortgage offer.</p>", content.get("text"));
         assertFalse(content.containsKey("title"), "the card fields do not apply to the fallback");
 
-        final Map<String, Object> styles = map(exported.get("styles"));
-        assertEquals(8, ((Number) styles.get("gap")).intValue(), "the fallback keeps the card's gap");
-        assertFalse(styles.containsKey("padding"), "the card no longer forces its own padding");
+        assertFalse(exported.containsKey("styles"), "the fallback carries no styles block");
     }
 
     @Test

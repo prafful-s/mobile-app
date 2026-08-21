@@ -16,9 +16,5 @@
     { "target": "subtitleVariant", "const": "titleMedium" },
     { "target": "titleFontWeight", "const": "regular" },
     { "target": "subtitleFontWeight", "const": "regular" }
-  ],
-  "styles": [
-    { "target": "gap", "const": 8 },
-    { "target": "borderRadius", "from": "borderRadius", "type": "number", "default": 12 }
   ]
 }
