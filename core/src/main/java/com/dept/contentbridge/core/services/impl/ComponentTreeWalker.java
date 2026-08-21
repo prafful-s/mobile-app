@@ -584,26 +584,9 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
-        final Map<String, Object> styles = panelStyles(resource);
-        // A vertical panel of cards centres them unless the author said otherwise, so the client
-        // aligns them to the panel's centre line rather than letting them hug the leading edge.
-        if ("vertical".equals(meta.get(SchemaConstants.KEY_LAYOUT))
-                && containsCard(children) && "".equals(styles.get("alignItems"))) {
-            styles.put("alignItems", "center");
-        }
-        entry.put(SchemaConstants.KEY_STYLES, styles);
+        entry.put(SchemaConstants.KEY_STYLES, panelStyles(resource));
         entry.put(SchemaConstants.KEY_CONTENT, children);
         sink.add(entry);
-    }
-
-    private static boolean containsCard(final List<Map<String, Object>> children) {
-        for (final Map<String, Object> child : children) {
-            if (SchemaConstants.COMPONENT_CARD.equals(
-                    asMeta(child.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static boolean isBanner(final Map<String, Object> entry) {

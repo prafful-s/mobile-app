@@ -100,52 +100,32 @@ final class EnvelopeMeta {
                                                final MetaDefaults defaults) {
         final Map<String, Object> meta = new LinkedHashMap<>();
 
+        // DIAGNOSTIC: every top-level meta field is hardcoded to the reference contract's values,
+        // except navigation (still built from authoring), to validate whether the missing top-right
+        // icon is caused by the authored/placeholder mapping. Revert once confirmed.
         meta.put("id", appId);
-
-        putIfPlaceholder(meta, root, "docs");
-
-        meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
-
-        // brand: placeholders wins, then site-level config, then the theme name, then blank.
-        final String brand = SiteHostResolver.placeholder(root, "brand");
-        meta.put("brand", StringUtils.defaultString(StringUtils.defaultIfBlank(brand,
-                StringUtils.defaultIfBlank(defaults.brand(),
-                        themeToLabel(root.getProperties().get("theme", String.class))))));
-
-        meta.put("title", props.get(SchemaConstants.PN_APP_TITLE,
-                StringUtils.defaultIfBlank(root.getTitle(), root.getName())));
-
-        meta.put(SchemaConstants.KEY_LOCALE, locale(root));
-
-        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
-
-        // optional: template, vertical, rightIcon, thumbnail (placeholders win, then site-level config)
-        meta.put("template", StringUtils.defaultString(StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "template"), defaults.template())));
-        meta.put("vertical", StringUtils.defaultString(StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "vertical"), defaults.vertical())));
-        meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root, defaults));
-        meta.put("thumbnail", StringUtils.defaultString(StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "thumbnail"), defaults.thumbnail())));
-
+        meta.put("docs", "https://docs.adobedemo.com/projects/public-projects/securfinancial/mobile");
+        meta.put("type", "mobile-v2");
+        meta.put("brand", "SecurFinancial");
+        meta.put("title", "SecurFinancial Mobile App");
+        meta.put(SchemaConstants.KEY_LOCALE, "en-us");
+        meta.put("useCart", false);
+        meta.put("template", "mobile-v2/generic-fsi-v4");
+        meta.put("vertical", "FSI");
+        final Map<String, Object> hardRightIcon = new LinkedHashMap<>();
+        hardRightIcon.put("icon", "shopping-cart");
+        hardRightIcon.put("name", "shopping-cart");
+        hardRightIcon.put("target", "cart");
+        meta.put("rightIcon", hardRightIcon);
+        meta.put("thumbnail", "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/securfinancial2-mobile/thumbnail");
         meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
-
-        // description: placeholders wins, then jcr:description, then blank - always present.
-        meta.put("description", StringUtils.defaultString(StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "description"), root.getDescription())));
-
-        // Always-present fields the client switches on
-        meta.put("displayInbox", StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "displayInbox"), DEFAULT_DISPLAY_INBOX));
-        meta.put("authentication", StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "authentication"), DEFAULT_AUTHENTICATION));
-        meta.put("enableTargetRec", flag(SiteHostResolver.placeholder(root, "enableTargetRec")));
-        meta.put("brandingMboxName", StringUtils.defaultString(
-                SiteHostResolver.placeholder(root, "brandingMboxName")));
-        meta.put("targetRecMboxName", StringUtils.defaultString(
-                SiteHostResolver.placeholder(root, "targetRecMboxName")));
-        meta.put("enableBrandingTargeting",
-                flag(SiteHostResolver.placeholder(root, "enableBrandingTargeting")));
+        meta.put("description", "Retail banking app");
+        meta.put("displayInbox", "mainNavigation");
+        meta.put("authentication", "optional");
+        meta.put("enableTargetRec", false);
+        meta.put("brandingMboxName", "");
+        meta.put("targetRecMboxName", "");
+        meta.put("enableBrandingTargeting", false);
 
         return meta;
     }
