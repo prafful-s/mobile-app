@@ -68,6 +68,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private String publishHostSegment;
     private int maxDepth;
     private int cacheMaxAge;
+    private boolean overrideEnabled;
+    private String overridePropertyName;
     private EnvelopeMeta.MetaDefaults metaDefaults;
 
     // Built once at activation rather than per request: they are stateless, and rebuilding them for
@@ -91,6 +93,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.publishHostSegment = StringUtils.defaultIfBlank(config.publishHostSegment(), "publish");
         this.maxDepth = Math.max(1, config.maxDepth());
         this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
+        this.overrideEnabled = config.overrideEnabled();
+        this.overridePropertyName = StringUtils.defaultIfBlank(config.overridePropertyName(), "cbJson");
         this.metaDefaults = EnvelopeMeta.MetaDefaults.of(
                 config.brand(), config.thumbnail(), config.rightIcon(), config.rightIconTarget(),
                 config.template(), config.vertical());
@@ -121,6 +125,16 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Override
     public int getCacheMaxAge() {
         return cacheMaxAge;
+    }
+
+    @Override
+    public boolean isOverrideEnabled() {
+        return overrideEnabled;
+    }
+
+    @Override
+    public String getOverridePropertyName() {
+        return overridePropertyName;
     }
 
     @Override

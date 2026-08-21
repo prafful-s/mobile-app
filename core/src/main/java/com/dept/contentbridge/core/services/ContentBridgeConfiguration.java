@@ -122,4 +122,20 @@ public @interface ContentBridgeConfiguration {
             description = "Site-level value for meta.vertical, applied when the placeholders sheet sets no "
                     + "'vertical' (e.g. 'FSI'). An authored placeholder still wins.")
     String vertical() default "";
+
+    @AttributeDefinition(
+            name = "Raw JSON override",
+            description = "Local-iteration switch: when on, a node under an allowed root that carries a raw "
+                    + "JSON payload is served verbatim instead of being exported, letting you drop a "
+                    + "hand-crafted response at any /content path without a rebuild. The override only "
+                    + "triggers where the payload is present, so pages without it are unaffected. Turn off "
+                    + "in production if authors should not be able to shape the API response directly.")
+    boolean overrideEnabled() default true;
+
+    @AttributeDefinition(
+            name = "Raw JSON override property",
+            description = "Name of the String property read for the raw JSON override, checked on the "
+                    + "requested node and on its jcr:content child. A .json file at the requested path is "
+                    + "also served verbatim regardless of this name.")
+    String overridePropertyName() default "cbJson";
 }

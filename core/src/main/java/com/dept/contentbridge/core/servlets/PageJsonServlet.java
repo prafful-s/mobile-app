@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.resource.LoginException;
+import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.api.servlets.HttpConstants;
@@ -25,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import com.dept.contentbridge.core.services.ExportOptions;
 import com.dept.contentbridge.core.services.PageJsonExporter;
 import com.day.cq.wcm.api.Page;
-import com.day.cq.wcm.api.PageManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -118,22 +118,41 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
         // regardless of who is asking. 'allowedRoots' is the access boundary, not the caller's ACLs.
         try (ResourceResolver serviceResolver = openServiceResolver()) {
 
-            Page page = findPage(serviceResolver, path);
+            Resource resource = findResource(serviceResolver, path);
 
-            if (page == null) {
+            if (resource == null) {
                 // The service user could not see it. That is either a genuine 404 or a
                 // misconfigured grant, and the two are indistinguishable from here - so fall back to
                 // the caller, who on author is usually an author or admin and can read it fine.
-                final Page viaRequest = findPage(request.getResourceResolver(), path);
+                final Resource viaRequest = findResource(request.getResourceResolver(), path);
                 if (viaRequest != null) {
-                    LOG.warn("Page {} was not readable by service user '{}' but is readable by the "
+                    LOG.warn("Path {} was not readable by service user '{}' but is readable by the "
                             + "requesting user - serving it. Check that repoinit granted jcr:read on "
                             + "/content and that the user sits under system/cq:services.",
                             path, SUBSERVICE);
-                    page = viaRequest;
+                    resource = viaRequest;
                 }
             }
 
+            if (resource == null) {
+                writeError(response, SlingHttpServletResponse.SC_NOT_FOUND,
+                        "No resource exists at '" + path + "'.");
+                return;
+            }
+
+            // Local-iteration override: a hand-crafted JSON payload dropped on the node is served
+            // verbatim, so a response can be shaped at any /content path without a rebuild.
+            if (exporter.isOverrideEnabled()) {
+                final String raw = rawJsonOverride(resource, exporter.getOverridePropertyName());
+                if (raw != null) {
+                    setCacheHeader(response);
+                    response.setStatus(SlingHttpServletResponse.SC_OK);
+                    response.getWriter().write(raw);
+                    return;
+                }
+            }
+
+            final Page page = resource.adaptTo(Page.class);
             if (page == null) {
                 writeError(response, SlingHttpServletResponse.SC_NOT_FOUND,
                         "No page exists at '" + path + "'.");
@@ -142,12 +161,7 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
 
             // Screen content is reduced to the enabled component set (banner/card/htmlText/form).
             final Map<String, Object> payload = exporter.export(page, ExportOptions.of(true));
-            final int maxAge = exporter.getCacheMaxAge();
-            if (maxAge > 0) {
-                response.setHeader("Cache-Control", "max-age=" + maxAge);
-            } else {
-                response.setHeader("Cache-Control", "no-store");
-            }
+            setCacheHeader(response);
             response.setStatus(SlingHttpServletResponse.SC_OK);
             writer(request).writeValue(response.getWriter(), payload);
 
@@ -181,12 +195,67 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
         }
     }
 
-    private Page findPage(final ResourceResolver resolver, final String path) {
+    private Resource findResource(final ResourceResolver resolver, final String path) {
         if (resolver == null) {
             return null;
         }
-        final PageManager pageManager = resolver.adaptTo(PageManager.class);
-        return pageManager == null ? null : pageManager.getPage(path);
+        return resolver.getResource(path);
+    }
+
+    /**
+     * Returns a raw JSON payload authored on the resource, or null when there is none.
+     *
+     * <p>Checked, in order: the override String property on the node, the same property on its
+     * {@code jcr:content} child, and a {@code .json} file at the path. The payload is served exactly
+     * as stored, so it is the author's responsibility that it is valid JSON.</p>
+     */
+    private String rawJsonOverride(final Resource resource, final String propertyName) {
+        final String onNode = resource.getValueMap().get(propertyName, String.class);
+        if (StringUtils.isNotBlank(onNode)) {
+            return onNode;
+        }
+        final Resource content = resource.getChild("jcr:content");
+        if (content != null) {
+            final String onContent = content.getValueMap().get(propertyName, String.class);
+            if (StringUtils.isNotBlank(onContent)) {
+                return onContent;
+            }
+        }
+        return jsonFile(resource);
+    }
+
+    /**
+     * Streams a {@code .json} file at the resource as text, or null when the resource is not one.
+     * Guards on name and mime type so pointing the endpoint at a non-JSON binary falls through to
+     * the normal export rather than emitting bytes as a JSON body.
+     */
+    private String jsonFile(final Resource resource) {
+        final Resource content = resource.getChild("jcr:content");
+        final String mime = content == null ? null
+                : content.getValueMap().get("jcr:mimeType", String.class);
+        final boolean looksJson = StringUtils.endsWithIgnoreCase(resource.getName(), ".json")
+                || StringUtils.equalsIgnoreCase(mime, CONTENT_TYPE);
+        if (!looksJson) {
+            return null;
+        }
+        try (java.io.InputStream in = resource.adaptTo(java.io.InputStream.class)) {
+            if (in == null) {
+                return null;
+            }
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (final IOException e) {
+            LOG.warn("Could not read JSON override file at {}", resource.getPath(), e);
+            return null;
+        }
+    }
+
+    private void setCacheHeader(final SlingHttpServletResponse response) {
+        final int maxAge = exporter.getCacheMaxAge();
+        if (maxAge > 0) {
+            response.setHeader("Cache-Control", "max-age=" + maxAge);
+        } else {
+            response.setHeader("Cache-Control", "no-store");
+        }
     }
 
     private com.fasterxml.jackson.databind.ObjectWriter writer(final SlingHttpServletRequest request) {

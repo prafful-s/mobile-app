@@ -96,4 +96,18 @@ class PageJsonServletTest {
 
         assertEquals(HttpServletResponse.SC_NOT_FOUND, context.response().getStatus());
     }
+
+    @Test
+    @DisplayName("a node carrying a cbJson property is served verbatim, skipping the exporter")
+    void rawJsonOverrideServedVerbatim() throws Exception {
+        final String raw = "{\"meta\":{\"id\":\"hand-crafted\"},\"content\":[]}";
+        context.create().resource("/content/contentbridge/us/en/override-demo", "cbJson", raw);
+
+        context.request().setParameterMap(Map.of("path", "/content/contentbridge/us/en/override-demo"));
+        servlet.doGet(context.request(), context.response());
+
+        assertEquals(HttpServletResponse.SC_OK, context.response().getStatus());
+        assertEquals("max-age=300", context.response().getHeader("Cache-Control"));
+        assertEquals(raw, context.response().getOutputAsString());
+    }
 }

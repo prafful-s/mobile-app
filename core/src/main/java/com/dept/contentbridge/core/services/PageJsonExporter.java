@@ -43,4 +43,15 @@ public interface PageJsonExporter {
      * @return the configured Cache-Control max-age in seconds
      */
     int getCacheMaxAge();
+
+    /**
+     * @return true when a raw JSON payload found on the requested node should be served verbatim
+     *         instead of exporting the page
+     */
+    boolean isOverrideEnabled();
+
+    /**
+     * @return the String property name checked for a raw JSON override payload
+     */
+    String getOverridePropertyName();
 }
