@@ -100,10 +100,11 @@ final class EnvelopeMeta {
                                                final MetaDefaults defaults) {
         final Map<String, Object> meta = new LinkedHashMap<>();
 
-        // DIAGNOSTIC: every top-level meta field is hardcoded to the reference contract's values,
-        // except navigation (still built from authoring), to validate whether the missing top-right
-        // icon is caused by the authored/placeholder mapping. Revert once confirmed.
-        meta.put("id", appId);
+        // TEMPORARY DIAGNOSTIC: every top-level meta field is pinned to the securfinancial.json
+        // reference contract (navigation still built from authoring) to confirm, on a live deploy,
+        // that the login + AEP header icons appear when the payload matches the reference exactly.
+        // Revert to the dynamic sourcing below this block once confirmed.
+        meta.put("id", "securfinancial-mobile-public");
         meta.put("docs", "https://docs.adobedemo.com/projects/public-projects/securfinancial/mobile");
         meta.put("type", "mobile-v2");
         meta.put("brand", "SecurFinancial");
@@ -126,6 +127,72 @@ final class EnvelopeMeta {
         meta.put("brandingMboxName", "");
         meta.put("targetRecMboxName", "");
         meta.put("enableBrandingTargeting", false);
+
+        return meta;
+    }
+
+    /**
+     * Dynamic app-level meta assembly (currently bypassed by the diagnostic pin in
+     * {@link #buildFullV2Meta(Page, String, ValueMap, Map, Map, MetaDefaults)}). Restore by calling
+     * this from that method once the reference-exact deploy is confirmed.
+     */
+    private static Map<String, Object> buildDynamicV2Meta(final Page root, final String appId,
+                                               final ValueMap props,
+                                               final Map<String, Object> navigation,
+                                               final Map<String, Object> navRightIcon,
+                                               final MetaDefaults defaults) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+
+        // id: the DSN app keys platform features (login button, AEP profile-viewer icon) off this
+        // value, so an authored app id on the placeholders sheet wins over the root node name - the
+        // node name is the language segment (e.g. "en"), which is not a registered project id.
+        meta.put("id", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "id"), appId)));
+
+        putIfPlaceholder(meta, root, "docs");
+
+        meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
+
+        // brand: placeholders wins, then site-level config, then the theme name, then blank.
+        final String brand = SiteHostResolver.placeholder(root, "brand");
+        meta.put("brand", StringUtils.defaultString(StringUtils.defaultIfBlank(brand,
+                StringUtils.defaultIfBlank(defaults.brand(),
+                        themeToLabel(root.getProperties().get("theme", String.class))))));
+
+        meta.put("title", props.get(SchemaConstants.PN_APP_TITLE,
+                StringUtils.defaultIfBlank(root.getTitle(), root.getName())));
+
+        meta.put(SchemaConstants.KEY_LOCALE, locale(root));
+
+        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
+
+        // optional: template, vertical, rightIcon, thumbnail (placeholders win, then site-level config)
+        meta.put("template", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "template"), defaults.template())));
+        meta.put("vertical", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "vertical"), defaults.vertical())));
+        meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root, defaults));
+        meta.put("thumbnail", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "thumbnail"), defaults.thumbnail())));
+
+        meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
+
+        // description: placeholders wins, then jcr:description, then blank - always present.
+        meta.put("description", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "description"), root.getDescription())));
+
+        // Always-present fields the client switches on
+        meta.put("displayInbox", StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "displayInbox"), DEFAULT_DISPLAY_INBOX));
+        meta.put("authentication", StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "authentication"), DEFAULT_AUTHENTICATION));
+        meta.put("enableTargetRec", flag(SiteHostResolver.placeholder(root, "enableTargetRec")));
+        meta.put("brandingMboxName", StringUtils.defaultString(
+                SiteHostResolver.placeholder(root, "brandingMboxName")));
+        meta.put("targetRecMboxName", StringUtils.defaultString(
+                SiteHostResolver.placeholder(root, "targetRecMboxName")));
+        meta.put("enableBrandingTargeting",
+                flag(SiteHostResolver.placeholder(root, "enableBrandingTargeting")));
 
         return meta;
     }

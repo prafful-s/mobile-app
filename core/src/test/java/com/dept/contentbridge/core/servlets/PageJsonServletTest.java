@@ -56,7 +56,7 @@ class PageJsonServletTest {
         assertEquals(HttpServletResponse.SC_OK, context.response().getStatus());
         assertTrue(context.response().getContentType().startsWith("application/json"));
         assertEquals("max-age=300", context.response().getHeader("Cache-Control"));
-        assertEquals("en", ((Map<?, ?>) body().get("meta")).get("id"));
+        assertEquals("securfinancial-mobile-public", ((Map<?, ?>) body().get("meta")).get("id"));
     }
 
     @Test

@@ -53,8 +53,8 @@ class PageJsonExporterImplTest {
     }
 
     @Test
+    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     @DisplayName("meta mirrors the app id and reads navigation from page properties")
-    @Disabled("meta temporarily hardcoded to reference values for a top-right-icon diagnostic")
     void meta() {
         final Map<String, Object> meta = map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("meta"));
 
