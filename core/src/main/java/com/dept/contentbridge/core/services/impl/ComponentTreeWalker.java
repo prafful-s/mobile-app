@@ -582,9 +582,11 @@ final class ComponentTreeWalker {
         meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
         meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
 
+        final boolean vertical = "vertical".equals(meta.get(SchemaConstants.KEY_LAYOUT));
+
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
-        entry.put(SchemaConstants.KEY_STYLES, panelStyles(resource));
+        entry.put(SchemaConstants.KEY_STYLES, panelStyles(resource, vertical));
         entry.put(SchemaConstants.KEY_CONTENT, children);
         sink.add(entry);
     }
@@ -618,9 +620,9 @@ final class ComponentTreeWalker {
      * still win.
      */
     private static final Map<String, Object> PANEL_SPACING_DEFAULTS = Map.of(
-            "gap", 8, "margin", 8, "padding", 0);
+            "gap", 20, "margin", 40, "padding", 0);
 
-    private Map<String, Object> panelStyles(final Resource resource) {
+    private Map<String, Object> panelStyles(final Resource resource, final boolean vertical) {
         final Map<String, Object> styles = new LinkedHashMap<>();
         final ValueMap props = resource.getValueMap();
         for (final String key : PANEL_STYLE_KEYS) {
@@ -643,6 +645,11 @@ final class ComponentTreeWalker {
             if ("".equals(styles.get(spacing.getKey()))) {
                 styles.put(spacing.getKey(), spacing.getValue());
             }
+        }
+        // Vertical panels stack cards, and the reference contract distributes them with
+        // space-between; fill it in when neither the author nor a style token set it.
+        if (vertical && "".equals(styles.get("justifyContent"))) {
+            styles.put("justifyContent", "space-between");
         }
         return styles;
     }
