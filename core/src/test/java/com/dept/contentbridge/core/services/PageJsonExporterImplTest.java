@@ -62,7 +62,7 @@ class PageJsonExporterImplTest {
         assertEquals(Boolean.TRUE, meta.get("useCart"));
 
         final Map<String, Object> navigation = map(meta.get("navigation"));
-        assertEquals("login", navigation.get("loginScreen"));
+        assertEquals("sign-in", navigation.get("loginScreen"));
         assertEquals("user-details", navigation.get("profileScreen"));
         assertEquals("registration", navigation.get("registrationScreen"));
         assertEquals(List.of("account"), navigation.get("authorizedMenu"));

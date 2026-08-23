@@ -185,7 +185,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
-        navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "login"));
+        navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "sign-in"));
         navigation.put("profileScreen", props.get(SchemaConstants.PN_PROFILE_SCREEN, "user-details"));
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));

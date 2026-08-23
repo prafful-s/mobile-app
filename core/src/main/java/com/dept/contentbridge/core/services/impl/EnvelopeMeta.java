@@ -152,7 +152,7 @@ final class EnvelopeMeta {
 
         meta.put(SchemaConstants.KEY_LOCALE, locale(root));
 
-        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
+        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, true));
 
         // optional: template, vertical, rightIcon, thumbnail (from placeholders)
         putIfPlaceholder(meta, root, "template");
