@@ -424,10 +424,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // applyScreenExclusions=true drops unmapped components (fileUpload/iframe/loan-calculator/
         // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
         // needs 'search' visible so meta.rightIcon can pick it up.
-        final List<Map<String, Object>> content =
+        List<Map<String, Object>> content =
                 walker.componentsOf(page, assetHost, true, true);
         if ("cart".equals(key)) {
             addCartActionsPanel(content, page);
+        } else if ("review-order".equals(key)) {
+            content = reviewOrderContent(content, page);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -547,6 +549,87 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         content.put("variant", variant);
         content.put("alignment", alignment);
         return content;
+    }
+
+    /**
+     * The review-order screen's content, flattened to exactly {@code [cartSummary, confirm button]}
+     * with no wrapping panel - unlike the cart screen, the reference here has both as direct
+     * siblings. The authored {@code order-summary} block already maps onto {@code cartSummary}
+     * (see {@code orderSummary.json}); {@link #walker} still wraps its section into a panel like any
+     * other single-block section, so that wrapper is unwound here rather than emitted. The confirm
+     * button has no AEM block behind it at all - the LUMA MOBILE reference's static content, added
+     * verbatim. Falls back to the walker's own content (plus the button) if no cartSummary is found,
+     * so a re-authored page still gets something rather than an empty screen.
+     */
+    private List<Map<String, Object>> reviewOrderContent(final List<Map<String, Object>> content,
+                                                          final Page page) {
+        final Map<String, Object> cartSummary = findComponent(content, "cartSummary");
+        final List<Map<String, Object>> result = new ArrayList<>();
+        if (cartSummary != null) {
+            asMeta(cartSummary.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, 0);
+            result.add(cartSummary);
+        } else {
+            result.addAll(content);
+        }
+        result.add(confirmButton(page, result.size()));
+        return result;
+    }
+
+    /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> findComponent(final List<Map<String, Object>> tree,
+                                                      final String componentName) {
+        for (final Map<String, Object> component : tree) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (meta instanceof Map
+                    && componentName.equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                return component;
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                final Map<String, Object> found = findComponent((List<Map<String, Object>>) inner, componentName);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asMeta(final Object value) {
+        return (Map<String, Object>) value;
+    }
+
+    /** The review-order screen's static "Confirm" button - see {@link #reviewOrderContent}. */
+    private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID,
+                AbstractComponentModel.generateId(reviewOrderPage.getPath() + "/confirm"));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "button");
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("marginTop", "16");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("icon", "cash-check");
+        content.put("label", "Confirm");
+        content.put("events", "commerce.purchases");
+        content.put("formId", "checkoutForm");
+        content.put("linkTo", "home");
+        content.put("message", "Thank you for your purchase! Your order has been successfully "
+                + "placed. You'll receive a confirmation email shortly with tracking details. "
+                + "Enjoy your shopping experience!");
+        content.put("variant", "contained");
+        content.put("alignment", "center");
+        content.put("customEvent", "commerce.purchases");
+
+        final Map<String, Object> button = new LinkedHashMap<>();
+        button.put(SchemaConstants.KEY_META, meta);
+        button.put(SchemaConstants.KEY_STYLES, styles);
+        button.put(SchemaConstants.KEY_CONTENT, content);
+        return button;
     }
 
     /**
@@ -796,9 +879,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * The site's login page is authored as {@code sign-in}, but the LUMA MOBILE reference names
      * that screen {@code login} - the same key {@code navigation.loginScreen} points at - the same
      * way its {@code registration} screen's key matches {@code navigation.registrationScreen}
-     * exactly. Rewritten after kebab-casing so {@code Sign_In}, {@code sign-in}, etc. all resolve.
+     * exactly. Likewise the authored {@code order-summary} page is the reference's
+     * {@code review-order} screen. Rewritten after kebab-casing so {@code Sign_In}, {@code sign-in},
+     * etc. all resolve.
      */
-    private static final Map<String, String> SCREEN_KEY_ALIASES = Map.of("sign-in", "login");
+    private static final Map<String, String> SCREEN_KEY_ALIASES =
+            Map.of("sign-in", "login", "order-summary", "review-order");
 
     private static String screenKey(final Page page) {
         final String key = kebab(page.getName());

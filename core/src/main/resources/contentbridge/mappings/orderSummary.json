@@ -1,0 +1,19 @@
+{
+  "match": ["order-summary"],
+  "component": "cartSummary",
+  "skeleton": true,
+  "ignoreExtras": ["*"],
+  "fields": [
+    { "target": "label", "const": "TOTAl" },
+    { "target": "totalLabel", "const": "TOTAL" },
+    { "target": "showDiscount", "const": true },
+    { "target": "discountCodes", "const": [] },
+    { "target": "discountLabel", "const": "DISCOUNT" },
+    { "target": "shippingLabel", "const": "SHIPPING" },
+    { "target": "showPromoCode", "const": true },
+    { "target": "subtotalLabel", "const": "SUBTOTAL" },
+    { "target": "promoCodeLabel", "const": "PROMO CODE" },
+    { "target": "showShippingCharge", "const": "false" },
+    { "target": "configureDiscountCodes", "const": false }
+  ]
+}
