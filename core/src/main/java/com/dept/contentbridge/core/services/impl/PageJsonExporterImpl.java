@@ -430,6 +430,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             addCartActionsPanel(content, page);
         } else if ("review-order".equals(key)) {
             content = reviewOrderContent(content, page);
+        } else if ("checkout".equals(key)) {
+            patchCheckoutFormMeta(content);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -573,6 +575,39 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         result.add(confirmButton(page, result.size()));
         return result;
+    }
+
+    /**
+     * Overrides the checkout screen's form meta with the LUMA MOBILE reference's values.
+     * {@link FormBlockBuilder} derives {@code eventType}/{@code submitButtonLabel}/etc. purely from
+     * the authored {@code checkout-shipping} block's own properties (its {@code buttoneventtype}
+     * gives {@code eventType: "checkout"}) or its own hardcoded defaults - there is no authored
+     * source for the reference's {@code commerce.checkouts} event name, its {@code checkoutForm} id,
+     * or the {@code link} to the review-order screen after submit, so those are patched in here.
+     * The reset button is dropped entirely (the reference form has none) rather than left hidden.
+     * Fields (from {@code checkout-shipping.json}) and the component's own id/order are untouched.
+     */
+    private static void patchCheckoutFormMeta(final List<Map<String, Object>> content) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
+
+        // Rebuilt rather than mutated in place: the reference's key order (id, link, order, formId,
+        // component, ...) differs from FormBlockBuilder's default, and insertion order is part of
+        // this contract everywhere else in the export.
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, old.get(SchemaConstants.KEY_ID));
+        meta.put("link", "review-order");
+        meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
+        meta.put("formId", "checkoutForm");
+        meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
+        meta.put("eventType", "commerce.checkouts");
+        meta.put("webhookUrl", old.get("webhookUrl"));
+        meta.put("toastMessage", old.get("toastMessage"));
+        meta.put("submitButtonLabel", "Checkout");
+        form.put(SchemaConstants.KEY_META, meta);
     }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
