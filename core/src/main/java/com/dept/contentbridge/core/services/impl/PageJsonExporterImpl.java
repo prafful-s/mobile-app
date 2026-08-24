@@ -215,6 +215,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_LOGIN_SCREEN), "login");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_REGISTRATION_SCREEN), "registration");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_PROFILE_SCREEN), "profile");
+        // cart is a fixed system screen like the roles above, not authored - its preset per the
+        // LUMA MOBILE reference is its own screen key rather than the generic DEFAULT_SCREEN_PRESET.
+        presets.putIfAbsent("cart", "cart");
         return presets;
     }
 
@@ -414,31 +417,39 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                                            final String rolePreset) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
+        final String key = screenKey(page);
         screen.put(SchemaConstants.KEY_META,
-                EnvelopeMeta.screenMeta(page, root, screenKey(page), menu, rolePreset));
-        // DSN reference shape: meta, editor, content.
-        // The editor block carries canvas layout (zIndex/position) authored in DSN Studio;
-        // AEM has no equivalent, so a zero-valued skeleton keeps the key shape fixed without
-        // fabricating a real position - the client sees the shape it expects, and the zeros
-        // read as "unpositioned" rather than "missing".
-        final Map<String, Object> position = new LinkedHashMap<>();
-        position.put("top", 0);
-        position.put("left", 0);
-        final Map<String, Object> editor = new LinkedHashMap<>();
-        editor.put("zIndex", 0);
-        editor.put("position", position);
-        screen.put(SchemaConstants.KEY_EDITOR, editor);
+                EnvelopeMeta.screenMeta(page, root, key, menu, rolePreset));
+        screen.put(SchemaConstants.KEY_EDITOR, screenEditor(key));
         // applyScreenExclusions=true drops unmapped components (fileUpload/iframe/loan-calculator/
         // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
         // needs 'search' visible so meta.rightIcon can pick it up.
         final List<Map<String, Object>> content =
                 walker.componentsOf(page, assetHost, true, true);
-        if ("cart".equals(screenKey(page))) {
+        if ("cart".equals(key)) {
             content.add(cartActionsPanel(page, content.size()));
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
+    }
+
+    /**
+     * The screen's {@code editor} block: canvas layout (zIndex/position) authored in DSN Studio.
+     * AEM has no equivalent, so every screen gets a zero-valued skeleton by default - the client
+     * sees the shape it expects, and the zeros read as "unpositioned" rather than "missing". The
+     * cart screen is a fixed system screen like its action panel above; its specific canvas
+     * coordinates come from the LUMA MOBILE reference rather than any AEM source.
+     */
+    private static Map<String, Object> screenEditor(final String screenKey) {
+        final boolean isCart = "cart".equals(screenKey);
+        final Map<String, Object> position = new LinkedHashMap<>();
+        position.put("top", isCart ? 275 : 0);
+        position.put("left", isCart ? 600 : 0);
+        final Map<String, Object> editor = new LinkedHashMap<>();
+        editor.put("zIndex", isCart ? 5 : 0);
+        editor.put("position", position);
+        return editor;
     }
 
     /**
