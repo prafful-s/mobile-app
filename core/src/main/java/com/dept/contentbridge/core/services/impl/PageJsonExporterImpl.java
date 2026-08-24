@@ -43,9 +43,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
 
-    /** The mobile client renders at most this many navigation tabs. */
-    private static final int MAX_MENU_ITEMS = 5;
-
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
             "jcr:primaryType", "jcr:mixinTypes", "jcr:createdBy", "jcr:created",
@@ -279,11 +276,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private List<String> buildMenu(final List<Page> screens) {
         final List<String> menu = new ArrayList<>();
         for (final Page page : screens) {
-            // The mobile client renders at most MAX_MENU_ITEMS tabs; anything beyond is dropped
-            // here so screen meta (navigationOrder/includeInNavigation) stays consistent with it.
-            if (menu.size() >= MAX_MENU_ITEMS) {
-                break;
-            }
             menu.add(screenKey(page));
         }
         return menu;
