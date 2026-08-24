@@ -302,20 +302,24 @@ final class EnvelopeMeta {
         return out.length() == 0 ? value : out.toString();
     }
 
+    /** The LUMA MOBILE reference's static app-bar icon, used when a site configures none. */
+    private static final String DEFAULT_RIGHT_ICON = "shopping-cart";
+    private static final String DEFAULT_RIGHT_ICON_TARGET = "cart";
+
     /**
-     * The optional icon in the app bar. Emitted only when an author named one - a right icon with no
-     * target is a button that does nothing.
+     * The icon in the app bar. Authored placeholders (icon and target) win when set; otherwise the
+     * fixed reference default - a cart shortcut - so the app bar is never blank.
      */
     private static Map<String, Object> rightIcon(final Page root) {
-        final String icon = StringUtils.defaultString(SiteHostResolver.placeholder(root, "rightIcon"));
-        final String target = SiteHostResolver.placeholder(root, "rightIconTarget");
+        final String icon = StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "rightIcon"), DEFAULT_RIGHT_ICON);
+        final String target = StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "rightIconTarget"), DEFAULT_RIGHT_ICON_TARGET);
 
-        // Emitted even when unset, for the same reason as the flat keys: the shape is fixed. An
-        // icon with no name renders as nothing, which is what an unconfigured right icon should do.
         final Map<String, Object> rightIcon = new LinkedHashMap<>();
         rightIcon.put("icon", icon);
         rightIcon.put("name", icon);
-        rightIcon.put("target", StringUtils.defaultIfBlank(target, icon));
+        rightIcon.put("target", target);
         return rightIcon;
     }
 

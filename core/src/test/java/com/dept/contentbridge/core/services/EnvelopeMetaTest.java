@@ -130,21 +130,22 @@ class EnvelopeMetaTest {
     }
 
     @Test
-    @DisplayName("the right icon block is always present, blank when unconfigured")
+    @DisplayName("the right icon block is always present, defaults to the reference cart shortcut")
     void rightIconIsAlwaysPresent() {
-        // The shape is fixed, so the key exists either way. An icon with no name renders as
-        // nothing, which is what an unconfigured right icon should do.
+        // The shape is fixed, so the key exists either way. Unconfigured falls back to the
+        // LUMA MOBILE reference default rather than blank, so the app bar is never empty.
         final Map<String, Object> unset = map(appMeta().get("rightIcon"));
-        assertEquals("", unset.get("icon"));
-        assertEquals("", unset.get("target"));
+        assertEquals("shopping-cart", unset.get("icon"));
+        assertEquals("shopping-cart", unset.get("name"));
+        assertEquals("cart", unset.get("target"));
 
         context.create().page(SITE + "/placeholders", "", Map.of(
-                "rightIcon", "shopping-cart", "rightIconTarget", "cart"));
+                "rightIcon", "search-icon", "rightIconTarget", "search"));
 
         final Map<String, Object> icon = map(appMeta().get("rightIcon"));
-        assertEquals("shopping-cart", icon.get("icon"));
-        assertEquals("shopping-cart", icon.get("name"));
-        assertEquals("cart", icon.get("target"));
+        assertEquals("search-icon", icon.get("icon"));
+        assertEquals("search-icon", icon.get("name"));
+        assertEquals("search", icon.get("target"));
     }
 
     @Test
