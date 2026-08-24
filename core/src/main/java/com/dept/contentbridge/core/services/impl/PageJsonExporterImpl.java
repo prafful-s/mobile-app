@@ -23,6 +23,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dept.contentbridge.core.models.impl.AbstractComponentModel;
 import com.dept.contentbridge.core.schema.SchemaConstants;
 import com.dept.contentbridge.core.services.ContentBridgeConfiguration;
 import com.dept.contentbridge.core.services.ExportOptions;
@@ -432,9 +433,74 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // needs 'search' visible so meta.rightIcon can pick it up.
         final List<Map<String, Object>> content =
                 walker.componentsOf(page, assetHost, true, true);
+        if ("cart".equals(screenKey(page))) {
+            content.add(cartActionsPanel(page, content.size()));
+        }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
+    }
+
+    /**
+     * The cart screen's "Empty cart" / "Review order" action row. No AEM block backs it - the
+     * authored {@code cart} block already maps entirely onto {@code cartSummary} - so this is the
+     * LUMA MOBILE reference's static panel, appended verbatim rather than derived from content.
+     * Ids are generated the same way real components are, from a stable synthetic path, so a
+     * rebuild does not renumber them.
+     */
+    private Map<String, Object> cartActionsPanel(final Page cartPage, final int order) {
+        final String base = cartPage.getPath() + "/cart-actions";
+
+        final Map<String, Object> emptyCartButton = new LinkedHashMap<>();
+        emptyCartButton.put(SchemaConstants.KEY_META, buttonMeta(base + "/empty-cart", 0));
+        emptyCartButton.put(SchemaConstants.KEY_CONTENT, buttonContent(
+                "Empty cart", "emptyCart", "", "", "contained-tonal", "stretch"));
+
+        final Map<String, Object> reviewOrderButton = new LinkedHashMap<>();
+        reviewOrderButton.put(SchemaConstants.KEY_META, buttonMeta(base + "/review-order", 2));
+        reviewOrderButton.put(SchemaConstants.KEY_CONTENT, buttonContent(
+                "Review order", " --- ", "checkout", "", "contained", "stretch"));
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(base));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put("layout", "horizontal");
+        meta.put(SchemaConstants.KEY_COMPONENT, "panel");
+        meta.put("showBorder", false);
+        meta.put("itemsAlignment", "center");
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("gap", 16);
+        styles.put("padding", 16);
+        styles.put("alignItems", "center");
+        styles.put("justifyContent", "center");
+
+        final Map<String, Object> panel = new LinkedHashMap<>();
+        panel.put(SchemaConstants.KEY_META, meta);
+        panel.put(SchemaConstants.KEY_STYLES, styles);
+        panel.put(SchemaConstants.KEY_CONTENT, List.of(emptyCartButton, reviewOrderButton));
+        return panel;
+    }
+
+    private Map<String, Object> buttonMeta(final String syntheticPath, final int order) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(syntheticPath));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "button");
+        return meta;
+    }
+
+    private Map<String, Object> buttonContent(final String label, final String events,
+                                              final String linkTo, final String message,
+                                              final String variant, final String alignment) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("label", label);
+        content.put("events", events);
+        content.put("linkTo", linkTo);
+        content.put("message", message);
+        content.put("variant", variant);
+        content.put("alignment", alignment);
+        return content;
     }
 
     /**
