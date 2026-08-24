@@ -207,6 +207,73 @@ class ComponentMappingTest {
     }
 
     @Test
+    @DisplayName("a card's subtitle gathers <li> items, not only <p> paragraphs")
+    void cardSubtitleGathersListItems() {
+        // The student-loan card authors its detail as a bullet list, with no paragraph at all -
+        // before <li> was added to the selector this subtitle came back empty.
+        final Map<String, Object> exported = export(true,
+                "model", "card",
+                "image", "/content/dam/we-healthcare/en/images/loan.jpeg",
+                "text", "<h2>Student Loan</h2>\n"
+                        + "<ul><li>Loan rates beginning at 3.5% APR</li>"
+                        + "<li>Downpayment from 5%</li></ul>");
+
+        assertEquals("card", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals("Student Loan", content.get("title"));
+        assertEquals("Loan rates beginning at 3.5% APR\nDownpayment from 5%", content.get("subtitle"),
+                "each list item becomes a line of the subtitle, joined by newlines");
+    }
+
+    @Test
+    @DisplayName("a content panel fills in the reference spacing defaults and space-between for a vertical stack")
+    void panelCarriesSpacingDefaults() {
+        final Map<String, Object> panel = exportUnderSection(
+                new Object[] {},
+                "model", "card",
+                "image", "/content/dam/x/pic.jpg",
+                "text", "<h2>Hi</h2><p>Sub</p>");
+
+        assertEquals("panel", component(panel), "a section of cards is boxed in a panel");
+        final Map<String, Object> styles = map(panel.get("styles"));
+        assertEquals(20, ((Number) styles.get("gap")).intValue(), "gap defaults to 20");
+        assertEquals(20, ((Number) styles.get("margin")).intValue(), "margin defaults to 20");
+        assertEquals(0, ((Number) styles.get("padding")).intValue(), "padding defaults to 0");
+        assertEquals("space-between", styles.get("justifyContent"),
+                "a vertical panel distributes its cards with space-between");
+    }
+
+    @Test
+    @DisplayName("a style token mapping to a screen-position key (left/top) never reaches panel styles")
+    void panelStyleTokensDropNonPanelKeys() {
+        // A token that carries both a panel key and a screen-position key: the panel key overlays,
+        // the position key must be dropped - left/top belong to editor.position, not panel styles.
+        final PageJsonExporter tokenExporter = context.registerInjectActivateService(
+                new PageJsonExporterImpl(),
+                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
+                "styleTokens", new String[] {"pos-token=left:325;backgroundColor:#EEEEEE"});
+
+        context.build().resource(HOME + "/jcr:content/root/section",
+                "sling:resourceType", "core/franklin/components/section/v1/section",
+                "style", "pos-token");
+        context.build().resource(HOME + "/jcr:content/root/section/block",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "card",
+                "image", "/content/dam/x/pic.jpg",
+                "text", "<h2>Hi</h2><p>Sub</p>");
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> panel = list(map(map(tokenExporter.export(home,
+                ExportOptions.of(false)).get("screens")).get("en")).get("content")).get(0);
+
+        final Map<String, Object> styles = map(panel.get("styles"));
+        assertEquals("#EEEEEE", styles.get("backgroundColor"),
+                "a token mapping to a panel key still overlays");
+        assertFalse(styles.containsKey("left"),
+                "the token's left value is filtered out of panel styles");
+    }
+
+    @Test
     @DisplayName("a hero laid out image-right is rendered as a card, not a banner")
     void heroImageRightBecomesCard() {
         final Map<String, Object> exported = export(true,

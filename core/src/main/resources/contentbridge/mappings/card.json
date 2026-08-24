@@ -17,7 +17,7 @@
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
     { "target": "cardType", "const": "stacked" },
     { "target": "subtitle",
-      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true },
+      "extract": { "from": "text", "select": "p:not(:has(a)), li", "as": "text", "all": true },
       "nullable": true },
     { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitleVariant", "const": "titleMedium" },

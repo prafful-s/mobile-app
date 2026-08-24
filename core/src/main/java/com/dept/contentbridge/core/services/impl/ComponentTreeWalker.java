@@ -613,6 +613,10 @@ final class ComponentTreeWalker {
         "borderRadius", "backgroundColor", "height", "marginTop",
     };
 
+    /** The panel style contract, as a set - a style token may only contribute one of these keys;
+     * screen positioning keys such as {@code left}/{@code top} belong to editor.position, not here. */
+    private static final Set<String> PANEL_STYLE_KEY_SET = Set.of(PANEL_STYLE_KEYS);
+
     /**
      * Spacing the reference contract carries on every content panel. AEM sections rarely author
      * these, and without them the panel manages no spacing - cards touch and the client cannot
@@ -620,7 +624,7 @@ final class ComponentTreeWalker {
      * still win.
      */
     private static final Map<String, Object> PANEL_SPACING_DEFAULTS = Map.of(
-            "gap", 20, "margin", 40, "padding", 0);
+            "gap", 20, "margin", 20, "padding", 0);
 
     private Map<String, Object> panelStyles(final Resource resource, final boolean vertical) {
         final Map<String, Object> styles = new LinkedHashMap<>();
@@ -631,8 +635,12 @@ final class ComponentTreeWalker {
         }
         // The style resolver adds anything the panel picked up from its section's style tokens
         // (a design-system class mapping); we let those overlay the raw keys so an author's
-        // token overrides the fallback but not their explicit property.
+        // token overrides the fallback but not their explicit property. Only keys the panel style
+        // contract owns are taken - a token mapping to left/top targets editor.position, not a panel.
         for (final Map.Entry<String, Object> tokenStyle : styleResolver.stylesOf(resource).entrySet()) {
+            if (!PANEL_STYLE_KEY_SET.contains(tokenStyle.getKey())) {
+                continue;
+            }
             if ("".equals(styles.get(tokenStyle.getKey()))) {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
             } else if (!styles.containsKey(tokenStyle.getKey())) {
