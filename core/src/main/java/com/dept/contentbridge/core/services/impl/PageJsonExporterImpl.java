@@ -427,7 +427,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final List<Map<String, Object>> content =
                 walker.componentsOf(page, assetHost, true, true);
         if ("cart".equals(key)) {
-            content.add(cartActionsPanel(page, content.size()));
+            addCartActionsPanel(content, page);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -453,9 +453,44 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
+     * Nests the cart screen's static "Empty cart" / "Review order" action row inside the panel
+     * that already wraps {@code cartSummary} - the reference shape is one outer panel holding both,
+     * not two sibling panels. Falls back to appending at the top level when the page's content does
+     * not follow that shape (e.g. the cart block sits outside any section), so a re-authored cart
+     * page still gets the action row rather than silently losing it.
+     */
+    @SuppressWarnings("unchecked")
+    private void addCartActionsPanel(final List<Map<String, Object>> content, final Page cartPage) {
+        for (final Map<String, Object> component : content) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (!(meta instanceof Map)
+                    || !"panel".equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                continue;
+            }
+            final Object innerContent = component.get(SchemaConstants.KEY_CONTENT);
+            if (!(innerContent instanceof List)) {
+                continue;
+            }
+            final List<Map<String, Object>> inner = (List<Map<String, Object>>) innerContent;
+            final boolean holdsCartSummary = inner.stream().anyMatch(c -> {
+                final Object innerMeta = c.get(SchemaConstants.KEY_META);
+                return innerMeta instanceof Map
+                        && "cartSummary".equals(((Map<String, Object>) innerMeta).get(SchemaConstants.KEY_COMPONENT));
+            });
+            if (holdsCartSummary) {
+                inner.add(cartActionsPanel(cartPage, inner.size()));
+                return;
+            }
+        }
+        // No panel holding cartSummary found - fall back to a top-level sibling so the action row
+        // still appears somewhere rather than being dropped.
+        content.add(cartActionsPanel(cartPage, content.size()));
+    }
+
+    /**
      * The cart screen's "Empty cart" / "Review order" action row. No AEM block backs it - the
      * authored {@code cart} block already maps entirely onto {@code cartSummary} - so this is the
-     * LUMA MOBILE reference's static panel, appended verbatim rather than derived from content.
+     * LUMA MOBILE reference's static panel, added verbatim rather than derived from content.
      * Ids are generated the same way real components are, from a stable synthetic path, so a
      * rebuild does not renumber them.
      */
