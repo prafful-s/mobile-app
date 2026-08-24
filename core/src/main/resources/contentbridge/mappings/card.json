@@ -6,10 +6,6 @@
     "component": "htmlText",
     "fields": [
       { "target": "text", "first": ["text", "richText", "jcr:text"] }
-    ],
-    "styles": [
-      { "target": "gap", "const": 8 },
-      { "target": "padding", "const": 8 }
     ]
   },
   "fields": [
@@ -17,6 +13,7 @@
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "default": "#" },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
     { "target": "cardType", "const": "stacked" },
     { "target": "subtitle",
@@ -26,10 +23,6 @@
     { "target": "subtitleVariant", "const": "titleMedium" },
     { "target": "titleFontWeight", "const": "regular" },
     { "target": "subtitleFontWeight", "const": "regular" }
-  ],
-  "styles": [
-    { "target": "gap", "const": 8 },
-    { "target": "padding", "const": 8 }
   ]
 }
 

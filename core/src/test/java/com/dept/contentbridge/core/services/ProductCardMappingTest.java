@@ -124,9 +124,7 @@ class ProductCardMappingTest {
                 "link is the screen key with the fragment's sku appended as productId");
         assertEquals("stacked", content.get("cardType"));
 
-        final Map<String, Object> styles = map(exported.get("styles"));
-        assertEquals(8, ((Number) styles.get("gap")).intValue());
-        assertEquals(8, ((Number) styles.get("padding")).intValue());
+        assertFalse(exported.containsKey("styles"), "cards carry no styles block");
     }
 
     @Test

@@ -1,0 +1,103 @@
+{
+  "segments": {
+    "segmentFilter": [
+      "SecurFinancial"
+    ]
+  },
+  "identities": [
+    {
+      "id": "B3ZqMc$tz",
+      "path": "entity.$tenantId.identification.core.email",
+      "label": "Email"
+    }
+  ],
+  "eventGroups": [
+    {
+      "id": "gaVnjwaF2",
+      "label": "Product View",
+      "filter": "entity.commerce.productViews"
+    },
+    {
+      "id": "7ipqju4o2w",
+      "label": "Documents Send to Realtor",
+      "filter": "web.fsi.sendPreapproval"
+    },
+    {
+      "id": "ntqI_V6lmz",
+      "label": "Page Views",
+      "filter": "web.webpagedetails.pageViews"
+    },
+    {
+      "id": "VzLUFpKIDL",
+      "label": "Appointment Scheduled",
+      "filter": "mobile.scheduleAppointment"
+    },
+    {
+      "id": "9MXDMwdQWr",
+      "label": "Submit Credit Card Application Form",
+      "filter": "web.fsi.creditcard.apply"
+    },
+    {
+      "id": "9q_sfhVQu1",
+      "label": "Credit Card View",
+      "filter": "web.fsi.creditCard.view"
+    },
+    {
+      "id": "row-6-1747807632128",
+      "label": "Home Screen View - Mobile",
+      "filter": "mobile.homeScreenView"
+    },
+    {
+      "id": "row-7-1747807632128",
+      "label": "ATM Screen View - Mobile",
+      "filter": "mobile.atmScreenView"
+    },
+    {
+      "id": "row-8-1747807634439",
+      "label": "POI Entry ",
+      "filter": "poi.entry"
+    },
+    {
+      "id": "row-9-1747807648427",
+      "label": "POI Exit",
+      "filter": "poi.exit"
+    }
+  ],
+  "profileFields": [
+    {
+      "id": "BNoAQwMxq",
+      "path": "entity.person.name.firstName entity.person.name.lastName",
+      "label": "Name"
+    },
+    {
+      "id": "t3QTNQgEXU",
+      "path": "entity.mobilePhone.number",
+      "label": "Phone number"
+    },
+    {
+      "id": "d63fWTWb8t",
+      "path": "entity.homeAddress.street1 entity.homeAddress.city",
+      "label": "Address"
+    },
+    {
+      "id": "dWZmhB6IvA",
+      "path": "entity.person.birthDate",
+      "label": "Date of birth"
+    },
+    {
+      "id": "zRh5pJJwBd",
+      "path": "pushNotificationDetails[].token",
+      "label": "Push Token"
+    },
+    {
+      "id": "_dnU4mUae",
+      "path": "_demosystem4.individualCharacteristics.core.lastKnownLocation",
+      "label": "Last known location"
+    },
+    {
+      "id": "aBmsgEC5LV",
+      "path": "consents.marketing.preferred",
+      "label": "Preferred Channel"
+    }
+  ]
+}

@@ -42,11 +42,15 @@ final class EnvelopeMeta {
     private static final String DEFAULT_DISPLAY_INBOX = "mainNavigation";
     private static final String DEFAULT_SCREEN_TEMPLATE = "FreeformScreen";
 
+    /**
+     * Preset a content screen gets when neither an author nor a navigation role names one. The DSN
+     * app renders every screen against a preset; a blank preset leaves it with no layout to apply,
+     * so the reference falls back to {@code home} - the banner-plus-cards layout most screens use.
+     */
+    private static final String DEFAULT_SCREEN_PRESET = "home";
+
     /** Suffix stripped from the AEM theme property when deriving a brand display label. */
     private static final Pattern THEME_SUFFIX = Pattern.compile("-theme$", Pattern.CASE_INSENSITIVE);
-
-    /** Page property holding the category/preset for a screen (e.g. "home", "article"). */
-    private static final String PN_PAGE_CATEGORY = "pageCategory";
 
     /**
      * Per-screen icon pair {@code [icon, iconInactive]} from the LUMA MOBILE reference. The mobile
@@ -134,18 +138,37 @@ final class EnvelopeMeta {
                                                final ValueMap props,
                                                final Map<String, Object> navigation,
                                                final Map<String, Object> navRightIcon) {
+        return buildFullV2Meta(root, appId, props, navigation, navRightIcon, MetaDefaults.empty());
+    }
+
+    /**
+     * As {@link #buildFullV2Meta(Page, String, ValueMap, Map, Map)}, plus site-level defaults from
+     * OSGi configuration. These fill {@code brand}, {@code thumbnail} and {@code rightIcon} when the
+     * placeholders sheet leaves them blank, so a site can be branded without any authored content -
+     * an authored placeholder (or a nav search block, for the icon) still wins.
+     */
+    static Map<String, Object> buildFullV2Meta(final Page root, final String appId,
+                                               final ValueMap props,
+                                               final Map<String, Object> navigation,
+                                               final Map<String, Object> navRightIcon,
+                                               final MetaDefaults defaults) {
         final Map<String, Object> meta = new LinkedHashMap<>();
 
-        meta.put("id", appId);
+        // id: the DSN app keys platform features (login button, AEP profile-viewer icon) off this
+        // value, so an authored app id on the placeholders sheet wins over the root node name - the
+        // node name is the language segment (e.g. "en"), which is not a registered project id.
+        meta.put("id", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "id"), appId)));
 
         putIfPlaceholder(meta, root, "docs");
 
         meta.put("type", props.get(SchemaConstants.PN_APP_TYPE, SchemaConstants.DEFAULT_APP_TYPE));
 
-        // brand: placeholders wins, then the theme name, then blank - but always present.
+        // brand: placeholders wins, then site-level config, then the theme name, then blank.
         final String brand = SiteHostResolver.placeholder(root, "brand");
         meta.put("brand", StringUtils.defaultString(StringUtils.defaultIfBlank(brand,
-                themeToLabel(root.getProperties().get("theme", String.class)))));
+                StringUtils.defaultIfBlank(defaults.brand(),
+                        themeToLabel(root.getProperties().get("theme", String.class))))));
 
         meta.put("title", props.get(SchemaConstants.PN_APP_TITLE,
                 StringUtils.defaultIfBlank(root.getTitle(), root.getName())));
@@ -154,11 +177,14 @@ final class EnvelopeMeta {
 
         meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, true));
 
-        // optional: template, vertical, rightIcon, thumbnail (from placeholders)
-        putIfPlaceholder(meta, root, "template");
-        putIfPlaceholder(meta, root, "vertical");
-        meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root));
-        putIfPlaceholder(meta, root, "thumbnail");
+        // optional: template, vertical, rightIcon, thumbnail (placeholders win, then site-level config)
+        meta.put("template", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "template"), defaults.template())));
+        meta.put("vertical", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "vertical"), defaults.vertical())));
+        meta.put("rightIcon", navRightIcon != null ? navRightIcon : rightIcon(root, defaults));
+        meta.put("thumbnail", StringUtils.defaultString(StringUtils.defaultIfBlank(
+                SiteHostResolver.placeholder(root, "thumbnail"), defaults.thumbnail())));
 
         meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
 
@@ -219,9 +245,11 @@ final class EnvelopeMeta {
      * @param screenKey  the key this screen is filed under, which is also its {@code name}
      * @param menu       the app menu, in order, so navigation membership and order are consistent
      *                   with what {@code meta.navigation.menu} already says
+     * @param rolePreset the preset implied by this screen's navigation role (login/registration/
+     *                   profile), or blank when it has none; an explicit {@code preset} prop wins
      */
     static Map<String, Object> screenMeta(final Page page, final Page root, final String screenKey,
-                                          final List<String> menu) {
+                                          final List<String> menu, final String rolePreset) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         final ValueMap props = page.getProperties();
 
@@ -243,10 +271,11 @@ final class EnvelopeMeta {
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
         meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
-        // preset: explicit prop wins, then pageCategory fallback, else blank.
-        meta.put("preset", StringUtils.defaultString(StringUtils.defaultIfBlank(
+        // preset: explicit prop wins, then the screen's navigation role, else the content default.
+        meta.put("preset", StringUtils.firstNonBlank(
                 props.get("preset", String.class),
-                props.get(PN_PAGE_CATEGORY, String.class))));
+                rolePreset,
+                DEFAULT_SCREEN_PRESET));
 
         meta.put("template", screenTemplate(props));
 
@@ -263,43 +292,15 @@ final class EnvelopeMeta {
     }
 
     /**
-     * The screen template name. Preferred source is AEM's {@code cq:template} on the page's
-     * {@code jcr:content}, so the value reflects what the page was actually built from; a
-     * {@code /conf/.../templates/freeform-screen} path becomes {@code FreeformScreen} by taking
-     * the last segment and PascalCasing it. An explicit authored {@code template} property still
-     * wins as an override, and both fall back to {@link #DEFAULT_SCREEN_TEMPLATE} so the key is
-     * never blank.
+     * The screen template name the DSN app renders against. Every screen here is authored on the
+     * same Franklin page template, whose PascalCased last segment ({@code Page}) is not a template
+     * the app understands - it only knows the DSN screen templates ({@code FreeformScreen} and
+     * friends). So the value defaults to {@link #DEFAULT_SCREEN_TEMPLATE}, with an explicit authored
+     * {@code template} property winning as an override for the rare screen that needs a different one.
      */
     private static String screenTemplate(final ValueMap props) {
         final String override = props.get("template", String.class);
-        if (StringUtils.isNotBlank(override)) {
-            return override;
-        }
-        final String cqTemplate = props.get("cq:template", String.class);
-        if (StringUtils.isNotBlank(cqTemplate)) {
-            final String tail = StringUtils.substringAfterLast(cqTemplate, "/");
-            final String segment = StringUtils.isNotBlank(tail) ? tail : cqTemplate;
-            return pascalCase(segment);
-        }
-        return DEFAULT_SCREEN_TEMPLATE;
-    }
-
-    /** Converts a kebab / snake / space-separated token to PascalCase: {@code freeform-screen -> FreeformScreen}. */
-    private static String pascalCase(final String value) {
-        if (StringUtils.isBlank(value)) {
-            return value;
-        }
-        final StringBuilder out = new StringBuilder(value.length());
-        for (final String part : value.split("[-_\\s]+")) {
-            if (part.isEmpty()) {
-                continue;
-            }
-            out.append(Character.toUpperCase(part.charAt(0)));
-            if (part.length() > 1) {
-                out.append(part.substring(1).toLowerCase(Locale.ROOT));
-            }
-        }
-        return out.length() == 0 ? value : out.toString();
+        return StringUtils.isNotBlank(override) ? override : DEFAULT_SCREEN_TEMPLATE;
     }
 
     /** The LUMA MOBILE reference's static app-bar icon, used when a site configures none. */
@@ -310,11 +311,15 @@ final class EnvelopeMeta {
      * The icon in the app bar. Authored placeholders (icon and target) win when set; otherwise the
      * fixed reference default - a cart shortcut - so the app bar is never blank.
      */
-    private static Map<String, Object> rightIcon(final Page root) {
+    private static Map<String, Object> rightIcon(final Page root, final MetaDefaults defaults) {
+        // Placeholder wins, then site-level OSGi config, then the LUMA MOBILE reference's static
+        // cart shortcut - the app bar is never blank even for a site that configures neither.
         final String icon = StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "rightIcon"), DEFAULT_RIGHT_ICON);
+                SiteHostResolver.placeholder(root, "rightIcon"),
+                StringUtils.defaultIfBlank(defaults.rightIcon(), DEFAULT_RIGHT_ICON));
         final String target = StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "rightIconTarget"), DEFAULT_RIGHT_ICON_TARGET);
+                SiteHostResolver.placeholder(root, "rightIconTarget"),
+                StringUtils.defaultIfBlank(defaults.rightIconTarget(), DEFAULT_RIGHT_ICON_TARGET));
 
         final Map<String, Object> rightIcon = new LinkedHashMap<>();
         rightIcon.put("icon", icon);
@@ -356,5 +361,67 @@ final class EnvelopeMeta {
         final String base = THEME_SUFFIX.matcher(theme).replaceFirst("");
         final String label = StringUtils.isBlank(base) ? theme : base;
         return Character.toUpperCase(label.charAt(0)) + label.substring(1);
+    }
+
+    /**
+     * Site-level meta defaults sourced from OSGi configuration, used when the placeholders sheet
+     * leaves a field blank. Lets a site be branded through configuration rather than authored
+     * content.
+     */
+    static final class MetaDefaults {
+
+        private static final MetaDefaults EMPTY = new MetaDefaults("", "", "", "", "", "");
+
+        private final String brand;
+        private final String thumbnail;
+        private final String rightIcon;
+        private final String rightIconTarget;
+        private final String template;
+        private final String vertical;
+
+        private MetaDefaults(final String brand, final String thumbnail,
+                             final String rightIcon, final String rightIconTarget,
+                             final String template, final String vertical) {
+            this.brand = StringUtils.trimToEmpty(brand);
+            this.thumbnail = StringUtils.trimToEmpty(thumbnail);
+            this.rightIcon = StringUtils.trimToEmpty(rightIcon);
+            this.rightIconTarget = StringUtils.trimToEmpty(rightIconTarget);
+            this.template = StringUtils.trimToEmpty(template);
+            this.vertical = StringUtils.trimToEmpty(vertical);
+        }
+
+        static MetaDefaults of(final String brand, final String thumbnail,
+                               final String rightIcon, final String rightIconTarget,
+                               final String template, final String vertical) {
+            return new MetaDefaults(brand, thumbnail, rightIcon, rightIconTarget, template, vertical);
+        }
+
+        static MetaDefaults empty() {
+            return EMPTY;
+        }
+
+        String brand() {
+            return brand;
+        }
+
+        String thumbnail() {
+            return thumbnail;
+        }
+
+        String rightIcon() {
+            return rightIcon;
+        }
+
+        String rightIconTarget() {
+            return rightIconTarget;
+        }
+
+        String template() {
+            return template;
+        }
+
+        String vertical() {
+            return vertical;
+        }
     }
 }

@@ -13,6 +13,7 @@ import org.apache.sling.api.resource.ModifiableValueMap;
 
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -176,7 +177,7 @@ class EnvelopeMetaTest {
         assertEquals("home", meta.get("icon"), "home screen falls back to the 'home' icon");
         assertEquals("home-outline", meta.get("iconInactive"));
         assertEquals("", meta.get("event"));
-        assertEquals("", meta.get("preset"));
+        assertEquals("home", meta.get("preset"), "content default when no role or authored preset");
         assertEquals("", meta.get("customEvent"));
         assertFalse(meta.containsKey("thumbnail"), "not part of the reference contract");
     }
@@ -232,23 +233,23 @@ class EnvelopeMetaTest {
     }
 
     @Test
-    @DisplayName("template comes from cq:template's last segment, PascalCased")
-    void templateFromCqTemplate() {
+    @DisplayName("the Franklin page template maps to the DSN FreeformScreen, not \"Page\"")
+    void templateIgnoresCqTemplate() {
         context.create().page(SITE + "/us/en/map", "",
                 Map.of("jcr:title", "Map",
-                        "cq:template", "/conf/acme/settings/wcm/templates/map-screen"));
+                        "cq:template", "/libs/core/franklin/templates/page"));
 
-        assertEquals("MapScreen", screenMeta("map").get("template"),
-                "cq:template's last segment kebab-to-Pascal");
+        assertEquals("FreeformScreen", screenMeta("map").get("template"),
+                "the app only understands DSN screen templates, so cq:template is not surfaced");
     }
 
     @Test
-    @DisplayName("an authored template property still wins over cq:template")
+    @DisplayName("an authored template property still wins over the default")
     void authoredTemplateBeatsCqTemplate() {
         context.create().page(SITE + "/us/en/custom", "",
                 Map.of("jcr:title", "Custom",
                         "template", "CustomScreen",
-                        "cq:template", "/conf/acme/settings/wcm/templates/freeform-screen"));
+                        "cq:template", "/libs/core/franklin/templates/page"));
 
         assertEquals("CustomScreen", screenMeta("custom").get("template"));
     }
@@ -273,6 +274,51 @@ class EnvelopeMetaTest {
     }
 
     @Test
+    @DisplayName("brand falls back to the site-level config default when placeholders set none")
+    void brandFromConfigDefault() {
+        final PageJsonExporter configured = context.registerInjectActivateService(
+                new PageJsonExporterImpl(),
+                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
+                "brand", "SecurFinancial");
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
+
+        assertEquals("SecurFinancial", meta.get("brand"), "config brand fills in when nothing is authored");
+    }
+
+    @Test
+    @DisplayName("placeholders brand wins over the site-level config default")
+    void placeholdersBrandWinsOverConfig() {
+        context.create().page(SITE + "/placeholders", "", Map.of("brand", "Authored Brand"));
+
+        final PageJsonExporter configured = context.registerInjectActivateService(
+                new PageJsonExporterImpl(),
+                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
+                "brand", "Config Brand");
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
+
+        assertEquals("Authored Brand", meta.get("brand"), "an authored placeholder still wins");
+    }
+
+    @Test
+    @DisplayName("template and vertical fall back to the site-level config defaults")
+    void templateAndVerticalFromConfigDefault() {
+        final PageJsonExporter configured = context.registerInjectActivateService(
+                new PageJsonExporterImpl(),
+                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
+                "template", "mobile-v2/generic-fsi-v4", "vertical", "FSI");
+
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
+
+        assertEquals("mobile-v2/generic-fsi-v4", meta.get("template"), "config template fills in when unauthored");
+        assertEquals("FSI", meta.get("vertical"), "config vertical fills in when unauthored");
+    }
+
+    @Test
     @DisplayName("description falls back to jcr:description on the root page when not in placeholders")
     void descriptionFallbackFromPage() {
         context.resourceResolver().getResource(HOME + "/jcr:content")
@@ -282,23 +328,29 @@ class EnvelopeMetaTest {
     }
 
     @Test
-    @DisplayName("screen preset comes from pageCategory when not explicitly set as preset")
-    void screenPresetFromPageCategory() {
-        context.create().page(HOME + "/insurance", "", Map.of(
-                "jcr:title", "Insurance",
-                "pageCategory", "article"));
+    @DisplayName("screen preset is derived from the screen's navigation role")
+    void screenPresetFromNavigationRole() {
+        context.create().page(HOME + "/my-login", "", Map.of("jcr:title", "Login"));
+        context.create().page(HOME + "/my-register", "", Map.of("jcr:title", "Register"));
+        context.resourceResolver().getResource(HOME + "/jcr:content")
+                .adaptTo(ModifiableValueMap.class)
+                .putAll(Map.of("loginScreen", "my-login", "registrationScreen", "my-register"));
 
-        assertEquals("article", screenMeta("insurance").get("preset"));
+        assertEquals("login", screenMeta("my-login").get("preset"));
+        assertEquals("registration", screenMeta("my-register").get("preset"));
+        assertEquals("home", screenMeta("offers").get("preset"), "no role falls back to the content default");
     }
 
     @Test
-    @DisplayName("explicit preset property wins over pageCategory")
-    void explicitPresetWinsOverPageCategory() {
-        context.create().page(HOME + "/login", "", Map.of(
+    @DisplayName("an explicit preset property wins over the navigation role")
+    void explicitPresetWinsOverRole() {
+        context.create().page(HOME + "/my-login", "", Map.of(
                 "jcr:title", "Login",
-                "preset", "login",
-                "pageCategory", "article"));
+                "preset", "custom"));
+        context.resourceResolver().getResource(HOME + "/jcr:content")
+                .adaptTo(ModifiableValueMap.class)
+                .put("loginScreen", "my-login");
 
-        assertEquals("login", screenMeta("login").get("preset"));
+        assertEquals("custom", screenMeta("my-login").get("preset"));
     }
 }

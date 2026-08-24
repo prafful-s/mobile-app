@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,6 +116,49 @@ final class ComponentTreeWalker {
         }
         prefixAssetsDeep(components, assetHost);
         return components;
+    }
+
+    /**
+     * The form schema names a page's own content carries, if any.
+     *
+     * <p>Lets navigation resolve which screen is the login/registration screen by looking for the
+     * page that actually holds a {@code sign-in} or {@code create-account} form, rather than
+     * hard-coding a page name. Scans the page's own component tree only - not its child pages - so
+     * an aggregating container that holds no form of its own yields an empty set.</p>
+     */
+    Set<String> formSchemasOn(final Page page) {
+        final Set<String> names = new LinkedHashSet<>();
+        final Resource container = resolveContainer(page);
+        if (container != null) {
+            collectFormSchemas(container, names, 0);
+        }
+        return names;
+    }
+
+    private void collectFormSchemas(final Resource parent, final Set<String> sink, final int depth) {
+        if (depth > MAX_COMPONENT_DEPTH) {
+            return;
+        }
+        for (final Resource child : parent.getChildren()) {
+            if (isSystemNode(child)) {
+                continue;
+            }
+            ContentBridgeComponent model = adaptStrictly(child);
+            if (model == null) {
+                model = new GenericComponent(child, urlService);
+            }
+            final String componentName = model.getComponentName();
+            final Map<String, Object> authored = model.getContent();
+            if (isFormBlock(child, componentName, authored)) {
+                final String formName = formNameOf(componentName, authored);
+                if (StringUtils.isNotBlank(formName)) {
+                    sink.add(formName);
+                }
+            }
+            if (child.hasChildren()) {
+                collectFormSchemas(child, sink, depth + 1);
+            }
+        }
     }
 
     /**
@@ -629,20 +673,45 @@ final class ComponentTreeWalker {
             return;
         }
 
+        // A section whose only child is a banner must render full-bleed, so it is emitted as a
+        // direct sibling rather than boxed in a panel that would inset and constrain it.
+        if (children.size() == 1 && isBanner(children.get(0))) {
+            final Map<String, Object> banner = children.get(0);
+            asMeta(banner.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, sink.size());
+            sink.add(banner);
+            return;
+        }
+
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
         meta.put(SchemaConstants.KEY_ORDER, sink.size());
         meta.put(SchemaConstants.KEY_LAYOUT, layoutOf(resourceType));
         meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
-        // Reference contract carries showBorder on every panel meta. AEM has no equivalent
-        // property, so emit the target's own default rather than omit the key.
-        meta.put("showBorder", resource.getValueMap().get("showBorder", Boolean.FALSE));
+        // Reference contract carries showBorder/itemsFillWidth/wrapOverflowing on every panel
+        // meta. AEM has no equivalent property, so emit the target's own defaults rather than omit
+        // them - itemsFillWidth true is what stretches cards to the panel width.
+        final ValueMap panelProps = resource.getValueMap();
+        meta.put("showBorder", panelProps.get("showBorder", Boolean.FALSE));
+        meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
+        meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
+
+        final boolean vertical = "vertical".equals(meta.get(SchemaConstants.KEY_LAYOUT));
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
-        entry.put(SchemaConstants.KEY_STYLES, panelStyles(resource));
+        entry.put(SchemaConstants.KEY_STYLES, panelStyles(resource, vertical));
         entry.put(SchemaConstants.KEY_CONTENT, children);
         sink.add(entry);
+    }
+
+    private static boolean isBanner(final Map<String, Object> entry) {
+        return SchemaConstants.COMPONENT_BANNER.equals(asMeta(entry.get(SchemaConstants.KEY_META))
+                .get(SchemaConstants.KEY_COMPONENT));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asMeta(final Object meta) {
+        return meta instanceof Map ? (Map<String, Object>) meta : Collections.emptyMap();
     }
 
     /**
@@ -653,14 +722,20 @@ final class ComponentTreeWalker {
      * lose the author's intent.
      */
     private static final String[] PANEL_STYLE_KEYS = {
-        "gap", "margin", "alignItems", "justifyContent",
+        "gap", "margin", "padding", "alignItems", "justifyContent",
         "borderRadius", "backgroundColor", "height", "marginTop",
     };
 
-    /** Style keys never emitted on a panel, regardless of authored properties or section tokens. */
-    private static final Set<String> SUPPRESSED_PANEL_STYLES = Set.of("padding");
+    /**
+     * Spacing the reference contract carries on every content panel. AEM sections rarely author
+     * these, and without them the panel manages no spacing - cards touch and the client cannot
+     * size them, so images crop. Applied last, after authored values and style tokens, so both
+     * still win.
+     */
+    private static final Map<String, Object> PANEL_SPACING_DEFAULTS = Map.of(
+            "gap", 20, "margin", 40, "padding", 0);
 
-    private Map<String, Object> panelStyles(final Resource resource) {
+    private Map<String, Object> panelStyles(final Resource resource, final boolean vertical) {
         final Map<String, Object> styles = new LinkedHashMap<>();
         final ValueMap props = resource.getValueMap();
         for (final String key : PANEL_STYLE_KEYS) {
@@ -671,14 +746,23 @@ final class ComponentTreeWalker {
         // (a design-system class mapping); we let those overlay the raw keys so an author's
         // token overrides the fallback but not their explicit property.
         for (final Map.Entry<String, Object> tokenStyle : styleResolver.stylesOf(resource).entrySet()) {
-            if (SUPPRESSED_PANEL_STYLES.contains(tokenStyle.getKey())) {
-                continue;
-            }
             if ("".equals(styles.get(tokenStyle.getKey()))) {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
             } else if (!styles.containsKey(tokenStyle.getKey())) {
                 styles.put(tokenStyle.getKey(), tokenStyle.getValue());
             }
+        }
+        // The panel is the sole owner of card spacing, so fill any gap/margin/padding the author
+        // and tokens both left blank with the reference contract's values.
+        for (final Map.Entry<String, Object> spacing : PANEL_SPACING_DEFAULTS.entrySet()) {
+            if ("".equals(styles.get(spacing.getKey()))) {
+                styles.put(spacing.getKey(), spacing.getValue());
+            }
+        }
+        // Vertical panels stack cards, and the reference contract distributes them with
+        // space-between; fill it in when neither the author nor a style token set it.
+        if (vertical && "".equals(styles.get("justifyContent"))) {
+            styles.put("justifyContent", "space-between");
         }
         return styles;
     }

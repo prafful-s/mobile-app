@@ -6,6 +6,7 @@
   "fields": [
     { "target": "link", "from": "link", "default": "#" },
     { "target": "image", "from": "productImage" },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
     { "target": "title", "from": "productName" },
     { "target": "cardType", "const": "stacked" },
     { "target": "subtitle",
@@ -15,9 +16,5 @@
     { "target": "subtitleVariant", "const": "titleMedium" },
     { "target": "titleFontWeight", "const": "regular" },
     { "target": "subtitleFontWeight", "const": "regular" }
-  ],
-  "styles": [
-    { "target": "gap", "const": 8 },
-    { "target": "padding", "const": 8 }
   ]
 }

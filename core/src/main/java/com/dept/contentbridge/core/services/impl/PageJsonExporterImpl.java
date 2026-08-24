@@ -43,6 +43,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
 
+    /** The mobile client renders at most this many navigation tabs. */
+    private static final int MAX_MENU_ITEMS = 5;
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
             "jcr:primaryType", "jcr:mixinTypes", "jcr:createdBy", "jcr:created",
@@ -65,12 +68,17 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private String publishHostSegment;
     private int maxDepth;
     private int cacheMaxAge;
+    private boolean overrideEnabled;
+    private String overridePropertyName;
+    private EnvelopeMeta.MetaDefaults metaDefaults;
 
     // Built once at activation rather than per request: they are stateless, and rebuilding them for
     // every page re-parsed the alias table and re-read configuration that cannot have changed.
     private ComponentTreeWalker walker;
     private SiteHostResolver hostResolver;
     private SiteBranding siteBranding;
+    private SiteProfileViewer siteProfileViewer;
+    private SiteIntegrations siteIntegrations;
     private ProductCatalog productCatalog;
 
     @Activate
@@ -85,12 +93,19 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.publishHostSegment = StringUtils.defaultIfBlank(config.publishHostSegment(), "publish");
         this.maxDepth = Math.max(1, config.maxDepth());
         this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
+        this.overrideEnabled = config.overrideEnabled();
+        this.overridePropertyName = StringUtils.defaultIfBlank(config.overridePropertyName(), "cbJson");
+        this.metaDefaults = EnvelopeMeta.MetaDefaults.of(
+                config.brand(), config.thumbnail(), config.rightIcon(), config.rightIconTarget(),
+                config.template(), config.vertical());
 
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
                 new StyleResolver(config.styleTokens()), ComponentMappings.load());
         this.hostResolver = new SiteHostResolver(authorHostSegment, publishHostSegment);
         this.siteBranding = SiteBranding.load();
+        this.siteProfileViewer = SiteProfileViewer.load();
+        this.siteIntegrations = SiteIntegrations.load();
         this.productCatalog = new ProductCatalog(ProductMappings.load());
     }
 
@@ -110,6 +125,16 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Override
     public int getCacheMaxAge() {
         return cacheMaxAge;
+    }
+
+    @Override
+    public boolean isOverrideEnabled() {
+        return overrideEnabled;
+    }
+
+    @Override
+    public String getOverridePropertyName() {
+        return overridePropertyName;
     }
 
     @Override
@@ -145,24 +170,24 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // can be a screen without being in the menu - a plan detail page reached from a card, say -
         // and screen meta records that as includeInNavigation: false.
         final List<String> menu = buildMenu(menuPages(homeRoot));
+        final Map<String, Object> navigation = buildNavigation(rootProps, menu, screenList, homeRoot);
+        final Map<String, String> screenPresets = screenPresets(navigation);
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
 
         final Map<String, Object> app = new LinkedHashMap<>();
         app.put(SchemaConstants.KEY_META,
-                buildMeta(envelopeSource, homeRoot, appId, rootProps, menu));
+                buildMeta(envelopeSource, homeRoot, appId, rootProps, navigation));
         // No AEM source for either yet, but the target shape is fixed, so a client can rely on
         // the keys being present rather than testing for them.
         app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_SCREENS,
-                buildScreens(screenList, homeRoot, assetHost, opts, menu));
+                buildScreens(screenList, homeRoot, assetHost, opts, menu, screenPresets));
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
-        app.put(SchemaConstants.KEY_INTEGRATIONS,
-                readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON));
-        app.put(SchemaConstants.KEY_PROFILE_VIEWER,
-                readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON));
+        app.put(SchemaConstants.KEY_INTEGRATIONS, buildIntegrations(envelopeSource, extras));
+        app.put(SchemaConstants.KEY_PROFILE_VIEWER, buildProfileViewer(envelopeSource, extras));
 
         return app;
     }
@@ -170,33 +195,95 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /* ------------------------------------------------------------------ meta */
 
     private Map<String, Object> buildMeta(final Page root, final Page homeRoot, final String appId,
-                                          final ValueMap props, final List<String> menu) {
-        final Map<String, Object> navigation = buildNavigation(props, menu);
-
+                                          final ValueMap props, final Map<String, Object> navigation) {
         // The entire meta is built in DSN reference field order via EnvelopeMeta. The nav page's
         // search block, when authored, takes over meta.rightIcon from the placeholders sheet - so a
         // header search icon can be configured by dropping a search block into the nav, no
         // placeholder-sheet round-trip needed. The nav lives under the home screen, not the site
         // container, so it is resolved from there.
         return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation,
-                navPageRightIcon(homeRoot));
+                navPageRightIcon(homeRoot), metaDefaults);
     }
 
-    private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu) {
+    /**
+     * The {@code preset} each screen carries, keyed by screen name, derived from the navigation
+     * roles rather than an authored page property. The screen the nav points at as its login,
+     * registration or profile destination is tagged {@code login}, {@code registration} or
+     * {@code profile} respectively - the same identity the client uses to switch on those screens.
+     * A screen with no navigation role gets no entry here and stays blank.
+     */
+    private static Map<String, String> screenPresets(final Map<String, Object> navigation) {
+        final Map<String, String> presets = new LinkedHashMap<>();
+        addScreenPreset(presets, navigation.get(SchemaConstants.PN_LOGIN_SCREEN), "login");
+        addScreenPreset(presets, navigation.get(SchemaConstants.PN_REGISTRATION_SCREEN), "registration");
+        addScreenPreset(presets, navigation.get(SchemaConstants.PN_PROFILE_SCREEN), "profile");
+        return presets;
+    }
+
+    private static void addScreenPreset(final Map<String, String> presets, final Object screenKey,
+                                        final String preset) {
+        if (screenKey instanceof String && StringUtils.isNotBlank((String) screenKey)) {
+            presets.putIfAbsent((String) screenKey, preset);
+        }
+    }
+
+    private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu,
+                                                final List<Page> screens, final Page homeRoot) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
-        navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "login"));
-        navigation.put("profileScreen", props.get(SchemaConstants.PN_PROFILE_SCREEN, "user-details"));
+        navigation.put("loginScreen",
+                resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
+        // No dedicated profile page exists here, so the logged-in account icon lands on settings.
+        navigation.put("profileScreen",
+                resolveScreenRef(props, SchemaConstants.PN_PROFILE_SCREEN, "settings", screens, homeRoot));
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
         navigation.put("registrationScreen",
-                props.get(SchemaConstants.PN_REGISTRATION_SCREEN, "registration"));
+                resolveScreenRef(props, SchemaConstants.PN_REGISTRATION_SCREEN, "create-account", screens, homeRoot));
         return navigation;
+    }
+
+    /**
+     * The screen an authored property names, or - when none is authored - the screen whose own
+     * content actually carries the given form, found by scanning rather than hard-coding a page
+     * name. The home screen and any {@code *-test} page are skipped; a page named exactly after the
+     * form (e.g. {@code sign-in}) wins over any other page carrying it, so the canonical screen is
+     * chosen regardless of authoring order. Falls back to the form name itself when none carries it.
+     */
+    private String resolveScreenRef(final ValueMap props, final String property,
+                                    final String formName, final List<Page> screens,
+                                    final Page homeRoot) {
+        final String authored = props.get(property, String.class);
+        if (StringUtils.isNotBlank(authored)) {
+            return authored;
+        }
+        String firstMatch = null;
+        for (final Page page : screens) {
+            if (page.equals(homeRoot) || page.getName().endsWith("-test")) {
+                continue;
+            }
+            if (!walker.formSchemasOn(page).contains(formName)) {
+                continue;
+            }
+            final String key = screenKey(page);
+            if (formName.equals(key)) {
+                return key;
+            }
+            if (firstMatch == null) {
+                firstMatch = key;
+            }
+        }
+        return firstMatch != null ? firstMatch : formName;
     }
 
     private List<String> buildMenu(final List<Page> screens) {
         final List<String> menu = new ArrayList<>();
         for (final Page page : screens) {
+            // The mobile client renders at most MAX_MENU_ITEMS tabs; anything beyond is dropped
+            // here so screen meta (navigationOrder/includeInNavigation) stays consistent with it.
+            if (menu.size() >= MAX_MENU_ITEMS) {
+                break;
+            }
             menu.add(screenKey(page));
         }
         return menu;
@@ -206,7 +293,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private Map<String, Object> buildScreens(final List<Page> pages, final Page homeRoot,
                                             final String assetHost, final ExportOptions options,
-                                            final List<String> menu) {
+                                            final List<String> menu,
+                                            final Map<String, String> screenPresets) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         for (final Page page : pages) {
             final String key = screenKey(page);
@@ -217,7 +305,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                 LOG.warn("Screen key '{}' from {} collides with an already-exported screen - "
                         + "overwriting it. Give one of the pages a distinct node name.", key, page.getPath());
             }
-            screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu));
+            screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu,
+                    screenPresets.getOrDefault(key, StringUtils.EMPTY)));
         }
         return screens;
     }
@@ -328,10 +417,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     private Map<String, Object> buildScreen(final Page page, final Page root, final String assetHost,
-                                           final ExportOptions options, final List<String> menu) {
+                                           final ExportOptions options, final List<String> menu,
+                                           final String rolePreset) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
-        screen.put(SchemaConstants.KEY_META, EnvelopeMeta.screenMeta(page, root, screenKey(page), menu));
+        screen.put(SchemaConstants.KEY_META,
+                EnvelopeMeta.screenMeta(page, root, screenKey(page), menu, rolePreset));
         // DSN reference shape: meta, editor, content.
         // The editor block carries canvas layout (zIndex/position) authored in DSN Studio;
         // AEM has no equivalent, so a zero-valued skeleton keeps the key shape fixed without
@@ -388,6 +479,36 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return kept;
     }
 
+
+    /* -------------------------------------- integrations / profileViewer */
+
+    /**
+     * The {@code integrations} block: the shipped per-site object wins and is emitted verbatim,
+     * with the authored {@code integrationsJson} blob as the only fallback for sites that ship
+     * none. Mirrors {@link #buildBranding} - integrations is site configuration, not page content.
+     */
+    private Map<String, Object> buildIntegrations(final Page root, final Resource extras) {
+        final Map<String, Object> shipped =
+                siteIntegrations == null ? null : siteIntegrations.forPage(root);
+        if (shipped != null) {
+            return shipped;
+        }
+        return readJsonObject(extras, SchemaConstants.PN_INTEGRATIONS_JSON);
+    }
+
+    /**
+     * The {@code profileViewer} block: the shipped per-site object wins and is emitted verbatim,
+     * with the authored {@code profileViewerJson} blob as the only fallback for sites that ship
+     * none. Mirrors {@link #buildBranding} - profileViewer is site configuration, not page content.
+     */
+    private Map<String, Object> buildProfileViewer(final Page root, final Resource extras) {
+        final Map<String, Object> shipped =
+                siteProfileViewer == null ? null : siteProfileViewer.forPage(root);
+        if (shipped != null) {
+            return shipped;
+        }
+        return readJsonObject(extras, SchemaConstants.PN_PROFILE_VIEWER_JSON);
+    }
 
     /* -------------------------------------------------------------- branding */
 
