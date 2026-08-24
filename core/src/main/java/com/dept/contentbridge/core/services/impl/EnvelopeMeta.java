@@ -64,10 +64,10 @@ final class EnvelopeMeta {
         final Map<String, String[]> icons = new LinkedHashMap<>();
         icons.put("en",                    new String[]{"home", "home-outline"});
         icons.put("home",                  new String[]{"home", "home-outline"});
-        icons.put("men",                   new String[]{"man", "man-outline"});
-        icons.put("women",                 new String[]{"woman", "woman-outline"});
+        icons.put("men",                   new String[]{"shirt", "shirt-outline"});
+        icons.put("women",                 new String[]{"shirt", "shirt-outline"});
         icons.put("gear",                  new String[]{"basket", "basket-outline"});
-        icons.put("yoga",                  new String[]{"body", "body-outline"});
+        icons.put("yoga",                  new String[]{"fitness", "fitness-outline"});
         icons.put("luma-plus",             new String[]{"star", "star-outline"});
         icons.put("cart",                  new String[]{"cart", "cart-outline"});
         icons.put("checkout",              new String[]{"card", "card-outline"});
