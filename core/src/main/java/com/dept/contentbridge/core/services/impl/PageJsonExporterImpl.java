@@ -185,7 +185,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private Map<String, Object> buildNavigation(final ValueMap props, final List<String> menu) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
-        navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "sign-in"));
+        navigation.put("loginScreen", props.get(SchemaConstants.PN_LOGIN_SCREEN, "login"));
         navigation.put("profileScreen", props.get(SchemaConstants.PN_PROFILE_SCREEN, "user-details"));
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
@@ -566,8 +566,18 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * way the key that reaches a client is always a valid identifier regardless of how the node was
      * named.</p>
      */
+    /**
+     * Authored node names that disagree with the reference's own screen key for the same screen.
+     * The site's login page is authored as {@code sign-in}, but the LUMA MOBILE reference names
+     * that screen {@code login} - the same key {@code navigation.loginScreen} points at - the same
+     * way its {@code registration} screen's key matches {@code navigation.registrationScreen}
+     * exactly. Rewritten after kebab-casing so {@code Sign_In}, {@code sign-in}, etc. all resolve.
+     */
+    private static final Map<String, String> SCREEN_KEY_ALIASES = Map.of("sign-in", "login");
+
     private static String screenKey(final Page page) {
-        return kebab(page.getName());
+        final String key = kebab(page.getName());
+        return SCREEN_KEY_ALIASES.getOrDefault(key, key);
     }
 
     /**
