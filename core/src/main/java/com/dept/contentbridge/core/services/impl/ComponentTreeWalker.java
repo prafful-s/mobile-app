@@ -417,8 +417,13 @@ final class ComponentTreeWalker {
             // the ordered field list. Only in v2 - v1 keeps the flat block with a schema beside it,
             // because that contract is already published.
             if (hierarchical && isFormBlock(child, authoredName, authored)) {
-                sink.add(formBuilder.build(child, formNameOf(authoredName, authored),
-                        model.getId(), sink.size(), authored));
+                final String formName = formNameOf(authoredName, authored);
+                final Map<String, Object> heading = formBuilder.heading(formName, authored,
+                        AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size());
+                if (heading != null) {
+                    sink.add(heading);
+                }
+                sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), authored));
                 continue;
             }
 

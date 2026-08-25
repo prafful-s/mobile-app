@@ -1,6 +1,7 @@
 package com.dept.contentbridge.core.services.impl;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,10 +55,88 @@ final class FormBlockBuilder {
     };
     private static final String[] RESET_LABEL_KEYS = {"resetButtonLabel", "resetText"};
 
+    /**
+     * Per-form heading configuration: the block's own property name(s) for its on-page title, and
+     * the text the block itself falls back to when none is authored - both read straight off each
+     * block's source (the EDS block .js, not this project), so the default matches what actually
+     * renders when a site author leaves the field blank. A form with no entry here has no heading at
+     * all in the reference (e.g. {@code checkout-shipping}, {@code sign-in}), so none is emitted.
+     *
+     * <p>{@code test-drive} deliberately has no entry: its default heading varies per authored
+     * variant rather than being one fixed string, which this simple key+default model cannot
+     * represent - add it once that per-variant default is worth replicating.</p>
+     */
+    private static final Map<String, Heading> FORM_HEADINGS = buildFormHeadings();
+
+    private static Map<String, Heading> buildFormHeadings() {
+        final Map<String, Heading> headings = new LinkedHashMap<>();
+        headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
+        headings.put("credit-card-application-form",
+                new Heading(new String[]{"form-title", "formtitle"}, "Credit Card Application"));
+        headings.put("insurance", new Heading(new String[]{"title"}, "Life Insurance"));
+        headings.put("insurance-plan-selection", new Heading(
+                new String[]{"formHeading", "formheading"}, "Which type of health insurance should I get?"));
+        headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, "JOIN WKND FLY CLUB"));
+        headings.put("loan-application-form",
+                new Heading(new String[]{"form-title", "formtitle"}, "Home Loan Application Form"));
+        headings.put("medicare-plan-selection", new Heading(
+                new String[]{"formHeading", "formheading"}, "Which type of Medicare plan should I get?"));
+        headings.put("new-account",
+                new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
+        return Collections.unmodifiableMap(headings);
+    }
+
+    /** One form's heading property name(s) (most specific first) and its block's own default text. */
+    private static final class Heading {
+        private final String[] keys;
+        private final String defaultText;
+
+        Heading(final String[] keys, final String defaultText) {
+            this.keys = keys;
+            this.defaultText = defaultText;
+        }
+    }
+
     private final FormSchemaService formSchemaService;
 
     FormBlockBuilder(final FormSchemaService formSchemaService) {
         this.formSchemaService = formSchemaService;
+    }
+
+    /**
+     * The form's on-page heading, as a standalone {@code title} component to sit right before the
+     * form in {@code content[]} - the block's own settings panel carries a heading field (e.g.
+     * {@code create-account}'s "Heading", authored value "Create an account"), but that text
+     * describes the page, not a form field, so it does not belong inside the form's own {@code meta}
+     * or field list. Returns {@code null} for a form with no heading in the reference (most of
+     * them) - see {@link #FORM_HEADINGS}.
+     *
+     * @param formName the schema name, used to look up which property (if any) carries the heading
+     * @param authored the block's own properties
+     * @param id       a stable id, generated the same way every other synthetic component's is
+     * @param order    position among its siblings
+     */
+    Map<String, Object> heading(final String formName, final Map<String, Object> authored,
+                                final String id, final int order) {
+        final Heading config = FORM_HEADINGS.get(formName);
+        if (config == null) {
+            return null;
+        }
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, id);
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "title");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("size", "medium");
+        content.put("text", first(authored, config.keys, config.defaultText));
+        content.put("weight", "bold");
+        content.put("textAlignment", "left");
+
+        final Map<String, Object> title = new LinkedHashMap<>();
+        title.put(SchemaConstants.KEY_META, meta);
+        title.put(SchemaConstants.KEY_CONTENT, content);
+        return title;
     }
 
     /**
