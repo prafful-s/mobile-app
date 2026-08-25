@@ -75,8 +75,9 @@ final class EnvelopeMeta {
         icons.put("luma-plus",             new String[]{"star", "star-outline"});
         icons.put("cart",                  new String[]{"cart", "cart-outline"});
         icons.put("checkout",              new String[]{"card", "card-outline"});
-        icons.put("order-summary",         new String[]{"receipt", "receipt-outline"});
-        icons.put("review-order",          new String[]{"receipt", "receipt-outline"});
+        // order-summary is authored, but PageJsonExporterImpl.SCREEN_KEY_ALIASES rewrites its
+        // screenKey to "review-order" before this lookup runs, so only that key is ever looked up.
+        icons.put("review-order",          new String[]{"purse", "purse-outline"});
         icons.put("order-confirmation",    new String[]{"checkmark-done", "checkmark-done-outline"});
         icons.put("product",               new String[]{"pricetag", "pricetag-outline"});
         icons.put("men-products",          new String[]{"shirt", "shirt-outline"});
@@ -269,7 +270,12 @@ final class EnvelopeMeta {
                 fallbackIcons[1]));
         meta.put("name", screenKey);
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
-        meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
+        // review-order's authored jcr:title is "Order-summary" (the AEM page's own leftover name,
+        // pre-dating the review-order rename) - the reference titles the screen "Review Order", so
+        // this one screen's title is forced rather than left to the authored value.
+        meta.put("title", "review-order".equals(screenKey)
+                ? "Review Order"
+                : StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
         // preset: explicit prop wins, then the screen's navigation role, else the content default.
         meta.put("preset", StringUtils.firstNonBlank(

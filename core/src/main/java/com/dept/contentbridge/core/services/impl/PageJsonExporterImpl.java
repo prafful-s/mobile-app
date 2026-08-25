@@ -215,9 +215,11 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_LOGIN_SCREEN), "login");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_REGISTRATION_SCREEN), "registration");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_PROFILE_SCREEN), "profile");
-        // cart is a fixed system screen like the roles above, not authored - its preset per the
-        // LUMA MOBILE reference is its own screen key rather than the generic DEFAULT_SCREEN_PRESET.
+        // cart and review-order are fixed system screens like the roles above, not authored - their
+        // preset per the LUMA MOBILE reference is a screen-specific value rather than the generic
+        // DEFAULT_SCREEN_PRESET.
         presets.putIfAbsent("cart", "cart");
+        presets.putIfAbsent("review-order", "reviewOrder");
         return presets;
     }
 
