@@ -327,18 +327,65 @@ final class FormFieldFactory {
     }
 
     /**
-     * A checkbox or radio group, whose shape differs from every other field: the path and the label
-     * live on each option rather than on the field.
-     *
-     * <p>That is not an inconsistency to smooth over. A group's options are separately addressable -
-     * three checkboxes write three values - so each needs to say where its own value goes and what
-     * it reads when ticked. A single label on the field could not describe three.</p>
+     * A checkbox or radio group. The two diverge in shape, and that divergence is real, not an
+     * inconsistency to smooth over: a checkbox group's options are separately addressable - three
+     * checkboxes write three values - so each needs its own path and what it reads when ticked. A
+     * radio group is mutually exclusive - exactly one path, exactly one selected value - so the
+     * group carries the path once and each option is just the label/value pair it offers.
      */
     private static Map<String, Object> toggleContent(final String component, final String path,
                                                      final String label,
                                                      final List<Object> options,
                                                      final boolean prefill,
                                                      final String configuredVariant) {
+        return RADIO_GROUP.equals(component)
+                ? radioGroupContent(path, label, options, prefill)
+                : checkboxGroupContent(path, label, options, prefill, configuredVariant);
+    }
+
+    /**
+     * {@code { ["label"], "path", "options": [{"label","value"}, ...], "prefill" }} - one path for
+     * the whole group, plain label/value options, no {@code variant} key (the reference radioGroup
+     * carries none).
+     */
+    private static Map<String, Object> radioGroupContent(final String path, final String label,
+                                                          final List<Object> options,
+                                                          final boolean prefill) {
+        final List<Object> rewritten = new ArrayList<>(options.size());
+        for (final Object option : options) {
+            if (!(option instanceof Map)) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> source = (Map<String, Object>) option;
+            final Map<String, Object> target = new LinkedHashMap<>();
+            target.put("label", StringUtils.defaultString(
+                    StringUtils.defaultIfBlank(str(source.get("label")), label)));
+            target.put("value", StringUtils.defaultString(
+                    StringUtils.defaultIfBlank(str(source.get("checkedValue")),
+                            str(source.get("value")))));
+            rewritten.add(target);
+        }
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        if (StringUtils.isNotBlank(label) && !labelsAnOption(rewritten, label)) {
+            content.put("label", label);
+        }
+        content.put("path", StringUtils.defaultString(path));
+        content.put("options", rewritten);
+        content.put("prefill", prefill);
+        return content;
+    }
+
+    /**
+     * {@code { ["label"], "options": [{"path","label","checkedValue","uncheckedValue"}, ...],
+     * "prefill", "variant" }} - the path and label live on each option rather than on the field,
+     * because a group's options are separately addressable.
+     */
+    private static Map<String, Object> checkboxGroupContent(final String path, final String label,
+                                                             final List<Object> options,
+                                                             final boolean prefill,
+                                                             final String configuredVariant) {
         final List<Object> rewritten = new ArrayList<>(options.size());
         for (final Object option : options) {
             if (!(option instanceof Map)) {
@@ -365,11 +412,9 @@ final class FormFieldFactory {
         final Map<String, Object> content = new LinkedHashMap<>();
 
         // A group normally says nothing about itself: one label cannot describe three separately
-        // addressable options, so each option carries its own. Two cases differ, and the difference
-        // is whether the field's label is a question or a caption. A radio group asks "How often do
-        // you get care?" and its options answer it - that is worth keeping. An authored checkbox
-        // node is titled "SMS", which is the option's own label repeated - dropping it avoids saying
-        // the same thing twice.
+        // addressable options, so each option carries its own. An authored checkbox node is titled
+        // "SMS", which is the option's own label repeated - dropping it avoids saying the same
+        // thing twice.
         if (StringUtils.isNotBlank(label) && !labelsAnOption(rewritten, label)) {
             content.put("label", label);
         }
@@ -378,8 +423,7 @@ final class FormFieldFactory {
 
         // The configuration decides where it says so - all 25 checkbox fields declare 'switch'.
         // Otherwise the variant is named after the control.
-        content.put("variant", StringUtils.defaultIfBlank(configuredVariant,
-                CHECKBOX_GROUP.equals(component) ? "checkbox" : "radio"));
+        content.put("variant", StringUtils.defaultIfBlank(configuredVariant, "checkbox"));
         return content;
     }
 

@@ -283,8 +283,11 @@ class FormBlockV2Test {
     }
 
     @Test
-    @DisplayName("a radio group has the same shape as a checkbox group")
-    void radioGroupMatchesCheckbox() {
+    @DisplayName("a radio group carries one path on the field and plain label/value options")
+    void radioGroupShape() {
+        // Mutually exclusive by construction - one selected value, one path - unlike a checkbox
+        // group where every option is independently addressable. The reference radioGroup carries
+        // no variant key at all.
         context.build().resource(ROOT + "/form",
                 "sling:resourceType", "core/franklin/components/block/v1/block",
                 "model", "form", "formName", "insurance-plan-selection");
@@ -293,17 +296,19 @@ class FormBlockV2Test {
         assertEquals("radioGroup", map(radio.get("meta")).get("component"));
 
         final Map<String, Object> content = map(radio.get("content"));
-        assertEquals(List.of("label", "options", "prefill", "variant"),
+        assertEquals(List.of("label", "path", "options", "prefill"),
                 List.copyOf(content.keySet()));
-        assertEquals("radio", content.get("variant"), "no variant configured, so the control names it");
+        assertFalse(content.containsKey("variant"), "the reference radioGroup has no variant key");
+        assertEquals("coverageFor", content.get("path"), "one path for the whole group");
 
         // A radio group asks a question the options only answer, so its label is kept rather than
         // dropped for the sake of matching the checkbox shape exactly.
         assertEquals("Are you looking for coverage for yourself or your family?", content.get("label"));
 
         final Map<String, Object> option = list(content.get("options")).get(0);
-        assertEquals(List.of("path", "label", "checkedValue", "uncheckedValue"),
-                List.copyOf(option.keySet()), "same option shape as a checkbox group");
+        assertEquals(List.of("label", "value"), List.copyOf(option.keySet()),
+                "plain label/value, not the checkbox group's path/checkedValue/uncheckedValue");
+        assertEquals("myself", option.get("value"));
     }
 
     @Test
