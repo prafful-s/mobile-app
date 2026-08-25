@@ -418,12 +418,13 @@ final class ComponentTreeWalker {
             // because that contract is already published.
             if (hierarchical && isFormBlock(child, authoredName, authored)) {
                 final String formName = formNameOf(authoredName, authored);
-                final Map<String, Object> heading = formBuilder.heading(formName, authored,
+                final Map<String, Object> resolvedAuthored = formBuilder.withDefaultVariant(formName, authored);
+                final Map<String, Object> heading = formBuilder.heading(formName, resolvedAuthored,
                         AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size());
                 if (heading != null) {
                     sink.add(heading);
                 }
-                sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), authored));
+                sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), resolvedAuthored));
                 continue;
             }
 

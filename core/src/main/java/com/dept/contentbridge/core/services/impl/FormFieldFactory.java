@@ -71,13 +71,28 @@ final class FormFieldFactory {
     /**
      * Field visibility gated by an authored property on the enclosing block.
      *
-     * <p>Schema entry declares one of:</p>
+     * <p>Three shapes at the field level, checked in this order:</p>
      * <pre>
-     *   "visibleIf": { "prop": "showcreditcard", "default": false }   // truthy check
-     *   "visibleIf": { "prop": "variant", "equals": "luma" }          // string equality
-     *   "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
-     *   "visibleIf": { "prop": "variant", "equalsAny": ["luma","wknd-fly"] }
+     *   "conditions": [ {gate}, {gate}, ... ]      // every gate must pass (AND)
+     *   "variants": ["luma", "wknd-fly"]           // shorthand for one gate on the "variant" prop
+     *   "condition": { gate }                      // single gate ("visibleIf" also accepted)
      * </pre>
+     *
+     * <p>A gate itself declares one of:</p>
+     * <pre>
+     *   { "field": "showcreditcard", "default": false }              // truthy check
+     *   { "field": "variant", "equals": "luma" }                     // string equality
+     *   { "field": "variant", "not-equals": "wizard" }               // string inequality
+     *   { "field": "variant", "equalsAny": ["luma","wknd-fly"] }     // one of several
+     *   { "field": "showconsentcheckbox", "default": true,
+     *     "fallback": { "field": "variant", "not-equals": "no-checkbox" } }
+     * </pre>
+     *
+     * <p>{@code fallback} is a second gate, evaluated instead of {@code default} when the primary
+     * {@code field} is not authored at all - the reference form falls back to a variant check rather
+     * than a fixed boolean when the more specific flag was never set. {@code prop}/{@code notEquals}
+     * (this project's original key spellings) are still accepted alongside {@code field}/
+     * {@code not-equals} (the reference schema's spellings), so either survives a round trip.</p>
      *
      * <p>The reference client uses two shapes for conditional rendering: a boolean {@code show*}
      * property (which becomes the truthy check), and a discriminator like {@code variant} that
@@ -87,17 +102,46 @@ final class FormFieldFactory {
      *
      * @param field    a schema entry
      * @param authored the block's own authored properties
-     * @return true when the field should be emitted; true also when the entry has no
-     *         {@code visibleIf}, so annotating a schema is opt-in per field
+     * @return true when the field should be emitted; true also when the entry has none of the
+     *         three shapes above, so annotating a schema is opt-in per field
      */
     static boolean isVisible(final Map<String, Object> field, final Map<String, Object> authored) {
-        final Object visibleIf = field.get("visibleIf");
-        if (!(visibleIf instanceof Map)) {
+        final Object conditions = field.get("conditions");
+        if (conditions instanceof List) {
+            for (final Object gate : (List<?>) conditions) {
+                if (gate instanceof Map && !evaluateGate(asStringMap(gate), authored)) {
+                    return false;
+                }
+            }
             return true;
         }
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> gate = (Map<String, Object>) visibleIf;
-        final String prop = str(gate.get("prop"));
+
+        final Object variants = field.get("variants");
+        if (variants instanceof List) {
+            final Map<String, Object> gate = new java.util.LinkedHashMap<>();
+            gate.put("field", "variant");
+            gate.put("equalsAny", variants);
+            return evaluateGate(gate, authored);
+        }
+
+        Object condition = field.get("condition");
+        if (condition == null) {
+            condition = field.get("visibleIf");
+        }
+        if (!(condition instanceof Map)) {
+            return true;
+        }
+        return evaluateGate(asStringMap(condition), authored);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asStringMap(final Object value) {
+        return (Map<String, Object>) value;
+    }
+
+    /** One gate of a {@code condition}/{@code conditions} entry - see {@link #isVisible}. */
+    private static boolean evaluateGate(final Map<String, Object> gate, final Map<String, Object> authored) {
+        final String prop = StringUtils.defaultIfBlank(str(gate.get("field")), str(gate.get("prop")));
         if (StringUtils.isBlank(prop)) {
             return true; // malformed gate - fail open
         }
@@ -110,7 +154,7 @@ final class FormFieldFactory {
         if (equals != null) {
             return authoredStr != null && authoredStr.equals(normaliseCompare(equals));
         }
-        final Object notEquals = gate.get("notEquals");
+        final Object notEquals = firstNonNull(gate.get("notEquals"), gate.get("not-equals"));
         if (notEquals != null) {
             // Default visible - reference emits the field for every variant except the named one.
             return authoredStr == null || !authoredStr.equals(normaliseCompare(notEquals));
@@ -128,9 +172,14 @@ final class FormFieldFactory {
             return false;
         }
 
-        // Truthy check (the original visibleIf semantics).
+        // Truthy check (the original visibleIf semantics) - falling back to a nested gate, rather
+        // than a fixed default, when the primary field itself was never authored.
         if (authoredValue == null || (authoredValue instanceof String
                 && StringUtils.isBlank((String) authoredValue))) {
+            final Object fallback = gate.get("fallback");
+            if (fallback instanceof Map) {
+                return evaluateGate(asStringMap(fallback), authored);
+            }
             final Object def = gate.get("default");
             return def instanceof Boolean ? (Boolean) def
                     : Boolean.parseBoolean(String.valueOf(def));
@@ -139,6 +188,10 @@ final class FormFieldFactory {
             return (Boolean) authoredValue;
         }
         return Boolean.parseBoolean(String.valueOf(authoredValue).trim());
+    }
+
+    private static Object firstNonNull(final Object a, final Object b) {
+        return a != null ? a : b;
     }
 
     /** Trim + lower-case, or null for blank/null. Mirrors reference's {@code normalizeVariant}. */

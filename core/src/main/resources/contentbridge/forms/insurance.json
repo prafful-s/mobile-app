@@ -20,7 +20,7 @@
   {
     "id": "birthDate",
     "name": "person.birthDate",
-    "label": "Birth date (YYYY-MM-DD)",
+    "label": "Birth date(YYYY-MM-DD)",
     "value": "",
     "type": "text",
     "placeholder": "mm / dd / yyyy",
@@ -58,8 +58,32 @@
     "name": "homeAddress.country",
     "label": "Country",
     "value": "",
-    "type": "text",
-    "placeholder": "",
-    "defaultValue": ""
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "United States of America",
+        "value": "US"
+      },
+      {
+        "label": "Canada",
+        "value": "CA"
+      },
+      {
+        "label": "Mexico",
+        "value": "MX"
+      },
+      {
+        "label": "United Kingdom",
+        "value": "GB"
+      },
+      {
+        "label": "Other",
+        "value": "OTHER"
+      }
+    ]
   }
 ]

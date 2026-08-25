@@ -399,18 +399,29 @@ class ComponentMappingTest {
     @DisplayName("a block naming a bundled form is built as a form, not projected")
     void getOfferIsAForm() {
         // The newsletter block on every we-healthcare page. It has a one-field schema, so under v2
-        // it is a form component with that field as its content - not a generic block.
-        final Map<String, Object> exported = export(true,
+        // it is a form component with that field as its content - not a generic block. A heading
+        // ("Get Offer" - get-offer's block has no title property of its own, so it is the form's
+        // own name) precedes it, the way every form's heading does.
+        context.build().resource(HOME + "/jcr:content/root/block",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
                 "model", "get-offer",
                 "placeholder", "Type your email address",
                 "button-label", "Subscribe");
+        final Page home = context.pageManager().getPage(HOME);
+        final Map<String, Object> app = exporter.export(home, ExportOptions.of(false));
+        final List<Map<String, Object>> content =
+                list(map(map(app.get("screens")).get("en")).get("content"));
 
+        assertEquals(2, content.size(), "a heading, then the form: " + content);
+        assertEquals("title", component(content.get(0)));
+        assertEquals("Get Offer", map(content.get(0).get("content")).get("text"));
+
+        final Map<String, Object> exported = content.get(1);
         assertEquals("form", component(exported));
         assertEquals("Subscribe", map(exported.get("meta")).get("submitButtonLabel"),
                 "the authored button label becomes the form's submit label");
 
-        @SuppressWarnings("unchecked")
-        final List<Map<String, Object>> fields = (List<Map<String, Object>>) exported.get("content");
+        final List<Map<String, Object>> fields = list(exported.get("content"));
         assertEquals(1, fields.size());
         assertEquals("textField", map(fields.get(0).get("meta")).get("component"));
 

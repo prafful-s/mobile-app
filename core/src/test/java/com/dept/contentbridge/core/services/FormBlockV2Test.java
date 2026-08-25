@@ -473,12 +473,15 @@ class FormBlockV2Test {
                 "model", "create-account");
         // showaddress/showdateofbirth/showcommunicationpreferences default true, so their fields
         // stay in. showcreditcard/showloyaltyprogram/showprivacypolicy default false, so those
-        // fields drop out. Net expected: 33 - 8 (creditcard block) - 1 (loyalty) - 1 (privacy) = 23.
+        // fields drop out. marketingConsent only shows in the wizard form-layout - unauthored
+        // form-layout defaults to "single" (the block's own default), so the single-page
+        // prefEmail/prefPhone/prefSms/prefWhatsapp show instead.
         final List<String> ids = ids(form());
 
         assertTrue(ids.contains("address"), "showaddress defaults true");
         assertTrue(ids.contains("dateOfBirth"), "showdateofbirth defaults true");
-        assertTrue(ids.contains("marketingConsent"), "showcommunicationpreferences defaults true");
+        assertTrue(ids.contains("prefEmail"), "single-page layout + showcommunicationpreferences default true");
+        assertFalse(ids.contains("marketingConsent"), "wizard-only - form-layout defaults to single");
         assertFalse(ids.contains("cardName"), "showcreditcard defaults false");
         assertFalse(ids.contains("joinLoyaltyProgram"), "showloyaltyprogram defaults false");
         assertFalse(ids.contains("privacyPolicy"), "showprivacypolicy defaults false");

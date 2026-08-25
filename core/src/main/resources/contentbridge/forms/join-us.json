@@ -43,7 +43,10 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "show-zip-code", "default": false }
+    "condition": {
+      "field": "show-zip-code",
+      "default": false
+    }
   },
   {
     "id": "streetLine1",
@@ -53,7 +56,10 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "showdeliverysection", "default": false }
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
   },
   {
     "id": "streetLine2",
@@ -63,7 +69,10 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "showdeliverysection", "default": false }
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
   },
   {
     "id": "city",
@@ -73,7 +82,10 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "showdeliverysection", "default": false }
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
   },
   {
     "id": "postalCode",
@@ -83,7 +95,10 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "showdeliverysection", "default": false }
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
   },
   {
     "id": "callBeforeDelivery",
@@ -91,13 +106,16 @@
     "value": "",
     "type": "checkbox",
     "variant": "switch",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    },
     "options": [
       {
         "label": "Call Before Delivery",
         "value": "true"
       }
-    ],
-    "visibleIf": { "prop": "showdeliverysection", "default": false }
+    ]
   },
   {
     "id": "deliveryFrequency",
@@ -105,6 +123,10 @@
     "label": "Delivery Frequency",
     "value": "",
     "type": "select",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    },
     "options": [
       {
         "label": "Once a week",
@@ -122,8 +144,7 @@
         "label": "Daily",
         "value": "daily"
       }
-    ],
-    "visibleIf": { "prop": "showdeliverysection", "default": false }
+    ]
   },
   {
     "id": "consent",
@@ -131,12 +152,19 @@
     "value": "",
     "type": "checkbox",
     "variant": "switch",
+    "condition": {
+      "field": "showconsentcheckbox",
+      "default": true,
+      "fallback": {
+        "field": "variant",
+        "not-equals": "no-checkbox"
+      }
+    },
     "options": [
       {
         "label": "I want to join WKND Fly Club and I have read and understand the Privacy and Cookies Policy. I want to receive personalized communication by email.",
         "value": "true"
       }
-    ],
-    "visibleIf": { "prop": "showconsentcheckbox", "default": true }
+    ]
   }
 ]

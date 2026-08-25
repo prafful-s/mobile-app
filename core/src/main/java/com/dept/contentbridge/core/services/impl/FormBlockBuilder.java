@@ -55,21 +55,30 @@ final class FormBlockBuilder {
     };
     private static final String[] RESET_LABEL_KEYS = {"resetButtonLabel", "resetText"};
 
+    /** No authored property backs this form's heading - see {@link #FORM_HEADINGS}. */
+    private static final String[] NO_KEYS = new String[0];
+
     /**
      * Per-form heading configuration: the block's own property name(s) for its on-page title, and
-     * the text the block itself falls back to when none is authored - both read straight off each
-     * block's source (the EDS block .js, not this project), so the default matches what actually
-     * renders when a site author leaves the field blank. A form with no entry here has no heading at
-     * all in the reference (e.g. {@code checkout-shipping}, {@code sign-in}), so none is emitted.
+     * the text the block itself falls back to when none is authored. Every form gets an entry, so
+     * every form gets a heading component - for the eight forms whose block actually has a heading
+     * field (create-account, credit-card-application-form, insurance, insurance-plan-selection,
+     * join-us, loan-application-form, medicare-plan-selection, new-account, test-drive) the property
+     * key(s) and default text are read straight off that block's source (the EDS block {@code .js},
+     * not this project) so the default matches what actually renders when a site author leaves the
+     * field blank. The remaining forms have no such property in their block at all, so their entry
+     * carries no keys - the heading is always the form's own name, title-cased.
      *
-     * <p>{@code test-drive} deliberately has no entry: its default heading varies per authored
-     * variant rather than being one fixed string, which this simple key+default model cannot
-     * represent - add it once that per-variant default is worth replicating.</p>
+     * <p>{@code test-drive}'s default varies per authored {@code variant} in the block itself
+     * ({@code VARIANTS[variant].formTitle}); the text here is the block's own fallback default
+     * ({@code VARIANTS['test-drive'].formTitle}), used when the authored variant has no match of its
+     * own - an approximation of the per-variant logic, not a full port of it.</p>
      */
     private static final Map<String, Heading> FORM_HEADINGS = buildFormHeadings();
 
     private static Map<String, Heading> buildFormHeadings() {
         final Map<String, Heading> headings = new LinkedHashMap<>();
+        // Forms whose block authors a heading property - key(s) and default read from the block .js.
         headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
         headings.put("credit-card-application-form",
                 new Heading(new String[]{"form-title", "formtitle"}, "Credit Card Application"));
@@ -83,7 +92,56 @@ final class FormBlockBuilder {
                 new String[]{"formHeading", "formheading"}, "Which type of Medicare plan should I get?"));
         headings.put("new-account",
                 new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
+        headings.put("test-drive", new Heading(new String[]{"form-title", "formtitle"}, "Schedule test drive"));
+
+        // Forms with no heading property in their block - default is the form's own name.
+        headings.put("add-external", new Heading(NO_KEYS, "Add External"));
+        headings.put("checkout", new Heading(NO_KEYS, "Checkout"));
+        headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout Shipping"));
+        headings.put("child-account-application", new Heading(NO_KEYS, "Child Account Application"));
+        headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
+        headings.put("get-offer", new Heading(NO_KEYS, "Get Offer"));
+        headings.put("name-change-request", new Heading(NO_KEYS, "Name Change Request"));
+        headings.put("plan-application", new Heading(NO_KEYS, "Plan Application"));
+        headings.put("set-up-auto-save", new Heading(NO_KEYS, "Set Up Auto Save"));
+        headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
+        headings.put("transfer-funds", new Heading(NO_KEYS, "Transfer Funds"));
         return Collections.unmodifiableMap(headings);
+    }
+
+    /**
+     * The {@code variant} value a form's own block dialog defaults to when an author sets none - read
+     * from each block's own field definition (its {@code variant} select's own {@code value}), not
+     * guessed. Only the forms whose fields actually gate on {@code variant} via {@code variants}/
+     * {@code equals}/{@code equalsAny} (where an absent value reads as "matches nothing") need an
+     * entry; a form gating with {@code not-equals} already defaults to visible without one.
+     */
+    private static final Map<String, String> DEFAULT_VARIANTS = Map.of(
+            "add-external", "account",
+            "create-account", "default",
+            "test-drive", "test-drive");
+
+    /**
+     * {@code authored}, with {@code variant} filled in from {@link #DEFAULT_VARIANTS} when the form
+     * names an entry there and the block itself carries none - so a block whose author never touched
+     * the variant dropdown is evaluated exactly as its own dialog default would render it, not as
+     * though variant-gated fields simply do not exist.
+     */
+    Map<String, Object> withDefaultVariant(final String formName, final Map<String, Object> authored) {
+        if (formName == null || authored == null) {
+            return authored;
+        }
+        final String defaultVariant = DEFAULT_VARIANTS.get(formName);
+        if (defaultVariant == null) {
+            return authored;
+        }
+        final Object existing = authored.get("variant");
+        if (existing instanceof String && StringUtils.isNotBlank((String) existing)) {
+            return authored;
+        }
+        final Map<String, Object> merged = new LinkedHashMap<>(authored);
+        merged.put("variant", defaultVariant);
+        return merged;
     }
 
     /** One form's heading property name(s) (most specific first) and its block's own default text. */
