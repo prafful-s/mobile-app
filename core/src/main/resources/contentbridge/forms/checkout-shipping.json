@@ -101,6 +101,11 @@
     ]
   },
   {
+    "id": "h-payment",
+    "type": "heading",
+    "label": "Payment"
+  },
+  {
     "id": "paymentMethod",
     "name": "paymentMethod",
     "label": "Payment",
@@ -129,6 +134,11 @@
       "field": "showcardnumberfield",
       "default": false
     }
+  },
+  {
+    "id": "h-shipping",
+    "type": "heading",
+    "label": "Shipping"
   },
   {
     "id": "shippingMethod",
