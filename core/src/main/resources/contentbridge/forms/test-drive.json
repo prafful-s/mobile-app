@@ -1,5 +1,10 @@
 [
   {
+    "id": "personal-info-heading",
+    "type": "heading",
+    "label": "Your personal informations"
+  },
+  {
     "id": "firstName",
     "name": "person.name.firstName",
     "label": "First Name",
@@ -34,6 +39,14 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": ""
+  },
+  {
+    "id": "address-heading",
+    "type": "heading",
+    "label": "Vehicle arrival address",
+    "variants": [
+      "test-drive"
+    ]
   },
   {
     "id": "address",

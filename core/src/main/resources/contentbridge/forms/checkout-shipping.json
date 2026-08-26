@@ -1,5 +1,10 @@
 [
   {
+    "id": "h-personal",
+    "type": "heading",
+    "label": "Personal information"
+  },
+  {
     "id": "firstName",
     "name": "person.name.firstName",
     "label": "First name",
@@ -155,6 +160,11 @@
     ]
   },
   {
+    "id": "h-account",
+    "type": "heading",
+    "label": "Account"
+  },
+  {
     "id": "lumaLoyalty",
     "name": "lumaLoyalty",
     "value": "",
@@ -183,5 +193,10 @@
         "value": "true"
       }
     ]
+  },
+  {
+    "id": "h-summary",
+    "type": "heading",
+    "label": "Summary"
   }
 ]

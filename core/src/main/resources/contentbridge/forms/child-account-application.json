@@ -1,5 +1,10 @@
 [
   {
+    "id": "heading-child-information",
+    "type": "heading",
+    "label": "Child's Information Confirmation"
+  },
+  {
     "id": "childFirstName",
     "name": "childFirstName",
     "label": "First name",
@@ -16,6 +21,11 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": ""
+  },
+  {
+    "id": "heading-parent-information",
+    "type": "heading",
+    "label": "Parent/Guardian Information"
   },
   {
     "id": "parentFirstName",
@@ -63,6 +73,11 @@
         "value": "other"
       }
     ]
+  },
+  {
+    "id": "heading-consent",
+    "type": "heading",
+    "label": "Consent & Agreements"
   },
   {
     "id": "confirmInformation",

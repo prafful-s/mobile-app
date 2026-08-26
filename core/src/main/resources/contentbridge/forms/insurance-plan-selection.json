@@ -17,6 +17,11 @@
     ]
   },
   {
+    "id": "step-2-sub",
+    "type": "heading",
+    "label": "This includes needing coverage for things like ongoing prescriptions, regular lab tests, etc."
+  },
+  {
     "id": "careFrequency",
     "name": "careFrequency",
     "label": "How often do you get care?",

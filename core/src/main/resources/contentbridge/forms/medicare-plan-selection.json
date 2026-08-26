@@ -1,5 +1,15 @@
 [
   {
+    "id": "step-1-title",
+    "type": "heading",
+    "label": "Let's get started"
+  },
+  {
+    "id": "step-1-sub",
+    "type": "heading",
+    "label": "When choosing your plan, let us know what matters most to you—cost, benefits, or the doctors, medications and facilities you need covered. Based on your selections, we'll show you a list of recommended plans you can choose from before signing up."
+  },
+  {
     "id": "zipCode",
     "name": "homeAddress.postalCode",
     "label": "ZIP Code",
@@ -26,6 +36,16 @@
     ]
   },
   {
+    "id": "step-3-title-main",
+    "type": "heading",
+    "label": "Benefits"
+  },
+  {
+    "id": "step-3-sub-main",
+    "type": "heading",
+    "label": "Tell us more about what you want your plan to do for you."
+  },
+  {
     "id": "preferredBenefits",
     "name": "preferredBenefits",
     "label": "Which type of benefits do you want in your plan?",
@@ -47,6 +67,11 @@
     ]
   },
   {
+    "id": "step-3-title-sub2",
+    "type": "heading",
+    "label": "Are there optional benefits that you'd like to add to your plan?"
+  },
+  {
     "id": "additionalBenefits",
     "name": "additionalBenefits",
     "value": "",
@@ -58,6 +83,16 @@
         "value": "true"
       }
     ]
+  },
+  {
+    "id": "step-4-title-main",
+    "type": "heading",
+    "label": "Access to Care"
+  },
+  {
+    "id": "step-4-sub-main",
+    "type": "heading",
+    "label": "Tell us when and where you want to access healthcare."
   },
   {
     "id": "networkPreference",
