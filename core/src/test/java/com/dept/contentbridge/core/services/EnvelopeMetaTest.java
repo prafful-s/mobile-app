@@ -173,9 +173,10 @@ class EnvelopeMetaTest {
                 "template", "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation")) {
             assertTrue(meta.containsKey(key), "screen meta is missing " + key + ": " + meta.keySet());
         }
-        // icon/iconInactive fall back to the fixed screen-key -> pair map when the page has none.
-        assertEquals("home", meta.get("icon"), "home screen falls back to the 'home' icon");
-        assertEquals("home-outline", meta.get("iconInactive"));
+        // icon/iconInactive are the page's own mobileIcon/mobileIconInactive, verbatim - empty
+        // when the page authors neither, not a guessed fallback.
+        assertEquals("", meta.get("icon"), "no mobileIcon authored");
+        assertEquals("", meta.get("iconInactive"));
         assertEquals("", meta.get("event"));
         assertEquals("home", meta.get("preset"), "content default when no role or authored preset");
         assertEquals("", meta.get("customEvent"));
@@ -226,10 +227,10 @@ class EnvelopeMetaTest {
         assertEquals("FreeformScreen", screenMeta("en").get("template"));
 
         context.create().page(SITE + "/us/en/atm", "",
-                Map.of("jcr:title", "ATM", "template", "MapScreen", "icon", "atm"));
+                Map.of("jcr:title", "ATM", "template", "MapScreen", "mobileIcon", "atm"));
 
         assertEquals("MapScreen", screenMeta("atm").get("template"));
-        assertEquals("atm", screenMeta("atm").get("icon"));
+        assertEquals("atm", screenMeta("atm").get("icon"), "the page's own mobileIcon property");
     }
 
     @Test

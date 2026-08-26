@@ -1,6 +1,5 @@
 package com.dept.contentbridge.core.services.impl;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -51,60 +50,6 @@ final class EnvelopeMeta {
 
     /** Suffix stripped from the AEM theme property when deriving a brand display label. */
     private static final Pattern THEME_SUFFIX = Pattern.compile("-theme$", Pattern.CASE_INSENSITIVE);
-
-    /**
-     * Per-screen icon pair {@code [icon, iconInactive]} from the LUMA MOBILE reference. The mobile
-     * client renders {@code icon} for the active tab and {@code iconInactive} for the resting state.
-     * Keyed by screen key (the same string the {@code screens} map is filed under). A screen not
-     * listed falls back to {@link #DEFAULT_ICON_PAIR} so every screen carries a usable pair.
-     *
-     * <p>Hardcoded rather than a placeholder or page-property lookup: the icon vocabulary is a
-     * client-side contract, not an authoring decision - the same key set every site ships against
-     * the same icon library. Add a row when a new screen key appears in the reference.</p>
-     */
-    private static final Map<String, String[]> SCREEN_ICON_PAIRS;
-    private static final String[] DEFAULT_ICON_PAIR = {"apps", "apps-outline"};
-    static {
-        final Map<String, String[]> icons = new LinkedHashMap<>();
-        icons.put("en",                    new String[]{"home", "home-outline"});
-        icons.put("home",                  new String[]{"home", "home-outline"});
-        icons.put("men",                   new String[]{"shirt", "shirt-outline"});
-        icons.put("women",                 new String[]{"shirt", "shirt-outline"});
-        icons.put("gear",                  new String[]{"basket", "basket-outline"});
-        icons.put("yoga",                  new String[]{"fitness", "fitness-outline"});
-        icons.put("luma-plus",             new String[]{"star", "star-outline"});
-        icons.put("cart",                  new String[]{"cart", "cart-outline"});
-        icons.put("checkout",              new String[]{"card", "card-outline"});
-        // order-summary is authored, but PageJsonExporterImpl.SCREEN_KEY_ALIASES rewrites its
-        // screenKey to "review-order" before this lookup runs, so only that key is ever looked up.
-        icons.put("review-order",          new String[]{"purse", "purse-outline"});
-        icons.put("order-confirmation",    new String[]{"checkmark-done", "checkmark-done-outline"});
-        icons.put("product",               new String[]{"pricetag", "pricetag-outline"});
-        icons.put("men-products",          new String[]{"shirt", "shirt-outline"});
-        icons.put("women-products",        new String[]{"shirt", "shirt-outline"});
-        icons.put("gear-products",         new String[]{"basket", "basket-outline"});
-        icons.put("yoga-products",         new String[]{"basket", "basket-outline"});
-        icons.put("accessories",           new String[]{"watch", "watch-outline"});
-        icons.put("adventure",             new String[]{"compass", "compass-outline"});
-        icons.put("blog",                  new String[]{"newspaper", "newspaper-outline"});
-        icons.put("blog45",                new String[]{"newspaper", "newspaper-outline"});
-        icons.put("beginners-luck",        new String[]{"document-text", "document-text-outline"});
-        icons.put("warming-up",            new String[]{"document-text", "document-text-outline"});
-        icons.put("keep-moving",           new String[]{"document-text", "document-text-outline"});
-        icons.put("styling-spring",        new String[]{"document-text", "document-text-outline"});
-        icons.put("spring-collection",     new String[]{"flower", "flower-outline"});
-        icons.put("sign-in",               new String[]{"log-in", "log-in-outline"});
-        icons.put("login",                 new String[]{"log-in", "log-in-outline"});
-        icons.put("registration",          new String[]{"person-add", "person-add-outline"});
-        icons.put("user-details",          new String[]{"person", "person-outline"});
-        icons.put("brand-concierge",       new String[]{"chatbubbles", "chatbubbles-outline"});
-        icons.put("feedback",              new String[]{"chatbox", "chatbox-outline"});
-        icons.put("search",                new String[]{"search", "search-outline"});
-        icons.put("inbox",                 new String[]{"mail", "mail-outline"});
-        icons.put("rewards",               new String[]{"gift", "gift-outline"});
-        icons.put("products",              new String[]{"grid", "grid-outline"});
-        SCREEN_ICON_PAIRS = Collections.unmodifiableMap(icons);
-    }
 
     private EnvelopeMeta() {
         // static helpers only
@@ -254,20 +199,11 @@ final class EnvelopeMeta {
         final Map<String, Object> meta = new LinkedHashMap<>();
         final ValueMap props = page.getProperties();
 
-        // icon / iconInactive: authored props win when set (so a site can override per page),
-        // otherwise the fixed screen-key -> icon pair from SCREEN_ICON_PAIRS wins, otherwise
-        // DEFAULT_ICON_PAIR - every screen carries a usable pair.
-        final String[] fallbackIcons = SCREEN_ICON_PAIRS.getOrDefault(screenKey, DEFAULT_ICON_PAIR);
-        meta.put("icon", StringUtils.defaultIfBlank(
-                StringUtils.defaultIfBlank(
-                        props.get("mobileIcon", String.class),
-                        props.get("icon", String.class)),
-                fallbackIcons[0]));
-        meta.put("iconInactive", StringUtils.defaultIfBlank(
-                StringUtils.defaultIfBlank(
-                        props.get("mobileIconInactive", String.class),
-                        props.get("iconInactive", String.class)),
-                fallbackIcons[1]));
+        // icon / iconInactive: the page's own authored jcr:content property, verbatim - sites author
+        // these directly per page (e.g. gear's mobileIcon = "account-plus"), so no fixed per-screen
+        // fallback is layered on top; unset is empty, not a guess.
+        meta.put("icon", StringUtils.defaultString(props.get("mobileIcon", String.class)));
+        meta.put("iconInactive", StringUtils.defaultString(props.get("mobileIconInactive", String.class)));
         meta.put("name", screenKey);
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
         // review-order's authored jcr:title is "Order-summary" (the AEM page's own leftover name,
