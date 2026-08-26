@@ -325,6 +325,21 @@
     ]
   },
   {
+    "id": "communicationHeading",
+    "type": "heading",
+    "label": "Communication preferences",
+    "conditions": [
+      {
+        "field": "form-layout",
+        "not-equals": "wizard"
+      },
+      {
+        "field": "showcommunicationpreferences",
+        "default": true
+      }
+    ]
+  },
+  {
     "id": "prefEmail",
     "name": "consents.marketing.email.val",
     "value": "",
@@ -414,6 +429,15 @@
         "label": "WhatsApp",
         "value": "true"
       }
+    ]
+  },
+  {
+    "id": "heading-know-you-better",
+    "type": "heading",
+    "label": "LET US KNOW YOU BETTER",
+    "variants": [
+      "luma",
+      "expnews"
     ]
   },
   {

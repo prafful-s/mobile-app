@@ -48,6 +48,13 @@ final class FormFieldFactory {
     private static final String TYPE_CHECKBOX = "checkbox";
     private static final String TYPE_DATE = "date";
     private static final String TYPE_FILE = "file";
+    /** A static section divider inside the field list - "Communication preferences", "LET US KNOW
+     *  YOU BETTER" - not a value the user supplies. Reuses the {@code title} component's shape
+     *  ({@code size}/{@code text}/{@code weight}/{@code textAlignment}), the only heading-shaped
+     *  component this project already emits (the form's own pre-form heading, see
+     *  {@link FormBlockBuilder#heading}). */
+    private static final String TYPE_HEADING = "heading";
+    private static final String COMPONENT_TITLE = "title";
 
     /**
      * The two authored node kinds that are part of a form but are not fields: a panel groups fields
@@ -211,6 +218,12 @@ final class FormFieldFactory {
      */
     static Map<String, Object> fromConfig(final Map<String, Object> field, final int order) {
         final String type = StringUtils.lowerCase(str(field.get("type")), java.util.Locale.ROOT);
+
+        if (TYPE_HEADING.equals(type)) {
+            final String id = StringUtils.defaultIfBlank(str(field.get("id")), "heading-" + order);
+            return component(id, order, COMPONENT_TITLE, headingContent(str(field.get("label"))));
+        }
+
         final String component = componentFor(type);
         // File upload is not rendered as a client field, so it produces no mapping.
         if (component == null) {
@@ -424,6 +437,22 @@ final class FormFieldFactory {
         // The configuration decides where it says so - all 25 checkbox fields declare 'switch'.
         // Otherwise the variant is named after the control.
         content.put("variant", StringUtils.defaultIfBlank(configuredVariant, "checkbox"));
+        return content;
+    }
+
+    /**
+     * A static heading field inside a form's field list - see {@link #TYPE_HEADING}. Same shape and
+     * defaults as {@code title.json}'s mapping rule (size medium, weight bold, left-aligned): a
+     * section-divider heading, not a page title, so a smaller/lighter treatment would be a mismatch,
+     * but there is no reference distinguishing the two, so the one heading shape this project already
+     * has is reused rather than inventing a second.
+     */
+    private static Map<String, Object> headingContent(final String text) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("size", "medium");
+        content.put("text", StringUtils.defaultString(text));
+        content.put("weight", "bold");
+        content.put("textAlignment", "left");
         return content;
     }
 
