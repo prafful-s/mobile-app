@@ -203,10 +203,5 @@
         "value": "true"
       }
     ]
-  },
-  {
-    "id": "h-summary",
-    "type": "heading",
-    "label": "Summary"
   }
 ]
