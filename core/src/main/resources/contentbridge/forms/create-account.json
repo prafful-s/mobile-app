@@ -9,15 +9,6 @@
     "defaultValue": ""
   },
   {
-    "id": "password",
-    "name": "password",
-    "label": "Password",
-    "value": "",
-    "type": "password",
-    "placeholder": "",
-    "defaultValue": ""
-  },
-  {
     "id": "firstName",
     "name": "person.name.firstName",
     "label": "First name",
