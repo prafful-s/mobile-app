@@ -1,8 +1,0 @@
-<sly data-sly-use.model="com.dept.contentbridge.core.models.impl.DividerModel"></sly>
-<hr class="cb-divider"/>
-
-<sly data-sly-template.placeholder="${@ isEmpty}">
-    <sly data-sly-test="${isEmpty && wcmmode.edit}">
-        <div class="cq-placeholder" data-emptytext="${component.title}"></div>
-    </sly>
-</sly>
