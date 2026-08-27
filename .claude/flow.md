@@ -17,7 +17,6 @@ change). Keep it factual and current, not historical — historical reasoning go
 | `ui.apps.structure` | Immutable `/apps` repo structure package |
 | `ui.config` | OSGi configs (runmode-specific) |
 | `ui.content` | `/content` + `/content/dam` sample/demo content, `mode="merge"` filters |
-| `ui.frontend` | Author-side clientlibs (webpack) |
 | `all` | Aggregates the above into one deployable content package |
 | `it.tests` | Integration tests |
 

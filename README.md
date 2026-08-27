@@ -502,11 +502,10 @@ those keys are simply omitted while the references are unresolved.
 | Module | Purpose |
 |---|---|
 | `core` | Sling Models, `PageJsonExporter`, `UrlService`, the servlet |
-| `ui.apps` | Components, dialogs, page-properties extensions, client library |
+| `ui.apps` | Components, dialogs, page-properties extensions |
 | `ui.apps.structure` | Declares the JCR roots so deployment fails fast on a missing parent |
 | `ui.config` | Run-mode aware OSGi configuration |
 | `ui.content` | Editable template, policies, sample site |
-| `ui.frontend` | Plain-JS/Sass sources, webpack → `clientlib-site` |
 | `all` | The single container package Cloud Manager ships |
 | `it.tests` | HTTP tests against a running instance |
 
