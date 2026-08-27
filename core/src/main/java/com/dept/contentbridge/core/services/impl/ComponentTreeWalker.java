@@ -624,7 +624,11 @@ final class ComponentTreeWalker {
      * still win.
      */
     private static final Map<String, Object> PANEL_SPACING_DEFAULTS = Map.of(
-            "gap", 20, "margin", 20, "padding", 0);
+            "gap", 0, "margin", 0, "padding", 0);
+
+    /** Vertical panels stack cards tighter than horizontal rows carry them side by side. */
+    private static final Map<String, Object> VERTICAL_PANEL_SPACING_DEFAULTS = Map.of(
+            "gap", 8, "margin", 8, "padding", 0);
 
     private Map<String, Object> panelStyles(final Resource resource, final boolean vertical) {
         final Map<String, Object> styles = new LinkedHashMap<>();
@@ -649,7 +653,9 @@ final class ComponentTreeWalker {
         }
         // The panel is the sole owner of card spacing, so fill any gap/margin/padding the author
         // and tokens both left blank with the reference contract's values.
-        for (final Map.Entry<String, Object> spacing : PANEL_SPACING_DEFAULTS.entrySet()) {
+        final Map<String, Object> spacingDefaults =
+                vertical ? VERTICAL_PANEL_SPACING_DEFAULTS : PANEL_SPACING_DEFAULTS;
+        for (final Map.Entry<String, Object> spacing : spacingDefaults.entrySet()) {
             if ("".equals(styles.get(spacing.getKey()))) {
                 styles.put(spacing.getKey(), spacing.getValue());
             }

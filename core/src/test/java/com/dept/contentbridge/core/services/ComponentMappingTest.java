@@ -191,7 +191,9 @@ class ComponentMappingTest {
         assertFalse(content.containsKey("overlaybackground"), "authored extras do not pass through");
         assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
 
-        assertFalse(exported.containsKey("styles"), "cards carry no styles block");
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertEquals("30", styles.get("marginLeft"), "every card carries a fixed left margin");
+        assertEquals("30", styles.get("marginRight"), "every card carries a fixed right margin");
     }
 
     @Test
@@ -236,8 +238,8 @@ class ComponentMappingTest {
 
         assertEquals("panel", component(panel), "a section of cards is boxed in a panel");
         final Map<String, Object> styles = map(panel.get("styles"));
-        assertEquals(20, ((Number) styles.get("gap")).intValue(), "gap defaults to 20");
-        assertEquals(20, ((Number) styles.get("margin")).intValue(), "margin defaults to 20");
+        assertEquals(8, ((Number) styles.get("gap")).intValue(), "a vertical panel's gap defaults to 8");
+        assertEquals(8, ((Number) styles.get("margin")).intValue(), "a vertical panel's margin defaults to 8");
         assertEquals(0, ((Number) styles.get("padding")).intValue(), "padding defaults to 0");
         assertEquals("space-between", styles.get("justifyContent"),
                 "a vertical panel distributes its cards with space-between");
