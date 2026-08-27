@@ -1,0 +1,148 @@
+{
+  "segments": {
+    "segmentFilter": [
+      "Luma"
+    ]
+  },
+  "identities": [
+    {
+      "id": "oXZz73qoI",
+      "path": "_demosystem4.identification.core.email",
+      "label": "Email"
+    },
+    {
+      "id": "J1C99xwJ1",
+      "path": "_demosystem4.identification.core.phoneNumber",
+      "label": "Phone number"
+    },
+    {
+      "id": "16o04YWC5",
+      "path": "userAccount.ID",
+      "label": "User ID"
+    }
+  ],
+  "eventGroups": [
+    {
+      "id": "row-0-1755338071295",
+      "label": "Product Views",
+      "filter": "entity.commerce.productViews"
+    },
+    {
+      "id": "row-1-1755338071295",
+      "label": "Add to Cart",
+      "filter": "entity.commerce.productListAdds"
+    },
+    {
+      "id": "row-2-1755338071295",
+      "label": "Commerce Checkout",
+      "filter": "entity.commerce.checkouts"
+    },
+    {
+      "id": "row-3-1755338071295",
+      "label": "Offers Interactions",
+      "filter": "entity._salesvelocity.interactionDetails.proposition.name"
+    },
+    {
+      "id": "row-4-1755338071295",
+      "label": "Join Luma+",
+      "filter": "luma.join.lumaplus"
+    },
+    {
+      "id": "row-5-1755338071295",
+      "label": "Mobile Registration",
+      "filter": "mobile.registration"
+    },
+    {
+      "id": "row-6-1755338071295",
+      "label": "Chatbot interaction",
+      "filter": "Bot.interaction"
+    },
+    {
+      "id": "row-7-1755338071295",
+      "label": "Purchase",
+      "filter": "commerce.purchases"
+    },
+    {
+      "id": "row-8-1755338071295",
+      "label": "Web Registration",
+      "filter": "web.registration"
+    },
+    {
+      "id": "row-9-1755338071295",
+      "label": "Application Launch",
+      "filter": "application.launch"
+    },
+    {
+      "id": "row-10-1755338071295",
+      "label": "Added to favourites",
+      "filter": "commerce.saveForLaters"
+    },
+    {
+      "id": "row-11-1755338071295",
+      "label": "Store Entry",
+      "filter": "poi.entry"
+    },
+    {
+      "id": "row-12-1755338071295",
+      "label": "Store Exit",
+      "filter": "poi.exit"
+    },
+    {
+      "id": "row-13-1755338071295",
+      "label": "Logout",
+      "filter": "application.logout"
+    },
+    {
+      "id": "row-14-1755338071295",
+      "label": "Login",
+      "filter": "application.login"
+    },
+    {
+      "id": "row-15-1755338071295",
+      "label": "Screen View",
+      "filter": "web.webpagedetails.pageViews"
+    },
+    {
+      "id": "row-16-1755338075694",
+      "label": "Application Install",
+      "filter": "application.install"
+    }
+  ],
+  "profileFields": [
+    {
+      "id": "$waSjXzV_",
+      "path": "entity.person.name.firstName entity.person.name.lastName",
+      "label": "Name"
+    },
+    {
+      "id": "lD3FbedeIE",
+      "path": "entity.person.gender",
+      "label": "Gender"
+    },
+    {
+      "id": "Ikb7Mm201O",
+      "path": "entity.person.birthDate",
+      "label": "Birth date"
+    },
+    {
+      "id": "3N1TmbKk6j",
+      "path": "entity.homeAddress.street1 entity.homeAddress.postalCode entity.homeAddress.city",
+      "label": "Address"
+    },
+    {
+      "id": "kIZsNA5E0F",
+      "path": "pushNotificationDetails[].token",
+      "label": "Push Token"
+    },
+    {
+      "id": "dpAbiMz1pp",
+      "path": "entity._demosystem4.loyaltyDetails.level",
+      "label": "Loyalty Status"
+    },
+    {
+      "id": "ZXx1WC6$N",
+      "path": "_demosystem4.scoring.core.propensityScore",
+      "label": "Propensity Score"
+    }
+  ]
+}
