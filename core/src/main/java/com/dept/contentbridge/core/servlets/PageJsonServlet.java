@@ -168,7 +168,7 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             // "excessive" access log below - avoids Jackson streaming the payload twice.
             final String body = writer(request).writeValueAsString(payload);
             response.getWriter().write(body);
-            LOG.info("ContentBridge served path={} bytes={} body={}", path, body.length(), body);
+            LOG.debug("ContentBridge served path={} bytes={} body={}", path, body.length(), body);
 
         } catch (final IOException e) {
             LOG.error("Failed to serialise ContentBridge payload for {}", path, e);
@@ -189,13 +189,14 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
      * service user degrades to the requesting user rather than taking the endpoint down.
      */
     /**
-     * Excessive access log: who called the API and with what. Emitted at INFO so it shows up
-     * without a debug config change. Reads only headers the servlet API already exposes -
-     * request line, remote address, User-Agent, Referer, authenticated user - and includes the
-     * decoded query string so a consumer can be traced back to what they asked for.
+     * Access log: who called the API and with what. Fires on every request, so it sits at DEBUG -
+     * enable it per-deployment rather than paying the volume on every hit. Reads only headers the
+     * servlet API already exposes - request line, remote address, User-Agent, Referer, authenticated
+     * user - and includes the decoded query string so a consumer can be traced back to what they
+     * asked for.
      */
     private static void logConsumer(final SlingHttpServletRequest request, final String path) {
-        LOG.info("ContentBridge request path={} remote={} user={} ua={} referer={} query={}",
+        LOG.debug("ContentBridge request path={} remote={} user={} ua={} referer={} query={}",
                 path,
                 StringUtils.defaultIfEmpty(request.getRemoteAddr(), "-"),
                 StringUtils.defaultIfEmpty(request.getRemoteUser(), "-"),

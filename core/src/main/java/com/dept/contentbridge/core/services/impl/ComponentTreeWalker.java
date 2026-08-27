@@ -492,7 +492,9 @@ final class ComponentTreeWalker {
         }
         final Resource fragment = component.getResourceResolver().getResource(((String) refValue).trim());
         if (fragment == null) {
-            LOG.warn("{} on {} points at '{}', which does not resolve - exporting the component "
+            // A content problem, not a code problem: fires identically on every export of this
+            // component until an author fixes the reference, so DEBUG rather than WARN.
+            LOG.debug("{} on {} points at '{}', which does not resolve - exporting the component "
                     + "without its fragment data", refProperty, component.getPath(), refValue);
             return authored;
         }
@@ -530,7 +532,9 @@ final class ComponentTreeWalker {
         final String path = stripHost(((String) raw).trim());
         final Resource folder = component.getResourceResolver().getResource(path);
         if (folder == null) {
-            LOG.warn("{} on {} points at '{}', which does not resolve - exporting the component "
+            // Same reasoning as withContentFragmentRef above: a content problem that repeats every
+            // export until fixed, not an exceptional runtime condition - DEBUG, not WARN.
+            LOG.debug("{} on {} points at '{}', which does not resolve - exporting the component "
                     + "without its folder data", ref.getProperty(), component.getPath(), raw);
             return authored;
         }
