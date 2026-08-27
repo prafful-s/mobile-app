@@ -34,11 +34,6 @@ public interface PageJsonExporter {
     Map<String, Object> export(Page requested, ExportOptions options);
 
     /**
-     * @return the configured Cache-Control max-age in seconds
-     */
-    int getCacheMaxAge();
-
-    /**
      * @return true when a raw JSON payload found on the requested node should be served verbatim
      *         instead of exporting the page
      */

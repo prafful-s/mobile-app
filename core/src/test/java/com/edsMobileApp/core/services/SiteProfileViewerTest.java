@@ -41,8 +41,7 @@ class SiteProfileViewerTest {
         context.addModelsForPackage("com.edsMobileApp.core.models.impl");
         context.registerInjectActivateService(new UrlServiceImpl());
         context.registerInjectActivateService(new FormSchemaServiceImpl());
-        context.registerInjectActivateService(new PageJsonExporterImpl(),
-                "allowedRoots", new String[] {"/content/secur-financial"}, "cacheMaxAge", 0);
+        context.registerInjectActivateService(new PageJsonExporterImpl());
 
         exporter = context.getService(PageJsonExporter.class);
         assertNotNull(exporter);

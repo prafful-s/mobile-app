@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * activation instead of an OSGi {@code @ObjectClassDefinition}.
  *
  * <p>These knobs ({@code maxDepth}, {@code navPageNames},
- * {@code excludedPageNames}, {@code includeHomeScreen}, {@code styleTokens}, {@code cacheMaxAge},
+ * {@code excludedPageNames}, {@code includeHomeScreen}, {@code styleTokens},
  * {@code overrideEnabled}, {@code overridePropertyName}) are legitimately global - one servlet
  * exports every site, so
  * unlike branding/integrations/profileViewer there is no per-site variant to keep separate.
@@ -34,9 +34,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * <p>{@code load(Map)} additionally accepts the component properties {@code @Activate} receives
  * (whatever the mock or real OSGi runtime passes, e.g. Sling Mocks'
- * {@code registerInjectActivateService(service, "cacheMaxAge", ...)} in tests) - any key present
- * there wins over {@code config.json}, so a test can still pin
- * a fixed {@code cacheMaxAge} without needing its own {@code config.json} on the test classpath.</p>
+ * {@code registerInjectActivateService(service, "maxDepth", ...)} in tests) - any key present
+ * there wins over {@code config.json}, so a test can still pin a narrower {@code maxDepth}
+ * without needing its own {@code config.json} on the test classpath.</p>
  */
 final class ContentBridgeSettings {
 
@@ -50,7 +50,6 @@ final class ContentBridgeSettings {
     private final String[] excludedPageNames;
     private final boolean includeHomeScreen;
     private final String[] styleTokens;
-    private final int cacheMaxAge;
     private final boolean overrideEnabled;
     private final String overridePropertyName;
 
@@ -63,7 +62,6 @@ final class ContentBridgeSettings {
         this.includeHomeScreen = boolValue(values, "includeHomeScreen", true);
         this.styleTokens = stringArray(values, "styleTokens",
                 new String[] {"bg-default=backgroundColor:#F5F8FA"});
-        this.cacheMaxAge = Math.max(0, intValue(values, "cacheMaxAge", 300));
         this.overrideEnabled = boolValue(values, "overrideEnabled", true);
         this.overridePropertyName = StringUtils.defaultIfBlank(
                 stringValue(values, "overridePropertyName"), "cbJson");
@@ -103,10 +101,6 @@ final class ContentBridgeSettings {
 
     String[] styleTokens() {
         return styleTokens.clone();
-    }
-
-    int cacheMaxAge() {
-        return cacheMaxAge;
     }
 
     boolean overrideEnabled() {

@@ -59,7 +59,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private Set<String> excludedPageNames;
     private boolean includeHomeScreen;
     private int maxDepth;
-    private int cacheMaxAge;
     private boolean overrideEnabled;
     private String overridePropertyName;
 
@@ -79,7 +78,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.excludedPageNames = new HashSet<>(Arrays.asList(config.excludedPageNames()));
         this.includeHomeScreen = config.includeHomeScreen();
         this.maxDepth = config.maxDepth();
-        this.cacheMaxAge = config.cacheMaxAge();
         this.overrideEnabled = config.overrideEnabled();
         this.overridePropertyName = config.overridePropertyName();
 
@@ -92,11 +90,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteDefaults = SiteDefaults.load();
         this.productCatalog = new ProductCatalog(ProductMappings.load());
         this.walker.setSiteDefaults(this.siteDefaults);
-    }
-
-    @Override
-    public int getCacheMaxAge() {
-        return cacheMaxAge;
     }
 
     @Override

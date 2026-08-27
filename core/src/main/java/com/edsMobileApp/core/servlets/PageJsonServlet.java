@@ -136,7 +136,7 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             if (exporter.isOverrideEnabled()) {
                 final String raw = rawJsonOverride(resource, exporter.getOverridePropertyName());
                 if (raw != null) {
-                    setCacheHeader(response);
+                    response.setHeader("Cache-Control", "no-store");
                     response.setStatus(SlingHttpServletResponse.SC_OK);
                     response.getWriter().write(raw);
                     return;
@@ -152,7 +152,7 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
 
             // Screen content is reduced to the enabled component set (banner/card/htmlText/form).
             final Map<String, Object> payload = exporter.export(page, ExportOptions.of(true));
-            setCacheHeader(response);
+            response.setHeader("Cache-Control", "no-store");
             response.setStatus(SlingHttpServletResponse.SC_OK);
             // Serialise once to a string so the same bytes go to both the response and the
             // "excessive" access log below - avoids Jackson streaming the payload twice.
@@ -241,15 +241,6 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
         } catch (final IOException e) {
             LOG.warn("Could not read JSON override file at {}", resource.getPath(), e);
             return null;
-        }
-    }
-
-    private void setCacheHeader(final SlingHttpServletResponse response) {
-        final int maxAge = exporter.getCacheMaxAge();
-        if (maxAge > 0) {
-            response.setHeader("Cache-Control", "max-age=" + maxAge);
-        } else {
-            response.setHeader("Cache-Control", "no-store");
         }
     }
 

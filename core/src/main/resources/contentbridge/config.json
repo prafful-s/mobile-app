@@ -4,7 +4,6 @@
   "excludedPageNames": ["nav", "header", "navigation", "footer", "placeholders", "language-masters", "redirects"],
   "includeHomeScreen": true,
   "styleTokens": ["bg-default=backgroundColor:#F5F8FA"],
-  "cacheMaxAge": 300,
   "overrideEnabled": true,
   "overridePropertyName": "cbJson"
 }

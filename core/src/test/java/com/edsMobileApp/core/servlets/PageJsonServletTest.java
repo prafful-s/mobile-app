@@ -55,7 +55,7 @@ class PageJsonServletTest {
 
         assertEquals(HttpServletResponse.SC_OK, context.response().getStatus());
         assertTrue(context.response().getContentType().startsWith("application/json"));
-        assertEquals("max-age=300", context.response().getHeader("Cache-Control"));
+        assertEquals("no-store", context.response().getHeader("Cache-Control"));
         assertEquals("en", ((Map<?, ?>) body().get("meta")).get("id"));
     }
 
@@ -87,7 +87,7 @@ class PageJsonServletTest {
         servlet.doGet(context.request(), context.response());
 
         assertEquals(HttpServletResponse.SC_OK, context.response().getStatus());
-        assertEquals("max-age=300", context.response().getHeader("Cache-Control"));
+        assertEquals("no-store", context.response().getHeader("Cache-Control"));
         assertEquals(raw, context.response().getOutputAsString());
     }
 }

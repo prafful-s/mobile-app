@@ -73,7 +73,7 @@ class NavigationMenuTest {
     }
 
     private PageJsonExporter defaultExporter() {
-        return exporter("allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0);
+        return exporter();
     }
 
     @SuppressWarnings("unchecked")
@@ -181,10 +181,7 @@ class NavigationMenuTest {
     @DisplayName("includeHomeScreen=false leaves the home page out when the nav omits it")
     void homeScreenCanBeSuppressed() {
         buildSite(NAV);
-        final PageJsonExporter exporter = exporter(
-                "allowedRoots", new String[] {"/content"},
-                "cacheMaxAge", 0,
-                "includeHomeScreen", false);
+        final PageJsonExporter exporter = exporter("includeHomeScreen", false);
 
         assertEquals(List.of("campaigns", "news", "about-us"), menu(exporter.export(home())));
     }
