@@ -121,7 +121,9 @@ final class EnvelopeMeta {
 
         meta.put(SchemaConstants.KEY_LOCALE, locale(root));
 
-        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, true));
+        // useCart: site-level config only (defaults.json meta.useCart) - not authored per page, since
+        // whether a site has a cart at all is a site-wide decision rather than page content.
+        meta.put("useCart", defaults.useCart());
 
         // optional: template, vertical, rightIcon, thumbnail (placeholders win, then site-level config)
         meta.put("template", StringUtils.defaultString(StringUtils.defaultIfBlank(
@@ -313,7 +315,7 @@ final class EnvelopeMeta {
      */
     static final class MetaDefaults {
 
-        private static final MetaDefaults EMPTY = new MetaDefaults("", "", "", "", "", "");
+        private static final MetaDefaults EMPTY = new MetaDefaults("", "", "", "", "", "", true);
 
         private final String brand;
         private final String thumbnail;
@@ -321,22 +323,24 @@ final class EnvelopeMeta {
         private final String rightIconTarget;
         private final String template;
         private final String vertical;
+        private final boolean useCart;
 
         private MetaDefaults(final String brand, final String thumbnail,
                              final String rightIcon, final String rightIconTarget,
-                             final String template, final String vertical) {
+                             final String template, final String vertical, final boolean useCart) {
             this.brand = StringUtils.trimToEmpty(brand);
             this.thumbnail = StringUtils.trimToEmpty(thumbnail);
             this.rightIcon = StringUtils.trimToEmpty(rightIcon);
             this.rightIconTarget = StringUtils.trimToEmpty(rightIconTarget);
             this.template = StringUtils.trimToEmpty(template);
             this.vertical = StringUtils.trimToEmpty(vertical);
+            this.useCart = useCart;
         }
 
         static MetaDefaults of(final String brand, final String thumbnail,
                                final String rightIcon, final String rightIconTarget,
-                               final String template, final String vertical) {
-            return new MetaDefaults(brand, thumbnail, rightIcon, rightIconTarget, template, vertical);
+                               final String template, final String vertical, final boolean useCart) {
+            return new MetaDefaults(brand, thumbnail, rightIcon, rightIconTarget, template, vertical, useCart);
         }
 
         /**
@@ -345,12 +349,19 @@ final class EnvelopeMeta {
          */
         static MetaDefaults of(final Map<String, Object> meta) {
             return of(str(meta, "brand"), str(meta, "thumbnail"), str(meta, "rightIcon"),
-                    str(meta, "rightIconTarget"), str(meta, "template"), str(meta, "vertical"));
+                    str(meta, "rightIconTarget"), str(meta, "template"), str(meta, "vertical"),
+                    bool(meta, "useCart", true));
         }
 
         private static String str(final Map<String, Object> map, final String key) {
             final Object value = map.get(key);
             return value instanceof String ? (String) value : "";
+        }
+
+        private static boolean bool(final Map<String, Object> map, final String key,
+                                    final boolean defaultValue) {
+            final Object value = map.get(key);
+            return value instanceof Boolean ? (Boolean) value : defaultValue;
         }
 
         static MetaDefaults empty() {
@@ -379,6 +390,10 @@ final class EnvelopeMeta {
 
         String vertical() {
             return vertical;
+        }
+
+        boolean useCart() {
+            return useCart;
         }
     }
 }

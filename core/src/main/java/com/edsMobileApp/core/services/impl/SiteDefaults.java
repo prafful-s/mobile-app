@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "formHeadings":      { "&lt;form-name&gt;": "&lt;title text&gt;" },
  *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
- *                          "rightIcon": "...", "rightIconTarget": "..." }
+ *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true }
  * }
  * </pre>
  *

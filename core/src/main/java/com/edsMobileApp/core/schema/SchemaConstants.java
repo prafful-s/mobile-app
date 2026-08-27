@@ -83,7 +83,6 @@ public final class SchemaConstants {
     /* ---- page / app properties authored in AEM ---- */
     public static final String PN_APP_TYPE = "appType";
     public static final String PN_APP_TITLE = "appTitle";
-    public static final String PN_USE_CART = "useCart";
     public static final String PN_LOGIN_SCREEN = "loginScreen";
     public static final String PN_PROFILE_SCREEN = "profileScreen";
     public static final String PN_REGISTRATION_SCREEN = "registrationScreen";
