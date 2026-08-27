@@ -48,10 +48,10 @@ class MenuVersusScreensTest {
         // ...one it does not, reached from a card on the plans page...
         context.create().page(SITE + "/plan-detail", "", Map.of("jcr:title", "Plan Detail"));
         // ...and the furniture, which is neither.
-        context.create().page(SITE + "/header", "", Map.of("jcr:title", "Header"));
+        context.create().page(SITE + "/nav", "", Map.of("jcr:title", "Nav"));
         context.create().page(SITE + "/footer", "", Map.of("jcr:title", "Footer"));
 
-        context.build().resource(SITE + "/header/jcr:content/root/nav",
+        context.build().resource(SITE + "/nav/jcr:content/root/nav",
                 "sling:resourceType", "core/franklin/components/block/v1/block",
                 "model", "text",
                 "text", "<ul>"
@@ -110,12 +110,12 @@ class MenuVersusScreensTest {
     }
 
     @Test
-    @DisplayName("header and footer are furniture and are never screens")
+    @DisplayName("nav and footer are furniture and are never screens")
     void furnitureIsExcluded() {
         final Map<String, Object> screens = map(app().get("screens"));
 
-        assertFalse(screens.containsKey("Header"), screens.keySet().toString());
-        assertFalse(screens.containsKey("Footer"), screens.keySet().toString());
+        assertFalse(screens.containsKey("nav"), screens.keySet().toString());
+        assertFalse(screens.containsKey("footer"), screens.keySet().toString());
     }
 
     @Test
