@@ -1,8 +1,6 @@
 {
   "match": ["/conf/secur-financial/settings/dam/cfm/models/secur-financial-product"],
   "component": "product",
-  "sites": ["/content/secur-financial", "/content/contentbridge"],
-  "scope": ["/content/dam/secur-financial/en/fragments", "/content/dam/contentbridge/en/fragments"],
   "fields": [
     { "target": "id", "from": "productSku" },
     { "target": "name", "from": "productName" },

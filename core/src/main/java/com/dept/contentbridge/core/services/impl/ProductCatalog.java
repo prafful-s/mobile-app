@@ -14,21 +14,20 @@ import com.day.cq.wcm.api.Page;
 /**
  * Builds a site's product list from its Content Fragments.
  *
- * <p>Every fragment under each rule's declared {@code scope} is inspected: when its {@code cq:model}
- * is one a {@link ProductMappings product rule} claims, the fragment's elements are projected onto
- * the shared product shape and added to the list. Fragments of any other model - brand themes, CTAs,
- * mobile configuration - are walked through, not exported, so one folder can hold products and
- * non-products side by side.</p>
+ * <p>Every fragment under each {@link ProductMappings#rootsForSite site-applicable root} is
+ * inspected: when its {@code cq:model} is one a product rule claims for that site, the fragment's
+ * elements are projected onto the shared product shape and added to the list. Fragments of any
+ * other model - brand themes, CTAs, mobile configuration - are walked through, not exported, so
+ * one folder can hold products and non-products side by side.</p>
  *
- * <p>Discovery is by {@code cq:model} - the model paths declared in each product rule's
- * {@code match} array are the sole configuration for what counts as a product. The rule's
- * {@code scope} declares where in the DAM tree that model's fragments live, so a Luma export walking
- * {@code /content/dam/luma3} does not pick up secur-financial fragments authored under
- * {@code /content/dam/contentbridge}.</p>
+ * <p>Discovery is by {@code cq:model}, and the DAM roots to walk come from the rules themselves.
+ * A rule can point at its own subtree via a {@code scope} field (Luma does, so its export walks
+ * {@code /content/dam/luma3/en/fragments}); a rule that stays silent falls back to
+ * {@code /content/dam/<siteName>}, which is what the walker did before rules could opt in.</p>
  */
 final class ProductCatalog {
 
-    /** Node visit budget per scope, so a pathological DAM tree cannot stall the export. */
+    /** Node visit budget per root, so a pathological DAM tree cannot stall the export. */
     private static final int MAX_NODES_SCANNED = 20000;
 
     /** Marks a rendered image asset - has jcr:content/renditions we must NOT walk into. */
@@ -51,26 +50,27 @@ final class ProductCatalog {
             return products;
         }
         final ResourceResolver resolver = site.getContentResource().getResourceResolver();
-        for (final String scope : mappings.scopesForSite(site.getPath())) {
-            final Resource root = resolver.getResource(scope);
-            if (root == null) {
+        final String sitePath = site.getPath();
+        for (final String root : mappings.rootsForSite(sitePath)) {
+            final Resource start = resolver.getResource(root);
+            if (start == null) {
                 continue;
             }
             final int[] budget = {0};
-            collect(root, products, assetHost, budget);
+            collect(start, products, assetHost, budget, sitePath);
         }
         return products;
     }
 
     /** Depth-first so fragments organised into sub-folders (accounts, loans, ...) are still found. */
     private void collect(final Resource folder, final List<Map<String, Object>> sink,
-                         final String assetHost, final int[] budget) {
+                         final String assetHost, final int[] budget, final String sitePath) {
         for (final Resource child : folder.getChildren()) {
             if (budget[0]++ >= MAX_NODES_SCANNED) {
                 return;
             }
             final String model = modelOf(child);
-            final ComponentMapping mapping = mappings.find(model);
+            final ComponentMapping mapping = mappings.findForSite(model, sitePath);
             if (mapping != null) {
                 final Map<String, String> elements = ContentFragmentReader.readElements(child);
                 if (elements != null) {
@@ -83,14 +83,15 @@ final class ProductCatalog {
                 continue;
             }
             if (model != null) {
-                // A fragment we do not export still has no product children to descend into.
+                // A fragment we do not export - foreign model, or a rule that doesn't claim this
+                // site - still has no product children to descend into.
                 continue;
             }
             // Plain DAM assets carry jcr:content/renditions with thousands of metadata sub-nodes
             // per asset. Recursing into them stalls the walk against MAX_NODES_SCANNED before we
             // ever reach a fragment folder, so we only descend into real folder nodes.
             if (isFolder(child) && child.hasChildren()) {
-                collect(child, sink, assetHost, budget);
+                collect(child, sink, assetHost, budget, sitePath);
             }
         }
     }

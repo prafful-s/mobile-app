@@ -22,18 +22,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * The loaded set of product projection rules, one entry per rule file.
  *
- * <p>Products come from Content Fragments, and each rule file describes one site's product model:
- * which authoring model to project ({@code match}), which sites the rule applies to ({@code sites}),
- * which DAM subtrees to scan for its fragments ({@code scope}), and how each element maps onto the
- * shared product shape ({@code fields}). Rules are matched to an export in two steps: pick every
- * rule whose {@code sites} claims the export site, then within its {@code scope} pick every fragment
- * whose {@code cq:model} the rule's {@code match} claims. The two together isolate one site's
- * catalogue from another - Luma exports do not see secur-financial fragments and vice versa, even
- * when the same JCR holds both.</p>
+ * <p>Each rule declares the authoring model to project ({@code match}) and how each element maps
+ * onto the shared product shape ({@code fields}). A rule may additionally declare {@code sites} and
+ * {@code scope} to target one specific export catalogue: {@code sites} names the export pages the
+ * rule claims (prefix-matched), and {@code scope} names the DAM subtrees to scan. Both fields are
+ * optional and defaults are intentionally permissive: a rule with no {@code sites} claims every
+ * export, a rule with no {@code scope} walks {@code /content/dam/<siteName>} - the site's own DAM
+ * root, which is what the walker already did before rules could carry their own scope.</p>
  *
- * <p>A rule with no {@code scope} contributes no products - the caller walks nothing on its behalf
- * rather than sweeping the entire DAM. A rule with no {@code sites} matches no export, again by
- * design.</p>
+ * <p>The optional fields carry the configuration that used to live in the {@code cf-folder-path}
+ * site placeholder for Luma: the Luma rule points at {@code /content/dam/luma3/en/fragments} in the
+ * rule file itself, so no per-site placeholder lookup is needed on export. Rules that stay silent
+ * about sites and scope keep the old walk-the-site's-DAM behaviour, so an existing rule (secur-
+ * financial's, for one) needs no changes.</p>
  *
  * <p>Files live under {@code /contentbridge/products}, one per model, with an {@code index.json}
  * manifest - the same classloader-only arrangement the component mappings and form schemas use, so
@@ -45,6 +46,9 @@ final class ProductMappings {
 
     static final String PRODUCTS_PATH = "/contentbridge/products";
     static final String INDEX = PRODUCTS_PATH + "/index.json";
+
+    private static final String CONTENT_ROOT = "/content/";
+    private static final String DAM_ROOT = "/content/dam/";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -75,9 +79,8 @@ final class ProductMappings {
                     LOG.error("Product rule '{}' declares no component or no model match - skipping it", name);
                     continue;
                 }
-                final List<String> sites = readList(definition.get("sites"));
-                final List<String> scopes = readList(definition.get("scope"));
-                loaded.add(new Entry(name.trim(), mapping, sites, scopes));
+                loaded.add(new Entry(name.trim(), mapping,
+                        readList(definition.get("sites")), readList(definition.get("scope"))));
             } catch (final IOException | RuntimeException e) {
                 LOG.error("Product rule '{}' could not be read - skipping it", name, e);
             }
@@ -116,10 +119,7 @@ final class ProductMappings {
         }
     }
 
-    /**
-     * Reads a string-array field from a rule file. Accepts a single string (one entry) or an array
-     * of strings (many). Blank entries are skipped.
-     */
+    /** Accepts either a single string or an array of strings; blanks are dropped. */
     private static List<String> readList(final Object declared) {
         final List<String> out = new ArrayList<>();
         if (declared instanceof String) {
@@ -141,35 +141,43 @@ final class ProductMappings {
     }
 
     /**
-     * @param sitePath the export site page's path (e.g. {@code /content/luma-site/language-masters/en})
-     * @return the DAM subtree roots to scan for that site's products, one entry per {@code scope} on
-     *         every rule whose {@code sites} prefix-matches the export site; empty when no rule
-     *         claims this site
+     * @param sitePath the export site page's path
+     * @return the DAM subtree roots to scan for that site's products - one entry per {@code scope}
+     *         on every rule that claims the site, plus {@code /content/dam/<siteName>} for rules
+     *         that stay silent about scope (default site DAM)
      */
-    Set<String> scopesForSite(final String sitePath) {
+    Set<String> rootsForSite(final String sitePath) {
         if (StringUtils.isBlank(sitePath)) {
             return Collections.emptySet();
         }
-        final Set<String> out = new LinkedHashSet<>();
+        final Set<String> roots = new LinkedHashSet<>();
         for (final Entry entry : entries) {
-            if (entry.claims(sitePath)) {
-                out.addAll(entry.scopes);
+            if (!entry.claims(sitePath)) {
+                continue;
+            }
+            if (!entry.scopes.isEmpty()) {
+                roots.addAll(entry.scopes);
+            } else {
+                final String fallback = defaultDamRoot(sitePath);
+                if (fallback != null) {
+                    roots.add(fallback);
+                }
             }
         }
-        return Collections.unmodifiableSet(out);
+        return Collections.unmodifiableSet(roots);
     }
 
     /**
-     * @param model the fragment's {@code cq:model} path
-     * @return the rule projecting that model onto a product, or {@code null} when none claims it
+     * Returns the projection rule for {@code model} <em>only when the rule claims {@code sitePath}</em>,
+     * so a fragment authored under one site's model does not leak into another site's export.
      */
-    ComponentMapping find(final String model) {
+    ComponentMapping findForSite(final String model, final String sitePath) {
         if (StringUtils.isBlank(model)) {
             return null;
         }
         final String trimmed = model.trim();
         for (final Entry entry : entries) {
-            if (entry.mapping.getMatches().contains(trimmed)) {
+            if (entry.mapping.getMatches().contains(trimmed) && entry.claims(sitePath)) {
                 return entry.mapping;
             }
         }
@@ -192,7 +200,16 @@ final class ProductMappings {
         return all().size();
     }
 
-    /** One rule as loaded: its file name, projection rule, applicable site prefixes, and DAM scopes. */
+    /** @return {@code /content/dam/<siteName>} for a site path under {@code /content/}, else null. */
+    private static String defaultDamRoot(final String sitePath) {
+        if (!sitePath.startsWith(CONTENT_ROOT)) {
+            return null;
+        }
+        final String siteName = sitePath.substring(CONTENT_ROOT.length()).split("/", 2)[0];
+        return siteName.isEmpty() ? null : DAM_ROOT + siteName;
+    }
+
+    /** One rule as loaded: file name, projection rule, applicable site prefixes, and DAM scopes. */
     private static final class Entry {
 
         private final String name;
@@ -208,8 +225,15 @@ final class ProductMappings {
             this.scopes = Collections.unmodifiableList(scopes);
         }
 
-        /** True when {@code sitePath} starts with one of this rule's declared site prefixes. */
+        /**
+         * True when this rule applies to {@code sitePath}. A rule with no {@code sites} claims every
+         * export, so a rule that hasn't opted into per-site targeting stays as broadly applicable as
+         * it always was.
+         */
         boolean claims(final String sitePath) {
+            if (sites.isEmpty()) {
+                return true;
+            }
             for (final String site : sites) {
                 if (sitePath.equals(site) || sitePath.startsWith(site + "/")) {
                     return true;
