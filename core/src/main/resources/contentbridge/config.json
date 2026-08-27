@@ -1,0 +1,13 @@
+{
+  "allowedRoots": ["/content"],
+  "maxDepth": 3,
+  "navPageNames": ["nav", "header", "navigation"],
+  "excludedPageNames": ["nav", "header", "navigation", "footer", "placeholders", "language-masters", "redirects"],
+  "includeHomeScreen": true,
+  "authorHostSegment": "author",
+  "publishHostSegment": "publish",
+  "styleTokens": ["bg-default=backgroundColor:#F5F8FA"],
+  "cacheMaxAge": 300,
+  "overrideEnabled": true,
+  "overridePropertyName": "cbJson"
+}

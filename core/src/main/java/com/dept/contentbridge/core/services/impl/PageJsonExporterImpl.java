@@ -19,13 +19,11 @@ import org.apache.sling.models.factory.ModelFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dept.contentbridge.core.models.impl.AbstractComponentModel;
 import com.dept.contentbridge.core.schema.SchemaConstants;
-import com.dept.contentbridge.core.services.ContentBridgeConfiguration;
 import com.dept.contentbridge.core.services.ExportOptions;
 import com.dept.contentbridge.core.services.FormSchemaService;
 import com.dept.contentbridge.core.services.PageJsonExporter;
@@ -36,7 +34,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component(service = PageJsonExporter.class)
-@Designate(ocd = ContentBridgeConfiguration.class)
 public class PageJsonExporterImpl implements PageJsonExporter {
 
     private static final Logger LOG = LoggerFactory.getLogger(PageJsonExporterImpl.class);
@@ -80,19 +77,18 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private ProductCatalog productCatalog;
 
     @Activate
-    protected void activate(final ContentBridgeConfiguration config) {
-        this.allowedRoots = config.allowedRoots() == null ? new String[0] : config.allowedRoots().clone();
-        this.navPageNames = config.navPageNames() == null ? new String[0] : config.navPageNames().clone();
-        this.excludedPageNames = config.excludedPageNames() == null
-                ? Collections.emptySet()
-                : new HashSet<>(Arrays.asList(config.excludedPageNames()));
+    protected void activate(final Map<String, Object> properties) {
+        final ContentBridgeSettings config = ContentBridgeSettings.load(properties);
+        this.allowedRoots = config.allowedRoots();
+        this.navPageNames = config.navPageNames();
+        this.excludedPageNames = new HashSet<>(Arrays.asList(config.excludedPageNames()));
         this.includeHomeScreen = config.includeHomeScreen();
-        this.authorHostSegment = StringUtils.defaultIfBlank(config.authorHostSegment(), "author");
-        this.publishHostSegment = StringUtils.defaultIfBlank(config.publishHostSegment(), "publish");
-        this.maxDepth = Math.max(1, config.maxDepth());
-        this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
+        this.authorHostSegment = config.authorHostSegment();
+        this.publishHostSegment = config.publishHostSegment();
+        this.maxDepth = config.maxDepth();
+        this.cacheMaxAge = config.cacheMaxAge();
         this.overrideEnabled = config.overrideEnabled();
-        this.overridePropertyName = StringUtils.defaultIfBlank(config.overridePropertyName(), "cbJson");
+        this.overridePropertyName = config.overridePropertyName();
 
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
