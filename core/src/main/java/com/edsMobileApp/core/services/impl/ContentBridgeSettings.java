@@ -56,9 +56,9 @@ final class ContentBridgeSettings {
     private ContentBridgeSettings(final Map<String, Object> values) {
         this.maxDepth = intValue(values, "maxDepth", 3);
         this.navPageNames = stringArray(values, "navPageNames",
-                new String[] {"nav", "header", "navigation"});
+                new String[] {"nav"});
         this.excludedPageNames = stringArray(values, "excludedPageNames", new String[] {
-                "nav", "header", "navigation", "footer", "placeholders", "language-masters", "redirects"});
+                "nav", "footer", "placeholders", "language-masters", "redirects"});
         this.includeHomeScreen = boolValue(values, "includeHomeScreen", true);
         this.styleTokens = stringArray(values, "styleTokens",
                 new String[] {"bg-default=backgroundColor:#F5F8FA"});
