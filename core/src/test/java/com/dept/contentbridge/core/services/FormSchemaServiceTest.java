@@ -129,8 +129,8 @@ class FormSchemaServiceTest {
     @Test
     @DisplayName("every field names a type the client can render")
     void knownFieldTypes() {
-        final java.util.Set<String> types =
-                java.util.Set.of("text", "select", "checkbox", "radio", "file", "password", "date");
+        final java.util.Set<String> types = java.util.Set.of(
+                "text", "select", "checkbox", "radio", "file", "password", "date", "heading");
 
         service.getFormNames().forEach(form -> service.getSchema(form).forEach(field ->
                 assertTrue(types.contains(field.get("type")),
@@ -140,9 +140,13 @@ class FormSchemaServiceTest {
     @Test
     @DisplayName("every field has an id and a name - both are load-bearing")
     void everyFieldIsAddressable() {
+        // A heading is a static section divider, not a value the user supplies - it has no path in
+        // the profile model to name.
         service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
             assertNotNull(field.get("id"), form + " has a field with no id");
-            assertNotNull(field.get("name"), form + "." + field.get("id") + " has no name");
+            if (!"heading".equals(field.get("type"))) {
+                assertNotNull(field.get("name"), form + "." + field.get("id") + " has no name");
+            }
         }));
     }
 

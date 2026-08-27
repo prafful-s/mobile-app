@@ -8,32 +8,30 @@ import java.util.Map;
 
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.day.cq.wcm.api.Page;
 
 /**
  * Builds a site's product list from its Content Fragments.
  *
- * <p>Every fragment under the site's DAM tree is inspected: when its {@code cq:model} is one a
- * {@link ProductMappings product rule} claims, the fragment's elements are projected onto the shared
- * product shape and added to the list. Fragments of any other model - brand themes, CTAs, mobile
- * configuration - are walked through, not exported, so one folder can hold products and non-products
- * side by side.</p>
+ * <p>Every fragment under each {@link ProductMappings#rootsForSite site-applicable root} is
+ * inspected: when its {@code cq:model} is one a product rule claims for that site, the fragment's
+ * elements are projected onto the shared product shape and added to the list. Fragments of any
+ * other model - brand themes, CTAs, mobile configuration - are walked through, not exported, so
+ * one folder can hold products and non-products side by side.</p>
  *
- * <p>Discovery is by model rather than by a configured path so a new product model needs only a rule
- * file, and so the caller never has to know where in the DAM tree a site keeps its catalogue.</p>
+ * <p>Discovery is by {@code cq:model}, and the DAM roots to walk come from the rules themselves.
+ * A rule can point at its own subtree via a {@code scope} field (Luma does, so its export walks
+ * {@code /content/dam/luma3/en/fragments}); a rule that stays silent falls back to
+ * {@code /content/dam/<siteName>}, which is what the walker did before rules could opt in.</p>
  */
 final class ProductCatalog {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ProductCatalog.class);
+    /** Node visit budget per root, so a pathological DAM tree cannot stall the export. */
+    private static final int MAX_NODES_SCANNED = 20000;
 
-    private static final String CONTENT_ROOT = "/content/";
-    private static final String DAM_ROOT = "/content/dam/";
-
-    /** Node visit budget, so a pathological DAM tree cannot stall the export. */
-    private static final int MAX_NODES_SCANNED = 5000;
+    /** Marks a rendered image asset - has jcr:content/renditions we must NOT walk into. */
+    private static final String DAM_ASSET = "dam:Asset";
 
     private final ProductMappings mappings;
 
@@ -48,37 +46,31 @@ final class ProductCatalog {
      */
     List<Map<String, Object>> export(final Page site, final String assetHost) {
         final List<Map<String, Object>> products = new ArrayList<>();
-        final Resource damRoot = damRoot(site);
-        if (damRoot != null) {
-            collect(damRoot, products, assetHost, new int[] {0});
+        if (site == null || site.getContentResource() == null) {
+            return products;
+        }
+        final ResourceResolver resolver = site.getContentResource().getResourceResolver();
+        final String sitePath = site.getPath();
+        for (final String root : mappings.rootsForSite(sitePath)) {
+            final Resource start = resolver.getResource(root);
+            if (start == null) {
+                continue;
+            }
+            final int[] budget = {0};
+            collect(start, products, assetHost, budget, sitePath);
         }
         return products;
     }
 
-    /** The site's DAM tree, {@code /content/dam/<site>}, or null when the page is not under a site. */
-    private Resource damRoot(final Page site) {
-        final String path = site.getPath();
-        if (path == null || !path.startsWith(CONTENT_ROOT)) {
-            return null;
-        }
-        final String siteName = path.substring(CONTENT_ROOT.length()).split("/", 2)[0];
-        if (siteName.isEmpty()) {
-            return null;
-        }
-        final ResourceResolver resolver = site.getContentResource().getResourceResolver();
-        return resolver.getResource(DAM_ROOT + siteName);
-    }
-
     /** Depth-first so fragments organised into sub-folders (accounts, loans, ...) are still found. */
     private void collect(final Resource folder, final List<Map<String, Object>> sink,
-                         final String assetHost, final int[] budget) {
+                         final String assetHost, final int[] budget, final String sitePath) {
         for (final Resource child : folder.getChildren()) {
             if (budget[0]++ >= MAX_NODES_SCANNED) {
-                LOG.warn("Product scan hit the {}-node budget under {} - some fragments may be skipped",
-                        MAX_NODES_SCANNED, folder.getPath());
                 return;
             }
-            final ComponentMapping mapping = mappings.find(modelOf(child));
+            final String model = modelOf(child);
+            final ComponentMapping mapping = mappings.findForSite(model, sitePath);
             if (mapping != null) {
                 final Map<String, String> elements = ContentFragmentReader.readElements(child);
                 if (elements != null) {
@@ -90,8 +82,16 @@ final class ProductCatalog {
                 // A recognised fragment has no product children to descend into.
                 continue;
             }
-            if (child.hasChildren()) {
-                collect(child, sink, assetHost, budget);
+            if (model != null) {
+                // A fragment we do not export - foreign model, or a rule that doesn't claim this
+                // site - still has no product children to descend into.
+                continue;
+            }
+            // Plain DAM assets carry jcr:content/renditions with thousands of metadata sub-nodes
+            // per asset. Recursing into them stalls the walk against MAX_NODES_SCANNED before we
+            // ever reach a fragment folder, so we only descend into real folder nodes.
+            if (isFolder(child) && child.hasChildren()) {
+                collect(child, sink, assetHost, budget, sitePath);
             }
         }
     }
@@ -100,6 +100,18 @@ final class ProductCatalog {
     private String modelOf(final Resource resource) {
         final Resource data = resource.getChild("jcr:content/data");
         return data == null ? null : data.getValueMap().get("cq:model", String.class);
+    }
+
+    /**
+     * True when {@code resource} is a container the walker should recurse into. Anything but a
+     * plain {@code dam:Asset} node is walked (folders under any primary type, nt:unstructured mock
+     * nodes in tests, and so on). Assets are stopped at because their {@code jcr:content/renditions}
+     * subtree carries hundreds of metadata sub-nodes per file, which stalls the walk against the
+     * scan budget before it reaches any Content Fragment folder.
+     */
+    private static boolean isFolder(final Resource resource) {
+        final String primaryType = resource.getValueMap().get("jcr:primaryType", String.class);
+        return !DAM_ASSET.equals(primaryType);
     }
 
     private Map<String, Object> toProduct(final ComponentMapping mapping,

@@ -242,7 +242,7 @@ Import-Package: !org.jspecify.annotations,javax.annotation;version=0.0.0,*
                     <artifactId>sling-maven-plugin</artifactId>
                     <version>${sling.maven.plugin.version}</version>
                     <configuration>
-                        <url>http://${aem.host}:${aem.port}/system/console</url>
+                        <slingUrl>http://${aem.host}:${aem.port}/system/console</slingUrl>
                         <user>${sling.user}</user>
                         <password>${sling.password}</password>
                     </configuration>

@@ -1,0 +1,22 @@
+{
+  "match": ["cart"],
+  "component": "cartSummary",
+  "skeleton": true,
+  "ignoreExtras": ["*"],
+  "fields": [
+    { "target": "label", "from": "label", "default": "TOTAL" },
+    { "target": "totalLabel", "from": "totalLabel", "default": "TOTAL" },
+    { "target": "subtotalLabel", "from": "subtotalLabel", "default": "SUBTOTAL" },
+    { "target": "shippingLabel", "from": "shippingLabel", "default": "SHIPPING" },
+    { "target": "discountLabel", "from": "discountLabel", "default": "DISCOUNT" },
+    { "target": "promoCodeLabel", "from": "promoCodeLabel", "default": "PROMO CODE" },
+    { "target": "emptyCartMessage", "from": "emptyCartMessage", "default": "Your cart is empty" },
+    { "target": "promoMessage", "from": "promoMessage", "default": "Promo code applied" },
+    { "target": "promoErrorMessage", "from": "promoErrorMessage", "default": "Invalid promo code" },
+    { "target": "showDiscount", "from": "showDiscount", "type": "boolean", "default": true },
+    { "target": "showPromoCode", "from": "showPromoCode", "type": "boolean", "default": true },
+    { "target": "showShippingCharge", "from": "showShippingCharge", "type": "boolean", "default": true },
+    { "target": "configureDiscountCodes", "from": "configureDiscountCodes", "type": "boolean", "default": false },
+    { "target": "discountCodes", "from": "discountCodes", "default": [] }
+  ]
+}

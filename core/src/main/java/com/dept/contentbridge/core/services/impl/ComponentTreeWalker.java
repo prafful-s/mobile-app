@@ -66,6 +66,11 @@ final class ComponentTreeWalker {
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
+    /** Forwarded to the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
+    void setSiteDefaults(final SiteDefaults siteDefaults) {
+        this.formBuilder.setSiteDefaults(siteDefaults);
+    }
+
     /**
      * Components with no reference-contract counterpart that ship on this repo's sites but that
      * a downstream client will not render - kept out of screens.content[] so the payload stays
@@ -266,6 +271,12 @@ final class ComponentTreeWalker {
     private static void appendUnconsumedExtras(final Map<String, Object> target,
                                                final Map<String, Object> authored,
                                                final Set<String> consumed) {
+        // Wildcard opt-out: a rule declaring ignoreExtras: ["*"] freezes its output to exactly what
+        // the rule wrote - a hardcoded reference shape must not gain keys from whatever the author
+        // happened to leave on the resource.
+        if (consumed.contains("*")) {
+            return;
+        }
         for (final Map.Entry<String, Object> entry : authored.entrySet()) {
             final String key = entry.getKey();
             if (consumed.contains(key) || target.containsKey(key)) {
@@ -411,8 +422,15 @@ final class ComponentTreeWalker {
             // the ordered field list. Only in v2 - v1 keeps the flat block with a schema beside it,
             // because that contract is already published.
             if (hierarchical && isFormBlock(child, authoredName, authored)) {
-                sink.add(formBuilder.build(child, formNameOf(authoredName, authored),
-                        model.getId(), sink.size(), authored));
+                final String formName = formNameOf(authoredName, authored);
+                final Map<String, Object> resolvedAuthored = formBuilder.withDefaultVariant(formName, authored);
+                final Map<String, Object> heading = formBuilder.heading(formName, resolvedAuthored,
+                        AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size(),
+                        child.getPath());
+                if (heading != null) {
+                    sink.add(heading);
+                }
+                sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), resolvedAuthored));
                 continue;
             }
 
@@ -474,7 +492,9 @@ final class ComponentTreeWalker {
         }
         final Resource fragment = component.getResourceResolver().getResource(((String) refValue).trim());
         if (fragment == null) {
-            LOG.warn("{} on {} points at '{}', which does not resolve - exporting the component "
+            // A content problem, not a code problem: fires identically on every export of this
+            // component until an author fixes the reference, so DEBUG rather than WARN.
+            LOG.debug("{} on {} points at '{}', which does not resolve - exporting the component "
                     + "without its fragment data", refProperty, component.getPath(), refValue);
             return authored;
         }
@@ -512,24 +532,133 @@ final class ComponentTreeWalker {
         final String path = stripHost(((String) raw).trim());
         final Resource folder = component.getResourceResolver().getResource(path);
         if (folder == null) {
-            LOG.warn("{} on {} points at '{}', which does not resolve - exporting the component "
+            // Same reasoning as withContentFragmentRef above: a content problem that repeats every
+            // export until fixed, not an exceptional runtime condition - DEBUG, not WARN.
+            LOG.debug("{} on {} points at '{}', which does not resolve - exporting the component "
                     + "without its folder data", ref.getProperty(), component.getPath(), raw);
             return authored;
         }
-        final List<String> collected = new ArrayList<>();
-        for (final Resource child : folder.getChildren()) {
-            final Map<String, String> elements = ContentFragmentReader.read(child);
-            final String value = elements.get(ref.getCollectField());
-            if (StringUtils.isNotBlank(value)) {
-                collected.add(value);
+        // One walk of the folder feeds every collect entry, so a rule that needs both product SKUs
+        // and their category tags reads the tree once instead of N times. A subfolder that is not
+        // itself a Content Fragment is recursed into (bounded depth) so a category folder holding
+        // per-subcategory folders of fragments (e.g. .../women/tops, .../women/bottoms) still yields
+        // its fragments to the caller.
+        final Map<String, List<String>> collected = new LinkedHashMap<>();
+        for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
+            collected.put(c.getInjectAs(), new ArrayList<>());
+        }
+        collectFragments(folder, ref, authored, collected, 0);
+        boolean anyPopulated = false;
+        for (final List<String> values : collected.values()) {
+            if (!values.isEmpty()) {
+                anyPopulated = true;
+                break;
             }
         }
-        if (collected.isEmpty()) {
+        if (!anyPopulated) {
             return authored;
         }
         final Map<String, Object> merged = new LinkedHashMap<>(authored);
-        merged.put(ref.getInjectAs(), collected);
+        for (final Map.Entry<String, List<String>> entry : collected.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                merged.put(entry.getKey(), entry.getValue());
+            }
+        }
         return merged;
+    }
+
+    /**
+     * Walks {@code folder} and every descendant folder, adding each Content Fragment child's
+     * collected fields to {@code sink}. Recursion is bounded so a malformed DAM tree cannot loop.
+     */
+    private static final int FRAGMENT_FOLDER_MAX_DEPTH = 5;
+
+    /** Marks a DAM asset's node - has jcr:content/renditions we must NOT walk into. */
+    private static final String DAM_ASSET = "dam:Asset";
+
+    private void collectFragments(final Resource folder,
+                                  final ComponentMapping.ContentFragmentFolderRef ref,
+                                  final Map<String, Object> authored,
+                                  final Map<String, List<String>> sink,
+                                  final int depth) {
+        for (final Resource child : folder.getChildren()) {
+            final Map<String, String> elements = ContentFragmentReader.readElements(child);
+            if (elements == null) {
+                // Not a Content Fragment. Recurse only into real folders - a dam:Asset's
+                // jcr:content/renditions subtree carries hundreds of metadata sub-nodes per file
+                // and stalls the walk against a page-load budget without ever finding a fragment.
+                if (depth < FRAGMENT_FOLDER_MAX_DEPTH && isFolderContainer(child) && child.hasChildren()) {
+                    collectFragments(child, ref, authored, sink, depth + 1);
+                }
+                continue;
+            }
+            for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
+                if (!matchesFilter(c, elements, authored)) {
+                    continue;
+                }
+                String value = null;
+                for (final String field : c.getFields()) {
+                    final String candidate = elements.get(field);
+                    if (StringUtils.isNotBlank(candidate)) {
+                        value = candidate;
+                        break;
+                    }
+                }
+                if (value != null) {
+                    sink.get(c.getInjectAs()).add(value);
+                } else if (c.keepBlank()) {
+                    // Preserve item count/order alignment with the folder even when a fragment
+                    // carries none of the requested fields; client can still show a placeholder.
+                    sink.get(c.getInjectAs()).add("");
+                }
+            }
+        }
+    }
+
+    /**
+     * True when {@code child} is a container the folder walk should descend into. Everything
+     * except a plain {@code dam:Asset} node counts (folders under any primary type, and
+     * {@code nt:unstructured} mock nodes used in tests).
+     */
+    private static boolean isFolderContainer(final Resource child) {
+        return !DAM_ASSET.equals(child.getValueMap().get("jcr:primaryType", String.class));
+    }
+
+    /**
+     * True when the collect applies to this fragment. Without match constraints, always true. With
+     * them, the CF's {@code matchField} value must appear in the authored list at
+     * {@code matchAgainst} - the block hardcoded a set of SKUs and only their fragments count.
+     */
+    private static boolean matchesFilter(final ComponentMapping.ContentFragmentFolderRef.Collect c,
+                                          final Map<String, String> elements,
+                                          final Map<String, Object> authored) {
+        final String matchField = c.getMatchField();
+        final String matchAgainst = c.getMatchAgainst();
+        if (matchField == null || matchAgainst == null) {
+            return true;
+        }
+        final String value = elements.get(matchField);
+        if (StringUtils.isBlank(value)) {
+            return false;
+        }
+        final Object allowed = authored.get(matchAgainst);
+        if (allowed instanceof Object[]) {
+            for (final Object item : (Object[]) allowed) {
+                if (item != null && value.equals(String.valueOf(item))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (allowed instanceof Iterable) {
+            for (final Object item : (Iterable<?>) allowed) {
+                if (item != null && value.equals(String.valueOf(item))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return allowed != null && value.equals(String.valueOf(allowed));
     }
 
     /** Strips scheme+host off an absolute http(s) URL, keeping only path. Idempotent on paths. */

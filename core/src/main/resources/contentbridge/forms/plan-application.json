@@ -1,5 +1,10 @@
 [
   {
+    "id": "step-1-subtitle",
+    "type": "heading",
+    "label": "Personal Details"
+  },
+  {
     "id": "firstName",
     "name": "person.name.firstName",
     "label": "First name",
@@ -86,6 +91,11 @@
     ]
   },
   {
+    "id": "address-heading",
+    "type": "heading",
+    "label": "Address"
+  },
+  {
     "id": "address",
     "name": "homeAddress.street1",
     "label": "Street Address",
@@ -93,6 +103,11 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": ""
+  },
+  {
+    "id": "identity-heading",
+    "type": "heading",
+    "label": "Identity"
   },
   {
     "id": "ssn",

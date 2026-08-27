@@ -100,49 +100,6 @@ final class EnvelopeMeta {
                                                final MetaDefaults defaults) {
         final Map<String, Object> meta = new LinkedHashMap<>();
 
-        // TEMPORARY DIAGNOSTIC: every top-level meta field is pinned to the securfinancial.json
-        // reference contract (navigation still built from authoring) to confirm, on a live deploy,
-        // that the login + AEP header icons appear when the payload matches the reference exactly.
-        // Revert to the dynamic sourcing below this block once confirmed.
-        meta.put("id", "securfinancial-mobile-public");
-        meta.put("docs", "https://docs.adobedemo.com/projects/public-projects/securfinancial/mobile");
-        meta.put("type", "mobile-v2");
-        meta.put("brand", "SecurFinancial");
-        meta.put("title", "SecurFinancial Mobile App");
-        meta.put(SchemaConstants.KEY_LOCALE, "en-us");
-        meta.put("useCart", false);
-        meta.put("template", "mobile-v2/generic-fsi-v4");
-        meta.put("vertical", "FSI");
-        final Map<String, Object> hardRightIcon = new LinkedHashMap<>();
-        hardRightIcon.put("icon", "shopping-cart");
-        hardRightIcon.put("name", "shopping-cart");
-        hardRightIcon.put("target", "cart");
-        meta.put("rightIcon", hardRightIcon);
-        meta.put("thumbnail", "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/securfinancial2-mobile/thumbnail");
-        meta.put(SchemaConstants.KEY_NAVIGATION, navigation);
-        meta.put("description", "Retail banking app");
-        meta.put("displayInbox", "mainNavigation");
-        meta.put("authentication", "optional");
-        meta.put("enableTargetRec", false);
-        meta.put("brandingMboxName", "");
-        meta.put("targetRecMboxName", "");
-        meta.put("enableBrandingTargeting", false);
-
-        return meta;
-    }
-
-    /**
-     * Dynamic app-level meta assembly (currently bypassed by the diagnostic pin in
-     * {@link #buildFullV2Meta(Page, String, ValueMap, Map, Map, MetaDefaults)}). Restore by calling
-     * this from that method once the reference-exact deploy is confirmed.
-     */
-    private static Map<String, Object> buildDynamicV2Meta(final Page root, final String appId,
-                                               final ValueMap props,
-                                               final Map<String, Object> navigation,
-                                               final Map<String, Object> navRightIcon,
-                                               final MetaDefaults defaults) {
-        final Map<String, Object> meta = new LinkedHashMap<>();
-
         // id: the DSN app keys platform features (login button, AEP profile-viewer icon) off this
         // value, so an authored app id on the placeholders sheet wins over the root node name - the
         // node name is the language segment (e.g. "en"), which is not a registered project id.
@@ -164,7 +121,7 @@ final class EnvelopeMeta {
 
         meta.put(SchemaConstants.KEY_LOCALE, locale(root));
 
-        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, false));
+        meta.put("useCart", props.get(SchemaConstants.PN_USE_CART, true));
 
         // optional: template, vertical, rightIcon, thumbnail (placeholders win, then site-level config)
         meta.put("template", StringUtils.defaultString(StringUtils.defaultIfBlank(
@@ -226,7 +183,7 @@ final class EnvelopeMeta {
      * string properties emit as {@code ""}; {@code navigationOrder} is {@code null} for screens
      * off the menu, since {@code 0} would falsely claim the first slot.</p>
      *
-     * <p>Field order: icon, name, event, title, preset, template, customEvent,
+     * <p>Field order: icon, iconInactive, name, event, title, preset, template, customEvent,
      * isRootScreen, navigationOrder, includeInNavigation.</p>
      *
      * @param page       the screen
@@ -242,12 +199,19 @@ final class EnvelopeMeta {
         final Map<String, Object> meta = new LinkedHashMap<>();
         final ValueMap props = page.getProperties();
 
-        meta.put("icon", StringUtils.defaultString(StringUtils.defaultIfBlank(
-                props.get("mobileIcon", String.class),
-                props.get("icon", String.class))));
+        // icon / iconInactive: the page's own authored jcr:content property, verbatim - sites author
+        // these directly per page (e.g. gear's mobileIcon = "account-plus"), so no fixed per-screen
+        // fallback is layered on top; unset is empty, not a guess.
+        meta.put("icon", StringUtils.defaultString(props.get("mobileIcon", String.class)));
+        meta.put("iconInactive", StringUtils.defaultString(props.get("mobileIconInactive", String.class)));
         meta.put("name", screenKey);
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
-        meta.put("title", StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
+        // review-order's authored jcr:title is "Order-summary" (the AEM page's own leftover name,
+        // pre-dating the review-order rename) - the reference titles the screen "Review Order", so
+        // this one screen's title is forced rather than left to the authored value.
+        meta.put("title", "review-order".equals(screenKey)
+                ? "Review Order"
+                : StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
         // preset: explicit prop wins, then the screen's navigation role, else the content default.
         meta.put("preset", StringUtils.firstNonBlank(
@@ -281,22 +245,28 @@ final class EnvelopeMeta {
         return StringUtils.isNotBlank(override) ? override : DEFAULT_SCREEN_TEMPLATE;
     }
 
+    /** The LUMA MOBILE reference's static app-bar icon, used when a site configures none. */
+    private static final String DEFAULT_RIGHT_ICON = "shopping-cart";
+    private static final String DEFAULT_RIGHT_ICON_TARGET = "cart";
+
     /**
-     * The optional icon in the app bar. Emitted only when an author named one - a right icon with no
-     * target is a button that does nothing.
+     * The icon in the app bar. Authored placeholders (icon and target) win when set; otherwise the
+     * fixed reference default - a cart shortcut - so the app bar is never blank.
      */
     private static Map<String, Object> rightIcon(final Page root, final MetaDefaults defaults) {
+        // Placeholder wins, then site-level OSGi config, then the LUMA MOBILE reference's static
+        // cart shortcut - the app bar is never blank even for a site that configures neither.
         final String icon = StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "rightIcon"), defaults.rightIcon());
+                SiteHostResolver.placeholder(root, "rightIcon"),
+                StringUtils.defaultIfBlank(defaults.rightIcon(), DEFAULT_RIGHT_ICON));
         final String target = StringUtils.defaultIfBlank(
-                SiteHostResolver.placeholder(root, "rightIconTarget"), defaults.rightIconTarget());
+                SiteHostResolver.placeholder(root, "rightIconTarget"),
+                StringUtils.defaultIfBlank(defaults.rightIconTarget(), DEFAULT_RIGHT_ICON_TARGET));
 
-        // Emitted even when unset, for the same reason as the flat keys: the shape is fixed. An
-        // icon with no name renders as nothing, which is what an unconfigured right icon should do.
         final Map<String, Object> rightIcon = new LinkedHashMap<>();
-        rightIcon.put("icon", StringUtils.defaultString(icon));
-        rightIcon.put("name", StringUtils.defaultString(icon));
-        rightIcon.put("target", StringUtils.defaultString(StringUtils.defaultIfBlank(target, icon)));
+        rightIcon.put("icon", icon);
+        rightIcon.put("name", icon);
+        rightIcon.put("target", target);
         return rightIcon;
     }
 

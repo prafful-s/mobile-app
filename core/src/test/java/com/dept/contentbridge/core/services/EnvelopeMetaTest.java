@@ -82,7 +82,6 @@ class EnvelopeMetaTest {
 
     @Test
     @DisplayName("a page with a language but no country still yields a usable tag")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     void localeWithoutCountry() {
         context.create().page("/content/beta/fr", "", Map.of("jcr:title", "Accueil", "jcr:language", "fr"));
 
@@ -93,7 +92,6 @@ class EnvelopeMetaTest {
 
     @Test
     @DisplayName("app fields an author sets on the placeholders page are carried through")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     void authoredAppFields() {
         context.create().page(SITE + "/placeholders", "", Map.of(
                 "brand", "Acme Financial",
@@ -133,27 +131,26 @@ class EnvelopeMetaTest {
     }
 
     @Test
-    @DisplayName("the right icon block is always present, blank when unconfigured")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
+    @DisplayName("the right icon block is always present, defaults to the reference cart shortcut")
     void rightIconIsAlwaysPresent() {
-        // The shape is fixed, so the key exists either way. An icon with no name renders as
-        // nothing, which is what an unconfigured right icon should do.
+        // The shape is fixed, so the key exists either way. Unconfigured falls back to the
+        // LUMA MOBILE reference default rather than blank, so the app bar is never empty.
         final Map<String, Object> unset = map(appMeta().get("rightIcon"));
-        assertEquals("", unset.get("icon"));
-        assertEquals("", unset.get("target"));
+        assertEquals("shopping-cart", unset.get("icon"));
+        assertEquals("shopping-cart", unset.get("name"));
+        assertEquals("cart", unset.get("target"));
 
         context.create().page(SITE + "/placeholders", "", Map.of(
-                "rightIcon", "shopping-cart", "rightIconTarget", "cart"));
+                "rightIcon", "search-icon", "rightIconTarget", "search"));
 
         final Map<String, Object> icon = map(appMeta().get("rightIcon"));
-        assertEquals("shopping-cart", icon.get("icon"));
-        assertEquals("shopping-cart", icon.get("name"));
-        assertEquals("cart", icon.get("target"));
+        assertEquals("search-icon", icon.get("icon"));
+        assertEquals("search-icon", icon.get("name"));
+        assertEquals("search", icon.get("target"));
     }
 
     @Test
     @DisplayName("every app key the target defines is present, even on a site that configures none")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     void appShapeIsFixed() {
         final Map<String, Object> meta = appMeta();
 
@@ -172,11 +169,14 @@ class EnvelopeMetaTest {
     void screenShapeIsFixed() {
         final Map<String, Object> meta = screenMeta("en");
 
-        for (final String key : List.of("icon", "name", "event", "title", "preset", "template",
-                "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation")) {
+        for (final String key : List.of("icon", "iconInactive", "name", "event", "title", "preset",
+                "template", "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation")) {
             assertTrue(meta.containsKey(key), "screen meta is missing " + key + ": " + meta.keySet());
         }
-        assertEquals("", meta.get("icon"), "blank rather than absent");
+        // icon/iconInactive are the page's own mobileIcon/mobileIconInactive, verbatim - empty
+        // when the page authors neither, not a guessed fallback.
+        assertEquals("", meta.get("icon"), "no mobileIcon authored");
+        assertEquals("", meta.get("iconInactive"));
         assertEquals("", meta.get("event"));
         assertEquals("home", meta.get("preset"), "content default when no role or authored preset");
         assertEquals("", meta.get("customEvent"));
@@ -227,10 +227,10 @@ class EnvelopeMetaTest {
         assertEquals("FreeformScreen", screenMeta("en").get("template"));
 
         context.create().page(SITE + "/us/en/atm", "",
-                Map.of("jcr:title", "ATM", "template", "MapScreen", "icon", "atm"));
+                Map.of("jcr:title", "ATM", "template", "MapScreen", "mobileIcon", "atm"));
 
         assertEquals("MapScreen", screenMeta("atm").get("template"));
-        assertEquals("atm", screenMeta("atm").get("icon"));
+        assertEquals("atm", screenMeta("atm").get("icon"), "the page's own mobileIcon property");
     }
 
     @Test
@@ -257,7 +257,6 @@ class EnvelopeMetaTest {
 
     @Test
     @DisplayName("brand is derived from the theme property when not in placeholders")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     void brandFallbackFromTheme() {
         context.resourceResolver().getResource(HOME + "/jcr:content")
                 .adaptTo(ModifiableValueMap.class).put("theme", "acme-theme");
@@ -267,7 +266,6 @@ class EnvelopeMetaTest {
 
     @Test
     @DisplayName("placeholders brand wins over the theme fallback")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     void placeholdersBrandTakesPrecedence() {
         context.create().page(SITE + "/placeholders", "", Map.of("brand", "Acme Official"));
         context.resourceResolver().getResource(HOME + "/jcr:content")
@@ -292,7 +290,6 @@ class EnvelopeMetaTest {
 
     @Test
     @DisplayName("placeholders brand wins over the site-level config default")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     void placeholdersBrandWinsOverConfig() {
         context.create().page(SITE + "/placeholders", "", Map.of("brand", "Authored Brand"));
 
@@ -324,7 +321,6 @@ class EnvelopeMetaTest {
 
     @Test
     @DisplayName("description falls back to jcr:description on the root page when not in placeholders")
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     void descriptionFallbackFromPage() {
         context.resourceResolver().getResource(HOME + "/jcr:content")
                 .adaptTo(ModifiableValueMap.class).put("jcr:description", "Healthcare app for members");

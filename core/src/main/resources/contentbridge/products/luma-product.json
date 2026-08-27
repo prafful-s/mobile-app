@@ -1,0 +1,17 @@
+{
+  "match": ["/conf/dsn-eds-configuration/settings/dam/cfm/models/product-model"],
+  "component": "product",
+  "sites": ["/content/luma-site"],
+  "scope": ["/content/dam/luma3/en/fragments"],
+  "fields": [
+    { "target": "id", "first": ["sku", "id"] },
+    { "target": "sku", "first": ["sku", "id"] },
+    { "target": "name", "from": "name" },
+    { "target": "image", "first": ["image", "damImageURL"] },
+    { "target": "thumbnail", "first": ["image", "damImageURL"] },
+    { "target": "price", "from": "price", "type": "number" },
+    { "target": "category", "from": "category", "type": "categoryLabel" },
+    { "target": "description", "from": "description" },
+    { "target": "short_description", "from": "short_description", "default": "" }
+  ]
+}

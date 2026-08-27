@@ -23,6 +23,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dept.contentbridge.core.models.impl.AbstractComponentModel;
 import com.dept.contentbridge.core.schema.SchemaConstants;
 import com.dept.contentbridge.core.services.ContentBridgeConfiguration;
 import com.dept.contentbridge.core.services.ExportOptions;
@@ -42,9 +43,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
-
-    /** The mobile client renders at most this many navigation tabs. */
-    private static final int MAX_MENU_ITEMS = 5;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
@@ -79,6 +77,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private SiteBranding siteBranding;
     private SiteProfileViewer siteProfileViewer;
     private SiteIntegrations siteIntegrations;
+    private SiteDefaults siteDefaults;
     private ProductCatalog productCatalog;
 
     @Activate
@@ -106,7 +105,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteBranding = SiteBranding.load();
         this.siteProfileViewer = SiteProfileViewer.load();
         this.siteIntegrations = SiteIntegrations.load();
+        this.siteDefaults = SiteDefaults.load();
         this.productCatalog = new ProductCatalog(ProductMappings.load());
+        this.walker.setSiteDefaults(this.siteDefaults);
     }
 
     @Override
@@ -201,8 +202,25 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // header search icon can be configured by dropping a search block into the nav, no
         // placeholder-sheet round-trip needed. The nav lives under the home screen, not the site
         // container, so it is resolved from there.
+        //
+        // A site's defaults.json may pin rightIcon to a fixed value (e.g. Luma wants the cart
+        // shortcut in the app bar even though its nav authors a search block) - that override wins
+        // over the nav-page lookup entirely, so a site opting in never needs its search
+        // configuration to match what its app bar shows.
         return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation,
-                navPageRightIcon(homeRoot), metaDefaults);
+                resolveRightIcon(root, homeRoot), metaDefaults);
+    }
+
+    /**
+     * @return the site's pinned {@code rightIcon} override from {@code defaults.json} when one is
+     *         configured, otherwise whatever the nav page's own search block resolves to (or
+     *         {@code null}, letting {@link EnvelopeMeta} fall through to the placeholders sheet /
+     *         compiled-in cart default)
+     */
+    private Map<String, Object> resolveRightIcon(final Page root, final Page homeRoot) {
+        final Map<String, Object> pinned = SiteDefaults.objectMap(
+                siteDefaults.forPage(root), SiteDefaults.KEY_RIGHT_ICON);
+        return pinned.isEmpty() ? navPageRightIcon(homeRoot) : pinned;
     }
 
     /**
@@ -217,6 +235,11 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_LOGIN_SCREEN), "login");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_REGISTRATION_SCREEN), "registration");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_PROFILE_SCREEN), "profile");
+        // cart and review-order are fixed system screens like the roles above, not authored - their
+        // preset per the LUMA MOBILE reference is a screen-specific value rather than the generic
+        // DEFAULT_SCREEN_PRESET.
+        presets.putIfAbsent("cart", "cart");
+        presets.putIfAbsent("review-order", "reviewOrder");
         return presets;
     }
 
@@ -279,11 +302,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private List<String> buildMenu(final List<Page> screens) {
         final List<String> menu = new ArrayList<>();
         for (final Page page : screens) {
-            // The mobile client renders at most MAX_MENU_ITEMS tabs; anything beyond is dropped
-            // here so screen meta (navigationOrder/includeInNavigation) stays consistent with it.
-            if (menu.size() >= MAX_MENU_ITEMS) {
-                break;
-            }
             menu.add(screenKey(page));
         }
         return menu;
@@ -421,28 +439,275 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                                            final String rolePreset) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
+        final String key = screenKey(page);
         screen.put(SchemaConstants.KEY_META,
-                EnvelopeMeta.screenMeta(page, root, screenKey(page), menu, rolePreset));
-        // DSN reference shape: meta, editor, content.
-        // The editor block carries canvas layout (zIndex/position) authored in DSN Studio;
-        // AEM has no equivalent, so a zero-valued skeleton keeps the key shape fixed without
-        // fabricating a real position - the client sees the shape it expects, and the zeros
-        // read as "unpositioned" rather than "missing".
-        final Map<String, Object> position = new LinkedHashMap<>();
-        position.put("top", 0);
-        position.put("left", 0);
-        final Map<String, Object> editor = new LinkedHashMap<>();
-        editor.put("zIndex", 0);
-        editor.put("position", position);
-        screen.put(SchemaConstants.KEY_EDITOR, editor);
+                EnvelopeMeta.screenMeta(page, root, key, menu, rolePreset));
+        screen.put(SchemaConstants.KEY_EDITOR, screenEditor(key));
         // applyScreenExclusions=true drops unmapped components (fileUpload/iframe/loan-calculator/
         // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
         // needs 'search' visible so meta.rightIcon can pick it up.
-        final List<Map<String, Object>> content =
+        List<Map<String, Object>> content =
                 walker.componentsOf(page, assetHost, true, true);
+        if ("cart".equals(key)) {
+            addCartActionsPanel(content, page);
+        } else if ("review-order".equals(key)) {
+            content = reviewOrderContent(content, page);
+        } else if ("checkout".equals(key)) {
+            patchCheckoutFormMeta(content, page);
+        }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
+    }
+
+    /**
+     * The screen's {@code editor} block: canvas layout (zIndex/position) authored in DSN Studio.
+     * AEM has no equivalent, so every screen gets a zero-valued skeleton by default - the client
+     * sees the shape it expects, and the zeros read as "unpositioned" rather than "missing". The
+     * cart screen is a fixed system screen like its action panel above; its specific canvas
+     * coordinates come from the LUMA MOBILE reference rather than any AEM source.
+     */
+    private static Map<String, Object> screenEditor(final String screenKey) {
+        final boolean isCart = "cart".equals(screenKey);
+        final Map<String, Object> position = new LinkedHashMap<>();
+        position.put("top", isCart ? 275 : 0);
+        position.put("left", isCart ? 600 : 0);
+        final Map<String, Object> editor = new LinkedHashMap<>();
+        editor.put("zIndex", isCart ? 5 : 0);
+        editor.put("position", position);
+        return editor;
+    }
+
+    /**
+     * Nests the cart screen's static "Empty cart" / "Review order" action row inside the panel
+     * that already wraps {@code cartSummary} - the reference shape is one outer panel holding both,
+     * not two sibling panels. Falls back to appending at the top level when the page's content does
+     * not follow that shape (e.g. the cart block sits outside any section), so a re-authored cart
+     * page still gets the action row rather than silently losing it.
+     */
+    @SuppressWarnings("unchecked")
+    private void addCartActionsPanel(final List<Map<String, Object>> content, final Page cartPage) {
+        for (final Map<String, Object> component : content) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (!(meta instanceof Map)
+                    || !"panel".equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                continue;
+            }
+            final Object innerContent = component.get(SchemaConstants.KEY_CONTENT);
+            if (!(innerContent instanceof List)) {
+                continue;
+            }
+            final List<Map<String, Object>> inner = (List<Map<String, Object>>) innerContent;
+            final boolean holdsCartSummary = inner.stream().anyMatch(c -> {
+                final Object innerMeta = c.get(SchemaConstants.KEY_META);
+                return innerMeta instanceof Map
+                        && "cartSummary".equals(((Map<String, Object>) innerMeta).get(SchemaConstants.KEY_COMPONENT));
+            });
+            if (holdsCartSummary) {
+                inner.add(cartActionsPanel(cartPage, inner.size()));
+                return;
+            }
+        }
+        // No panel holding cartSummary found - fall back to a top-level sibling so the action row
+        // still appears somewhere rather than being dropped.
+        content.add(cartActionsPanel(cartPage, content.size()));
+    }
+
+    /**
+     * The cart screen's "Empty cart" / "Review order" action row. No AEM block backs it - the
+     * authored {@code cart} block already maps entirely onto {@code cartSummary} - so this is the
+     * LUMA MOBILE reference's static panel, added verbatim rather than derived from content.
+     * Ids are generated the same way real components are, from a stable synthetic path, so a
+     * rebuild does not renumber them.
+     */
+    private Map<String, Object> cartActionsPanel(final Page cartPage, final int order) {
+        final String base = cartPage.getPath() + "/cart-actions";
+
+        final Map<String, Object> emptyCartButton = new LinkedHashMap<>();
+        emptyCartButton.put(SchemaConstants.KEY_META, buttonMeta(base + "/empty-cart", 0));
+        emptyCartButton.put(SchemaConstants.KEY_CONTENT, buttonContent(
+                "Empty cart", "emptyCart", "", "", "contained-tonal", "stretch"));
+
+        final Map<String, Object> reviewOrderButton = new LinkedHashMap<>();
+        reviewOrderButton.put(SchemaConstants.KEY_META, buttonMeta(base + "/review-order", 2));
+        reviewOrderButton.put(SchemaConstants.KEY_CONTENT, buttonContent(
+                "Review order", " --- ", "checkout", "", "contained", "stretch"));
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(base));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put("layout", "horizontal");
+        meta.put(SchemaConstants.KEY_COMPONENT, "panel");
+        meta.put("showBorder", false);
+        meta.put("itemsAlignment", "center");
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("gap", 16);
+        styles.put("padding", 16);
+        styles.put("alignItems", "center");
+        styles.put("justifyContent", "center");
+
+        final Map<String, Object> panel = new LinkedHashMap<>();
+        panel.put(SchemaConstants.KEY_META, meta);
+        panel.put(SchemaConstants.KEY_STYLES, styles);
+        panel.put(SchemaConstants.KEY_CONTENT, List.of(emptyCartButton, reviewOrderButton));
+        return panel;
+    }
+
+    private Map<String, Object> buttonMeta(final String syntheticPath, final int order) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(syntheticPath));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "button");
+        return meta;
+    }
+
+    private Map<String, Object> buttonContent(final String label, final String events,
+                                              final String linkTo, final String message,
+                                              final String variant, final String alignment) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("label", label);
+        content.put("events", events);
+        content.put("linkTo", linkTo);
+        content.put("message", message);
+        content.put("variant", variant);
+        content.put("alignment", alignment);
+        return content;
+    }
+
+    /**
+     * The review-order screen's content, flattened to exactly {@code [cartSummary, confirm button]}
+     * with no wrapping panel - unlike the cart screen, the reference here has both as direct
+     * siblings. The authored {@code order-summary} block already maps onto {@code cartSummary}
+     * (see {@code orderSummary.json}); {@link #walker} still wraps its section into a panel like any
+     * other single-block section, so that wrapper is unwound here rather than emitted. The confirm
+     * button has no AEM block behind it at all - the LUMA MOBILE reference's static content, added
+     * verbatim. Falls back to the walker's own content (plus the button) if no cartSummary is found,
+     * so a re-authored page still gets something rather than an empty screen.
+     */
+    private List<Map<String, Object>> reviewOrderContent(final List<Map<String, Object>> content,
+                                                          final Page page) {
+        final Map<String, Object> cartSummary = findComponent(content, "cartSummary");
+        final List<Map<String, Object>> result = new ArrayList<>();
+        if (cartSummary != null) {
+            asMeta(cartSummary.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, 0);
+            result.add(cartSummary);
+        } else {
+            result.addAll(content);
+        }
+        result.add(confirmButton(page, result.size()));
+        return result;
+    }
+
+    /**
+     * Overrides the checkout screen's form meta with the LUMA MOBILE reference's values.
+     * {@link FormBlockBuilder} derives {@code eventType}/{@code submitButtonLabel}/etc. purely from
+     * the authored {@code checkout-shipping} block's own properties (its {@code buttoneventtype}
+     * gives {@code eventType: "checkout"}) or its own hardcoded defaults - there is no authored
+     * source for the reference's {@code commerce.checkouts} event name, its {@code checkoutForm} id,
+     * or the {@code link} to the review-order screen after submit, so those are patched in here.
+     * The reset button is dropped entirely (the reference form has none) rather than left hidden.
+     * Fields (from {@code checkout-shipping.json}) and the component's own id/order are untouched.
+     */
+    /** Compiled-in fallback used when a site's {@code defaults.json} has no {@code checkoutForm} block. */
+    private static final Map<String, Object> CHECKOUT_FORM_DEFAULTS = Map.of(
+            "link", "review-order",
+            "formId", "checkoutForm",
+            "eventType", "commerce.checkouts",
+            "webhookUrl", "",
+            "toastMessage", "",
+            "submitButtonLabel", "Checkout");
+
+    private void patchCheckoutFormMeta(final List<Map<String, Object>> content, final Page page) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
+
+        // A site may override any subset of these in defaults.json.checkoutForm; everything absent
+        // there falls back to the compiled-in reference values below.
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_CHECKOUT_FORM);
+
+        // Rebuilt rather than mutated in place: the reference's key order (id, link, order, formId,
+        // component, ...) differs from FormBlockBuilder's default, and insertion order is part of
+        // this contract everywhere else in the export.
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, old.get(SchemaConstants.KEY_ID));
+        meta.put("link", override(overrides, "link"));
+        meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
+        meta.put("formId", override(overrides, "formId"));
+        meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
+        meta.put("eventType", override(overrides, "eventType"));
+        meta.put("webhookUrl", overrides.containsKey("webhookUrl")
+                ? overrides.get("webhookUrl") : old.get("webhookUrl"));
+        meta.put("toastMessage", overrides.containsKey("toastMessage")
+                ? overrides.get("toastMessage") : old.get("toastMessage"));
+        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel"));
+        form.put(SchemaConstants.KEY_META, meta);
+    }
+
+    /** Reads {@code key} from {@code overrides}, falling back to {@link #CHECKOUT_FORM_DEFAULTS}. */
+    private static Object override(final Map<String, Object> overrides, final String key) {
+        return overrides.getOrDefault(key, CHECKOUT_FORM_DEFAULTS.get(key));
+    }
+
+    /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> findComponent(final List<Map<String, Object>> tree,
+                                                      final String componentName) {
+        for (final Map<String, Object> component : tree) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (meta instanceof Map
+                    && componentName.equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                return component;
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                final Map<String, Object> found = findComponent((List<Map<String, Object>>) inner, componentName);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asMeta(final Object value) {
+        return (Map<String, Object>) value;
+    }
+
+    /** The review-order screen's static "Confirm" button - see {@link #reviewOrderContent}. */
+    private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID,
+                AbstractComponentModel.generateId(reviewOrderPage.getPath() + "/confirm"));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "button");
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("marginTop", "16");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("icon", "cash-check");
+        content.put("label", "Confirm");
+        content.put("events", "commerce.purchases");
+        content.put("formId", "checkoutForm");
+        content.put("linkTo", "home");
+        content.put("message", "Thank you for your purchase! Your order has been successfully "
+                + "placed. You'll receive a confirmation email shortly with tracking details. "
+                + "Enjoy your shopping experience!");
+        content.put("variant", "contained");
+        content.put("alignment", "center");
+        content.put("customEvent", "commerce.purchases");
+
+        final Map<String, Object> button = new LinkedHashMap<>();
+        button.put(SchemaConstants.KEY_META, meta);
+        button.put(SchemaConstants.KEY_STYLES, styles);
+        button.put(SchemaConstants.KEY_CONTENT, content);
+        return button;
     }
 
     /**
@@ -451,7 +716,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * empty once their other children are removed. Extend {@link #ENABLED_COMPONENTS} as more
      * mappings are re-enabled; remove this call and method when the full component set is restored.
      */
-    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form");
+    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list", "title", "image", "button", "productCard", "cartSummary");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
@@ -687,8 +952,32 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * way the key that reaches a client is always a valid identifier regardless of how the node was
      * named.</p>
      */
-    private static String screenKey(final Page page) {
-        return kebab(page.getName());
+    /**
+     * Authored node names that disagree with the reference's own screen key for the same screen.
+     * The site's login page is authored as {@code sign-in}, but the LUMA MOBILE reference names
+     * that screen {@code login} - the same key {@code navigation.loginScreen} points at - the same
+     * way its {@code registration} screen's key matches {@code navigation.registrationScreen}
+     * exactly. Likewise the authored {@code order-summary} page is the reference's
+     * {@code review-order} screen. Rewritten after kebab-casing so {@code Sign_In}, {@code sign-in},
+     * etc. all resolve.
+     */
+    /**
+     * Compiled-in default screen-key rewrites: two AEM node names the client expects under a
+     * different key. A site's {@code defaults.json} may override or extend this - see
+     * {@link SiteDefaults}. Kept as a fallback so a site that ships no {@code defaults.json} still
+     * gets the two rewrites the reference contract has always relied on.
+     */
+    private static final Map<String, String> SCREEN_KEY_ALIASES =
+            Map.of("sign-in", "login", "order-summary", "review-order");
+
+    private String screenKey(final Page page) {
+        final String key = kebab(page.getName());
+        final Map<String, String> siteAliases = SiteDefaults.stringMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_SCREEN_KEY_ALIASES);
+        if (siteAliases.containsKey(key)) {
+            return siteAliases.get(key);
+        }
+        return SCREEN_KEY_ALIASES.getOrDefault(key, key);
     }
 
     /**

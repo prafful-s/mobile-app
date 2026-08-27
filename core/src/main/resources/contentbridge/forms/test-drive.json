@@ -1,5 +1,10 @@
 [
   {
+    "id": "personal-info-heading",
+    "type": "heading",
+    "label": "Your personal informations"
+  },
+  {
     "id": "firstName",
     "name": "person.name.firstName",
     "label": "First Name",
@@ -36,6 +41,14 @@
     "defaultValue": ""
   },
   {
+    "id": "address-heading",
+    "type": "heading",
+    "label": "Vehicle arrival address",
+    "variants": [
+      "test-drive"
+    ]
+  },
+  {
     "id": "address",
     "name": "homeAddress.street1",
     "label": "Address",
@@ -43,7 +56,9 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
+    "variants": [
+      "test-drive"
+    ]
   },
   {
     "id": "city",
@@ -53,7 +68,9 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
+    "variants": [
+      "test-drive"
+    ]
   },
   {
     "id": "zipCode",
@@ -63,6 +80,8 @@
     "type": "text",
     "placeholder": "",
     "defaultValue": "",
-    "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
+    "variants": [
+      "test-drive"
+    ]
   }
 ]

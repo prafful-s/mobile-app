@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +52,6 @@ class PageJsonExporterImplTest {
     }
 
     @Test
-    @Disabled("temporary: diagnostic hardcode pins meta to securfinancial.json reference")
     @DisplayName("meta mirrors the app id and reads navigation from page properties")
     void meta() {
         final Map<String, Object> meta = map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("meta"));

@@ -115,7 +115,11 @@ class SiteHostTest {
         final List<Map<String, Object>> content =
                 (List<Map<String, Object>>) map(screens.get("en")).get("content");
 
-        assertEquals("/content/acme/us/en/news",
-                map(content.get(0).get("content")).get("link"));
+        // A mapped component's `link` field is reduced to the target screen name (mobile-app
+        // convention) - what matters here is that it is NOT rewritten to the publish host.
+        final Object link = map(content.get(0).get("content")).get("link");
+        assertEquals("news", link);
+        assertNotNull(link);
+        assertEquals(false, String.valueOf(link).startsWith("http"));
     }
 }

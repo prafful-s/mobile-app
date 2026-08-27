@@ -1,5 +1,15 @@
 [
   "hero",
   "card",
-  "productCard"
+  "productCard",
+  "productDetail",
+  "cart",
+  "orderSummary",
+  "newArrival",
+  "categoryProductsLister",
+  "title",
+  "image",
+  "button",
+  "text",
+  "search"
 ]

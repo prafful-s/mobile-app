@@ -35,6 +35,7 @@ final class ComponentMapping {
     private final ComponentMapping fallback;
     private final List<Variant> variants;
     private final LinkQuery linkQuery;
+    private final Set<String> ignoreExtras;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final String subtype,
@@ -42,7 +43,8 @@ final class ComponentMapping {
                              final boolean skeleton, final String contentFragmentRef,
                              final ContentFragmentFolderRef contentFragmentFolderRef,
                              final String requiresField, final ComponentMapping fallback,
-                             final List<Variant> variants, final LinkQuery linkQuery) {
+                             final List<Variant> variants, final LinkQuery linkQuery,
+                             final Set<String> ignoreExtras) {
         this.matches = matches;
         this.component = component;
         this.subtype = subtype;
@@ -55,6 +57,7 @@ final class ComponentMapping {
         this.fallback = fallback;
         this.variants = variants;
         this.linkQuery = linkQuery;
+        this.ignoreExtras = ignoreExtras;
     }
 
     /**
@@ -78,10 +81,11 @@ final class ComponentMapping {
         final ComponentMapping fallback = fallbackOf(definition.get("fallback"), matches);
         final List<Variant> variants = variants(definition.get("variants"));
         final LinkQuery linkQuery = LinkQuery.of(definition.get("linkQuery"));
+        final Set<String> ignoreExtras = new LinkedHashSet<>(names(definition.get("ignoreExtras")));
         return new ComponentMapping(Collections.unmodifiableList(matches), component, subtype,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
                 skeleton, contentFragmentRef, contentFragmentFolderRef, requiresField, fallback,
-                variants, linkQuery);
+                variants, linkQuery, Collections.unmodifiableSet(ignoreExtras));
     }
 
     /**
@@ -104,7 +108,7 @@ final class ComponentMapping {
                 Collections.unmodifiableList(fieldRules(map.get("styles"))),
                 Boolean.TRUE.equals(map.get("skeleton")), trimmed(map.get("contentFragmentRef")),
                 ContentFragmentFolderRef.of(map.get("contentFragmentFolderRef")), null, null,
-                Collections.emptyList(), null);
+                Collections.emptyList(), null, Collections.emptySet());
     }
 
     /**
@@ -203,14 +207,11 @@ final class ComponentMapping {
     static final class ContentFragmentFolderRef {
 
         private final String property;
-        private final String collectField;
-        private final String injectAs;
+        private final List<Collect> collects;
 
-        private ContentFragmentFolderRef(final String property, final String collectField,
-                                          final String injectAs) {
+        private ContentFragmentFolderRef(final String property, final List<Collect> collects) {
             this.property = property;
-            this.collectField = collectField;
-            this.injectAs = injectAs;
+            this.collects = collects;
         }
 
         static ContentFragmentFolderRef of(final Object definition) {
@@ -220,17 +221,96 @@ final class ComponentMapping {
             @SuppressWarnings("unchecked")
             final Map<String, Object> map = (Map<String, Object>) definition;
             final String property = trimmed(map.get("property"));
-            final String collectField = trimmed(map.get("collectField"));
-            final String injectAs = trimmed(map.get("injectAs"));
-            if (property == null || collectField == null || injectAs == null) {
+            if (property == null) {
                 return null;
             }
-            return new ContentFragmentFolderRef(property, collectField, injectAs);
+            // Two shapes accepted, chosen by which key the rule uses:
+            //   collect: [{fields:[...], injectAs:"...", keepBlank:true}, ...]  (multi-column)
+            //   collectField + injectAs (+ keepBlank)                           (single column)
+            final List<Collect> collects = new ArrayList<>();
+            final Object multi = map.get("collect");
+            if (multi instanceof List) {
+                for (final Object entry : (List<?>) multi) {
+                    final Collect c = Collect.of(entry);
+                    if (c != null) {
+                        collects.add(c);
+                    }
+                }
+            } else {
+                final Collect single = Collect.ofFlat(map);
+                if (single != null) {
+                    collects.add(single);
+                }
+            }
+            if (collects.isEmpty()) {
+                return null;
+            }
+            return new ContentFragmentFolderRef(property, Collections.unmodifiableList(collects));
         }
 
         String getProperty() { return property; }
-        String getCollectField() { return collectField; }
-        String getInjectAs() { return injectAs; }
+        List<Collect> getCollects() { return collects; }
+
+        /**
+         * One (fields, injectAs, keepBlank) tuple - the folder-ref applies each in turn per fragment.
+         *
+         * <p>An optional {@code matchField}/{@code matchAgainst} pair narrows the collect to only
+         * those fragments whose {@code matchField} value appears in the authored list at
+         * {@code matchAgainst}. Used by {@code new-arrival}, where the block hardcodes a SKU list
+         * and the collect should read categories off just those SKUs' fragments, not every fragment
+         * in the folder tree.</p>
+         */
+        static final class Collect {
+
+            private final List<String> fields;
+            private final String injectAs;
+            private final boolean keepBlank;
+            private final String matchField;
+            private final String matchAgainst;
+
+            private Collect(final List<String> fields, final String injectAs, final boolean keepBlank,
+                            final String matchField, final String matchAgainst) {
+                this.fields = fields;
+                this.injectAs = injectAs;
+                this.keepBlank = keepBlank;
+                this.matchField = matchField;
+                this.matchAgainst = matchAgainst;
+            }
+
+            static Collect of(final Object definition) {
+                if (!(definition instanceof Map)) {
+                    return null;
+                }
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> map = (Map<String, Object>) definition;
+                final List<String> fields = names(map.get("fields"));
+                final String injectAs = trimmed(map.get("injectAs"));
+                if (fields.isEmpty() || injectAs == null) {
+                    return null;
+                }
+                return new Collect(Collections.unmodifiableList(fields), injectAs,
+                        Boolean.TRUE.equals(map.get("keepBlank")),
+                        trimmed(map.get("matchField")), trimmed(map.get("matchAgainst")));
+            }
+
+            /** Parses the flat legacy shape - collectField + injectAs on the parent object. */
+            static Collect ofFlat(final Map<String, Object> map) {
+                final List<String> fields = names(map.get("collectField"));
+                final String injectAs = trimmed(map.get("injectAs"));
+                if (fields.isEmpty() || injectAs == null) {
+                    return null;
+                }
+                return new Collect(Collections.unmodifiableList(fields), injectAs,
+                        Boolean.TRUE.equals(map.get("keepBlank")),
+                        trimmed(map.get("matchField")), trimmed(map.get("matchAgainst")));
+            }
+
+            List<String> getFields() { return fields; }
+            String getInjectAs() { return injectAs; }
+            boolean keepBlank() { return keepBlank; }
+            String getMatchField() { return matchField; }
+            String getMatchAgainst() { return matchAgainst; }
+        }
     }
 
     /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */
@@ -318,6 +398,7 @@ final class ComponentMapping {
         if (contentFragmentFolderRef != null) {
             consumed.add(contentFragmentFolderRef.getProperty());
         }
+        consumed.addAll(ignoreExtras);
         return consumed;
     }
 
@@ -373,7 +454,7 @@ final class ComponentMapping {
      */
     private Object screenTarget(final String targetKey, final Object value,
                                 final Map<String, Object> source) {
-        if (!"link".equals(targetKey) || !(value instanceof String)) {
+        if ((!"link".equals(targetKey) && !"linkTo".equals(targetKey)) || !(value instanceof String)) {
             return value;
         }
         final String text = ((String) value).trim();

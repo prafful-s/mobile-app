@@ -48,6 +48,13 @@ final class FormFieldFactory {
     private static final String TYPE_CHECKBOX = "checkbox";
     private static final String TYPE_DATE = "date";
     private static final String TYPE_FILE = "file";
+    /** A static section divider inside the field list - "Communication preferences", "LET US KNOW
+     *  YOU BETTER" - not a value the user supplies. Reuses the {@code title} component's shape
+     *  ({@code size}/{@code text}/{@code weight}/{@code textAlignment}), the only heading-shaped
+     *  component this project already emits (the form's own pre-form heading, see
+     *  {@link FormBlockBuilder#heading}). */
+    private static final String TYPE_HEADING = "heading";
+    private static final String COMPONENT_TITLE = "title";
 
     /**
      * The two authored node kinds that are part of a form but are not fields: a panel groups fields
@@ -71,13 +78,28 @@ final class FormFieldFactory {
     /**
      * Field visibility gated by an authored property on the enclosing block.
      *
-     * <p>Schema entry declares one of:</p>
+     * <p>Three shapes at the field level, checked in this order:</p>
      * <pre>
-     *   "visibleIf": { "prop": "showcreditcard", "default": false }   // truthy check
-     *   "visibleIf": { "prop": "variant", "equals": "luma" }          // string equality
-     *   "visibleIf": { "prop": "variant", "notEquals": "schedule-appointment" }
-     *   "visibleIf": { "prop": "variant", "equalsAny": ["luma","wknd-fly"] }
+     *   "conditions": [ {gate}, {gate}, ... ]      // every gate must pass (AND)
+     *   "variants": ["luma", "wknd-fly"]           // shorthand for one gate on the "variant" prop
+     *   "condition": { gate }                      // single gate ("visibleIf" also accepted)
      * </pre>
+     *
+     * <p>A gate itself declares one of:</p>
+     * <pre>
+     *   { "field": "showcreditcard", "default": false }              // truthy check
+     *   { "field": "variant", "equals": "luma" }                     // string equality
+     *   { "field": "variant", "not-equals": "wizard" }               // string inequality
+     *   { "field": "variant", "equalsAny": ["luma","wknd-fly"] }     // one of several
+     *   { "field": "showconsentcheckbox", "default": true,
+     *     "fallback": { "field": "variant", "not-equals": "no-checkbox" } }
+     * </pre>
+     *
+     * <p>{@code fallback} is a second gate, evaluated instead of {@code default} when the primary
+     * {@code field} is not authored at all - the reference form falls back to a variant check rather
+     * than a fixed boolean when the more specific flag was never set. {@code prop}/{@code notEquals}
+     * (this project's original key spellings) are still accepted alongside {@code field}/
+     * {@code not-equals} (the reference schema's spellings), so either survives a round trip.</p>
      *
      * <p>The reference client uses two shapes for conditional rendering: a boolean {@code show*}
      * property (which becomes the truthy check), and a discriminator like {@code variant} that
@@ -87,17 +109,46 @@ final class FormFieldFactory {
      *
      * @param field    a schema entry
      * @param authored the block's own authored properties
-     * @return true when the field should be emitted; true also when the entry has no
-     *         {@code visibleIf}, so annotating a schema is opt-in per field
+     * @return true when the field should be emitted; true also when the entry has none of the
+     *         three shapes above, so annotating a schema is opt-in per field
      */
     static boolean isVisible(final Map<String, Object> field, final Map<String, Object> authored) {
-        final Object visibleIf = field.get("visibleIf");
-        if (!(visibleIf instanceof Map)) {
+        final Object conditions = field.get("conditions");
+        if (conditions instanceof List) {
+            for (final Object gate : (List<?>) conditions) {
+                if (gate instanceof Map && !evaluateGate(asStringMap(gate), authored)) {
+                    return false;
+                }
+            }
             return true;
         }
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> gate = (Map<String, Object>) visibleIf;
-        final String prop = str(gate.get("prop"));
+
+        final Object variants = field.get("variants");
+        if (variants instanceof List) {
+            final Map<String, Object> gate = new java.util.LinkedHashMap<>();
+            gate.put("field", "variant");
+            gate.put("equalsAny", variants);
+            return evaluateGate(gate, authored);
+        }
+
+        Object condition = field.get("condition");
+        if (condition == null) {
+            condition = field.get("visibleIf");
+        }
+        if (!(condition instanceof Map)) {
+            return true;
+        }
+        return evaluateGate(asStringMap(condition), authored);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asStringMap(final Object value) {
+        return (Map<String, Object>) value;
+    }
+
+    /** One gate of a {@code condition}/{@code conditions} entry - see {@link #isVisible}. */
+    private static boolean evaluateGate(final Map<String, Object> gate, final Map<String, Object> authored) {
+        final String prop = StringUtils.defaultIfBlank(str(gate.get("field")), str(gate.get("prop")));
         if (StringUtils.isBlank(prop)) {
             return true; // malformed gate - fail open
         }
@@ -110,7 +161,7 @@ final class FormFieldFactory {
         if (equals != null) {
             return authoredStr != null && authoredStr.equals(normaliseCompare(equals));
         }
-        final Object notEquals = gate.get("notEquals");
+        final Object notEquals = firstNonNull(gate.get("notEquals"), gate.get("not-equals"));
         if (notEquals != null) {
             // Default visible - reference emits the field for every variant except the named one.
             return authoredStr == null || !authoredStr.equals(normaliseCompare(notEquals));
@@ -128,9 +179,14 @@ final class FormFieldFactory {
             return false;
         }
 
-        // Truthy check (the original visibleIf semantics).
+        // Truthy check (the original visibleIf semantics) - falling back to a nested gate, rather
+        // than a fixed default, when the primary field itself was never authored.
         if (authoredValue == null || (authoredValue instanceof String
                 && StringUtils.isBlank((String) authoredValue))) {
+            final Object fallback = gate.get("fallback");
+            if (fallback instanceof Map) {
+                return evaluateGate(asStringMap(fallback), authored);
+            }
             final Object def = gate.get("default");
             return def instanceof Boolean ? (Boolean) def
                     : Boolean.parseBoolean(String.valueOf(def));
@@ -139,6 +195,10 @@ final class FormFieldFactory {
             return (Boolean) authoredValue;
         }
         return Boolean.parseBoolean(String.valueOf(authoredValue).trim());
+    }
+
+    private static Object firstNonNull(final Object a, final Object b) {
+        return a != null ? a : b;
     }
 
     /** Trim + lower-case, or null for blank/null. Mirrors reference's {@code normalizeVariant}. */
@@ -158,6 +218,12 @@ final class FormFieldFactory {
      */
     static Map<String, Object> fromConfig(final Map<String, Object> field, final int order) {
         final String type = StringUtils.lowerCase(str(field.get("type")), java.util.Locale.ROOT);
+
+        if (TYPE_HEADING.equals(type)) {
+            final String id = StringUtils.defaultIfBlank(str(field.get("id")), "heading-" + order);
+            return component(id, order, COMPONENT_TITLE, headingContent(str(field.get("label"))));
+        }
+
         final String component = componentFor(type);
         // File upload is not rendered as a client field, so it produces no mapping.
         if (component == null) {
@@ -274,18 +340,65 @@ final class FormFieldFactory {
     }
 
     /**
-     * A checkbox or radio group, whose shape differs from every other field: the path and the label
-     * live on each option rather than on the field.
-     *
-     * <p>That is not an inconsistency to smooth over. A group's options are separately addressable -
-     * three checkboxes write three values - so each needs to say where its own value goes and what
-     * it reads when ticked. A single label on the field could not describe three.</p>
+     * A checkbox or radio group. The two diverge in shape, and that divergence is real, not an
+     * inconsistency to smooth over: a checkbox group's options are separately addressable - three
+     * checkboxes write three values - so each needs its own path and what it reads when ticked. A
+     * radio group is mutually exclusive - exactly one path, exactly one selected value - so the
+     * group carries the path once and each option is just the label/value pair it offers.
      */
     private static Map<String, Object> toggleContent(final String component, final String path,
                                                      final String label,
                                                      final List<Object> options,
                                                      final boolean prefill,
                                                      final String configuredVariant) {
+        return RADIO_GROUP.equals(component)
+                ? radioGroupContent(path, label, options, prefill)
+                : checkboxGroupContent(path, label, options, prefill, configuredVariant);
+    }
+
+    /**
+     * {@code { ["label"], "path", "options": [{"label","value"}, ...], "prefill" }} - one path for
+     * the whole group, plain label/value options, no {@code variant} key (the reference radioGroup
+     * carries none).
+     */
+    private static Map<String, Object> radioGroupContent(final String path, final String label,
+                                                          final List<Object> options,
+                                                          final boolean prefill) {
+        final List<Object> rewritten = new ArrayList<>(options.size());
+        for (final Object option : options) {
+            if (!(option instanceof Map)) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> source = (Map<String, Object>) option;
+            final Map<String, Object> target = new LinkedHashMap<>();
+            target.put("label", StringUtils.defaultString(
+                    StringUtils.defaultIfBlank(str(source.get("label")), label)));
+            target.put("value", StringUtils.defaultString(
+                    StringUtils.defaultIfBlank(str(source.get("checkedValue")),
+                            str(source.get("value")))));
+            rewritten.add(target);
+        }
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        if (StringUtils.isNotBlank(label) && !labelsAnOption(rewritten, label)) {
+            content.put("label", label);
+        }
+        content.put("path", StringUtils.defaultString(path));
+        content.put("options", rewritten);
+        content.put("prefill", prefill);
+        return content;
+    }
+
+    /**
+     * {@code { ["label"], "options": [{"path","label","checkedValue","uncheckedValue"}, ...],
+     * "prefill", "variant" }} - the path and label live on each option rather than on the field,
+     * because a group's options are separately addressable.
+     */
+    private static Map<String, Object> checkboxGroupContent(final String path, final String label,
+                                                             final List<Object> options,
+                                                             final boolean prefill,
+                                                             final String configuredVariant) {
         final List<Object> rewritten = new ArrayList<>(options.size());
         for (final Object option : options) {
             if (!(option instanceof Map)) {
@@ -312,11 +425,9 @@ final class FormFieldFactory {
         final Map<String, Object> content = new LinkedHashMap<>();
 
         // A group normally says nothing about itself: one label cannot describe three separately
-        // addressable options, so each option carries its own. Two cases differ, and the difference
-        // is whether the field's label is a question or a caption. A radio group asks "How often do
-        // you get care?" and its options answer it - that is worth keeping. An authored checkbox
-        // node is titled "SMS", which is the option's own label repeated - dropping it avoids saying
-        // the same thing twice.
+        // addressable options, so each option carries its own. An authored checkbox node is titled
+        // "SMS", which is the option's own label repeated - dropping it avoids saying the same
+        // thing twice.
         if (StringUtils.isNotBlank(label) && !labelsAnOption(rewritten, label)) {
             content.put("label", label);
         }
@@ -325,8 +436,23 @@ final class FormFieldFactory {
 
         // The configuration decides where it says so - all 25 checkbox fields declare 'switch'.
         // Otherwise the variant is named after the control.
-        content.put("variant", StringUtils.defaultIfBlank(configuredVariant,
-                CHECKBOX_GROUP.equals(component) ? "checkbox" : "radio"));
+        content.put("variant", StringUtils.defaultIfBlank(configuredVariant, "checkbox"));
+        return content;
+    }
+
+    /**
+     * A static heading field inside a form's field list - see {@link #TYPE_HEADING}. Same shape and
+     * defaults as {@code title.json}'s mapping rule (size medium, weight bold, left-aligned): a
+     * section-divider heading, not a page title, so a smaller/lighter treatment would be a mismatch,
+     * but there is no reference distinguishing the two, so the one heading shape this project already
+     * has is reused rather than inventing a second.
+     */
+    private static Map<String, Object> headingContent(final String text) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("size", "medium");
+        content.put("text", StringUtils.defaultString(text));
+        content.put("weight", "bold");
+        content.put("textAlignment", "left");
         return content;
     }
 

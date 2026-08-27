@@ -163,7 +163,11 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             final Map<String, Object> payload = exporter.export(page, ExportOptions.of(true));
             setCacheHeader(response);
             response.setStatus(SlingHttpServletResponse.SC_OK);
-            writer(request).writeValue(response.getWriter(), payload);
+            // Serialise once to a string so the same bytes go to both the response and the
+            // "excessive" access log below - avoids Jackson streaming the payload twice.
+            final String body = writer(request).writeValueAsString(payload);
+            response.getWriter().write(body);
+            LOG.debug("ContentBridge served path={} bytes={} body={}", path, body.length(), body);
 
         } catch (final IOException e) {
             LOG.error("Failed to serialise ContentBridge payload for {}", path, e);
