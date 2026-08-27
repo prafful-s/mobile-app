@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspaceFilter version="1.0">
+    <filter root="/conf/EdsMobileApp" mode="merge"/>
+    <filter root="/content/EdsMobileApp" mode="merge"/>
+    <filter root="/content/dam/EdsMobileApp" mode="merge">
+        <exclude pattern="/content/dam/EdsMobileApp(/.*)?"/>
+        <include pattern="/content/dam/EdsMobileApp/jcr:content(/.*)?"/>
+    </filter>
+    <filter root="/content/dam/EdsMobileApp/asset.jpg" mode="merge"/>
+    <filter root="/content/experience-fragments/EdsMobileApp" mode="merge"/>
+</workspaceFilter>

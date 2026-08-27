@@ -1,0 +1,7 @@
+{
+    "scripts": [
+        "create path (sling:OrderedFolder) /content/dam/EdsMobileApp",
+        "create path (nt:unstructured) /content/dam/EdsMobileApp/jcr:content",
+        "set properties on /content/dam/EdsMobileApp/jcr:content\n  set cq:conf{String} to /conf/EdsMobileApp\n  set jcr:title{String} to \"EDS Mobile App\"\nend"
+    ]
+}

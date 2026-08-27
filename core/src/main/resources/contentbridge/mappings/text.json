@@ -1,0 +1,11 @@
+{
+  "match": ["text"],
+  "component": "htmlText",
+  "skeleton": true,
+  "fields": [
+    { "target": "text", "from": "text", "default": "" }
+  ],
+  "styles": [
+    { "target": "padding", "from": "padding", "default": "" }
+  ]
+}

@@ -1,0 +1,121 @@
+[
+  {
+    "id": "heading-child-information",
+    "type": "heading",
+    "label": "Child's Information Confirmation"
+  },
+  {
+    "id": "childFirstName",
+    "name": "childFirstName",
+    "label": "First name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "childLastName",
+    "name": "childLastName",
+    "label": "Last name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "heading-parent-information",
+    "type": "heading",
+    "label": "Parent/Guardian Information"
+  },
+  {
+    "id": "parentFirstName",
+    "name": "person.name.firstName",
+    "label": "First name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "parentLastName",
+    "name": "person.name.lastName",
+    "label": "Last name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "relationshipToChild",
+    "name": "relationshipToChild",
+    "label": "Relationship to Child",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "Mother",
+        "value": "mother"
+      },
+      {
+        "label": "Father",
+        "value": "father"
+      },
+      {
+        "label": "Legal Guardian",
+        "value": "legal-guardian"
+      },
+      {
+        "label": "Other",
+        "value": "other"
+      }
+    ]
+  },
+  {
+    "id": "heading-consent",
+    "type": "heading",
+    "label": "Consent & Agreements"
+  },
+  {
+    "id": "confirmInformation",
+    "name": "confirmInformation",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I confirm that the information provided above is accurate.",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "consentAccountOperation",
+    "name": "consentAccountOperation",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I consent to the continued operation of my child's account in accordance with SecurFinancial's Terms and Conditions.",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "acknowledgeFeatureChanges",
+    "name": "acknowledgeFeatureChanges",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I acknowledge and agree to any changes in account features applicable to account holders aged 13 and above.",
+        "value": "true"
+      }
+    ]
+  }
+]

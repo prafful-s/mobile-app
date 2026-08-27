@@ -1,0 +1,22 @@
+[
+  "add-external",
+  "checkout",
+  "checkout-shipping",
+  "child-account-application",
+  "create-account",
+  "credit-card-application-form",
+  "flight-search",
+  "get-offer",
+  "insurance",
+  "insurance-plan-selection",
+  "join-us",
+  "loan-application-form",
+  "medicare-plan-selection",
+  "name-change-request",
+  "new-account",
+  "plan-application",
+  "set-up-auto-save",
+  "sign-in",
+  "test-drive",
+  "transfer-funds"
+]

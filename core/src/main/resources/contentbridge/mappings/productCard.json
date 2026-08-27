@@ -1,0 +1,20 @@
+{
+  "match": ["product-card"],
+  "component": "card",
+  "contentFragmentRef": "contentFragmentFolder",
+  "linkQuery": { "param": "productId", "from": "productSku" },
+  "fields": [
+    { "target": "link", "from": "link", "default": "#" },
+    { "target": "image", "from": "productImage" },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
+    { "target": "title", "from": "productName" },
+    { "target": "cardType", "const": "stacked" },
+    { "target": "subtitle",
+      "extract": { "from": "productDescription", "select": "p, li", "as": "text", "all": true },
+      "nullable": true },
+    { "target": "titleVariant", "const": "titleLarge" },
+    { "target": "subtitleVariant", "const": "titleMedium" },
+    { "target": "titleFontWeight", "const": "regular" },
+    { "target": "subtitleFontWeight", "const": "regular" }
+  ]
+}

@@ -1,0 +1,265 @@
+[
+  {
+    "id": "",
+    "name": "person.name.firstName",
+    "label": "First Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "middleName",
+    "label": "Middle Name (optional)",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "person.name.lastName",
+    "label": "Last Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "person.birthDate",
+    "label": "Birth Date",
+    "value": "",
+    "type": "text",
+    "withDateFormatInLabel": false
+  },
+  {
+    "id": "",
+    "name": "gender",
+    "label": "Gender",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Not Specified",
+        "value": ""
+      },
+      {
+        "label": "Male",
+        "value": "male"
+      },
+      {
+        "label": "Female",
+        "value": "female"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "frequentFlyerId",
+    "label": "Frequent Flyer ID",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "personalEmail.address",
+    "label": "Email Address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "mobilePhone.number",
+    "label": "Phone Number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "person.isMember",
+    "value": "checked",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I want to sign up for WKND Fly Club",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "consents.marketing.sms.val",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I want to get SMS with booking confirmation",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "consents.marketing.email.val",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I want to receive electronic mail with promotions and announcements",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "nameOnCard",
+    "label": "Name on Card",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "expiration",
+    "label": "Expiration",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "cardNumber",
+    "label": "Card Number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "cvv",
+    "label": "CVV",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "",
+    "name": "upgrade-points",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "Upgrade class with points",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "upgrade-luggage",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "Add extra piece of checked-in luggage",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "seat",
+    "label": "Seat",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "Window",
+        "value": "window"
+      },
+      {
+        "label": "Aisle",
+        "value": "aisle"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "section",
+    "label": "Section",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "Forward",
+        "value": "forward"
+      },
+      {
+        "label": "Rear",
+        "value": "rear"
+      }
+    ]
+  },
+  {
+    "id": "",
+    "name": "meal",
+    "label": "Meal",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "Regular",
+        "value": "regular"
+      },
+      {
+        "label": "Vegetarian",
+        "value": "vegetarian"
+      },
+      {
+        "label": "Low Calories",
+        "value": "low-calories"
+      },
+      {
+        "label": "Peanut-Free",
+        "value": "peanut-free"
+      },
+      {
+        "label": "Non-Lactose",
+        "value": "non-lactose"
+      },
+      {
+        "label": "Diabetic",
+        "value": "diabetic"
+      }
+    ]
+  }
+]

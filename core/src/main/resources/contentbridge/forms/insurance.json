@@ -1,0 +1,89 @@
+[
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "birthDate",
+    "name": "person.birthDate",
+    "label": "Birth date(YYYY-MM-DD)",
+    "value": "",
+    "type": "text",
+    "placeholder": "mm / dd / yyyy",
+    "defaultValue": ""
+  },
+  {
+    "id": "permanentAddress",
+    "name": "homeAddress.street1",
+    "label": "Permanent Address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "city",
+    "name": "homeAddress.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "zipCode",
+    "name": "homeAddress.postalCode",
+    "label": "Zip Code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "country",
+    "name": "homeAddress.country",
+    "label": "Country",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "United States of America",
+        "value": "US"
+      },
+      {
+        "label": "Canada",
+        "value": "CA"
+      },
+      {
+        "label": "Mexico",
+        "value": "MX"
+      },
+      {
+        "label": "United Kingdom",
+        "value": "GB"
+      },
+      {
+        "label": "Other",
+        "value": "OTHER"
+      }
+    ]
+  }
+]

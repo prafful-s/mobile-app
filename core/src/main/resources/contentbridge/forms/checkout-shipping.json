@@ -1,0 +1,207 @@
+[
+  {
+    "id": "h-personal",
+    "type": "heading",
+    "label": "Personal information"
+  },
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "phone",
+    "name": "mobilePhone.number",
+    "label": "Phone number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "street",
+    "name": "homeAddress.street1",
+    "label": "Street address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "city",
+    "name": "homeAddress.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "postalCode",
+    "name": "homeAddress.postalCode",
+    "label": "Postal code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "country",
+    "name": "homeAddress.country",
+    "label": "Country",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Select...",
+        "value": ""
+      },
+      {
+        "label": "United States",
+        "value": "US"
+      },
+      {
+        "label": "Canada",
+        "value": "CA"
+      },
+      {
+        "label": "United Kingdom",
+        "value": "GB"
+      },
+      {
+        "label": "Germany",
+        "value": "DE"
+      },
+      {
+        "label": "France",
+        "value": "FR"
+      }
+    ]
+  },
+  {
+    "id": "h-payment",
+    "type": "heading",
+    "label": "Payment"
+  },
+  {
+    "id": "paymentMethod",
+    "name": "paymentMethod",
+    "label": "Payment",
+    "value": "card",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Credit or Debit Card",
+        "value": "card"
+      },
+      {
+        "label": "Paypal",
+        "value": "paypal"
+      }
+    ]
+  },
+  {
+    "id": "cardNumber",
+    "name": "cardNumber",
+    "label": "Card number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "condition": {
+      "field": "showcardnumberfield",
+      "default": false
+    }
+  },
+  {
+    "id": "h-shipping",
+    "type": "heading",
+    "label": "Shipping"
+  },
+  {
+    "id": "shippingMethod",
+    "name": "shippingMethod",
+    "label": "Shipping",
+    "value": "standard",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Standard: 5-14 business days",
+        "value": "standard"
+      },
+      {
+        "label": "Ground: 3-7 business days",
+        "value": "ground"
+      },
+      {
+        "label": "Priority: 2 business days",
+        "value": "priority"
+      },
+      {
+        "label": "Express: 1 business day",
+        "value": "express"
+      },
+      {
+        "label": "Next-day pickup",
+        "value": "pickup"
+      }
+    ]
+  },
+  {
+    "id": "h-account",
+    "type": "heading",
+    "label": "Account"
+  },
+  {
+    "id": "lumaLoyalty",
+    "name": "lumaLoyalty",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "condition": {
+      "field": "show-loyalty",
+      "default": false
+    },
+    "options": [
+      {
+        "label": "I want to join Luma+ Loyalty Program",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "createAccount",
+    "name": "createAccount",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I want to create the account",
+        "value": "true"
+      }
+    ]
+  }
+]

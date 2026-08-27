@@ -1,0 +1,197 @@
+[
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "phone",
+    "name": "mobilePhone.number",
+    "label": "Phone number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "zipCode",
+    "name": "homeAddress.postalCode",
+    "label": "Zip code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "condition": {
+      "field": "show-zip-code",
+      "default": false
+    }
+  },
+  {
+    "id": "heading-delivery-address",
+    "type": "heading",
+    "label": "DELIVERY ADDRESS",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
+  },
+  {
+    "id": "streetLine1",
+    "name": "homeAddress.street1",
+    "label": "Street Address Line 1",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
+  },
+  {
+    "id": "streetLine2",
+    "name": "streetLine2",
+    "label": "Street Address Line 2",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
+  },
+  {
+    "id": "city",
+    "name": "homeAddress.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
+  },
+  {
+    "id": "postalCode",
+    "name": "homeAddress.postalCode",
+    "label": "Postal Code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
+  },
+  {
+    "id": "heading-delivery-instruction",
+    "type": "heading",
+    "label": "SPECIAL DELIVERY INSTRUCTION",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
+  },
+  {
+    "id": "callBeforeDelivery",
+    "name": "callBeforeDelivery",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    },
+    "options": [
+      {
+        "label": "Call Before Delivery",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "heading-delivery-frequency",
+    "type": "heading",
+    "label": "DELIVERY FREQUENCY",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    }
+  },
+  {
+    "id": "deliveryFrequency",
+    "name": "deliveryFrequency",
+    "label": "Delivery Frequency",
+    "value": "",
+    "type": "select",
+    "condition": {
+      "field": "showdeliverysection",
+      "default": false
+    },
+    "options": [
+      {
+        "label": "Once a week",
+        "value": "once"
+      },
+      {
+        "label": "Twice a week",
+        "value": "twice"
+      },
+      {
+        "label": "Thrice a week",
+        "value": "thrice"
+      },
+      {
+        "label": "Daily",
+        "value": "daily"
+      }
+    ]
+  },
+  {
+    "id": "consent",
+    "name": "consent",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "condition": {
+      "field": "showconsentcheckbox",
+      "default": true,
+      "fallback": {
+        "field": "variant",
+        "not-equals": "no-checkbox"
+      }
+    },
+    "options": [
+      {
+        "label": "I want to join WKND Fly Club and I have read and understand the Privacy and Cookies Policy. I want to receive personalized communication by email.",
+        "value": "true"
+      }
+    ]
+  }
+]

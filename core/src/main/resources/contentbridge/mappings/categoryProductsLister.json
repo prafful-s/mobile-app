@@ -1,0 +1,27 @@
+{
+  "match": ["category-products-lister"],
+  "component": "list",
+  "skeleton": true,
+  "ignoreExtras": ["*"],
+  "contentFragmentFolderRef": {
+    "property": "folder",
+    "collect": [
+      { "fields": ["sku", "id"], "injectAs": "_items" },
+      { "fields": ["category"], "injectAs": "_categories" }
+    ]
+  },
+  "fields": [
+    { "target": "items", "from": "_items", "default": [] },
+    { "target": "filter", "from": "_categories", "type": "categoryRootRegex", "default": "" },
+    { "target": "layout", "from": "layout",
+      "map": { "horizontal": "horizontal", "vertical": "vertical/grid" },
+      "default": "vertical/grid" },
+    { "target": "listType", "from": "listType", "default": "productList" },
+    { "target": "textColor", "from": "textColor", "default": "#8B8B8B" },
+    { "target": "itemsInRow", "const": 1 },
+    { "target": "itemRenderer", "from": "itemRenderer", "default": "image-text-one-line" },
+    { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
+    { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
+    { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" }
+  ]
+}

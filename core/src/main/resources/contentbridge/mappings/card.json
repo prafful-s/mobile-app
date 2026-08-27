@@ -1,0 +1,32 @@
+{
+  "match": ["card"],
+  "component": "card",
+  "requires": "image",
+  "fallback": {
+    "component": "htmlText",
+    "fields": [
+      { "target": "text", "first": ["text", "richText", "jcr:text"] }
+    ]
+  },
+  "fields": [
+    { "target": "link",
+      "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
+      "default": "#" },
+    { "target": "image", "first": ["image", "fileReference", "imageRef"] },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
+    { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
+    { "target": "cardType", "const": "stacked" },
+    { "target": "subtitle",
+      "extract": { "from": "text", "select": "p:not(:has(a)), li", "as": "text", "all": true },
+      "nullable": true },
+    { "target": "titleVariant", "const": "titleLarge" },
+    { "target": "subtitleVariant", "const": "titleMedium" },
+    { "target": "titleFontWeight", "const": "regular" },
+    { "target": "subtitleFontWeight", "const": "regular" }
+  ],
+  "styles": [
+    { "target": "marginLeft", "const": "30" },
+    { "target": "marginRight", "const": "30" }
+  ]
+}
+

@@ -1,0 +1,66 @@
+[
+  {
+    "id": "coverageFor",
+    "name": "coverageFor",
+    "label": "Are you looking for coverage for yourself or your family?",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Myself",
+        "value": "myself"
+      },
+      {
+        "label": "Family",
+        "value": "family"
+      }
+    ]
+  },
+  {
+    "id": "step-2-sub",
+    "type": "heading",
+    "label": "This includes needing coverage for things like ongoing prescriptions, regular lab tests, etc."
+  },
+  {
+    "id": "careFrequency",
+    "name": "careFrequency",
+    "label": "How often do you get care?",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Never",
+        "value": "never"
+      },
+      {
+        "label": "Rarely",
+        "value": "rarely"
+      },
+      {
+        "label": "Sometimes",
+        "value": "sometimes"
+      },
+      {
+        "label": "Often",
+        "value": "often"
+      }
+    ]
+  },
+  {
+    "id": "costPreference",
+    "name": "costPreference",
+    "label": "Would you rather:",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Pay a lower monthly premium and stay in-network for care",
+        "value": "lower"
+      },
+      {
+        "label": "Pay a higher monthly premium and be able to choose any doctor",
+        "value": "higher"
+      }
+    ]
+  }
+]

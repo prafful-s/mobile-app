@@ -1,0 +1,24 @@
+{
+  "match": ["offer"],
+  "component": "offer",
+  "skeleton": true,
+  "fields": [
+    { "target": "linkTo", "from": "linkTo", "type": "path" },
+    { "target": "opacity", "from": "opacity", "type": "number", "default": 0.34 },
+    { "target": "surface", "from": "surface" },
+    { "target": "showTitle", "from": "showTitle", "type": "boolean", "default": true },
+    { "target": "imageResize", "from": "imageResize", "default": "cover" },
+    { "target": "titleVariant", "from": "titleVariant", "default": "titleLarge" },
+    { "target": "fallbackImage", "from": "fallbackImage" },
+    { "target": "subtitleVariant", "from": "subtitleVariant", "default": "titleMedium" },
+    { "target": "contentAlignment", "from": "contentAlignment", "default": "center" },
+    { "target": "showDebugMessage", "from": "showDebugMessage", "type": "boolean", "default": false },
+    { "target": "verticalAlignment", "from": "verticalAlignment", "default": "bottom" },
+    { "target": "horizontalAlignment", "from": "horizontalAlignment", "default": "center" }
+  ],
+  "styles": [
+    { "target": "color", "from": "color", "default": "#FFF" },
+    { "target": "height", "from": "height", "type": "number", "default": 200 },
+    { "target": "borderRadius", "from": "borderRadius", "default": "0" }
+  ]
+}

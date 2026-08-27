@@ -1,0 +1,14 @@
+{
+  "match": ["divider", "separator"],
+  "component": "divider",
+  "skeleton": true,
+  "fields": [
+    { "target": "size", "from": "size", "default": "S" },
+    { "target": "length", "from": "length", "default": "S" },
+    { "target": "variant", "from": "variant", "default": "normal" },
+    { "target": "showLine", "from": "showLine", "type": "boolean", "default": false },
+    { "target": "alignment", "from": "alignment", "default": "center" },
+    { "target": "orientation", "from": "orientation", "default": "vertical" },
+    { "target": "horizontalInset", "from": "horizontalInset", "type": "boolean", "nullable": true }
+  ]
+}

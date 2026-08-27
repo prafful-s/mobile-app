@@ -1,0 +1,38 @@
+{
+  "aep": {
+    "id": 11350,
+    "imsOrg": {
+      "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+      "name": "Adobe Demo System Shared",
+      "tenantID": "demosystem4",
+      "__typename": "IMSOrg",
+      "targetClientCode": "demosystem4"
+    },
+    "sandbox": "public-luma",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "__typename": "AEP",
+    "sandboxName": "public-luma"
+  },
+  "imsOrg": {
+    "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "name": "Adobe Demo System Shared",
+    "tenantID": "demosystem4",
+    "__typename": "IMSOrg",
+    "targetClientCode": "demosystem4"
+  },
+  "launch": {
+    "id": 13413,
+    "type": "mobile",
+    "aepID": 11350,
+    "appID": "59610d662d36/f844b63dd96d/launch-9ef629369df8-development",
+    "appId": "59610d662d36/f844b63dd96d/launch-9ef629369df8-development",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "companyId": "CO248bee8aabe04648b1421ee94f8e416b",
+    "createdAt": 1664535064067,
+    "__typename": "Launch",
+    "propertyID": "PR880d10d8434e49899dcea6c8bc7e3011",
+    "sandboxName": "public-luma",
+    "propertyName": "Luma (DO NOT DELETE) (mobile) ",
+    "primarySolution": "AEP"
+  }
+}

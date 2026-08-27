@@ -1,0 +1,61 @@
+[
+  {
+    "id": "type",
+    "name": "externalAccount.type",
+    "label": "Type",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Bank Account",
+        "value": "bank-account"
+      },
+      {
+        "label": "Credit Card",
+        "value": "credit-card"
+      }
+    ]
+  },
+  {
+    "id": "origin",
+    "name": "externalAccount.origin",
+    "label": "Origin",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "accountNumber",
+    "name": "externalAccount.accountNumber",
+    "label": "Account number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "variants": [
+      "account"
+    ]
+  },
+  {
+    "id": "cardNumber",
+    "name": "externalAccount.cardNumber",
+    "label": "Card number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "variants": [
+      "credit-card"
+    ]
+  },
+  {
+    "id": "authorizedUserName",
+    "name": "externalAccount.authorizedUserName",
+    "label": "Authorized user name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  }
+]

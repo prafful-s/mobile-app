@@ -1,0 +1,20 @@
+[
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "password",
+    "name": "password",
+    "label": "Password",
+    "value": "",
+    "type": "password",
+    "placeholder": "",
+    "defaultValue": ""
+  }
+]

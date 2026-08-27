@@ -1,0 +1,114 @@
+[
+  {
+    "id": "step-1-title",
+    "type": "heading",
+    "label": "Let's get started"
+  },
+  {
+    "id": "step-1-sub",
+    "type": "heading",
+    "label": "When choosing your plan, let us know what matters most to you—cost, benefits, or the doctors, medications and facilities you need covered. Based on your selections, we'll show you a list of recommended plans you can choose from before signing up."
+  },
+  {
+    "id": "zipCode",
+    "name": "homeAddress.postalCode",
+    "label": "ZIP Code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "monthlyPaymentPreference",
+    "name": "monthlyPaymentPreference",
+    "label": "When you think about your monthly payment, which best describes you?",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Pay a lower monthly payment even if it means I have slightly fewer benefits",
+        "value": "lower"
+      },
+      {
+        "label": "I don't mind a higher monthly payment to get more benefits",
+        "value": "higher"
+      }
+    ]
+  },
+  {
+    "id": "step-3-title-main",
+    "type": "heading",
+    "label": "Benefits"
+  },
+  {
+    "id": "step-3-sub-main",
+    "type": "heading",
+    "label": "Tell us more about what you want your plan to do for you."
+  },
+  {
+    "id": "preferredBenefits",
+    "name": "preferredBenefits",
+    "label": "Which type of benefits do you want in your plan?",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "I want one convenient plan which bundles all of the benefits from Medicare Parts A , B, and possibly D",
+        "value": "all"
+      },
+      {
+        "label": "I want a plan that helps fill the gaps by covering costs that Original Medicare does not cover (such as deductibles and coinsurance)",
+        "value": "medium"
+      },
+      {
+        "label": "I want a plan which only helps pay the cost of my prescription drugs (Part D only)",
+        "value": "basic"
+      }
+    ]
+  },
+  {
+    "id": "step-3-title-sub2",
+    "type": "heading",
+    "label": "Are there optional benefits that you'd like to add to your plan?"
+  },
+  {
+    "id": "additionalBenefits",
+    "name": "additionalBenefits",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "I need vision and/or dental options",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "id": "step-4-title-main",
+    "type": "heading",
+    "label": "Access to Care"
+  },
+  {
+    "id": "step-4-sub-main",
+    "type": "heading",
+    "label": "Tell us when and where you want to access healthcare."
+  },
+  {
+    "id": "networkPreference",
+    "name": "networkPreference",
+    "label": "Which best describes you?",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "I don't mind selecting from a network of doctors and facilities that accept Medicare patients",
+        "value": "network"
+      },
+      {
+        "label": "I want the flexibility to go to any facility, doctor, or specialist that accepts Medicare patients.",
+        "value": "any"
+      }
+    ]
+  }
+]

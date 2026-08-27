@@ -1,0 +1,27 @@
+{
+  "match": ["hero"],
+  "component": "banner",
+  "variants": [
+    { "when": { "field": "herolayout", "equals": "image-right" }, "useRule": "card" }
+  ],
+  "fields": [
+    { "target": "image", "first": ["image", "fileReference", "imageRef"] },
+    { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
+    { "target": "titleVariant", "const": "titleLarge" },
+    { "target": "subtitle",
+      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true },
+      "nullable": true },
+    { "target": "buttonLabel",
+      "extract": { "from": "text", "select": "a", "as": "text" }, "nullable": true },
+    { "target": "imageResize", "const": "cover" },
+    { "target": "linkTo", "const": "" },
+    { "target": "showButton", "const": "false" },
+    { "target": "horizontalAlignment", "const": "left" },
+    { "target": "verticalAlignment", "const": " top" },
+    { "target": "contentAlignment", "const": "left" }
+  ],
+  "styles": [
+    { "target": "gap", "const": 8 },
+    { "target": "color", "const": "#FFF" }
+  ]
+}

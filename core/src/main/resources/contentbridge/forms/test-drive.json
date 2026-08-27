@@ -1,0 +1,87 @@
+[
+  {
+    "id": "personal-info-heading",
+    "type": "heading",
+    "label": "Your personal informations"
+  },
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "phone",
+    "name": "mobilePhone.number",
+    "label": "Phone number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "address-heading",
+    "type": "heading",
+    "label": "Vehicle arrival address",
+    "variants": [
+      "test-drive"
+    ]
+  },
+  {
+    "id": "address",
+    "name": "homeAddress.street1",
+    "label": "Address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "variants": [
+      "test-drive"
+    ]
+  },
+  {
+    "id": "city",
+    "name": "homeAddress.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "variants": [
+      "test-drive"
+    ]
+  },
+  {
+    "id": "zipCode",
+    "name": "homeAddress.postalCode",
+    "label": "Zip code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "variants": [
+      "test-drive"
+    ]
+  }
+]

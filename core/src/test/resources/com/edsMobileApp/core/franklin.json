@@ -1,0 +1,145 @@
+{
+  "jcr:primaryType": "cq:Page",
+  "language-masters": {
+    "jcr:primaryType": "cq:Page",
+    "en": {
+      "jcr:primaryType": "cq:Page",
+      "jcr:content": {
+        "jcr:primaryType": "cq:PageContent",
+        "jcr:title": "English",
+        "sling:resourceType": "core/franklin/components/page/v1/page",
+        "cq:template": "/libs/core/franklin/templates/page",
+        "pageName": "home",
+        "pageTitle": "Home",
+        "theme": "bodea-theme",
+        "root": {
+          "jcr:primaryType": "nt:unstructured",
+          "sling:resourceType": "core/franklin/components/root/v1/root",
+          "section_2": {
+            "jcr:primaryType": "nt:unstructured",
+            "sling:resourceType": "core/franklin/components/section/v1/section",
+            "model": "section",
+            "sec-custom-styles": "bodea-banner",
+            "sec-spacing": "section-large",
+            "hero_1": {
+              "jcr:primaryType": "nt:unstructured",
+              "sling:resourceType": "core/franklin/components/block/v1/block",
+              "model": "hero",
+              "name": "Hero",
+              "ctastyle": "button",
+              "image": "/content/dam/bodea/en/images/hero.png",
+              "text": "<h1>Digital Assets Are Changing The Game</h1>"
+            }
+          },
+          "section_10": {
+            "jcr:primaryType": "nt:unstructured",
+            "sling:resourceType": "core/franklin/components/section/v1/section",
+            "model": "section",
+            "text_3": {
+              "jcr:primaryType": "nt:unstructured",
+              "sling:resourceType": "core/franklin/components/text/v1/text",
+              "text": "<h1>Our Last Industry Publications</h1>"
+            },
+            "cards_8": {
+              "jcr:primaryType": "nt:unstructured",
+              "sling:resourceType": "core/franklin/components/block/v1/block",
+              "filter": "cards",
+              "name": "Cards",
+              "card_4": {
+                "jcr:primaryType": "nt:unstructured",
+                "sling:resourceType": "core/franklin/components/block/v1/block/item",
+                "model": "card",
+                "name": "Card",
+                "image": "/content/dam/bodea/en/images/card1.jpg",
+                "link": "/content/bodea/language-masters/en/machine-learning-in-the-digital-age",
+                "overlaybackground": "true",
+                "text": "<h2>MACHINE LEARNING IN THE DIGITAL AGE</h2>"
+              },
+              "card_5": {
+                "jcr:primaryType": "nt:unstructured",
+                "sling:resourceType": "core/franklin/components/block/v1/block/item",
+                "model": "card",
+                "name": "Card",
+                "image": "/content/dam/bodea/en/images/card2.jpg",
+                "text": "<h2>NEW UPDATES</h2>"
+              }
+            }
+          },
+          "section_20": {
+            "jcr:primaryType": "nt:unstructured",
+            "sling:resourceType": "core/franklin/components/section/v1/section",
+            "model": "section",
+            "columns_1": {
+              "jcr:primaryType": "nt:unstructured",
+              "sling:resourceType": "core/franklin/components/columns/v1/columns",
+              "columns": "2",
+              "rows": "1",
+              "row1": {
+                "jcr:primaryType": "nt:unstructured",
+                "col1": {
+                  "jcr:primaryType": "nt:unstructured",
+                  "teaser_1": {
+                    "jcr:primaryType": "nt:unstructured",
+                    "sling:resourceType": "core/franklin/components/block/v1/block",
+                    "model": "teaser",
+                    "name": "Teaser",
+                    "modelFields": ["title", "teaserStyle", "imageRef", "buttonText", "btn-link"],
+                    "title": "Lorem Ipsum",
+                    "teaserStyle": "image",
+                    "imageRef": "/content/dam/bodea/en/images/image7.jpg",
+                    "buttonText": "Explore More",
+                    "btn-link": "#",
+                    "videoReference": "https://example.com/clip.mp4"
+                  }
+                },
+                "col2": {
+                  "jcr:primaryType": "nt:unstructured",
+                  "title_1": {
+                    "jcr:primaryType": "nt:unstructured",
+                    "sling:resourceType": "core/franklin/components/title/v1/title",
+                    "model": "title",
+                    "title": "Questions ? Get In Touch With Us"
+                  }
+                }
+              }
+            }
+          },
+          "section_30": {
+            "jcr:primaryType": "nt:unstructured",
+            "sling:resourceType": "core/franklin/components/section/v1/section",
+            "model": "section",
+            "separator_1": {
+              "jcr:primaryType": "nt:unstructured",
+              "sling:resourceType": "core/franklin/components/block/v1/block",
+              "model": "separator",
+              "name": "Separator"
+            }
+          }
+        }
+      },
+      "about-us": {
+        "jcr:primaryType": "cq:Page",
+        "jcr:content": {
+          "jcr:primaryType": "cq:PageContent",
+          "jcr:title": "About Us",
+          "sling:resourceType": "core/franklin/components/page/v1/page",
+          "root": {
+            "jcr:primaryType": "nt:unstructured",
+            "sling:resourceType": "core/franklin/components/root/v1/root",
+            "section_1": {
+              "jcr:primaryType": "nt:unstructured",
+              "sling:resourceType": "core/franklin/components/section/v1/section",
+              "model": "section",
+              "newsletter_1": {
+                "jcr:primaryType": "nt:unstructured",
+                "sling:resourceType": "core/franklin/components/block/v1/block",
+                "model": "newsletter",
+                "name": "Newsletter"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

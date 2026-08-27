@@ -1,0 +1,37 @@
+[
+  {
+    "id": "transfer-from",
+    "name": "transferFrom",
+    "label": "Transfer from",
+    "value": "checking-account",
+    "type": "select",
+    "options": [
+      {
+        "label": "Checking Account",
+        "value": "Checking Account"
+      }
+    ]
+  },
+  {
+    "id": "transfer-to",
+    "name": "transferTo",
+    "label": "Transfer to",
+    "value": "retirement-account",
+    "type": "select",
+    "options": [
+      {
+        "label": "Retirement Account",
+        "value": "Retirement Account"
+      }
+    ]
+  },
+  {
+    "id": "amount",
+    "name": "amount",
+    "label": "Amount",
+    "value": "$100.00",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "$100.00"
+  }
+]

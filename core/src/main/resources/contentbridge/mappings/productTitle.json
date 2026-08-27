@@ -1,0 +1,13 @@
+{
+  "match": ["productTitle"],
+  "component": "productTitle",
+  "skeleton": true,
+  "fields": [
+    { "target": "size", "from": "size", "default": "large" },
+    { "target": "weight", "from": "weight", "default": "bold" },
+    { "target": "textAlignment", "from": "textAlignment", "default": "left" }
+  ],
+  "styles": [
+    { "target": "color", "from": "color", "default": "#FFF" }
+  ]
+}

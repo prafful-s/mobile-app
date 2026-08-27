@@ -1,0 +1,52 @@
+[
+  {
+    "id": "flight-from",
+    "name": "flight-from",
+    "label": "From",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "flight-to",
+    "name": "flight-to",
+    "label": "To",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "flight-date",
+    "name": "flight-date",
+    "label": "Date",
+    "value": "",
+    "type": "date",
+    "withDateFormatInLabel": false
+  },
+  {
+    "id": "flight-options",
+    "name": "flight-options",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "id": "business-trip",
+        "label": "Business Trip",
+        "value": "true"
+      },
+      {
+        "id": "business-class",
+        "label": "Business Class",
+        "value": "true"
+      },
+      {
+        "id": "travelling-children",
+        "label": "Travelling with children",
+        "value": "true"
+      }
+    ]
+  }
+]

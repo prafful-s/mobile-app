@@ -1,0 +1,24 @@
+{
+  "match": ["action-button"],
+  "component": "button",
+  "skeleton": true,
+  "fields": [
+    { "target": "label", "from": "label", "default": "" },
+    { "target": "events", "default": "" },
+    { "target": "linkTo", "from": "link", "type": "path", "default": "" },
+    { "target": "message", "default": "" },
+    {
+      "target": "variant",
+      "from": "style",
+      "map": {
+        "default-button": "contained",
+        "default-button-link": "text",
+        "cta-button": "contained",
+        "cta-link": "text",
+        "button": "contained"
+      },
+      "default": "contained"
+    },
+    { "target": "alignment", "default": "stretch" }
+  ]
+}

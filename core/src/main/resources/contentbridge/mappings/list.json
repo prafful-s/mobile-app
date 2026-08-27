@@ -1,0 +1,26 @@
+{
+  "match": ["list"],
+  "component": "list",
+  "skeleton": true,
+  "fields": [
+    { "target": "sort", "from": "sort", "default": "none" },
+    { "target": "items", "from": "items" },
+    { "target": "limit", "from": "limit", "type": "number", "default": 6 },
+    { "target": "filter", "from": "filter", "default": "" },
+    { "target": "layout", "from": "layout", "default": "horizontal" },
+    { "target": "listType", "from": "listType", "default": "screenList" },
+    { "target": "imageWidth", "from": "imageWidth", "type": "number", "default": 100 },
+    { "target": "itemHeight", "from": "itemHeight", "type": "number", "default": 100 },
+    { "target": "itemsInRow", "from": "itemsInRow", "type": "number", "default": 1 },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" },
+    { "target": "hideSubtitle", "from": "hideSubtitle", "type": "boolean", "default": false },
+    { "target": "itemRenderer", "from": "itemRenderer", "default": "stacked" },
+    { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
+    { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
+    { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" }
+  ],
+  "styles": [
+    { "target": "gap", "from": "gap", "type": "number", "default": 8 },
+    { "target": "color", "from": "color", "default": "" }
+  ]
+}

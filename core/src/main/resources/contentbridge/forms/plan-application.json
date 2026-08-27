@@ -1,0 +1,148 @@
+[
+  {
+    "id": "step-1-subtitle",
+    "type": "heading",
+    "label": "Personal Details"
+  },
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "birthDate",
+    "name": "person.birthDate",
+    "label": "Date of birth",
+    "value": "",
+    "type": "text",
+    "withDateFormatInLabel": false
+  },
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "gender",
+    "name": "gender",
+    "label": "Gender",
+    "value": "",
+    "type": "select",
+    "options": [
+      {
+        "label": "Female",
+        "value": "female"
+      },
+      {
+        "label": "Male",
+        "value": "male"
+      },
+      {
+        "label": "Not Specified",
+        "value": "not_specified"
+      },
+      {
+        "label": "Non-specific",
+        "value": "non_specific"
+      }
+    ]
+  },
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "phoneNumber",
+    "name": "mobilePhone.number",
+    "label": "Mobile phone number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "jointApplicant",
+    "name": "jointApplicant",
+    "label": "Is there a joint applicant?",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Yes",
+        "value": "yes"
+      },
+      {
+        "label": "No",
+        "value": "no"
+      }
+    ]
+  },
+  {
+    "id": "address-heading",
+    "type": "heading",
+    "label": "Address"
+  },
+  {
+    "id": "address",
+    "name": "homeAddress.street1",
+    "label": "Street Address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "identity-heading",
+    "type": "heading",
+    "label": "Identity"
+  },
+  {
+    "id": "ssn",
+    "name": "ssn",
+    "label": "Social Security Number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "patientNumber",
+    "name": "patientNumber",
+    "label": "Patient number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "zipCode",
+    "name": "homeAddress.postalCode",
+    "label": "Zip code",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "state",
+    "name": "homeAddress.state",
+    "label": "State",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  }
+]

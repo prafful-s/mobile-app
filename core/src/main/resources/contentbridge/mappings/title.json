@@ -1,0 +1,12 @@
+{
+  "match": ["title"],
+  "component": "title",
+  "fields": [
+    { "target": "size", "from": "titleType",
+      "map": { "h1": "large", "h2": "large", "h3": "medium", "h4": "small", "h5": "small", "h6": "small" },
+      "default": "medium" },
+    { "target": "text", "from": "title", "default": "" },
+    { "target": "weight", "from": "weight", "default": "bold" },
+    { "target": "textAlignment", "from": "textAlignment", "default": "left" }
+  ]
+}

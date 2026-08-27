@@ -1,0 +1,12 @@
+{
+  "match": ["productImage"],
+  "component": "productImage",
+  "skeleton": true,
+  "fields": [
+    { "target": "fullWidth", "from": "fullWidth", "type": "boolean", "default": true },
+    { "target": "imageResize", "from": "imageResize", "default": "contain" }
+  ],
+  "styles": [
+    { "target": "height", "from": "height", "type": "number", "default": 250 }
+  ]
+}

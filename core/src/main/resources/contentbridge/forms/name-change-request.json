@@ -1,0 +1,65 @@
+[
+  {
+    "id": "reasonForNameChange",
+    "name": "reasonForNameChange",
+    "value": "",
+    "type": "checkbox",
+    "variant": "switch",
+    "options": [
+      {
+        "label": "Marriage",
+        "value": "marriage"
+      },
+      {
+        "label": "Divorce",
+        "value": "divorce"
+      },
+      {
+        "label": "Legal name change",
+        "value": "legal-name-change"
+      },
+      {
+        "label": "First or middle name correction",
+        "value": "first-or-middle-name-correction"
+      },
+      {
+        "label": "Naturalization",
+        "value": "naturalization"
+      }
+    ]
+  },
+  {
+    "id": "identityDocument",
+    "name": "identityDocument",
+    "label": "Identity document",
+    "value": "",
+    "type": "file"
+  },
+  {
+    "id": "firstName",
+    "name": "person.name.firstName",
+    "label": "First name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "middleName",
+    "name": "middleName",
+    "label": "Middle name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "lastName",
+    "name": "person.name.lastName",
+    "label": "Last name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  }
+]
