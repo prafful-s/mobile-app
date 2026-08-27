@@ -3,10 +3,5 @@
     "/content"
   ],
   "maxDepth": 5,
-  "cacheMaxAge": 300,
-  "brand": "SecurFinancial",
-  "rightIcon": "shopping-cart",
-  "rightIconTarget": "cart",
-  "template": "mobile-v2/generic-fsi-v4",
-  "vertical": "FSI"
+  "cacheMaxAge": 300
 }

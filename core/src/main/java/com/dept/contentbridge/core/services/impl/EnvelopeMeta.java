@@ -306,9 +306,10 @@ final class EnvelopeMeta {
     }
 
     /**
-     * Site-level meta defaults sourced from OSGi configuration, used when the placeholders sheet
-     * leaves a field blank. Lets a site be branded through configuration rather than authored
-     * content.
+     * Site-level meta defaults sourced from that site's {@code defaults.json} (see
+     * {@link SiteDefaults}), used when the placeholders sheet leaves a field blank. Lets a site
+     * be branded through bundled configuration rather than authored content, without every site
+     * sharing the same values the way a single OSGi config would force.
      */
     static final class MetaDefaults {
 
@@ -336,6 +337,20 @@ final class EnvelopeMeta {
                                final String rightIcon, final String rightIconTarget,
                                final String template, final String vertical) {
             return new MetaDefaults(brand, thumbnail, rightIcon, rightIconTarget, template, vertical);
+        }
+
+        /**
+         * @param meta the site's {@code defaults.json} {@code meta} section (see {@link SiteDefaults}),
+         *             or an empty map when the site ships none
+         */
+        static MetaDefaults of(final Map<String, Object> meta) {
+            return of(str(meta, "brand"), str(meta, "thumbnail"), str(meta, "rightIcon"),
+                    str(meta, "rightIconTarget"), str(meta, "template"), str(meta, "vertical"));
+        }
+
+        private static String str(final Map<String, Object> map, final String key) {
+            final Object value = map.get(key);
+            return value instanceof String ? (String) value : "";
         }
 
         static MetaDefaults empty() {

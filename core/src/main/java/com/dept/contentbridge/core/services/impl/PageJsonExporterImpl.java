@@ -68,7 +68,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private int cacheMaxAge;
     private boolean overrideEnabled;
     private String overridePropertyName;
-    private EnvelopeMeta.MetaDefaults metaDefaults;
 
     // Built once at activation rather than per request: they are stateless, and rebuilding them for
     // every page re-parsed the alias table and re-read configuration that cannot have changed.
@@ -94,9 +93,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.cacheMaxAge = Math.max(0, config.cacheMaxAge());
         this.overrideEnabled = config.overrideEnabled();
         this.overridePropertyName = StringUtils.defaultIfBlank(config.overridePropertyName(), "cbJson");
-        this.metaDefaults = EnvelopeMeta.MetaDefaults.of(
-                config.brand(), config.thumbnail(), config.rightIcon(), config.rightIconTarget(),
-                config.template(), config.vertical());
 
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
@@ -207,6 +203,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // shortcut in the app bar even though its nav authors a search block) - that override wins
         // over the nav-page lookup entirely, so a site opting in never needs its search
         // configuration to match what its app bar shows.
+        //
+        // metaDefaults (brand/thumbnail/template/vertical/rightIcon/rightIconTarget) is resolved
+        // per site from defaults.json rather than once at activation from a shared OSGi config -
+        // otherwise every site would fall back to whichever one instance happened to be configured.
+        final EnvelopeMeta.MetaDefaults metaDefaults = EnvelopeMeta.MetaDefaults.of(
+                SiteDefaults.objectMap(siteDefaults.forPage(root), SiteDefaults.KEY_META));
         return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation,
                 resolveRightIcon(root, homeRoot), metaDefaults);
     }

@@ -536,3 +536,39 @@ about whether that reduced mode should still be the servlet default).
 Answer both times: no — these are hard Cloud Manager pipeline gates, not configurable/skippable
 from repo config. Every failure was root-caused and fixed for real (see entries above) rather
 than worked around.
+
+## Site branding meta defaults moved from one shared OSGi config to per-site `defaults.json`
+
+**Decision**: `ContentBridgeConfiguration.brand()/thumbnail()/rightIcon()/rightIconTarget()/
+template()/vertical()` — six `@AttributeDefinition`s — removed from the OSGi config entirely.
+`EnvelopeMeta.MetaDefaults` (the fallback used when the placeholders sheet leaves a field blank)
+is now resolved per request from `SiteDefaults.forPage(page)`'s new `meta` section in
+`core/src/main/resources/contentbridge/sites/<site>/defaults.json`, instead of once at
+`PageJsonExporterImpl` activation from the single `ui.config` PID.
+**Why**: the project is meant to be deployable as the `core` bundle alone — `ui.config` (where
+these `.cfg.json` files lived) is a separate content package with its own install step, so an
+environment that only ever deploys `core` never had this config at all. Worse, even when
+`ui.config` *was* deployed, one OSGi config is shared across every site the servlet exports —
+the config was hardcoded to `brand: "SecurFinancial", vertical: "FSI", template: "mobile-v2/
+generic-fsi-v4"`, so a Luma export picked up SecurFinancial's brand/vertical/template too (this
+was flagged earlier as a real contract mismatch against `luma-mobile.json`, which has no
+`brand`/`vertical` keys and a different `template`). Per-site `defaults.json` already exists for
+exactly this class of problem (`screenKeyAliases`, `checkoutForm`, `formHeadings`, `rightIcon`
+pin) and ships inside `core`'s bundled resources, so no separate package deploy is needed.
+**Values preserved, not lost**: SecurFinancial's former config values moved verbatim into a new
+`core/src/main/resources/contentbridge/sites/secur-financial/defaults.json` (this site previously
+had no `defaults.json` at all, only `branding.json`/`integrations.json`/`profileviewer.json`).
+Luma's `defaults.json` gained a `meta` section with `template`/`thumbnail` values read off
+`luma-mobile.json`'s reference contract.
+**`allowedRoots`, `maxDepth`, `navPageNames`, `excludedPageNames`, `authorHostSegment`/
+`publishHostSegment`, `styleTokens`, `cacheMaxAge`, `overrideEnabled`, `overridePropertyName`
+stay in `ContentBridgeConfiguration`** — these are servlet-wide operational/infrastructure
+settings (security boundary, caching, host rewriting), not per-site branding, so a shared OSGi
+config is the right shape for them. Only the six branding fields moved.
+**Test fixture note**: `EnvelopeMetaTest`'s three config-fallback tests
+(`brandFromConfigDefault`, `placeholdersBrandWinsOverConfig`, `templateAndVerticalFromConfigDefault`)
+moved off the shared `/content/acme` site (used by every other test in that file, which assert an
+*unbranded* default) onto a dedicated `/content/acme-branded` site backed by a new test-only
+fixture, `core/src/test/resources/contentbridge/sites/acme-branded/defaults.json` — `SiteDefaults`
+caches per site name process-wide, so reusing `acme` would have leaked the branded values into
+every other test in the file that expects blank brand/template/vertical.

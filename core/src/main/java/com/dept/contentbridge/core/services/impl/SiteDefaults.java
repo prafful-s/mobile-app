@@ -31,9 +31,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "screenKeyAliases":  { "&lt;jcr-name&gt;":  "&lt;screen-key&gt;" },
  *   "checkoutForm":      { "formId": "...", "eventType": "...", ... },
  *   "formHeadings":      { "&lt;form-name&gt;": "&lt;title text&gt;" },
- *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." }
+ *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
+ *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
+ *                          "rightIcon": "...", "rightIconTarget": "..." }
  * }
  * </pre>
+ *
+ * <p>{@code meta} carries the site's branding fallbacks (brand/thumbnail/template/vertical/
+ * rightIcon/rightIconTarget) - the values {@link EnvelopeMeta} falls back to when the
+ * placeholders sheet leaves a field blank. These used to live in one shared OSGi config, which
+ * meant every site got the same brand/template/vertical regardless of which one was actually
+ * being exported; per-site {@code defaults.json} is the fix, following the same pattern as the
+ * other sections here.</p>
  *
  * <p>{@code rightIcon}, when present, pins {@code meta.rightIcon} to exactly this value for the
  * site - it wins over both an authored nav-page search block and the placeholders-sheet
@@ -59,6 +68,7 @@ final class SiteDefaults {
     static final String KEY_CHECKOUT_FORM = "checkoutForm";
     static final String KEY_FORM_HEADINGS = "formHeadings";
     static final String KEY_RIGHT_ICON = "rightIcon";
+    static final String KEY_META = "meta";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 

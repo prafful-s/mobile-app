@@ -37,5 +37,9 @@
     "icon": "shopping-cart",
     "name": "shopping-cart",
     "target": "cart"
+  },
+  "meta": {
+    "template": "mobile-v2/generic-retail-v4",
+    "thumbnail": "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/luma2-mobile/thumbnail"
   }
 }

@@ -9,6 +9,14 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  * <p>Deliberately separate from {@link UrlServiceConfiguration}: one OCD shared by two components
  * means both PIDs advertise every property in the web console, so an operator sees settings that
  * the component they are editing ignores.</p>
+ *
+ * <p>Site-level branding defaults ({@code brand}, {@code thumbnail}, {@code template},
+ * {@code vertical}, {@code rightIcon}, {@code rightIconTarget}) do not live here - a single OSGi
+ * config is shared by every site the servlet exports, so a per-site value here would apply to
+ * all of them regardless of which one was actually requested. Those now live in each site's
+ * {@code core/src/main/resources/contentbridge/sites/<site>/defaults.json} under a {@code meta}
+ * key (see {@code SiteDefaults}), which ships inside the {@code core} bundle and needs no
+ * separate {@code ui.config} deployment.</p>
  */
 @ObjectClassDefinition(
         name = "ContentBridge - JSON Exporter",
@@ -83,45 +91,6 @@ public @interface ContentBridgeConfiguration {
             name = "Cache max-age (seconds)",
             description = "Value used for the Cache-Control header on successful responses. 0 disables caching.")
     int cacheMaxAge() default 300;
-
-    @AttributeDefinition(
-            name = "Brand name",
-            description = "Site-level brand label for meta.brand, applied when the placeholders sheet sets no "
-                    + "'brand'. Lets the brand be fixed by configuration rather than authored content; an "
-                    + "authored placeholder still wins, and a blank value falls back to the theme name.")
-    String brand() default "";
-
-    @AttributeDefinition(
-            name = "Thumbnail URL",
-            description = "Site-level value for meta.thumbnail, applied when the placeholders sheet sets no "
-                    + "'thumbnail'. An authored placeholder still wins.")
-    String thumbnail() default "";
-
-    @AttributeDefinition(
-            name = "Right icon",
-            description = "Site-level app-bar icon for meta.rightIcon, applied when neither a nav search block "
-                    + "nor a placeholder 'rightIcon' is set. Blank leaves the icon unconfigured.")
-    String rightIcon() default "";
-
-    @AttributeDefinition(
-            name = "Right icon target",
-            description = "Screen the right icon opens, for meta.rightIcon.target. Defaults to the icon name "
-                    + "when blank. Only meaningful when a right icon is configured.")
-    String rightIconTarget() default "";
-
-    @AttributeDefinition(
-            name = "App template",
-            description = "Site-level value for meta.template, applied when the placeholders sheet sets no "
-                    + "'template'. This is the DSN app template the mobile client renders its chrome against "
-                    + "(e.g. 'mobile-v2/generic-fsi-v4'); a blank value leaves the client on its bare default. "
-                    + "An authored placeholder still wins.")
-    String template() default "";
-
-    @AttributeDefinition(
-            name = "Vertical",
-            description = "Site-level value for meta.vertical, applied when the placeholders sheet sets no "
-                    + "'vertical' (e.g. 'FSI'). An authored placeholder still wins.")
-    String vertical() default "";
 
     @AttributeDefinition(
             name = "Raw JSON override",

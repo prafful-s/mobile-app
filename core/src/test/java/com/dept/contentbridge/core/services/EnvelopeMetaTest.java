@@ -274,49 +274,48 @@ class EnvelopeMetaTest {
         assertEquals("Acme Official", appMeta().get("brand"));
     }
 
-    @Test
-    @DisplayName("brand falls back to the site-level config default when placeholders set none")
-    void brandFromConfigDefault() {
-        final PageJsonExporter configured = context.registerInjectActivateService(
-                new PageJsonExporterImpl(),
-                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
-                "brand", "SecurFinancial");
+    /**
+     * Brand/template/vertical config defaults are per-site ({@code sites/<site>/defaults.json}),
+     * not a shared OSGi config - so these three tests run against a dedicated
+     * {@code /content/acme-branded} site (backed by the test fixture
+     * {@code core/src/test/resources/contentbridge/sites/acme-branded/defaults.json}) rather than
+     * the shared {@code SITE}/{@code HOME} constant, so the fixture's values do not leak into the
+     * other tests in this file that assert on an unbranded site.
+     */
+    private static final String BRANDED_SITE = "/content/acme-branded";
+    private static final String BRANDED_HOME = BRANDED_SITE + "/us/en";
 
-        final Page home = context.pageManager().getPage(HOME);
-        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
-
-        assertEquals("SecurFinancial", meta.get("brand"), "config brand fills in when nothing is authored");
+    private Map<String, Object> exportBrandedSite() {
+        context.create().page(BRANDED_HOME, "", Map.of("jcr:title", "Home", "jcr:language", "en_US"));
+        final Page home = context.pageManager().getPage(BRANDED_HOME);
+        return map(exporter.export(home, ExportOptions.of(false)).get("meta"));
     }
 
     @Test
-    @DisplayName("placeholders brand wins over the site-level config default")
+    @DisplayName("brand falls back to the site-level defaults.json when placeholders set none")
+    void brandFromConfigDefault() {
+        final Map<String, Object> meta = exportBrandedSite();
+
+        assertEquals("SecurFinancial", meta.get("brand"), "site defaults fill in when nothing is authored");
+    }
+
+    @Test
+    @DisplayName("placeholders brand wins over the site-level defaults.json")
     void placeholdersBrandWinsOverConfig() {
-        context.create().page(SITE + "/placeholders", "", Map.of("brand", "Authored Brand"));
+        context.create().page(BRANDED_SITE + "/placeholders", "", Map.of("brand", "Authored Brand"));
 
-        final PageJsonExporter configured = context.registerInjectActivateService(
-                new PageJsonExporterImpl(),
-                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
-                "brand", "Config Brand");
-
-        final Page home = context.pageManager().getPage(HOME);
-        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
+        final Map<String, Object> meta = exportBrandedSite();
 
         assertEquals("Authored Brand", meta.get("brand"), "an authored placeholder still wins");
     }
 
     @Test
-    @DisplayName("template and vertical fall back to the site-level config defaults")
+    @DisplayName("template and vertical fall back to the site-level defaults.json")
     void templateAndVerticalFromConfigDefault() {
-        final PageJsonExporter configured = context.registerInjectActivateService(
-                new PageJsonExporterImpl(),
-                "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0,
-                "template", "mobile-v2/generic-fsi-v4", "vertical", "FSI");
+        final Map<String, Object> meta = exportBrandedSite();
 
-        final Page home = context.pageManager().getPage(HOME);
-        final Map<String, Object> meta = map(configured.export(home, ExportOptions.of(false)).get("meta"));
-
-        assertEquals("mobile-v2/generic-fsi-v4", meta.get("template"), "config template fills in when unauthored");
-        assertEquals("FSI", meta.get("vertical"), "config vertical fills in when unauthored");
+        assertEquals("mobile-v2/generic-fsi-v4", meta.get("template"), "site defaults fill in when unauthored");
+        assertEquals("FSI", meta.get("vertical"), "site defaults fill in when unauthored");
     }
 
     @Test
