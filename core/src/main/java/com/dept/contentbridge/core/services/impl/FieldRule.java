@@ -244,15 +244,6 @@ final class FieldRule {
     }
 
     /**
-     * True when the mapping should still emit the field on skeleton pass even when
-     * {@link #emptyDefault()} evaluates to {@code null} - a JSON {@code null} is the reference
-     * shape's chosen placeholder for {@code type:"null"} fields, distinct from "not authored".
-     */
-    boolean emitsNullDefault() {
-        return TYPE_NULL.equals(type) && defaultValue == null;
-    }
-
-    /**
      * The CRX property names this rule reads from <em>the component's own resource</em>, so
      * extras passthrough can filter them out. Constant-only rules, and {@code fromParent} rules
      * (which read the enclosing section, not the component), return an empty list - neither

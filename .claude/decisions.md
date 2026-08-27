@@ -218,7 +218,7 @@ schemas) of shipping config as bundle-resource JSON instead of Java.
 **Format**: `graphQlEndpoint` is `"<config>/<queryName>"` as one string (matches the two path
 segments of `/graphql/execute.json/<config>/<queryName>` — the same shape a pasted execute URL or
 this file both use), split on the first `/` at load time rather than as two JSON keys.
-**Verified against the running local AEM instance** (`:6502`, admin/admin):
+**Verified against the running local AEM instance** (`:4502`, admin/admin):
 `/conf.1.json` → 5 conf roots, only `dsn-eds-configuration` has
 `settings/graphql/persistentQueries` (5 queries: `productsListByPath`,
 `productDescriptionByPathAndSKU`, `productListByCategory`, `productListByPathBinji`,
@@ -499,6 +499,36 @@ persist. Removing the constant later is one commit.
 
 **Also fixed inline**: `create-account.phone` gained `visibleIf notEquals bodea` to match source
 repo's `!isBodeaVariant` field-emit gate (previously always emitted regardless of variant).
+
+**Superseded**: see "GraphQL and the screen allowlist removed" below — `SCREEN_ALLOWED_COMPONENTS`
+and the `contentbridge.screen.allowlist` system property no longer exist in the codebase; the
+constant was in fact removed (step 5 above), but the same transient-gate need was reintroduced
+under a new name (`ENABLED_COMPONENTS` / `keepEnabledComponents()` in `PageJsonExporterImpl`,
+gated by `ExportOptions.isReduced()`) rather than retired for good.
+
+## GraphQL product source and mobile screen allowlist removed
+
+**Decision**: this PR range fully removed the GraphQL product-fetch path (`GraphQlClient`,
+`GraphQlProductSource`, `GraphQlQuery`, old `ProductExporter`, `SiteProductDefaults`,
+`sites.json`, and the `gqlConfig`/`gqlQuery`/`productsPath`/`schema` servlet params) and replaced
+it with a simpler, GraphQL-free mechanism: `ContentFragmentReader` reads Content Fragments
+directly from JCR, projected through JSON-declared rules in `core/src/main/resources/
+contentbridge/products/{luma,secur-financial}-product.json` via `ProductCatalog`/`ProductMappings`.
+**Why**: simplification — the persisted-query precedence chain (request param > placeholders
+sheet > shipped `sites.json`) and its GraphQL/CF dual-source ownership rules added complexity
+that wasn't earning its keep once direct CF reads covered both sites.
+**Note**: the "Configured GraphQL owns the products catalogue" and "Per-site product source
+defaults shipped as bundle data" decisions above are now historical — the classes and files they
+describe (`GraphQlQuery`, `SiteProductDefaults`, `sites.json`) do not exist in the current tree.
+Left in place per this file's append-only convention; do not follow those entries' file paths as
+if they're current.
+**Also removed in the same range**: the mobile screen allowlist documented above
+(`SCREEN_ALLOWED_COMPONENTS`, `contentbridge.screen.allowlist`) — its code, and the now-orphaned
+`core/pom.xml` surefire `systemPropertyVariables` block that set the property to `off` for tests,
+were deleted for real this time. The equivalent transient-gate need is currently served by
+`PageJsonExporterImpl.ENABLED_COMPONENTS` / `keepEnabledComponents()`, gated by
+`ExportOptions.isReduced()` (servlet currently always passes `reduced=true` — see open question
+about whether that reduced mode should still be the servlet default).
 
 ## No pipeline bypass for Cloud Manager's image-build / code-quality gates
 

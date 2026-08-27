@@ -19,16 +19,13 @@ change). Keep it factual and current, not historical — historical reasoning go
 | `ui.content` | `/content` + `/content/dam` sample/demo content, `mode="merge"` filters |
 | `ui.frontend` | Author-side clientlibs (webpack) |
 | `all` | Aggregates the above into one deployable content package |
-| `dispatcher` | AEM Dispatcher SDK config (farms, vhosts, filters, cache) |
 | `it.tests` | Integration tests |
 
 ## Request flow (the one API endpoint)
 
 ```
-GET /content/<site>/<path>/api/<name>.json?path=/content/<site>/us/en[&pretty=true][&schema=v2]
+GET /content/<site>/<path>/api/<name>.json?path=/content/<site>/us/en[&pretty=true]
         │
-        ▼  Dispatcher (dispatcher/src/conf.dispatcher.d/filters/contentbridge_filters.any)
-        │  allows GET *.json under /content/*/api/* (rule 0100) and /apps/contentbridge/api (0110, author-only)
         ▼
   PageJsonServlet  (core/.../servlets/PageJsonServlet.java)
         │  bound by sling:resourceType "contentbridge/api" (NOT a fixed path — Adobe AEMaaCS guidance:
@@ -65,16 +62,11 @@ GET /content/<site>/<path>/api/<name>.json?path=/content/<site>/us/en[&pretty=tr
         │    through as extras)
         │  - forms: FormSchemaServiceImpl reads core/src/main/resources/contentbridge/forms/*.json
         │    to describe authored form components (FormBlockBuilder + FieldRule + FormFieldFactory)
-        │  - products: ProductExporter reads Content Fragments under
-        │    /content/dam/<site>/<productsFolderName> (default "products") OR, if requested via
-        │    ?gqlConfig=&gqlQuery= (or the site's placeholders sheet), GraphQlProductSource dispatches
-        │    a persisted GraphQL query in-JVM via SlingRequestProcessor (optional ref — falls back to
-        │    Content Fragments if unbound). maxProducts caps the response (default 200, truncates +
-        │    warns). Resolution precedence for both query name and folder path: request param >
-        │    site's placeholders page > shipped contentbridge/products/sites.json default
-        │    (SiteProductDefaults) > none — a site listed in sites.json works with zero authored
-        │    config; the shipped folder default also backstops the plain Content Fragment read if
-        │    the GraphQL query yields nothing
+        │  - products: ProductCatalog/ProductMappings read Content Fragments directly from JCR via
+        │    ContentFragmentReader, projected through per-site rules in
+        │    core/src/main/resources/contentbridge/products/{luma,secur-financial}-product.json
+        │    (no GraphQL — that path, and the sites.json precedence chain that backed it, was
+        │    removed; see decisions.md "GraphQL product source and mobile screen allowlist removed")
         │  - ComponentTreeWalker.prefixAssetsDeep walks the finished tree and prepends the delivery host
     (ContentPaths.prefix) to every `/content/...` string value - EXCEPT the `link`/`linkTo` keys,
     which stay relative paths (client resolves them itself; see decisions.md). Runs after mapping,
@@ -93,10 +85,6 @@ GET /content/<site>/<path>/api/<name>.json?path=/content/<site>/us/en[&pretty=tr
 |---|---|---|
 | `path` | yes | JCR path of the page to export, must be under an allowed root |
 | `pretty` | no | `true` → indented JSON |
-| `schema` | no | `v1` (default, flat) or `v2` (hierarchical panels) |
-| `productsPath` | no | override where product Content Fragments are read from |
-| `gqlConfig` | no | named GraphQL endpoint config, e.g. `dsn-eds-configuration` |
-| `gqlQuery` | no | persisted GraphQL query name, e.g. `productListByPathBinji` |
 
 ## API endpoints (effective, by environment)
 
@@ -113,20 +101,6 @@ environment; only the host differs.
 
 Example: `GET https://publish-pXXXXX-eYYYYYY.adobeaemcloud.com/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en`
 
-## Dispatcher routing (`dispatcher/src/conf.dispatcher.d/`)
-
-- **Farm**: `available_farms/contentbridge.farm` (+ identical copy in `enabled_farms/`, plain file
-  copy not symlink — Windows-checkout safety)
-- **Filters**: `filters/contentbridge_filters.any` — `/0100` allows GET `*.json` under
-  `/content/*/api/*`; `/0110` allows GET `/apps/contentbridge/api.json` (author-only convenience,
-  publish denies anonymous `/apps` regardless); `/0120` allows DAM image extensions under
-  `/content/dam/*`
-- **Cache**: `cache/contentbridge_cache.any` — caches both API paths above; invalidates on any
-  change under `/content/*` (not just this repo's demo content — API serves any site)
-- **VHost**: `conf.d/available_vhosts/contentbridge.vhost` (+ `enabled_vhosts/` copy) — CORS
-  `LocationMatch` covers both API paths; `ServerAlias` includes `*.adobeaemcloud.net` /
-  `*.adobeaemcloud.com` for Cloud Manager default domains
-
 ## Key OSGi config (`ContentBridgeConfiguration`, PID via `ui.config`)
 
 `allowedRoots` (default `/content`), `maxDepth` (3), `navPageNames`, `excludedPageNames`,
@@ -136,9 +110,14 @@ rewrite), `productsFolderName` (`products`), `maxProducts` (200), `productFieldA
 
 ## Mapping-driven component/form catalogue
 
-- `core/src/main/resources/contentbridge/mappings/*.json` — one file per component type
-  (title, button, hero→banner, image, card, text, divider, map, offer, productImage,
-  productTitle, timeSlotPicker, userDetails, userLogin, list, contentCards) + `index.json`
+- `core/src/main/resources/contentbridge/mappings/*.json` — one file per component type. Only
+  files listed in `index.json` are loaded; as of this writing that's hero→banner, card,
+  productCard, productDetail, cart, orderSummary, newArrival, categoryProductsLister, title,
+  image, button, text, search, actionButton, divider. A handful of other rule files exist on
+  disk but are intentionally excluded from `index.json` because nothing in the currently
+  authored Luma/SecurFinancial content exercises them yet (list, map, offer, productImage,
+  productTitle, timeSlotPicker, userDetails, userLogin, contentCards) — add them back to
+  `index.json` when a site actually authors that block type.
 - `core/src/main/resources/contentbridge/forms/*.json` — one file per form type (checkout,
   create-account, loan-application-form, etc.) + `index.json`. A field entry can carry a
   `visibleIf` gate that drops the field before mapping when its condition resolves false:

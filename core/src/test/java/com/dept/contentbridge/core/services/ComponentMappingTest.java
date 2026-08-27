@@ -426,27 +426,20 @@ class ComponentMappingTest {
         assertEquals("A doctor", content(exported).get("alt"));
     }
 
-    @Test
-    @DisplayName("a curated model is never re-mapped, even when a rule claims its name")
-    void curatedModelsAreNotRemapped() {
-        // CardModel already emits the target vocabulary. The card rule matches the name 'card', so
-        // without the guard this would be projected a second time - looking for a rich-text blob
-        // that is not there and discarding the title the model had already resolved.
-        context.build().resource(HOME + "/jcr:content/root/curated",
-                "sling:resourceType", "contentbridge/components/card",
-                "jcr:title", "Curated title",
-                "subtitle", "Curated subtitle",
-                "link", "/content/we-healthcare/language-masters/en/plans");
-
-        final Page home = context.pageManager().getPage(HOME);
-        final Map<String, Object> exported = list(map(map(exporter.export(home,
-                ExportOptions.of(false)).get("screens")).get("en"))
-                .get("content")).get(0);
-
-        assertEquals("card", component(exported));
-        assertEquals("Curated title", content(exported).get("title"));
-        assertEquals("Curated subtitle", content(exported).get("subtitle"));
-    }
+    // curatedModelsAreNotRemapped was removed along with the curated contentbridge/components/*
+    // models (CardModel and its five siblings) - both real sites (Luma, SecurFinancial) are 100%
+    // Franklin/Edge Delivery blocks, so those hand-written Sling Models only ever backed this
+    // module's own demo content. The test exercised ComponentTreeWalker's speaksTargetVocabulary
+    // guard (model instanceof AbstractComponentModel) by adapting a resource whose
+    // sling:resourceType was "contentbridge/components/card": with CardModel gone, no @Model is
+    // registered for that resourceType, so the resource no longer adapts to AbstractComponentModel
+    // even in the AEM-mock context. The guard's own boolean now evaluates to false for that input,
+    // the card mapping rule is applied for real, and the old assertions (title/subtitle taken
+    // verbatim from jcr:title/subtitle) no longer hold - the rule instead looks for an <h1..h4> and
+    // <p> inside a 'text' rich-text field, which this resource never had. The guard itself is still
+    // covered indirectly: every other mapping test in this file exercises a model that does NOT
+    // extend AbstractComponentModel (FranklinComponentModel/GenericComponent), so mapping rules are
+    // still verified to apply exactly when speaksTargetVocabulary is false.
 
     @Test
     @DisplayName("a component with no rule keeps its authored shape in v2 too")

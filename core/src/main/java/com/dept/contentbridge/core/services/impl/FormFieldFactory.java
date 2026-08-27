@@ -82,7 +82,7 @@ final class FormFieldFactory {
      * <pre>
      *   "conditions": [ {gate}, {gate}, ... ]      // every gate must pass (AND)
      *   "variants": ["luma", "wknd-fly"]           // shorthand for one gate on the "variant" prop
-     *   "condition": { gate }                      // single gate ("visibleIf" also accepted)
+     *   "condition": { gate }                      // single gate
      * </pre>
      *
      * <p>A gate itself declares one of:</p>
@@ -97,9 +97,7 @@ final class FormFieldFactory {
      *
      * <p>{@code fallback} is a second gate, evaluated instead of {@code default} when the primary
      * {@code field} is not authored at all - the reference form falls back to a variant check rather
-     * than a fixed boolean when the more specific flag was never set. {@code prop}/{@code notEquals}
-     * (this project's original key spellings) are still accepted alongside {@code field}/
-     * {@code not-equals} (the reference schema's spellings), so either survives a round trip.</p>
+     * than a fixed boolean when the more specific flag was never set.</p>
      *
      * <p>The reference client uses two shapes for conditional rendering: a boolean {@code show*}
      * property (which becomes the truthy check), and a discriminator like {@code variant} that
@@ -131,10 +129,7 @@ final class FormFieldFactory {
             return evaluateGate(gate, authored);
         }
 
-        Object condition = field.get("condition");
-        if (condition == null) {
-            condition = field.get("visibleIf");
-        }
+        final Object condition = field.get("condition");
         if (!(condition instanceof Map)) {
             return true;
         }
@@ -148,7 +143,7 @@ final class FormFieldFactory {
 
     /** One gate of a {@code condition}/{@code conditions} entry - see {@link #isVisible}. */
     private static boolean evaluateGate(final Map<String, Object> gate, final Map<String, Object> authored) {
-        final String prop = StringUtils.defaultIfBlank(str(gate.get("field")), str(gate.get("prop")));
+        final String prop = str(gate.get("field"));
         if (StringUtils.isBlank(prop)) {
             return true; // malformed gate - fail open
         }
@@ -161,7 +156,7 @@ final class FormFieldFactory {
         if (equals != null) {
             return authoredStr != null && authoredStr.equals(normaliseCompare(equals));
         }
-        final Object notEquals = firstNonNull(gate.get("notEquals"), gate.get("not-equals"));
+        final Object notEquals = gate.get("not-equals");
         if (notEquals != null) {
             // Default visible - reference emits the field for every variant except the named one.
             return authoredStr == null || !authoredStr.equals(normaliseCompare(notEquals));
@@ -195,10 +190,6 @@ final class FormFieldFactory {
             return (Boolean) authoredValue;
         }
         return Boolean.parseBoolean(String.valueOf(authoredValue).trim());
-    }
-
-    private static Object firstNonNull(final Object a, final Object b) {
-        return a != null ? a : b;
     }
 
     /** Trim + lower-case, or null for blank/null. Mirrors reference's {@code normalizeVariant}. */

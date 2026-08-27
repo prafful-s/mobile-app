@@ -11,5 +11,7 @@
   "image",
   "button",
   "text",
-  "search"
+  "search",
+  "actionButton",
+  "divider"
 ]

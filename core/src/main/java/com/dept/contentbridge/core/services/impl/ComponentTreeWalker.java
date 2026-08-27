@@ -371,7 +371,6 @@ final class ComponentTreeWalker {
 
             final String authoredName = model.getComponentName();
             String componentName = authoredName;
-            String subtype = null;
             Map<String, Object> content = authored;
             Map<String, Object> styles = Collections.emptyMap();
             final Map<String, Object> sectionProps = ancestorSection == null
@@ -406,7 +405,6 @@ final class ComponentTreeWalker {
                             authoredName, child.getPath());
                 } else {
                     componentName = mapping.getComponent();
-                    subtype = mapping.getSubtype();
                     content = new LinkedHashMap<>(mapped);
                     styles = mapping.applyStyles(ruleSource, sectionProps);
                     if (mapping.isSkeleton()) {
@@ -441,9 +439,6 @@ final class ComponentTreeWalker {
                 meta.put(SchemaConstants.KEY_ORDER, sink.size());
             }
             meta.put(SchemaConstants.KEY_COMPONENT, componentName);
-            if (subtype != null) {
-                meta.put(SchemaConstants.KEY_SUBTYPE, subtype);
-            }
             entry.put(SchemaConstants.KEY_META, meta);
             if (!styles.isEmpty()) {
                 entry.put(SchemaConstants.KEY_STYLES, styles);

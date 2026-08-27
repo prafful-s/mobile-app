@@ -9,14 +9,6 @@ public final class SchemaConstants {
         // constants only
     }
 
-    /* ---- resource types ---- */
-    public static final String RT_BANNER = "contentbridge/components/banner";
-    public static final String RT_TITLE = "contentbridge/components/title";
-    public static final String RT_HTML_TEXT = "contentbridge/components/htmlText";
-    public static final String RT_CARD = "contentbridge/components/card";
-    public static final String RT_DIVIDER = "contentbridge/components/divider";
-    public static final String RT_IMAGE = "contentbridge/components/image";
-
     /* ---- AEM Edge Delivery / Franklin resource types ----
      *
      * Franklin does not give each component its own resource type. Everything authored is either a
@@ -60,14 +52,6 @@ public final class SchemaConstants {
     public static final String KEY_PRODUCTS = "products";
     public static final String KEY_NAVIGATION = "navigation";
     public static final String KEY_COMPONENT = "component";
-    /**
-     * Discriminator for AEM sources that share a reference component name. Two AEM blocks
-     * (e.g. {@code hero} and {@code productCard}) both emit {@code meta.component = "banner"}
-     * because the reference vocabulary is thinner than AEM's; {@code meta.subtype} names the
-     * AEM source so a client can distinguish them. Only emitted when the mapping rule declares
-     * a {@code subtype} value.
-     */
-    public static final String KEY_SUBTYPE = "subtype";
 
     /* ---- v2 (hierarchical) keys ---- */
     /** Index of a component among its siblings. */

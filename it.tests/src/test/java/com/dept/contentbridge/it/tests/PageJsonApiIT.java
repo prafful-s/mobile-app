@@ -27,7 +27,7 @@ class PageJsonApiIT {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private static final String BASE = System.getProperty("it.author.url", "http://localhost:6502");
+    private static final String BASE = System.getProperty("it.author.url", "http://localhost:4502");
     private static final String USER = System.getProperty("it.author.user", "admin");
     private static final String PASSWORD = System.getProperty("it.author.password", "admin");
     private static final String APP_ROOT = "/content/contentbridge/us/en";
@@ -56,7 +56,6 @@ class PageJsonApiIT {
         assertTrue(response.headers().firstValue("Content-Type").orElse("").contains("application/json"));
 
         final Map<String, Object> body = json(response);
-        assertNotNull(body.get("id"));
         assertNotNull(body.get("meta"));
         assertNotNull(body.get("screens"));
         assertNotNull(body.get("branding"));

@@ -10,7 +10,7 @@ ContentBridge is an AEM as a Cloud Service project that exports authored pages a
 # Unit tests only (fast, no AEM required)
 mvn test -pl core
 
-# Full build + deploy to local AEM author (localhost:6502)
+# Full build + deploy to local AEM author (localhost:4502)
 mvn clean install -PautoInstallSinglePackage
 
 # Deploy to a non-default port

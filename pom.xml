@@ -20,7 +20,6 @@
         <module>ui.config</module>
         <module>ui.content</module>
         <module>all</module>
-        <!-- <module>dispatcher</module> -->
     </modules>
 
     <properties>
@@ -32,7 +31,7 @@
 
         <!-- Local AEM SDK quickstart. Deploy target for this project. -->
         <aem.host>localhost</aem.host>
-        <aem.port>6502</aem.port>
+        <aem.port>4502</aem.port>
         <aem.publish.host>localhost</aem.publish.host>
         <aem.publish.port>6503</aem.publish.port>
         <sling.user>admin</sling.user>
