@@ -34,12 +34,6 @@ public interface PageJsonExporter {
     Map<String, Object> export(Page requested, ExportOptions options);
 
     /**
-     * @param path a repository path
-     * @return true when the path sits under one of the configured allowed roots
-     */
-    boolean isAllowed(String path);
-
-    /**
      * @return the configured Cache-Control max-age in seconds
      */
     int getCacheMaxAge();

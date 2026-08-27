@@ -27,14 +27,13 @@ import com.edsMobileApp.core.services.ExportOptions;
 import com.edsMobileApp.core.services.PageJsonExporter;
 import com.day.cq.wcm.api.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
  * The ContentBridge read API.
  *
  * <pre>
  * GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en
- * GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en/subpage-1&amp;pretty=true
+ * GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en/subpage-1
  * </pre>
  *
  * <p>Bound by <strong>resource type</strong> rather than by path. Adobe's guidance for AEM as a
@@ -47,8 +46,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
  * <p>Content is read through the {@code contentbridge-reader} system user, which repoinit grants
  * {@code jcr:read} on {@code /content}. That is what lets one endpoint serve every site on the
  * instance, including projects that know nothing about ContentBridge, and it means the response does
- * <em>not</em> reflect the requesting user's permissions - {@code allowedRoots} is the access
- * boundary, so keep it meaningful.</p>
+ * <em>not</em> reflect the requesting user's permissions - the service user's own {@code jcr:read}
+ * grant is the access boundary, so keep it meaningful.</p>
  *
  * <p>If the service user cannot be obtained or cannot see the page, the request falls back to the
  * caller's own resolver and logs a warning. That keeps a misconfigured service user from taking the
@@ -75,7 +74,6 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(PageJsonServlet.class);
 
     private static final String PARAM_PATH = "path";
-    private static final String PARAM_PRETTY = "pretty";
 
     private static final String CONTENT_TYPE = "application/json";
 
@@ -107,15 +105,8 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
                     "Missing required query parameter 'path'.");
             return;
         }
-        if (!exporter.isAllowed(path)) {
-            LOG.warn("Rejected ContentBridge export for path outside the allowed roots: {}", path);
-            writeError(response, SlingHttpServletResponse.SC_FORBIDDEN,
-                    "Path is not exposed by this API.");
-            return;
-        }
-
         // Prefer the contentbridge-reader system user so the API can serve every site under /content
-        // regardless of who is asking. 'allowedRoots' is the access boundary, not the caller's ACLs.
+        // regardless of who is asking.
         try (ResourceResolver serviceResolver = openServiceResolver()) {
 
             Resource resource = findResource(serviceResolver, path);
@@ -165,7 +156,7 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             response.setStatus(SlingHttpServletResponse.SC_OK);
             // Serialise once to a string so the same bytes go to both the response and the
             // "excessive" access log below - avoids Jackson streaming the payload twice.
-            final String body = writer(request).writeValueAsString(payload);
+            final String body = mapper.writeValueAsString(payload);
             response.getWriter().write(body);
             LOG.debug("ContentBridge served path={} bytes={} body={}", path, body.length(), body);
 
@@ -260,13 +251,6 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
         } else {
             response.setHeader("Cache-Control", "no-store");
         }
-    }
-
-    private com.fasterxml.jackson.databind.ObjectWriter writer(final SlingHttpServletRequest request) {
-        final boolean pretty = Boolean.parseBoolean(request.getParameter(PARAM_PRETTY));
-        return pretty
-                ? mapper.writer().with(SerializationFeature.INDENT_OUTPUT)
-                : mapper.writer();
     }
 
     private void writeError(final SlingHttpServletResponse response, final int status, final String message)

@@ -32,7 +32,6 @@ public final class ContentBridgeTestContext {
         context.registerInjectActivateService(new UrlServiceImpl());
         context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
-                "allowedRoots", new String[] {"/content/contentbridge"},
                 "maxDepth", 3,
                 "cacheMaxAge", 300);
     }

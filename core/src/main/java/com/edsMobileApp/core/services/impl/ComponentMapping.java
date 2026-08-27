@@ -57,6 +57,15 @@ final class ComponentMapping {
         this.ignoreExtras = ignoreExtras;
     }
 
+    /** A {@code fallback} mapping: no {@code requires}, no further fallback, no variants/linkQuery/ignoreExtras. */
+    private ComponentMapping(final List<String> matches, final String component,
+                             final List<FieldRule> fields, final List<FieldRule> styleFields,
+                             final boolean skeleton, final String contentFragmentRef,
+                             final ContentFragmentFolderRef contentFragmentFolderRef) {
+        this(matches, component, fields, styleFields, skeleton, contentFragmentRef,
+                contentFragmentFolderRef, null, null, Collections.emptyList(), null, Collections.emptySet());
+    }
+
     /**
      * @param definition a parsed rule file
      * @return the mapping, or {@code null} when it names no target component or matches nothing
@@ -102,8 +111,7 @@ final class ComponentMapping {
                 Collections.unmodifiableList(fieldRules(map.get("fields"))),
                 Collections.unmodifiableList(fieldRules(map.get("styles"))),
                 Boolean.TRUE.equals(map.get("skeleton")), trimmed(map.get("contentFragmentRef")),
-                ContentFragmentFolderRef.of(map.get("contentFragmentFolderRef")), null, null,
-                Collections.emptyList(), null, Collections.emptySet());
+                ContentFragmentFolderRef.of(map.get("contentFragmentFolderRef")));
     }
 
     /**
@@ -278,19 +286,15 @@ final class ComponentMapping {
                 }
                 @SuppressWarnings("unchecked")
                 final Map<String, Object> map = (Map<String, Object>) definition;
-                final List<String> fields = names(map.get("fields"));
-                final String injectAs = trimmed(map.get("injectAs"));
-                if (fields.isEmpty() || injectAs == null) {
-                    return null;
-                }
-                return new Collect(Collections.unmodifiableList(fields), injectAs,
-                        Boolean.TRUE.equals(map.get("keepBlank")),
-                        trimmed(map.get("matchField")), trimmed(map.get("matchAgainst")));
+                return fromMap(map, names(map.get("fields")));
             }
 
             /** Parses the flat legacy shape - collectField + injectAs on the parent object. */
             static Collect ofFlat(final Map<String, Object> map) {
-                final List<String> fields = names(map.get("collectField"));
+                return fromMap(map, names(map.get("collectField")));
+            }
+
+            private static Collect fromMap(final Map<String, Object> map, final List<String> fields) {
                 final String injectAs = trimmed(map.get("injectAs"));
                 if (fields.isEmpty() || injectAs == null) {
                     return null;
@@ -412,24 +416,32 @@ final class ComponentMapping {
         boolean anyAuthored = false;
 
         for (final FieldRule field : fields) {
-            Object value = field.fromSource(source, parentSource);
-            if (isPresent(value)) {
+            final Object authored = field.fromSource(source, parentSource);
+            if (isPresent(authored)) {
                 anyAuthored = true;
-            } else {
-                value = field.fallback();
             }
-            if (isPresent(value)) {
-                putTarget(target, field.getTarget(), screenTarget(field.getTarget(), value, source));
-            } else if (skeleton) {
-                // Fixed-shape opt-in: emit the key anyway, typed to what the schema declared.
-                // The client always sees the same key set, whatever the author left blank.
-                putTarget(target, field.getTarget(), field.emptyDefault());
-            }
+            final Object value = isPresent(authored) ? authored : field.fallback();
+            resolveInto(target, field, isPresent(value) ? screenTarget(field.getTarget(), value, source) : value);
         }
         if (skeleton) {
             return target;
         }
         return anyAuthored ? target : Collections.emptyMap();
+    }
+
+    /**
+     * Resolves one field's value - authored, or its fallback - and places it in {@code target}, or
+     * (under skeleton mode) its typed empty default when there was nothing to place. Shared by
+     * {@link #apply} and {@link #applyStyles}.
+     */
+    private void resolveInto(final Map<String, Object> target, final FieldRule field, final Object value) {
+        if (isPresent(value)) {
+            putTarget(target, field.getTarget(), value);
+        } else if (skeleton) {
+            // Fixed-shape opt-in: emit the key anyway, typed to what the schema declared.
+            // The client always sees the same key set, whatever the author left blank.
+            putTarget(target, field.getTarget(), field.emptyDefault());
+        }
     }
 
     /**
@@ -536,17 +548,8 @@ final class ComponentMapping {
     Map<String, Object> applyStyles(final Map<String, Object> source, final Map<String, Object> parentSource) {
         final Map<String, Object> target = new LinkedHashMap<>();
         for (final FieldRule field : styleFields) {
-            Object value = field.fromSource(source, parentSource);
-            if (!isPresent(value)) {
-                value = field.fallback();
-            }
-            if (isPresent(value)) {
-                putTarget(target, field.getTarget(), value);
-            } else if (skeleton) {
-                // Fixed-shape styles: emit every declared key so the reference contract's
-                // styles keyset is always present, typed to what the schema declared.
-                putTarget(target, field.getTarget(), field.emptyDefault());
-            }
+            final Object authored = field.fromSource(source, parentSource);
+            resolveInto(target, field, isPresent(authored) ? authored : field.fallback());
         }
         return target;
     }

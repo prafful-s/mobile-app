@@ -60,16 +60,6 @@ class PageJsonServletTest {
     }
 
     @Test
-    @DisplayName("pretty=true indents the response")
-    void prettyPrint() throws Exception {
-        context.request().setParameterMap(Map.of(
-                "path", ContentBridgeTestContext.APP_ROOT, "pretty", "true"));
-        servlet.doGet(context.request(), context.response());
-
-        assertTrue(context.response().getOutputAsString().contains("\n  "));
-    }
-
-    @Test
     @DisplayName("missing path yields 400 with a JSON error body")
     void missingPath() throws Exception {
         servlet.doGet(context.request(), context.response());
@@ -79,17 +69,7 @@ class PageJsonServletTest {
     }
 
     @Test
-    @DisplayName("paths outside the allowed roots yield 403, not 404")
-    void forbiddenPath() throws Exception {
-        context.request().setParameterMap(Map.of("path", "/etc/passwd"));
-        servlet.doGet(context.request(), context.response());
-
-        assertEquals(HttpServletResponse.SC_FORBIDDEN, context.response().getStatus());
-        assertEquals("no-store", context.response().getHeader("Cache-Control"));
-    }
-
-    @Test
-    @DisplayName("an allowed but non-existent page yields 404")
+    @DisplayName("a non-existent page yields 404")
     void missingPage() throws Exception {
         context.request().setParameterMap(Map.of("path", "/content/contentbridge/us/nope"));
         servlet.doGet(context.request(), context.response());

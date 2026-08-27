@@ -55,7 +55,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Reference
     private FormSchemaService formSchemaService;
 
-    private String[] allowedRoots;
     private String[] navPageNames;
     private Set<String> excludedPageNames;
     private boolean includeHomeScreen;
@@ -76,7 +75,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     @Activate
     protected void activate(final Map<String, Object> properties) {
         final ContentBridgeSettings config = ContentBridgeSettings.load(properties);
-        this.allowedRoots = config.allowedRoots();
         this.navPageNames = config.navPageNames();
         this.excludedPageNames = new HashSet<>(Arrays.asList(config.excludedPageNames()));
         this.includeHomeScreen = config.includeHomeScreen();
@@ -94,19 +92,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteDefaults = SiteDefaults.load();
         this.productCatalog = new ProductCatalog(ProductMappings.load());
         this.walker.setSiteDefaults(this.siteDefaults);
-    }
-
-    @Override
-    public boolean isAllowed(final String path) {
-        if (StringUtils.isBlank(path)) {
-            return false;
-        }
-        for (final String root : allowedRoots) {
-            if (StringUtils.equals(path, root) || StringUtils.startsWith(path, StringUtils.appendIfMissing(root, "/"))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

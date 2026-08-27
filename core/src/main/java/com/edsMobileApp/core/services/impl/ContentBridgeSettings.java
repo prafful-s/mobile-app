@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Global settings for the ContentBridge JSON exporter, read once from {@code config.json} at
  * activation instead of an OSGi {@code @ObjectClassDefinition}.
  *
- * <p>These knobs ({@code allowedRoots}, {@code maxDepth}, {@code navPageNames},
+ * <p>These knobs ({@code maxDepth}, {@code navPageNames},
  * {@code excludedPageNames}, {@code includeHomeScreen}, {@code styleTokens}, {@code cacheMaxAge},
  * {@code overrideEnabled}, {@code overridePropertyName}) are legitimately global - one servlet
  * exports every site, so
@@ -34,8 +34,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * <p>{@code load(Map)} additionally accepts the component properties {@code @Activate} receives
  * (whatever the mock or real OSGi runtime passes, e.g. Sling Mocks'
- * {@code registerInjectActivateService(service, "allowedRoots", ...)} in tests) - any key present
- * there wins over {@code config.json}, so a test can still pin a narrower {@code allowedRoots} or
+ * {@code registerInjectActivateService(service, "cacheMaxAge", ...)} in tests) - any key present
+ * there wins over {@code config.json}, so a test can still pin
  * a fixed {@code cacheMaxAge} without needing its own {@code config.json} on the test classpath.</p>
  */
 final class ContentBridgeSettings {
@@ -45,7 +45,6 @@ final class ContentBridgeSettings {
     private static final String PATH = "/contentbridge/config.json";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final String[] allowedRoots;
     private final int maxDepth;
     private final String[] navPageNames;
     private final String[] excludedPageNames;
@@ -56,7 +55,6 @@ final class ContentBridgeSettings {
     private final String overridePropertyName;
 
     private ContentBridgeSettings(final Map<String, Object> values) {
-        this.allowedRoots = stringArray(values, "allowedRoots", new String[] {"/content"});
         this.maxDepth = intValue(values, "maxDepth", 3);
         this.navPageNames = stringArray(values, "navPageNames",
                 new String[] {"nav", "header", "navigation"});
@@ -85,10 +83,6 @@ final class ContentBridgeSettings {
             merged.putAll(overrides);
         }
         return new ContentBridgeSettings(merged);
-    }
-
-    String[] allowedRoots() {
-        return allowedRoots.clone();
     }
 
     int maxDepth() {
@@ -145,7 +139,7 @@ final class ContentBridgeSettings {
                                         final String[] fallback) {
         final Object value = values.get(key);
         // config.json deserialises an array as a List; OSGi component properties (real or mock,
-        // e.g. Sling Mocks' registerInjectActivateService(service, "allowedRoots", new String[]{...}))
+        // e.g. Sling Mocks' registerInjectActivateService(service, "navPageNames", new String[]{...}))
         // hand over a plain String[] instead - both are accepted.
         if (value instanceof String[]) {
             return ((String[]) value).clone();

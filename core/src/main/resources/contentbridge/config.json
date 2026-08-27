@@ -1,5 +1,4 @@
 {
-  "allowedRoots": ["/content"],
   "maxDepth": 3,
   "navPageNames": ["nav", "header", "navigation"],
   "excludedPageNames": ["nav", "header", "navigation", "footer", "placeholders", "language-masters", "redirects"],

@@ -211,16 +211,4 @@ class PageJsonExporterImplTest {
                 map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("integrations"));
         assertTrue(integrations.isEmpty());
     }
-
-    @Test
-    @DisplayName("allowed-root check matches whole path segments, not string prefixes")
-    void allowedRoots() {
-        assertTrue(exporter.isAllowed("/content/contentbridge"));
-        assertTrue(exporter.isAllowed("/content/contentbridge/us/en"));
-        assertFalse(exporter.isAllowed("/content/contentbridge-other/us"),
-                "a sibling sharing a name prefix must not be reachable");
-        assertFalse(exporter.isAllowed("/etc/passwd"));
-        assertFalse(exporter.isAllowed(""));
-        assertFalse(exporter.isAllowed(null));
-    }
 }
