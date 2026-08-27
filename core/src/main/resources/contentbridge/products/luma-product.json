@@ -1,6 +1,8 @@
 {
   "match": ["/conf/dsn-eds-configuration/settings/dam/cfm/models/product-model"],
   "component": "product",
+  "sites": ["/content/luma-site"],
+  "scope": ["/content/dam/luma3/en/fragments"],
   "fields": [
     { "target": "id", "first": ["sku", "id"] },
     { "target": "sku", "first": ["sku", "id"] },
