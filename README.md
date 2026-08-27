@@ -23,7 +23,7 @@ cd content-bridge
 mvn clean install -PautoInstallSinglePackage
 ```
 
-The build targets `localhost:6502` by default. For a different port:
+The build targets `localhost:4502` by default. For a different port:
 
 ```bash
 mvn clean install -PautoInstallSinglePackage -Daem.port=4502
@@ -33,7 +33,7 @@ Then:
 
 ```bash
 curl -u admin:admin \
-  'http://localhost:6502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true'
+  'http://localhost:4502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true'
 ```
 
 If every screen comes back with `"content": []`, check
@@ -50,7 +50,6 @@ If every screen comes back with `"content": []`, check
 | Binding | resource type `contentbridge/api`, extension `json` |
 | `path` | **required.** Repository path of a page. Must sit under an allowed root. |
 | `pretty` | optional. `true` indents the response. |
-| `productsPath` | optional. Reads the product catalogue from this folder instead of resolving it per site. |
 | Response | `application/json;charset=UTF-8` |
 
 The servlet is bound by **resource type**, not by path. Adobe advises against `@SlingServletPaths`
@@ -135,7 +134,7 @@ Errors return JSON (`{"status":403,"error":"..."}`) so clients never have to par
 
 ```bash
 curl -u admin:admin \
-  'http://localhost:6502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true'
+  'http://localhost:4502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true'
 ```
 
 ---
@@ -459,10 +458,10 @@ win when both exist.
 
 ## Build and deploy
 
-The `aem.port` property defaults to **6502**, so the plain commands target that instance.
+The `aem.port` property defaults to **4502**, so the plain commands target that instance.
 
 ```bash
-# Full build + deploy to the local author instance on :6502
+# Full build + deploy to the local author instance on :4502
 mvn clean install -PautoInstallSinglePackage
 
 # Java only, hot-swapped into the running OSGi container
@@ -489,8 +488,8 @@ mvn verify -PintegrationTests
 
 ### After the first deploy
 
-1. Author: <http://localhost:6502/sites.html/content/contentbridge/us/en>
-2. API: <http://localhost:6502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true>
+1. Author: <http://localhost:4502/sites.html/content/contentbridge/us/en>
+2. API: <http://localhost:4502/content/contentbridge/api/getPageDetails.json?path=/content/contentbridge/us/en&pretty=true>
 
 The sample content references DAM assets under `/content/dam/contentbridge/…` that are **not**
 shipped in this package. Upload your own or repoint the components — the export works either way,
@@ -509,7 +508,6 @@ those keys are simply omitted while the references are unresolved.
 | `ui.content` | Editable template, policies, sample site |
 | `ui.frontend` | Plain-JS/Sass sources, webpack → `clientlib-site` |
 | `all` | The single container package Cloud Manager ships |
-| `dispatcher` | Apache + Dispatcher configuration |
 | `it.tests` | HTTP tests against a running instance |
 
 ## Configuration
