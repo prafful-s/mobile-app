@@ -101,7 +101,6 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
         final String path = StringUtils.trimToEmpty(request.getParameter(PARAM_PATH));
-        logConsumer(request, path);
 
         if (StringUtils.isEmpty(path)) {
             writeError(response, SlingHttpServletResponse.SC_BAD_REQUEST,
@@ -188,23 +187,6 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
      * Opens the service-user resolver, or null when it cannot be obtained. A missing or misconfigured
      * service user degrades to the requesting user rather than taking the endpoint down.
      */
-    /**
-     * Access log: who called the API and with what. Fires on every request, so it sits at DEBUG -
-     * enable it per-deployment rather than paying the volume on every hit. Reads only headers the
-     * servlet API already exposes - request line, remote address, User-Agent, Referer, authenticated
-     * user - and includes the decoded query string so a consumer can be traced back to what they
-     * asked for.
-     */
-    private static void logConsumer(final SlingHttpServletRequest request, final String path) {
-        LOG.debug("ContentBridge request path={} remote={} user={} ua={} referer={} query={}",
-                path,
-                StringUtils.defaultIfEmpty(request.getRemoteAddr(), "-"),
-                StringUtils.defaultIfEmpty(request.getRemoteUser(), "-"),
-                StringUtils.defaultIfEmpty(request.getHeader("User-Agent"), "-"),
-                StringUtils.defaultIfEmpty(request.getHeader("Referer"), "-"),
-                StringUtils.defaultIfEmpty(request.getQueryString(), "-"));
-    }
-
     private ResourceResolver openServiceResolver() {
         try {
             return resolverFactory.getServiceResourceResolver(
