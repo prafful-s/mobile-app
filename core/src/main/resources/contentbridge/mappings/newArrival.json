@@ -2,7 +2,6 @@
   "match": ["new-arrival"],
   "component": "list",
   "skeleton": true,
-  "ignoreExtras": ["*"],
   "contentFragmentFolderRef": {
     "property": "folder",
     "collect": [

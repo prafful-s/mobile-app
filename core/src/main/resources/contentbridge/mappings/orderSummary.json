@@ -2,7 +2,6 @@
   "match": ["order-summary"],
   "component": "cartSummary",
   "skeleton": true,
-  "ignoreExtras": ["*"],
   "fields": [
     { "target": "label", "const": "TOTAl" },
     { "target": "totalLabel", "const": "TOTAL" },

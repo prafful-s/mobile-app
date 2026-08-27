@@ -2,7 +2,6 @@
   "match": ["product-detail"],
   "component": "productCard",
   "skeleton": true,
-  "ignoreExtras": ["*"],
   "fields": [
     { "target": "product", "type": "null" }
   ]

@@ -382,11 +382,7 @@ final class ComponentTreeWalker {
                     content = new LinkedHashMap<>(mapped);
                     styles = mapping.applyStyles(ruleSource, sectionProps);
                     // No extras passthrough: a component's output is exactly its rule's declared
-                    // fields, nothing an author happened to leave on the resource. A rule that
-                    // wants a property exposed names it in "fields"; ComponentMapping.ignoreExtras
-                    // stays available for a rule that still needs to name properties to exclude from
-                    // some other consumer of consumedProperties(), even though it no longer feeds a
-                    // passthrough step here.
+                    // fields. A rule that wants a property exposed names it in "fields".
                 }
             }
 

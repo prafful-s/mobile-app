@@ -2,7 +2,6 @@
   "match": ["cart"],
   "component": "cartSummary",
   "skeleton": true,
-  "ignoreExtras": ["*"],
   "fields": [
     { "target": "label", "from": "label", "default": "TOTAL" },
     { "target": "totalLabel", "from": "totalLabel", "default": "TOTAL" },

@@ -252,26 +252,6 @@ final class FieldRule {
         return TYPE_NULL.equals(type) && defaultValue == null;
     }
 
-    /**
-     * The CRX property names this rule reads from <em>the component's own resource</em>, so
-     * extras passthrough can filter them out. Constant-only rules, and {@code fromParent} rules
-     * (which read the enclosing section, not the component), return an empty list - neither
-     * consumes anything from the component's own authored properties.
-     */
-    List<String> consumedProperties() {
-        if (extract != null) {
-            final String source = extract.sourceProperty();
-            return source == null ? Collections.emptyList() : List.of(source);
-        }
-        if (!first.isEmpty()) {
-            return first;
-        }
-        if (from != null) {
-            return List.of(from);
-        }
-        return Collections.emptyList();
-    }
-
     private Object resolve(final Map<String, Object> source, final Map<String, Object> parentSource) {
         if (extract != null) {
             return extract.apply(source);
@@ -639,11 +619,6 @@ final class FieldRule {
             return html instanceof String
                     ? HtmlExtractor.extract((String) html, select, as, attribute, all)
                     : null;
-        }
-
-        /** The CRX property this extract reads from, or null when it names none. */
-        String sourceProperty() {
-            return from;
         }
     }
 }

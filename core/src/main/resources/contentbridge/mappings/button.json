@@ -2,7 +2,6 @@
   "match": ["button"],
   "component": "button",
   "skeleton": true,
-  "ignoreExtras": ["textUppercase"],
   "fields": [
     { "target": "icon", "from": "icon", "default": "" },
     { "target": "label", "first": ["label", "linkText", "text"], "default": "" },
