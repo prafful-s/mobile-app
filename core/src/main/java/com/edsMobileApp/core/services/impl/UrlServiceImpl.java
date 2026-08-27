@@ -1,27 +1,18 @@
 package com.edsMobileApp.core.services.impl;
 
 import org.apache.commons.lang3.StringUtils;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.metatype.annotations.Designate;
 
 import com.edsMobileApp.core.services.UrlService;
-import com.edsMobileApp.core.services.UrlServiceConfiguration;
 
 @Component(service = UrlService.class)
-@Designate(ocd = UrlServiceConfiguration.class)
 public class UrlServiceImpl implements UrlService {
 
-    private String publishDomain;
-
-    @Activate
-    protected void activate(final UrlServiceConfiguration config) {
-        this.publishDomain = StringUtils.removeEnd(StringUtils.trimToEmpty(config.publishDomain()), "/");
-    }
+    private static final String PUBLISH_DOMAIN = "https://publish-p189874-e1977911.adobeaemcloud.com";
 
     @Override
     public String getPublishDomain() {
-        return StringUtils.trimToEmpty(publishDomain);
+        return PUBLISH_DOMAIN;
     }
 
     @Override
@@ -31,9 +22,9 @@ public class UrlServiceImpl implements UrlService {
         }
         final String trimmed = path.trim();
         final boolean alreadyAbsolute = StringUtils.startsWithAny(trimmed, "http://", "https://", "//", "#", "data:");
-        if (alreadyAbsolute || StringUtils.isEmpty(publishDomain) || !trimmed.startsWith("/")) {
+        if (alreadyAbsolute || !trimmed.startsWith("/")) {
             return trimmed;
         }
-        return publishDomain + trimmed;
+        return PUBLISH_DOMAIN + trimmed;
     }
 }

@@ -52,7 +52,7 @@ class ComponentMappingTest {
     void setUp() {
         context.create().page(HOME, "", Map.of("jcr:title", "Home"));
         context.addModelsForPackage("com.edsMobileApp.core.models.impl");
-        context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
+        context.registerInjectActivateService(new UrlServiceImpl());
         context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
                 "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0);
@@ -141,7 +141,8 @@ class ComponentMappingTest {
         assertEquals("Providing affordable", content.get("subtitle"),
                 "the eyebrow paragraph as plain text, and not the one holding the link");
         assertEquals("Select your plan", content.get("buttonLabel"));
-        assertEquals("/content/dam/we-healthcare/en/images/banner-medicare-hero.jpg",
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com"
+                        + "/content/dam/we-healthcare/en/images/banner-medicare-hero.jpg",
                 content.get("image"));
 
         // Every hero renders with this fixed set of constants regardless of what was authored.
@@ -179,7 +180,9 @@ class ComponentMappingTest {
         assertTrue(String.valueOf(content.get("subtitle")).startsWith("You'll find flexible"));
         assertEquals("insurance-plans", content.get("link"),
                 "link is reduced to the screen the anchor points at");
-        assertEquals("/content/dam/we-healthcare/en/images/family.jpeg", content.get("image"));
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com"
+                        + "/content/dam/we-healthcare/en/images/family.jpeg",
+                content.get("image"));
 
         // Fixed constants supplied by the rule regardless of what was authored.
         assertEquals("stacked", content.get("cardType"));
@@ -288,7 +291,8 @@ class ComponentMappingTest {
         assertEquals("card", component(exported), "image-right hero defers to the card rule");
         final Map<String, Object> content = content(exported);
         assertEquals("Connecting accounts made easy", content.get("title"));
-        assertEquals("/content/dam/x/hero-6.jpg", content.get("image"));
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com/content/dam/x/hero-6.jpg",
+                content.get("image"));
         assertEquals("how-to-consolidate-bank-accounts", content.get("link"));
         assertEquals("stacked", content.get("cardType"), "the card contract's constants apply");
     }
@@ -421,7 +425,9 @@ class ComponentMappingTest {
                 "alt", "A doctor");
 
         assertEquals("image", component(exported));
-        assertEquals("/content/dam/we-healthcare/en/images/doctor.jpg", content(exported).get("image"),
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com"
+                        + "/content/dam/we-healthcare/en/images/doctor.jpg",
+                content(exported).get("image"),
                 "fileReference is the classic AEM name; the rule accepts it alongside image");
         assertEquals("A doctor", content(exported).get("alt"));
     }
@@ -880,7 +886,8 @@ class ComponentMappingTest {
         assertEquals("banner", component(exported));
         final Map<String, Object> content = content(exported);
 
-        assertEquals("/content/dam/x/hero.jpg", content.get("image"));
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com/content/dam/x/hero.jpg",
+                content.get("image"));
         assertEquals("Hi", content.get("title"));
         assertEquals("Sub", content.get("subtitle"));
         assertEquals("titleLarge", content.get("titleVariant"));
@@ -985,7 +992,8 @@ class ComponentMappingTest {
                 "authorNotes", "cropped by design team");
 
         final Map<String, Object> content = content(exported);
-        assertEquals("/content/dam/x/pic.jpg", content.get("image"));
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com/content/dam/x/pic.jpg",
+                content.get("image"));
         assertEquals("A picture", content.get("alt"));
         assertEquals("contain", content.get("imageResize"), "schema default");
         assertEquals("", content.get("width"));
@@ -1006,7 +1014,8 @@ class ComponentMappingTest {
                 "trackingId", "prod-1");
 
         final Map<String, Object> content = content(exported);
-        assertEquals("/content/dam/x/pic.jpg", content.get("image"));
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com/content/dam/x/pic.jpg",
+                content.get("image"));
         assertEquals("Title", content.get("title"));
         assertEquals("stacked", content.get("cardType"));
         assertEquals("titleMedium", content.get("titleVariant"));

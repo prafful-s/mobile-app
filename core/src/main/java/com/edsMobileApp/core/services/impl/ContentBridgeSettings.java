@@ -20,9 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * activation instead of an OSGi {@code @ObjectClassDefinition}.
  *
  * <p>These knobs ({@code allowedRoots}, {@code maxDepth}, {@code navPageNames},
- * {@code excludedPageNames}, {@code includeHomeScreen}, {@code authorHostSegment},
- * {@code publishHostSegment}, {@code styleTokens}, {@code cacheMaxAge}, {@code overrideEnabled},
- * {@code overridePropertyName}) are legitimately global - one servlet exports every site, so
+ * {@code excludedPageNames}, {@code includeHomeScreen}, {@code styleTokens}, {@code cacheMaxAge},
+ * {@code overrideEnabled}, {@code overridePropertyName}) are legitimately global - one servlet
+ * exports every site, so
  * unlike branding/integrations/profileViewer there is no per-site variant to keep separate.
  * Trading OSGi's web-console tunability for a single file was a deliberate choice: it keeps every
  * exporter setting in one place instead of split across OSGi config and per-site JSON.</p>
@@ -50,8 +50,6 @@ final class ContentBridgeSettings {
     private final String[] navPageNames;
     private final String[] excludedPageNames;
     private final boolean includeHomeScreen;
-    private final String authorHostSegment;
-    private final String publishHostSegment;
     private final String[] styleTokens;
     private final int cacheMaxAge;
     private final boolean overrideEnabled;
@@ -65,10 +63,6 @@ final class ContentBridgeSettings {
         this.excludedPageNames = stringArray(values, "excludedPageNames", new String[] {
                 "nav", "header", "navigation", "footer", "placeholders", "language-masters", "redirects"});
         this.includeHomeScreen = boolValue(values, "includeHomeScreen", true);
-        this.authorHostSegment = StringUtils.defaultIfBlank(
-                stringValue(values, "authorHostSegment"), "author");
-        this.publishHostSegment = StringUtils.defaultIfBlank(
-                stringValue(values, "publishHostSegment"), "publish");
         this.styleTokens = stringArray(values, "styleTokens",
                 new String[] {"bg-default=backgroundColor:#F5F8FA"});
         this.cacheMaxAge = Math.max(0, intValue(values, "cacheMaxAge", 300));
@@ -111,14 +105,6 @@ final class ContentBridgeSettings {
 
     boolean includeHomeScreen() {
         return includeHomeScreen;
-    }
-
-    String authorHostSegment() {
-        return authorHostSegment;
-    }
-
-    String publishHostSegment() {
-        return publishHostSegment;
     }
 
     String[] styleTokens() {

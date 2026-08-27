@@ -20,16 +20,15 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
- * Asset hosts come from each site's own placeholders page, so two sites in one repository can point
- * at different delivery domains.
+ * Every site's asset host is the same hardcoded publish domain, regardless of any per-site
+ * placeholders.
  */
 @ExtendWith(AemContextExtension.class)
 class SiteHostTest {
 
     private static final String SITE = "/content/acme";
     private static final String HOME = SITE + "/us/en";
-    private static final String AUTHOR_HOST = "https://author-p153659-e1620914.adobeaemcloud.com";
-    private static final String PUBLISH_HOST = "https://publish-p153659-e1620914.adobeaemcloud.com";
+    private static final String PUBLISH_HOST = "https://publish-p189874-e1977911.adobeaemcloud.com";
 
     private final AemContext context = new AemContext(ResourceResolverType.JCR_MOCK);
 
@@ -39,7 +38,7 @@ class SiteHostTest {
                 "sling:resourceType", "core/franklin/components/image/v1/image",
                 "image", "/content/dam/acme/hero.png",
                 "link", "/content/acme/us/en/news");
-        context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
+        context.registerInjectActivateService(new UrlServiceImpl());
     }
 
     private PageJsonExporter exporter() {
@@ -67,47 +66,17 @@ class SiteHostTest {
     }
 
     @Test
-    @DisplayName("hostname on the placeholders page is rewritten from author to publish")
-    void authorHostBecomesPublishHost() {
+    @DisplayName("DAM asset paths are prefixed with the hardcoded publish host")
+    void assetsUseHardcodedPublishHost() {
         buildSite();
-        context.create().page(SITE + "/placeholders", "", Map.of("hostname", AUTHOR_HOST));
 
         assertEquals(PUBLISH_HOST + "/content/dam/acme/hero.png", imageValue());
-    }
-
-    @Test
-    @DisplayName("a hostname already pointing at publish is left alone")
-    void publishHostIsNotRewrittenTwice() {
-        buildSite();
-        context.create().page(SITE + "/placeholders", "", Map.of("hostname", PUBLISH_HOST));
-
-        assertEquals(PUBLISH_HOST + "/content/dam/acme/hero.png", imageValue());
-    }
-
-    @Test
-    @DisplayName("hostname stored as a key/value row is found too")
-    void keyValueRowShape() {
-        buildSite();
-        context.create().page(SITE + "/placeholders", "", Map.of("jcr:title", "Placeholders"));
-        context.build().resource(SITE + "/placeholders/jcr:content/data/row0",
-                "key", "hostname", "value", AUTHOR_HOST);
-
-        assertEquals(PUBLISH_HOST + "/content/dam/acme/hero.png", imageValue());
-    }
-
-    @Test
-    @DisplayName("no placeholders page leaves DAM paths relative")
-    void noPlaceholders() {
-        buildSite();
-
-        assertEquals("/content/dam/acme/hero.png", imageValue());
     }
 
     @Test
     @DisplayName("page links stay relative even though assets are prefixed")
     void pageLinksArePrefixed() {
         buildSite();
-        context.create().page(SITE + "/placeholders", "", Map.of("hostname", AUTHOR_HOST));
 
         final Page home = context.pageManager().getPage(HOME);
         final Map<String, Object> screens = map(exporter().export(home).get("screens"));

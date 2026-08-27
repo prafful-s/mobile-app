@@ -485,7 +485,7 @@ final class ComponentTreeWalker {
         if (!(refValue instanceof String) || StringUtils.isBlank((String) refValue)) {
             return authored;
         }
-        final Resource fragment = component.getResourceResolver().getResource(((String) refValue).trim());
+        final Resource fragment = component.getResourceResolver().getResource(stripHost(((String) refValue).trim()));
         if (fragment == null) {
             // A content problem, not a code problem: fires identically on every export of this
             // component until an author fixes the reference, so DEBUG rather than WARN.

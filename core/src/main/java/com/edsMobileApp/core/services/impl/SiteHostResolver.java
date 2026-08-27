@@ -12,20 +12,11 @@ import org.slf4j.LoggerFactory;
 import com.day.cq.wcm.api.Page;
 
 /**
- * Works out which host DAM references should be served from, per site.
- *
- * <p>Sites carry their own hostname in a {@code placeholders} page under the site root, so a single
- * globally-configured domain would be wrong the moment a second site is exported. The authored value
- * is the <em>author</em> host; clients need the publish one, so the host segment is switched over.</p>
- *
- * <pre>
- * /content/&lt;site&gt;/placeholders   hostname = https://author-p153659-e1620914.adobeaemcloud.com
- *                                   emitted  = https://publish-p153659-e1620914.adobeaemcloud.com
- * </pre>
+ * Locates a site's {@code placeholders} page and reads per-site settings from it.
  *
  * <p>The lookup is deliberately forgiving about where the value sits. {@code placeholders} is a
  * key/value sheet in Edge Delivery and a plain page elsewhere, so the whole subtree is searched both
- * for a property literally named {@code hostname} and for the key/value row shape that sheets use.</p>
+ * for a property literally named after the key and for the key/value row shape that sheets use.</p>
  */
 final class SiteHostResolver {
 
@@ -33,15 +24,6 @@ final class SiteHostResolver {
 
     private static final String CONTENT_ROOT = "/content/";
     private static final String PLACEHOLDERS = "placeholders";
-    /**
-     * The one placeholder key naming the delivery host.
-     *
-     * <p>Deliberately not widened to other keys that happen to hold a URL. {@code dmurl} in
-     * particular is the Dynamic Media delivery URL - Scene7 serves rendered images from it, so
-     * prefixing a page link with it produces a URL that resolves to nothing. A site that declares no
-     * {@code hostname} emits relative paths, which is honest about what the site said.</p>
-     */
-    private static final String PN_HOSTNAME = "hostname";
 
     /** Property names a key/value sheet uses for the value column. */
     private static final String[] VALUE_PROPERTIES = {"value", "text", "Text", "Value"};
@@ -49,24 +31,7 @@ final class SiteHostResolver {
     /** Guard against pathological trees; placeholders sheets are shallow. */
     private static final int MAX_NODES = 500;
 
-    private final String authorSegment;
-    private final String publishSegment;
-
-    SiteHostResolver(final String authorSegment, final String publishSegment) {
-        this.authorSegment = authorSegment;
-        this.publishSegment = publishSegment;
-    }
-
-    /**
-     * @param page any page in the site
-     * @return the publish host to prefix DAM paths with, or empty when the site declares none
-     */
-    String resolve(final Page page) {
-        final String hostname = placeholder(page, PN_HOSTNAME);
-        if (StringUtils.isBlank(hostname)) {
-            return StringUtils.EMPTY;
-        }
-        return toPublishHost(hostname);
+    private SiteHostResolver() {
     }
 
     /**
@@ -95,19 +60,6 @@ final class SiteHostResolver {
             return StringUtils.EMPTY;
         }
         return value.trim();
-    }
-
-    /**
-     * Swaps the author host segment for the publish one. AEM as a Cloud Service hostnames are
-     * {@code author-pNNNNN-eNNNNNN} / {@code publish-pNNNNN-eNNNNNN}, so only the leading segment
-     * differs. A value that is already a publish host is returned untouched.
-     */
-    private String toPublishHost(final String hostname) {
-        final String trimmed = StringUtils.removeEnd(StringUtils.trimToEmpty(hostname), "/");
-        if (!StringUtils.contains(trimmed, authorSegment)) {
-            return trimmed;
-        }
-        return StringUtils.replaceOnce(trimmed, authorSegment, publishSegment);
     }
 
     /**

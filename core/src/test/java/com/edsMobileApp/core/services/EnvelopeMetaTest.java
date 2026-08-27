@@ -46,7 +46,7 @@ class EnvelopeMetaTest {
         context.create().page(HOME + "/documents", "", Map.of("jcr:title", "Documents"));
 
         context.addModelsForPackage("com.edsMobileApp.core.models.impl");
-        context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
+        context.registerInjectActivateService(new UrlServiceImpl());
         context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
                 "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0);

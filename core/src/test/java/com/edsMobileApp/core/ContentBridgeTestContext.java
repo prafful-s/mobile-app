@@ -15,7 +15,7 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 public final class ContentBridgeTestContext {
 
     public static final String APP_ROOT = "/content/contentbridge/us/en";
-    public static final String PUBLISH_DOMAIN = "https://publish.example.com";
+    public static final String PUBLISH_DOMAIN = "https://publish-p189874-e1977911.adobeaemcloud.com";
 
     private ContentBridgeTestContext() {
         // static helpers only
@@ -29,8 +29,7 @@ public final class ContentBridgeTestContext {
         context.addModelsForPackage("com.edsMobileApp.core.models.impl");
         context.load().json("/com/edsMobileApp/core/content.json", "/content/contentbridge");
 
-        context.registerInjectActivateService(new UrlServiceImpl(),
-                "publishDomain", PUBLISH_DOMAIN);
+        context.registerInjectActivateService(new UrlServiceImpl());
         context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
                 "allowedRoots", new String[] {"/content/contentbridge"},

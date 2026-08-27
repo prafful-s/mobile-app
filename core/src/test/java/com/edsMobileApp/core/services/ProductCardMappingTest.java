@@ -43,7 +43,7 @@ class ProductCardMappingTest {
     void setUp() {
         context.create().page(HOME, "", Map.of("jcr:title", "Home"));
         context.addModelsForPackage("com.edsMobileApp.core.models.impl");
-        context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
+        context.registerInjectActivateService(new UrlServiceImpl());
         context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
                 "allowedRoots", new String[] {"/content"}, "cacheMaxAge", 0);
@@ -116,7 +116,8 @@ class ProductCardMappingTest {
 
         final Map<String, Object> content = map(exported.get("content"));
         assertEquals("SecurFinancial GOLD", content.get("title"), "title comes from the fragment's productName");
-        assertEquals("/content/dam/secur-financial/en/images/Secure-credit-cards/card-gold.png",
+        assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com"
+                        + "/content/dam/secur-financial/en/images/Secure-credit-cards/card-gold.png",
                 content.get("image"), "image comes from the fragment's productImage");
         assertEquals("Premium rewards.\nNo annual fee", content.get("subtitle"),
                 "subtitle text comes from the fragment's productDescription");

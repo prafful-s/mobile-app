@@ -60,7 +60,7 @@ class NavigationMenuTest {
                 "sling:resourceType", "core/franklin/components/text/v1/text",
                 "text", navMarkup);
 
-        context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
+        context.registerInjectActivateService(new UrlServiceImpl());
     }
 
     private PageJsonExporter exporter(final Object... config) {
@@ -195,7 +195,7 @@ class NavigationMenuTest {
         context.create().page(SITE, "", Map.of("jcr:title", "Home"));
         context.create().page(SITE + "/one", "", Map.of("jcr:title", "One"));
         context.create().page(SITE + "/two", "", Map.of("jcr:title", "Two"));
-        context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
+        context.registerInjectActivateService(new UrlServiceImpl());
 
         assertEquals(List.of("en", "one", "two"), menu(defaultExporter().export(home())));
     }

@@ -59,8 +59,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private String[] navPageNames;
     private Set<String> excludedPageNames;
     private boolean includeHomeScreen;
-    private String authorHostSegment;
-    private String publishHostSegment;
     private int maxDepth;
     private int cacheMaxAge;
     private boolean overrideEnabled;
@@ -69,7 +67,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     // Built once at activation rather than per request: they are stateless, and rebuilding them for
     // every page re-parsed the alias table and re-read configuration that cannot have changed.
     private ComponentTreeWalker walker;
-    private SiteHostResolver hostResolver;
     private SiteBranding siteBranding;
     private SiteProfileViewer siteProfileViewer;
     private SiteIntegrations siteIntegrations;
@@ -83,8 +80,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.navPageNames = config.navPageNames();
         this.excludedPageNames = new HashSet<>(Arrays.asList(config.excludedPageNames()));
         this.includeHomeScreen = config.includeHomeScreen();
-        this.authorHostSegment = config.authorHostSegment();
-        this.publishHostSegment = config.publishHostSegment();
         this.maxDepth = config.maxDepth();
         this.cacheMaxAge = config.cacheMaxAge();
         this.overrideEnabled = config.overrideEnabled();
@@ -93,7 +88,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
                 new StyleResolver(config.styleTokens()), ComponentMappings.load());
-        this.hostResolver = new SiteHostResolver(authorHostSegment, publishHostSegment);
         this.siteBranding = SiteBranding.load();
         this.siteProfileViewer = SiteProfileViewer.load();
         this.siteIntegrations = SiteIntegrations.load();
@@ -156,7 +150,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
         // Resolved once per export: every screen in one response belongs to the same site, so the
         // placeholders lookup should not be repeated per page.
-        final String assetHost = deliveryHost(envelopeSource);
+        final String assetHost = deliveryHost();
 
         // Two different questions, deliberately answered by two different methods. The menu is what
         // an author curated on the nav page; the screens are every page the app can reach. A page
@@ -804,17 +798,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /**
      * The host every repository path in this response is made absolute against.
      *
-     * <p>The site's own {@code placeholders} page wins, so two sites in one repository can point at
-     * different delivery domains. A site declaring no {@code hostname} falls back to the
-     * instance-wide publish domain - an explicit operator setting, not a guess - and with neither
-     * configured the paths stay relative. Nothing else is consulted: a URL sitting in some other
-     * placeholder is not necessarily a host, and guessing produces links that resolve to nothing.</p>
+     * <p>Every site uses the same instance-wide publish domain; no per-site override is consulted.</p>
      */
-    private String deliveryHost(final Page site) {
-        final String fromPlaceholders = hostResolver.resolve(site);
-        if (StringUtils.isNotBlank(fromPlaceholders)) {
-            return fromPlaceholders;
-        }
+    private String deliveryHost() {
         return urlService == null ? StringUtils.EMPTY : urlService.getPublishDomain();
     }
 

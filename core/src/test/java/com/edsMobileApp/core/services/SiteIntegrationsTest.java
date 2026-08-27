@@ -38,7 +38,7 @@ class SiteIntegrationsTest {
     void setUp() {
         context.create().page(SITE, "", Map.of("jcr:title", "Home"));
         context.addModelsForPackage("com.edsMobileApp.core.models.impl");
-        context.registerInjectActivateService(new UrlServiceImpl(), "publishDomain", "");
+        context.registerInjectActivateService(new UrlServiceImpl());
         context.registerInjectActivateService(new FormSchemaServiceImpl());
         context.registerInjectActivateService(new PageJsonExporterImpl(),
                 "allowedRoots", new String[] {"/content/secur-financial"}, "cacheMaxAge", 0);
