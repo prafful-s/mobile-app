@@ -77,6 +77,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private SiteBranding siteBranding;
     private SiteProfileViewer siteProfileViewer;
     private SiteIntegrations siteIntegrations;
+    private SiteDefaults siteDefaults;
     private ProductCatalog productCatalog;
 
     @Activate
@@ -104,7 +105,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteBranding = SiteBranding.load();
         this.siteProfileViewer = SiteProfileViewer.load();
         this.siteIntegrations = SiteIntegrations.load();
+        this.siteDefaults = SiteDefaults.load();
         this.productCatalog = new ProductCatalog(ProductMappings.load());
+        this.walker.setSiteDefaults(this.siteDefaults);
     }
 
     @Override
@@ -433,7 +436,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         } else if ("review-order".equals(key)) {
             content = reviewOrderContent(content, page);
         } else if ("checkout".equals(key)) {
-            patchCheckoutFormMeta(content);
+            patchCheckoutFormMeta(content, page);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -589,27 +592,48 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * The reset button is dropped entirely (the reference form has none) rather than left hidden.
      * Fields (from {@code checkout-shipping.json}) and the component's own id/order are untouched.
      */
-    private static void patchCheckoutFormMeta(final List<Map<String, Object>> content) {
+    /** Compiled-in fallback used when a site's {@code defaults.json} has no {@code checkoutForm} block. */
+    private static final Map<String, Object> CHECKOUT_FORM_DEFAULTS = Map.of(
+            "link", "review-order",
+            "formId", "checkoutForm",
+            "eventType", "commerce.checkouts",
+            "webhookUrl", "",
+            "toastMessage", "",
+            "submitButtonLabel", "Checkout");
+
+    private void patchCheckoutFormMeta(final List<Map<String, Object>> content, final Page page) {
         final Map<String, Object> form = findComponent(content, "form");
         if (form == null) {
             return;
         }
         final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
 
+        // A site may override any subset of these in defaults.json.checkoutForm; everything absent
+        // there falls back to the compiled-in reference values below.
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_CHECKOUT_FORM);
+
         // Rebuilt rather than mutated in place: the reference's key order (id, link, order, formId,
         // component, ...) differs from FormBlockBuilder's default, and insertion order is part of
         // this contract everywhere else in the export.
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, old.get(SchemaConstants.KEY_ID));
-        meta.put("link", "review-order");
+        meta.put("link", override(overrides, "link"));
         meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
-        meta.put("formId", "checkoutForm");
+        meta.put("formId", override(overrides, "formId"));
         meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
-        meta.put("eventType", "commerce.checkouts");
-        meta.put("webhookUrl", old.get("webhookUrl"));
-        meta.put("toastMessage", old.get("toastMessage"));
-        meta.put("submitButtonLabel", "Checkout");
+        meta.put("eventType", override(overrides, "eventType"));
+        meta.put("webhookUrl", overrides.containsKey("webhookUrl")
+                ? overrides.get("webhookUrl") : old.get("webhookUrl"));
+        meta.put("toastMessage", overrides.containsKey("toastMessage")
+                ? overrides.get("toastMessage") : old.get("toastMessage"));
+        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel"));
         form.put(SchemaConstants.KEY_META, meta);
+    }
+
+    /** Reads {@code key} from {@code overrides}, falling back to {@link #CHECKOUT_FORM_DEFAULTS}. */
+    private static Object override(final Map<String, Object> overrides, final String key) {
+        return overrides.getOrDefault(key, CHECKOUT_FORM_DEFAULTS.get(key));
     }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
@@ -920,11 +944,22 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * {@code review-order} screen. Rewritten after kebab-casing so {@code Sign_In}, {@code sign-in},
      * etc. all resolve.
      */
+    /**
+     * Compiled-in default screen-key rewrites: two AEM node names the client expects under a
+     * different key. A site's {@code defaults.json} may override or extend this - see
+     * {@link SiteDefaults}. Kept as a fallback so a site that ships no {@code defaults.json} still
+     * gets the two rewrites the reference contract has always relied on.
+     */
     private static final Map<String, String> SCREEN_KEY_ALIASES =
             Map.of("sign-in", "login", "order-summary", "review-order");
 
-    private static String screenKey(final Page page) {
+    private String screenKey(final Page page) {
         final String key = kebab(page.getName());
+        final Map<String, String> siteAliases = SiteDefaults.stringMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_SCREEN_KEY_ALIASES);
+        if (siteAliases.containsKey(key)) {
+            return siteAliases.get(key);
+        }
         return SCREEN_KEY_ALIASES.getOrDefault(key, key);
     }
 

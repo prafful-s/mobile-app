@@ -66,6 +66,11 @@ final class ComponentTreeWalker {
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
+    /** Forwarded to the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
+    void setSiteDefaults(final SiteDefaults siteDefaults) {
+        this.formBuilder.setSiteDefaults(siteDefaults);
+    }
+
     /**
      * Components with no reference-contract counterpart that ship on this repo's sites but that
      * a downstream client will not render - kept out of screens.content[] so the payload stays
@@ -420,7 +425,8 @@ final class ComponentTreeWalker {
                 final String formName = formNameOf(authoredName, authored);
                 final Map<String, Object> resolvedAuthored = formBuilder.withDefaultVariant(formName, authored);
                 final Map<String, Object> heading = formBuilder.heading(formName, resolvedAuthored,
-                        AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size());
+                        AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size(),
+                        child.getPath());
                 if (heading != null) {
                     sink.add(heading);
                 }

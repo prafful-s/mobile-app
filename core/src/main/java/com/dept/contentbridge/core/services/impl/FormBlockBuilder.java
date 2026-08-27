@@ -156,9 +156,19 @@ final class FormBlockBuilder {
     }
 
     private final FormSchemaService formSchemaService;
+    private SiteDefaults siteDefaults;
 
     FormBlockBuilder(final FormSchemaService formSchemaService) {
         this.formSchemaService = formSchemaService;
+    }
+
+    /**
+     * Wires the per-site defaults source. Called once, on service activation; when unset (in the
+     * few tests that construct the builder directly), heading() falls back to its compiled-in
+     * {@link #FORM_HEADINGS} defaults.
+     */
+    void setSiteDefaults(final SiteDefaults siteDefaults) {
+        this.siteDefaults = siteDefaults;
     }
 
     /**
@@ -175,11 +185,16 @@ final class FormBlockBuilder {
      * @param order    position among its siblings
      */
     Map<String, Object> heading(final String formName, final Map<String, Object> authored,
-                                final String id, final int order) {
+                                final String id, final int order, final String resourcePath) {
         final Heading config = FORM_HEADINGS.get(formName);
         if (config == null) {
             return null;
         }
+        // Per-site override for the default text, e.g. Luma's defaults.json.formHeadings.
+        // The keys (block property names) stay compiled-in - those describe the block itself, not
+        // the site. Only the display text is site-overridable.
+        final String defaultText = siteOverride(formName, resourcePath, config.defaultText);
+
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
         meta.put(SchemaConstants.KEY_ORDER, order);
@@ -187,7 +202,7 @@ final class FormBlockBuilder {
 
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("size", "medium");
-        content.put("text", first(authored, config.keys, config.defaultText));
+        content.put("text", first(authored, config.keys, defaultText));
         content.put("weight", "bold");
         content.put("textAlignment", "left");
 
@@ -195,6 +210,21 @@ final class FormBlockBuilder {
         title.put(SchemaConstants.KEY_META, meta);
         title.put(SchemaConstants.KEY_CONTENT, content);
         return title;
+    }
+
+    /**
+     * @return the site's overridden default text for {@code formName}, or {@code compiledDefault}
+     *         when no site override applies (no defaults file, or no {@code formHeadings} entry
+     *         for this form). Never null.
+     */
+    private String siteOverride(final String formName, final String resourcePath,
+                                final String compiledDefault) {
+        if (siteDefaults == null || resourcePath == null) {
+            return compiledDefault;
+        }
+        final Map<String, String> perSite = SiteDefaults.stringMap(
+                siteDefaults.forPath(resourcePath), SiteDefaults.KEY_FORM_HEADINGS);
+        return perSite.getOrDefault(formName, compiledDefault);
     }
 
     /**
