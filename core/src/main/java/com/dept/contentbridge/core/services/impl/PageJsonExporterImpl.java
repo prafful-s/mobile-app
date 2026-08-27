@@ -202,8 +202,25 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // header search icon can be configured by dropping a search block into the nav, no
         // placeholder-sheet round-trip needed. The nav lives under the home screen, not the site
         // container, so it is resolved from there.
+        //
+        // A site's defaults.json may pin rightIcon to a fixed value (e.g. Luma wants the cart
+        // shortcut in the app bar even though its nav authors a search block) - that override wins
+        // over the nav-page lookup entirely, so a site opting in never needs its search
+        // configuration to match what its app bar shows.
         return EnvelopeMeta.buildFullV2Meta(root, appId, props, navigation,
-                navPageRightIcon(homeRoot), metaDefaults);
+                resolveRightIcon(root, homeRoot), metaDefaults);
+    }
+
+    /**
+     * @return the site's pinned {@code rightIcon} override from {@code defaults.json} when one is
+     *         configured, otherwise whatever the nav page's own search block resolves to (or
+     *         {@code null}, letting {@link EnvelopeMeta} fall through to the placeholders sheet /
+     *         compiled-in cart default)
+     */
+    private Map<String, Object> resolveRightIcon(final Page root, final Page homeRoot) {
+        final Map<String, Object> pinned = SiteDefaults.objectMap(
+                siteDefaults.forPage(root), SiteDefaults.KEY_RIGHT_ICON);
+        return pinned.isEmpty() ? navPageRightIcon(homeRoot) : pinned;
     }
 
     /**

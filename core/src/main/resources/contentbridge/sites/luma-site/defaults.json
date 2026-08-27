@@ -32,5 +32,10 @@
     "set-up-auto-save": "Set Up Auto Save",
     "sign-in": "Sign In",
     "transfer-funds": "Transfer Funds"
+  },
+  "rightIcon": {
+    "icon": "shopping-cart",
+    "name": "shopping-cart",
+    "target": "cart"
   }
 }

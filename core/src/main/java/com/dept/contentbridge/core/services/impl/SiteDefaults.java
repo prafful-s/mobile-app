@@ -30,9 +30,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * {
  *   "screenKeyAliases":  { "&lt;jcr-name&gt;":  "&lt;screen-key&gt;" },
  *   "checkoutForm":      { "formId": "...", "eventType": "...", ... },
- *   "formHeadings":      { "&lt;form-name&gt;": "&lt;title text&gt;" }
+ *   "formHeadings":      { "&lt;form-name&gt;": "&lt;title text&gt;" },
+ *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." }
  * }
  * </pre>
+ *
+ * <p>{@code rightIcon}, when present, pins {@code meta.rightIcon} to exactly this value for the
+ * site - it wins over both an authored nav-page search block and the placeholders-sheet
+ * {@code rightIcon}/{@code rightIconTarget} keys, which for every other site still take precedence
+ * over the compiled-in cart default in that order. Use it when a site wants the app-bar icon fixed
+ * regardless of what search configuration its nav page carries.</p>
  *
  * <p>Each section is optional; a section that is absent leaves the consumer's own default in place,
  * so a site that overrides nothing keeps the same behaviour it had before this class existed.</p>
@@ -51,6 +58,7 @@ final class SiteDefaults {
     static final String KEY_SCREEN_KEY_ALIASES = "screenKeyAliases";
     static final String KEY_CHECKOUT_FORM = "checkoutForm";
     static final String KEY_FORM_HEADINGS = "formHeadings";
+    static final String KEY_RIGHT_ICON = "rightIcon";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
