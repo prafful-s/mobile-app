@@ -40,6 +40,7 @@ final class EnvelopeMeta {
     private static final String DEFAULT_AUTHENTICATION = "optional";
     private static final String DEFAULT_DISPLAY_INBOX = "mainNavigation";
     private static final String DEFAULT_SCREEN_TEMPLATE = "FreeformScreen";
+    private static final String CONTENT_SOURCE = "EDS";
 
     /**
      * Preset a content screen gets when neither an author nor a navigation role names one. The DSN
@@ -152,6 +153,8 @@ final class EnvelopeMeta {
                 SiteHostResolver.placeholder(root, "targetRecMboxName")));
         meta.put("enableBrandingTargeting",
                 flag(SiteHostResolver.placeholder(root, "enableBrandingTargeting")));
+
+        meta.put("contentSource", CONTENT_SOURCE);
 
         return meta;
     }
