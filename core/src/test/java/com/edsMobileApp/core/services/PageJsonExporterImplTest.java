@@ -319,4 +319,41 @@ class PageJsonExporterImplTest {
         assertTrue(content.stream().noneMatch(c -> "card".equals(map(c.get("meta")).get("component"))),
                 "the whole 3-card group is skipped, not exported as individual cards");
     }
+
+    @Test
+    @DisplayName("a 3-card block with no hyperlink at all on any card is dropped entirely, "
+            + "even when the block itself carries an authored property")
+    void cardsBlockWithNoLinksIsSkippedEvenWithBlockOwnProperty() {
+        // Mirrors luma-site's "feature-support" Cards block: filter="cards", model="cards",
+        // modelFields="[classes]" (so the block's own authored content is not empty), three plain
+        // icon+text cards, none of them wrapping their text in an <a href>.
+        final String base = ContentBridgeTestContext.APP_ROOT + "/subpage-1/jcr:content/root/container/cardsBlock";
+        context.build().resource(base,
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "filter", "cards",
+                "model", "cards",
+                "modelFields", new String[] {"classes"},
+                "classes", "feature-support",
+                "name", "Cards");
+        final String[] texts = {
+            "<h2>WORLDWIDE SHIPPING</h2><p>And free return</p>",
+            "<h2>ORDER TRACKING</h2><p>Worldwide shipping</p>",
+            "<h2>ONLINE SUPPORT</h2><p>With our outdoor specialist</p>",
+        };
+        for (int i = 0; i < texts.length; i++) {
+            context.build().resource(base + "/item" + i,
+                    "sling:resourceType", "core/franklin/components/block/v1/block/item",
+                    "model", "card",
+                    "image", "/content/dam/contentbridge/images/icon" + i + ".png",
+                    "text", texts[i]);
+        }
+
+        final List<Map<String, Object>> content = subpage1Content();
+        assertTrue(content.stream().noneMatch(c -> "list".equals(map(c.get("meta")).get("component"))),
+                "no card carries a link, so there is no screen to resolve");
+        assertTrue(content.stream().noneMatch(c -> "card".equals(map(c.get("meta")).get("component"))),
+                "the whole block is dropped rather than falling through to individual cards");
+        assertTrue(content.stream().noneMatch(c -> "cards".equals(map(c.get("meta")).get("component"))),
+                "the block itself is not exported unmapped just because it carries 'classes'");
+    }
 }

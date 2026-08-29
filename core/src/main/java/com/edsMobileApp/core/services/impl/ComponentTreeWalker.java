@@ -396,25 +396,32 @@ final class ComponentTreeWalker {
             final boolean speaksTargetVocabulary = model instanceof AbstractComponentModel;
             final Map<String, Object> authored = model.getContent();
 
+            // A block explicitly authored as a 3-card Cards group is intercepted before anything
+            // else - including before the "nothing of its own to say" check below, since a Cards
+            // block can carry its own authored property (e.g. modelFields="[classes]") and still be
+            // a pure wrapper around its items. Checked unconditionally so a block like this is never
+            // exported unmapped-with-children just because it happens to have a stray property.
+            if (hasChildren && hierarchical && isCardsBlock(child)) {
+                final Map<String, Object> list = cardsBlockAsList(child, sink.size(), knownScreenKeys,
+                        screenThumbnailOverrides);
+                if (list != null) {
+                    sink.add(list);
+                    continue;
+                }
+                if (isCardsBlockEligibleForList(child)) {
+                    // Exactly a 3-card group, but not every card resolves to a real screen (or none
+                    // of them carry a link at all) - the whole block is dropped rather than falling
+                    // through to individual cards, so a client never sees a mix of live and dead
+                    // cards, or a set of cards with nowhere to go.
+                    continue;
+                }
+            }
+
             // Children but nothing of its own to say: a wrapper such as an Edge Delivery cards or
             // accordion block. Exporting it would emit an empty component and hide its items.
             // Evaluated from the authored content, before any mapping, so that a rule cannot turn a
             // wrapper into a component by supplying constants.
             if (hasChildren && authored.isEmpty()) {
-                if (hierarchical && isCardsBlock(child)) {
-                    final Map<String, Object> list = cardsBlockAsList(child, sink.size(), knownScreenKeys,
-                            screenThumbnailOverrides);
-                    if (list != null) {
-                        sink.add(list);
-                        continue;
-                    }
-                    if (isCardsBlockEligibleForList(child)) {
-                        // Named/filtered as a 3-card group but not every card resolves to a real
-                        // screen - the whole block is dropped rather than falling through to
-                        // individual cards, so a client never sees a mix of live and dead cards.
-                        continue;
-                    }
-                }
                 collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys,
                         screenThumbnailOverrides);
                 continue;
