@@ -276,6 +276,20 @@ class PageJsonExporterImplTest {
         final Map<String, Object> listContent = map(list.get("content"));
         assertEquals("screenList", listContent.get("listType"));
         assertEquals(List.of("renamed", "subpage-1", "en"), listContent.get("items"));
+
+        // Sizing/layout fields a screenList overlay item needs to render three cards side by side
+        // instead of stacked full-width - matches the LUMA MOBILE reference's own 3-card screenList.
+        assertEquals("horizontal", listContent.get("layout"));
+        assertEquals(130, listContent.get("imageWidth"));
+        assertEquals(3, listContent.get("itemsInRow"));
+        assertEquals("overlay", listContent.get("itemRenderer"));
+        assertEquals("cover", listContent.get("imageResizeMode"));
+        assertEquals("Category", listContent.get("filterProperty"));
+
+        final Map<String, Object> styles = map(list.get("styles"));
+        assertEquals(12, styles.get("gap"));
+        assertEquals("16", styles.get("marginBottom"));
+        assertEquals("8", styles.get("marginHorizontal"));
     }
 
     @Test

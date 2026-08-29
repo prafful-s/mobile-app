@@ -635,15 +635,32 @@ final class ComponentTreeWalker {
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, "list");
 
+        // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
+        // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
+        // each card's image so three sit side by side instead of stacking full-width; without them
+        // the client has nothing to size a screenList overlay item against.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
         content.put("layout", "horizontal");
         content.put("listType", "screenList");
+        content.put("textColor", "#f4f3f3");
+        content.put("imageWidth", 130);
+        content.put("itemHeight", null);
+        content.put("itemRadius", null);
         content.put("itemsInRow", screenKeys.size());
         content.put("itemRenderer", "overlay");
+        content.put("filterProperty", "Category");
+        content.put("imageResizeMode", "cover");
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("gap", 12);
+        styles.put("color", "#ffffff");
+        styles.put("marginBottom", "16");
+        styles.put("marginHorizontal", "8");
 
         final Map<String, Object> list = new LinkedHashMap<>();
         list.put(SchemaConstants.KEY_META, meta);
+        list.put(SchemaConstants.KEY_STYLES, styles);
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
     }
