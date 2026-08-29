@@ -111,10 +111,23 @@ final class ComponentTreeWalker {
     List<Map<String, Object>> componentsOf(final Page page, final String assetHost,
                                            final boolean hierarchical,
                                            final boolean applyScreenExclusions) {
+        return componentsOf(page, assetHost, hierarchical, applyScreenExclusions, Collections.emptySet());
+    }
+
+    /**
+     * @param knownScreenKeys every screen key the app will expose, used to decide whether a
+     *                        {@code Cards} block's items all resolve to real screens - see
+     *                        {@link #cardsBlockAsList}
+     */
+    List<Map<String, Object>> componentsOf(final Page page, final String assetHost,
+                                           final boolean hierarchical,
+                                           final boolean applyScreenExclusions,
+                                           final Set<String> knownScreenKeys) {
         final List<Map<String, Object>> components = new ArrayList<>();
         final Resource container = resolveContainer(page);
         if (container != null) {
-            collectComponents(container, components, 0, hierarchical, null);
+            collectComponents(container, components, 0, hierarchical, null,
+                    knownScreenKeys == null ? Collections.emptySet() : knownScreenKeys);
         }
         if (applyScreenExclusions) {
             dropExcludedDeep(components);
@@ -305,7 +318,7 @@ final class ComponentTreeWalker {
      */
     private void collectComponents(final Resource parent, final List<Map<String, Object>> sink,
                                    final int depth, final boolean hierarchical,
-                                   final Resource ancestorSection) {
+                                   final Resource ancestorSection, final Set<String> knownScreenKeys) {
         if (depth > MAX_COMPONENT_DEPTH) {
             LOG.warn("Component nesting below {} exceeds {} levels - not descending further",
                     parent.getPath(), MAX_COMPONENT_DEPTH);
@@ -334,9 +347,9 @@ final class ComponentTreeWalker {
                 if (hierarchical) {
                     // A section carries the spacing and alignment the target's panel wants, so it is
                     // a component in its own right rather than scaffolding to step over.
-                    emitPanel(child, sink, depth, resourceType, nextSection);
+                    emitPanel(child, sink, depth, resourceType, nextSection, knownScreenKeys);
                 } else {
-                    collectComponents(child, sink, depth + 1, false, nextSection);
+                    collectComponents(child, sink, depth + 1, false, nextSection, knownScreenKeys);
                 }
                 continue;
             }
@@ -365,7 +378,20 @@ final class ComponentTreeWalker {
             // Evaluated from the authored content, before any mapping, so that a rule cannot turn a
             // wrapper into a component by supplying constants.
             if (hasChildren && authored.isEmpty()) {
-                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection);
+                if (hierarchical && isCardsBlock(child)) {
+                    final Map<String, Object> list = cardsBlockAsList(child, sink.size(), knownScreenKeys);
+                    if (list != null) {
+                        sink.add(list);
+                        continue;
+                    }
+                    if (isCardsBlockEligibleForList(child)) {
+                        // Named/filtered as a 3-card group but not every card resolves to a real
+                        // screen - the whole block is dropped rather than falling through to
+                        // individual cards, so a client never sees a mix of live and dead cards.
+                        continue;
+                    }
+                }
+                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys);
                 continue;
             }
 
@@ -456,9 +482,100 @@ final class ComponentTreeWalker {
             // Components that also nest (carousels, tabs, blocks with items) contribute their
             // children to the same flat list.
             if (hasChildren) {
-                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection);
+                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys);
             }
         }
+    }
+
+    /**
+     * True when {@code resource} is an Edge Delivery block explicitly authored as a {@code Cards}
+     * group - its own {@code filter} or {@code name} property (stripped from
+     * {@link GenericComponent#getContent()} as bookkeeping, so read here straight off the
+     * {@link ValueMap}) equals {@code cards}, case-insensitively.
+     */
+    private static boolean isCardsBlock(final Resource resource) {
+        final ValueMap props = resource.getValueMap();
+        return "cards".equalsIgnoreCase(props.get(SchemaConstants.PN_FILTER, StringUtils.EMPTY))
+                || "cards".equalsIgnoreCase(props.get(SchemaConstants.PN_NAME, StringUtils.EMPTY));
+    }
+
+    /** {@code isCardsBlock} plus exactly three {@code card}-modelled item children. */
+    private boolean isCardsBlockEligibleForList(final Resource resource) {
+        return cardItemsOf(resource) != null;
+    }
+
+    /**
+     * @return {@code resource}'s children, when there are exactly three and every one of them
+     *         resolves (by name, via {@link GenericComponent#getComponentName()}) to {@code card} -
+     *         or {@code null} when the block does not have that shape
+     */
+    private List<Resource> cardItemsOf(final Resource resource) {
+        final List<Resource> items = new ArrayList<>();
+        for (final Resource child : resource.getChildren()) {
+            if (isSystemNode(child)) {
+                continue;
+            }
+            items.add(child);
+        }
+        if (items.size() != 3) {
+            return null;
+        }
+        for (final Resource item : items) {
+            final String name = new GenericComponent(item, urlService).getComponentName();
+            if (!"card".equals(name)) {
+                return null;
+            }
+        }
+        return items;
+    }
+
+    /**
+     * Converts a three-card {@code Cards} block into a single {@code list} component of
+     * {@code listType: screenList}, one item per card - but only when every card's link resolves to
+     * a real screen. Reuses the {@code card} rule's own {@code link} field (which already reduces an
+     * authored {@code <a href="/content/.../beginners-luck">} down to the leaf screen key
+     * {@code beginners-luck} - see {@link ComponentMapping#apply}) rather than re-implementing href
+     * extraction, so this stays in step with however the card rule resolves a link.
+     *
+     * @return the {@code list} component, or {@code null} when {@code resource} is not a
+     *         three-card group, the {@code card} rule is not loaded, or not every card resolves to a
+     *         key in {@code knownScreenKeys}
+     */
+    private Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
+                                                  final Set<String> knownScreenKeys) {
+        final List<Resource> items = cardItemsOf(resource);
+        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
+        if (items == null || cardRule == null) {
+            return null;
+        }
+        final List<String> screenKeys = new ArrayList<>(items.size());
+        for (final Resource item : items) {
+            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
+            final Object link = cardRule.effectiveFor(authored)
+                    .apply(authored, Collections.emptyMap()).get("link");
+            final String key = link instanceof String ? (String) link : null;
+            if (StringUtils.isBlank(key) || !knownScreenKeys.contains(key)) {
+                return null;
+            }
+            screenKeys.add(key);
+        }
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "list");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("items", screenKeys);
+        content.put("layout", "horizontal");
+        content.put("listType", "screenList");
+        content.put("itemsInRow", screenKeys.size());
+        content.put("itemRenderer", "overlay");
+
+        final Map<String, Object> list = new LinkedHashMap<>();
+        list.put(SchemaConstants.KEY_META, meta);
+        list.put(SchemaConstants.KEY_CONTENT, content);
+        return list;
     }
 
     /**
@@ -676,9 +793,9 @@ final class ComponentTreeWalker {
      */
     private void emitPanel(final Resource resource, final List<Map<String, Object>> sink,
                            final int depth, final String resourceType,
-                           final Resource ancestorSection) {
+                           final Resource ancestorSection, final Set<String> knownScreenKeys) {
         final List<Map<String, Object>> children = new ArrayList<>();
-        collectComponents(resource, children, depth + 1, true, ancestorSection);
+        collectComponents(resource, children, depth + 1, true, ancestorSection, knownScreenKeys);
 
         if (children.isEmpty()) {
             return;

@@ -124,7 +124,8 @@ class ProductCardMappingTest {
                 "link is the screen key with the fragment's sku appended as productId");
         assertEquals("stacked", content.get("cardType"));
 
-        assertFalse(exported.containsKey("styles"), "cards carry no styles block");
+        assertEquals(Map.of("marginLeft", "30", "marginRight", "30"), map(exported.get("styles")),
+                "product-card carries the same margin styles as a plain card");
     }
 
     @Test

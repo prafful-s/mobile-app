@@ -138,6 +138,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> navigation = buildNavigation(rootProps, menu, screenList, homeRoot);
         final Map<String, String> screenPresets = screenPresets(navigation);
 
+        // Every screen key the app will actually expose, gathered once so a Cards-block-to-list
+        // conversion (see ComponentTreeWalker) can tell a real screen link from a dangling one
+        // without re-walking the page tree per block.
+        final Set<String> knownScreenKeys = new HashSet<>();
+        for (final Page screen : screenList) {
+            knownScreenKeys.add(screenKey(screen));
+        }
+
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
 
         final Map<String, Object> app = new LinkedHashMap<>();
@@ -148,7 +156,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_SCREENS,
-                buildScreens(screenList, homeRoot, assetHost, opts, menu, screenPresets));
+                buildScreens(screenList, homeRoot, assetHost, opts, menu, screenPresets, knownScreenKeys));
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_INTEGRATIONS, buildIntegrations(envelopeSource, extras));
@@ -282,7 +290,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private Map<String, Object> buildScreens(final List<Page> pages, final Page homeRoot,
                                             final String assetHost, final ExportOptions options,
                                             final List<String> menu,
-                                            final Map<String, String> screenPresets) {
+                                            final Map<String, String> screenPresets,
+                                            final Set<String> knownScreenKeys) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         for (final Page page : pages) {
             final String key = screenKey(page);
@@ -294,7 +303,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                         + "overwriting it. Give one of the pages a distinct node name.", key, page.getPath());
             }
             screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu,
-                    screenPresets.getOrDefault(key, StringUtils.EMPTY)));
+                    screenPresets.getOrDefault(key, StringUtils.EMPTY), knownScreenKeys));
         }
         return screens;
     }
@@ -406,7 +415,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private Map<String, Object> buildScreen(final Page page, final Page root, final String assetHost,
                                            final ExportOptions options, final List<String> menu,
-                                           final String rolePreset) {
+                                           final String rolePreset, final Set<String> knownScreenKeys) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
         final String key = screenKey(page);
@@ -417,7 +426,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
         // needs 'search' visible so meta.rightIcon can pick it up.
         List<Map<String, Object>> content =
-                walker.componentsOf(page, assetHost, true, true);
+                walker.componentsOf(page, assetHost, true, true, knownScreenKeys);
         if ("cart".equals(key)) {
             addCartActionsPanel(content, page);
         } else if ("review-order".equals(key)) {

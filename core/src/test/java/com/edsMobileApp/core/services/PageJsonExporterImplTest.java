@@ -211,4 +211,66 @@ class PageJsonExporterImplTest {
                 map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("integrations"));
         assertTrue(integrations.isEmpty());
     }
+
+    /**
+     * Authors an Edge Delivery {@code Cards} block - {@code filter="cards"}, three
+     * {@code model="card"} items - under {@code subpage-1}'s container, each item's rich-text
+     * {@code text} carrying a {@code <a href>} to one of the given targets. Mirrors the shape
+     * {@code luma-site}'s {@code language-masters/en} pages actually author.
+     */
+    private void buildCardsBlock(final String... linkTargets) {
+        final String base = ContentBridgeTestContext.APP_ROOT + "/subpage-1/jcr:content/root/container/cardsBlock";
+        context.build().resource(base,
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "filter", "cards",
+                "name", "Cards");
+        for (int i = 0; i < linkTargets.length; i++) {
+            context.build().resource(base + "/item" + i,
+                    "sling:resourceType", "core/franklin/components/block/v1/block/item",
+                    "model", "card",
+                    "image", "/content/dam/contentbridge/images/img2.png",
+                    "text", "<p><a href=\"" + linkTargets[i] + "\">Card " + i + "</a></p>");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> subpage1Content() {
+        final Map<String, Object> screens =
+                map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("screens"));
+        return (List<Map<String, Object>>) map(screens.get("subpage-1")).get("content");
+    }
+
+    @Test
+    @DisplayName("a 3-card block whose links all resolve to real screens becomes one screenList")
+    void cardsBlockWithAllLinksResolvedBecomesScreenList() {
+        buildCardsBlock(
+                ContentBridgeTestContext.APP_ROOT + "/renamed",
+                ContentBridgeTestContext.APP_ROOT + "/subpage-1",
+                ContentBridgeTestContext.APP_ROOT);
+
+        final List<Map<String, Object>> content = subpage1Content();
+        final Map<String, Object> list = content.stream()
+                .filter(c -> "list".equals(map(c.get("meta")).get("component")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a list component: " + content));
+
+        final Map<String, Object> listContent = map(list.get("content"));
+        assertEquals("screenList", listContent.get("listType"));
+        assertEquals(List.of("renamed", "subpage-1", "en"), listContent.get("items"));
+    }
+
+    @Test
+    @DisplayName("a 3-card block where one link does not resolve to a screen is dropped entirely")
+    void cardsBlockWithADanglingLinkIsSkipped() {
+        buildCardsBlock(
+                ContentBridgeTestContext.APP_ROOT + "/renamed",
+                ContentBridgeTestContext.APP_ROOT + "/no-such-page",
+                ContentBridgeTestContext.APP_ROOT);
+
+        final List<Map<String, Object>> content = subpage1Content();
+        assertTrue(content.stream().noneMatch(c -> "list".equals(map(c.get("meta")).get("component"))),
+                "no list component - one card's link does not resolve to a real screen");
+        assertTrue(content.stream().noneMatch(c -> "card".equals(map(c.get("meta")).get("component"))),
+                "the whole 3-card group is skipped, not exported as individual cards");
+    }
 }
