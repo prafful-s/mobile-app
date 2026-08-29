@@ -148,6 +148,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
 
+        // Filled in by the Cards-to-list conversion as screens are walked (see
+        // ComponentTreeWalker#cardsBlockAsList): screen key -> the raw image path of a card that
+        // links to it. Applied to screens.*.meta.thumbnail in one pass below, once every screen has
+        // been built, since a card on one page may resolve to a screen built earlier or later in
+        // screenList's order.
+        final Map<String, String> screenThumbnailOverrides = new LinkedHashMap<>();
+
         final Map<String, Object> app = new LinkedHashMap<>();
         app.put(SchemaConstants.KEY_META,
                 buildMeta(envelopeSource, homeRoot, appId, rootProps, navigation));
@@ -155,8 +162,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // the keys being present rather than testing for them.
         app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
-        app.put(SchemaConstants.KEY_SCREENS,
-                buildScreens(screenList, homeRoot, assetHost, opts, menu, screenPresets, knownScreenKeys));
+        final Map<String, Object> screens = buildScreens(screenList, homeRoot, assetHost, opts, menu,
+                screenPresets, knownScreenKeys, screenThumbnailOverrides);
+        applyScreenThumbnailOverrides(screens, screenThumbnailOverrides, assetHost);
+        app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_INTEGRATIONS, buildIntegrations(envelopeSource, extras));
@@ -291,7 +300,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                                             final String assetHost, final ExportOptions options,
                                             final List<String> menu,
                                             final Map<String, String> screenPresets,
-                                            final Set<String> knownScreenKeys) {
+                                            final Set<String> knownScreenKeys,
+                                            final Map<String, String> screenThumbnailOverrides) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         for (final Page page : pages) {
             final String key = screenKey(page);
@@ -303,9 +313,33 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                         + "overwriting it. Give one of the pages a distinct node name.", key, page.getPath());
             }
             screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu,
-                    screenPresets.getOrDefault(key, StringUtils.EMPTY), knownScreenKeys));
+                    screenPresets.getOrDefault(key, StringUtils.EMPTY), knownScreenKeys,
+                    screenThumbnailOverrides));
         }
         return screens;
+    }
+
+    /**
+     * Fills in {@code screens.*.meta.thumbnail} with the image of a card that links to it, for
+     * every screen a Cards-to-list conversion recorded one for - see
+     * {@link ComponentTreeWalker#cardsBlockAsList}. That card's image is the only source a screen's
+     * thumbnail has: it is what a client actually sees rendered wherever the screen appears inside a
+     * list.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyScreenThumbnailOverrides(final Map<String, Object> screens,
+                                               final Map<String, String> overrides,
+                                               final String assetHost) {
+        for (final Map.Entry<String, String> override : overrides.entrySet()) {
+            final Object screen = screens.get(override.getKey());
+            if (!(screen instanceof Map)) {
+                continue;
+            }
+            final Object meta = ((Map<String, Object>) screen).get(SchemaConstants.KEY_META);
+            if (meta instanceof Map) {
+                ((Map<String, Object>) meta).put("thumbnail", prefixAsset(override.getValue(), assetHost));
+            }
+        }
     }
 
     /**
@@ -415,18 +449,24 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private Map<String, Object> buildScreen(final Page page, final Page root, final String assetHost,
                                            final ExportOptions options, final List<String> menu,
-                                           final String rolePreset, final Set<String> knownScreenKeys) {
+                                           final String rolePreset, final Set<String> knownScreenKeys,
+                                           final Map<String, String> screenThumbnailOverrides) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
         final String key = screenKey(page);
-        screen.put(SchemaConstants.KEY_META,
-                EnvelopeMeta.screenMeta(page, root, key, menu, rolePreset));
+        final Map<String, Object> meta = EnvelopeMeta.screenMeta(page, root, key, menu, rolePreset);
+        screen.put(SchemaConstants.KEY_META, meta);
         screen.put(SchemaConstants.KEY_EDITOR, screenEditor(key));
         // applyScreenExclusions=true drops unmapped components (fileUpload/iframe/loan-calculator/
         // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
         // needs 'search' visible so meta.rightIcon can pick it up.
-        List<Map<String, Object>> content =
-                walker.componentsOf(page, assetHost, true, true, knownScreenKeys);
+        List<Map<String, Object>> content = walker.componentsOf(page, assetHost, true, true,
+                knownScreenKeys, screenThumbnailOverrides);
+        // A screenList item shows the target screen's thumbnail (see luma-mobile.json's
+        // beginners-luck/warming-up/keep-moving) - filled in below from whichever card links to this
+        // screen (see ComponentTreeWalker#cardsBlockAsList / applyScreenThumbnailOverrides). Left
+        // blank when no card links here, same as every other unset meta field.
+        meta.put("thumbnail", StringUtils.EMPTY);
         if ("cart".equals(key)) {
             addCartActionsPanel(content, page);
         } else if ("review-order".equals(key)) {

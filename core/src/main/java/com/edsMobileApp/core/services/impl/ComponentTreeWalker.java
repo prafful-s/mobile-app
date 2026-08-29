@@ -123,11 +123,31 @@ final class ComponentTreeWalker {
                                            final boolean hierarchical,
                                            final boolean applyScreenExclusions,
                                            final Set<String> knownScreenKeys) {
+        return componentsOf(page, assetHost, hierarchical, applyScreenExclusions, knownScreenKeys, null);
+    }
+
+    /**
+     * @param screenThumbnailOverrides sink a {@code Cards}-to-{@code list} conversion writes into,
+     *                                 keyed by the resolved screen key each card links to, valued
+     *                                 with that card's own raw (unprefixed) image path - see
+     *                                 {@link #cardsBlockAsList}. The card's own image is what a
+     *                                 client actually sees rendered for that screen inside a list,
+     *                                 so the caller applies it over the target screen's own
+     *                                 {@code meta.thumbnail} once every page has been walked. May be
+     *                                 {@code null} when the caller has no use for it (the nav-page
+     *                                 walk, the bare-container probe).
+     */
+    List<Map<String, Object>> componentsOf(final Page page, final String assetHost,
+                                           final boolean hierarchical,
+                                           final boolean applyScreenExclusions,
+                                           final Set<String> knownScreenKeys,
+                                           final Map<String, String> screenThumbnailOverrides) {
         final List<Map<String, Object>> components = new ArrayList<>();
         final Resource container = resolveContainer(page);
         if (container != null) {
             collectComponents(container, components, 0, hierarchical, null,
-                    knownScreenKeys == null ? Collections.emptySet() : knownScreenKeys);
+                    knownScreenKeys == null ? Collections.emptySet() : knownScreenKeys,
+                    screenThumbnailOverrides);
         }
         if (applyScreenExclusions) {
             dropExcludedDeep(components);
@@ -318,7 +338,8 @@ final class ComponentTreeWalker {
      */
     private void collectComponents(final Resource parent, final List<Map<String, Object>> sink,
                                    final int depth, final boolean hierarchical,
-                                   final Resource ancestorSection, final Set<String> knownScreenKeys) {
+                                   final Resource ancestorSection, final Set<String> knownScreenKeys,
+                                   final Map<String, String> screenThumbnailOverrides) {
         if (depth > MAX_COMPONENT_DEPTH) {
             LOG.warn("Component nesting below {} exceeds {} levels - not descending further",
                     parent.getPath(), MAX_COMPONENT_DEPTH);
@@ -347,9 +368,11 @@ final class ComponentTreeWalker {
                 if (hierarchical) {
                     // A section carries the spacing and alignment the target's panel wants, so it is
                     // a component in its own right rather than scaffolding to step over.
-                    emitPanel(child, sink, depth, resourceType, nextSection, knownScreenKeys);
+                    emitPanel(child, sink, depth, resourceType, nextSection, knownScreenKeys,
+                            screenThumbnailOverrides);
                 } else {
-                    collectComponents(child, sink, depth + 1, false, nextSection, knownScreenKeys);
+                    collectComponents(child, sink, depth + 1, false, nextSection, knownScreenKeys,
+                            screenThumbnailOverrides);
                 }
                 continue;
             }
@@ -379,7 +402,8 @@ final class ComponentTreeWalker {
             // wrapper into a component by supplying constants.
             if (hasChildren && authored.isEmpty()) {
                 if (hierarchical && isCardsBlock(child)) {
-                    final Map<String, Object> list = cardsBlockAsList(child, sink.size(), knownScreenKeys);
+                    final Map<String, Object> list = cardsBlockAsList(child, sink.size(), knownScreenKeys,
+                            screenThumbnailOverrides);
                     if (list != null) {
                         sink.add(list);
                         continue;
@@ -391,7 +415,8 @@ final class ComponentTreeWalker {
                         continue;
                     }
                 }
-                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys);
+                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys,
+                        screenThumbnailOverrides);
                 continue;
             }
 
@@ -482,7 +507,8 @@ final class ComponentTreeWalker {
             // Components that also nest (carousels, tabs, blocks with items) contribute their
             // children to the same flat list.
             if (hasChildren) {
-                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys);
+                collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys,
+                        screenThumbnailOverrides);
             }
         }
     }
@@ -537,27 +563,43 @@ final class ComponentTreeWalker {
      * {@code beginners-luck} - see {@link ComponentMapping#apply}) rather than re-implementing href
      * extraction, so this stays in step with however the card rule resolves a link.
      *
+     * <p>Each card's own image is also the thumbnail its target screen shows wherever that screen is
+     * rendered as a list item - a list card is the only place that image is ever displayed, so it is
+     * recorded into {@code screenThumbnailOverrides} (raw, unprefixed - the caller prefixes every
+     * screen's thumbnail in one pass once every page has been walked) keyed by the screen it
+     * resolved to.</p>
+     *
      * @return the {@code list} component, or {@code null} when {@code resource} is not a
      *         three-card group, the {@code card} rule is not loaded, or not every card resolves to a
      *         key in {@code knownScreenKeys}
      */
     private Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
-                                                  final Set<String> knownScreenKeys) {
+                                                  final Set<String> knownScreenKeys,
+                                                  final Map<String, String> screenThumbnailOverrides) {
         final List<Resource> items = cardItemsOf(resource);
         final ComponentMapping cardRule = items == null ? null : mappings.find("card");
         if (items == null || cardRule == null) {
             return null;
         }
         final List<String> screenKeys = new ArrayList<>(items.size());
+        final Map<String, String> thumbnails = new LinkedHashMap<>();
         for (final Resource item : items) {
             final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
-            final Object link = cardRule.effectiveFor(authored)
-                    .apply(authored, Collections.emptyMap()).get("link");
+            final Map<String, Object> mapped =
+                    cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
+            final Object link = mapped.get("link");
             final String key = link instanceof String ? (String) link : null;
             if (StringUtils.isBlank(key) || !knownScreenKeys.contains(key)) {
                 return null;
             }
             screenKeys.add(key);
+            final Object image = mapped.get("image");
+            if (image instanceof String && StringUtils.isNotBlank((String) image)) {
+                thumbnails.put(key, (String) image);
+            }
+        }
+        if (screenThumbnailOverrides != null) {
+            screenThumbnailOverrides.putAll(thumbnails);
         }
 
         final Map<String, Object> meta = new LinkedHashMap<>();
@@ -793,9 +835,11 @@ final class ComponentTreeWalker {
      */
     private void emitPanel(final Resource resource, final List<Map<String, Object>> sink,
                            final int depth, final String resourceType,
-                           final Resource ancestorSection, final Set<String> knownScreenKeys) {
+                           final Resource ancestorSection, final Set<String> knownScreenKeys,
+                           final Map<String, String> screenThumbnailOverrides) {
         final List<Map<String, Object>> children = new ArrayList<>();
-        collectComponents(resource, children, depth + 1, true, ancestorSection, knownScreenKeys);
+        collectComponents(resource, children, depth + 1, true, ancestorSection, knownScreenKeys,
+                screenThumbnailOverrides);
 
         if (children.isEmpty()) {
             return;

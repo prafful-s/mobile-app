@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -122,6 +123,17 @@ class PageJsonExporterImplTest {
     }
 
     @Test
+    @DisplayName("screen thumbnail is blank when no card links to the screen")
+    void screenThumbnailIsBlankWithoutAReferencingCard() {
+        final Map<String, Object> screens =
+                map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("screens"));
+
+        assertEquals("", map(map(screens.get("en")).get("meta")).get("thumbnail"),
+                "no card links to the home screen in this fixture");
+        assertEquals("", map(map(screens.get("subpage-1")).get("meta")).get("thumbnail"));
+    }
+
+    @Test
     @DisplayName("a resource with no registered model is still exported, named from its resource type")
     void unmappedResourceTypesFallBackToGenericExport() {
         final Map<String, Object> screens =
@@ -215,10 +227,17 @@ class PageJsonExporterImplTest {
     /**
      * Authors an Edge Delivery {@code Cards} block - {@code filter="cards"}, three
      * {@code model="card"} items - under {@code subpage-1}'s container, each item's rich-text
-     * {@code text} carrying a {@code <a href>} to one of the given targets. Mirrors the shape
-     * {@code luma-site}'s {@code language-masters/en} pages actually author.
+     * {@code text} carrying a {@code <a href>} to one of the given targets, and all sharing the same
+     * image. Mirrors the shape {@code luma-site}'s {@code language-masters/en} pages actually author.
      */
     private void buildCardsBlock(final String... linkTargets) {
+        final String[] images = new String[linkTargets.length];
+        Arrays.fill(images, "/content/dam/contentbridge/images/img2.png");
+        buildCardsBlock(linkTargets, images);
+    }
+
+    /** Same shape as above, but with a distinct image per card. */
+    private void buildCardsBlock(final String[] linkTargets, final String[] images) {
         final String base = ContentBridgeTestContext.APP_ROOT + "/subpage-1/jcr:content/root/container/cardsBlock";
         context.build().resource(base,
                 "sling:resourceType", "core/franklin/components/block/v1/block",
@@ -228,7 +247,7 @@ class PageJsonExporterImplTest {
             context.build().resource(base + "/item" + i,
                     "sling:resourceType", "core/franklin/components/block/v1/block/item",
                     "model", "card",
-                    "image", "/content/dam/contentbridge/images/img2.png",
+                    "image", images[i],
                     "text", "<p><a href=\"" + linkTargets[i] + "\">Card " + i + "</a></p>");
         }
     }
@@ -257,6 +276,33 @@ class PageJsonExporterImplTest {
         final Map<String, Object> listContent = map(list.get("content"));
         assertEquals("screenList", listContent.get("listType"));
         assertEquals(List.of("renamed", "subpage-1", "en"), listContent.get("items"));
+    }
+
+    @Test
+    @DisplayName("a screen linked from a card takes that card's own image as its thumbnail")
+    void screenListItemThumbnailComesFromTheReferencingCard() {
+        buildCardsBlock(
+                new String[] {
+                    ContentBridgeTestContext.APP_ROOT + "/renamed",
+                    ContentBridgeTestContext.APP_ROOT + "/subpage-1",
+                    ContentBridgeTestContext.APP_ROOT,
+                },
+                new String[] {
+                    "/content/dam/contentbridge/images/renamed-card.png",
+                    "/content/dam/contentbridge/images/subpage1-card.png",
+                    "/content/dam/contentbridge/images/home-card.png",
+                });
+
+        final Map<String, Object> screens =
+                map(exporter.export(page(ContentBridgeTestContext.APP_ROOT)).get("screens"));
+
+        assertEquals(ContentBridgeTestContext.PUBLISH_DOMAIN
+                        + "/content/dam/contentbridge/images/renamed-card.png",
+                map(map(screens.get("renamed")).get("meta")).get("thumbnail"));
+        assertEquals(ContentBridgeTestContext.PUBLISH_DOMAIN
+                        + "/content/dam/contentbridge/images/home-card.png",
+                map(map(screens.get("en")).get("meta")).get("thumbnail"),
+                "the card's image wins even though en also has its own banner");
     }
 
     @Test

@@ -169,7 +169,8 @@ class EnvelopeMetaTest {
         final Map<String, Object> meta = screenMeta("en");
 
         for (final String key : List.of("icon", "iconInactive", "name", "event", "title", "preset",
-                "template", "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation")) {
+                "template", "customEvent", "isRootScreen", "navigationOrder", "includeInNavigation",
+                "thumbnail")) {
             assertTrue(meta.containsKey(key), "screen meta is missing " + key + ": " + meta.keySet());
         }
         // icon/iconInactive are the page's own mobileIcon/mobileIconInactive, verbatim - empty
@@ -179,7 +180,10 @@ class EnvelopeMetaTest {
         assertEquals("", meta.get("event"));
         assertEquals("home", meta.get("preset"), "content default when no role or authored preset");
         assertEquals("", meta.get("customEvent"));
-        assertFalse(meta.containsKey("thumbnail"), "not part of the reference contract");
+        // thumbnail comes from a card that links to this screen (see
+        // PageJsonExporterImpl#applyScreenThumbnailOverrides) - none does in this fixture, so it
+        // stays blank rather than a guess.
+        assertEquals("", meta.get("thumbnail"), "no card links to this screen");
     }
 
     @Test
