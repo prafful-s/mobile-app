@@ -40,6 +40,9 @@ final class FormBlockBuilder {
     /** The one component name a client has to know to render a form. */
     static final String COMPONENT_FORM = "form";
 
+    /** A schema field of this type names a secondary navigation link - see {@link #secondaryLink}. */
+    private static final String TYPE_LINK = "link";
+
     /** Guard against a pathological or cyclic authored tree while collecting fields. */
     private static final int MAX_FIELD_DEPTH = 6;
 
@@ -260,6 +263,81 @@ final class FormBlockBuilder {
         form.put(SchemaConstants.KEY_META, meta);
         form.put(SchemaConstants.KEY_CONTENT, fields);
         return form;
+    }
+
+    /**
+     * The secondary navigation link a form's own schema may declare - the generic form of what the
+     * reference {@code sign-in} block does for its "Create an account" link (see
+     * {@code addCreateAccountLink} in the EDS block's own {@code sign-in.js}): a link rendered
+     * alongside the form but not one of its fields, pointing at one of the app's own named nav
+     * screens rather than a value the form submits.
+     *
+     * <p>Declared as one more entry in the bundled field array (see {@code sign-in.json}):</p>
+     * <pre>{ "type": "link", "label": "Create an account", "target": "registrationScreen" }</pre>
+     *
+     * <p>{@code target} names one of the three screen roles {@code PageJsonExporterImpl
+     * .buildNavigation} already resolves for every export - {@code loginScreen}, {@code
+     * profileScreen} or {@code registrationScreen} - so a link always points wherever the app's own
+     * nav already sends a user for that role, whichever form declares it. Emitted as a standalone
+     * {@code button} component, the same shape {@code contentbridge/mappings/button.json} produces
+     * for any other navigable link, styled {@code text} rather than a filled button since it is a
+     * secondary action beside the submit button, not a competing one.
+     *
+     * <p>Returns {@code null} when the form's schema declares no such field, or when the field names
+     * a role this export could not resolve - a link with nowhere to go is worse than no link.</p>
+     *
+     * @param formName        the schema name being built
+     * @param navScreensByRole {@code loginScreen}/{@code profileScreen}/{@code registrationScreen},
+     *                        already resolved for this export (see {@code PageJsonExporterImpl
+     *                        .buildNavigation}) - reused rather than re-derived so both the app's own
+     *                        nav menu and this link agree on where each role goes
+     * @param id              a stable id, generated the same way every other synthetic component's is
+     * @param order           position among its siblings
+     */
+    Map<String, Object> secondaryLink(final String formName, final Map<String, String> navScreensByRole,
+                                      final String id, final int order) {
+        final Map<String, Object> field = linkField(formName);
+        if (field == null) {
+            return null;
+        }
+        final String target = str(field.get("target"));
+        final String screen = navScreensByRole == null || target == null ? null : navScreensByRole.get(target);
+        if (StringUtils.isBlank(screen)) {
+            return null;
+        }
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, id);
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "button");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("label", StringUtils.defaultString(str(field.get("label"))));
+        content.put("linkTo", screen);
+        content.put("variant", "text");
+        content.put("alignment", "center");
+
+        final Map<String, Object> button = new LinkedHashMap<>();
+        button.put(SchemaConstants.KEY_META, meta);
+        button.put(SchemaConstants.KEY_CONTENT, content);
+        return button;
+    }
+
+    /** @return the form's own {@code "type": "link"} schema entry, or {@code null} when it has none */
+    private Map<String, Object> linkField(final String formName) {
+        if (StringUtils.isBlank(formName)) {
+            return null;
+        }
+        for (final Map<String, Object> field : formSchemaService.getSchema(formName)) {
+            if (TYPE_LINK.equals(StringUtils.lowerCase(str(field.get("type")), java.util.Locale.ROOT))) {
+                return field;
+            }
+        }
+        return null;
+    }
+
+    private static String str(final Object value) {
+        return value instanceof String ? (String) value : null;
     }
 
     /**

@@ -48,6 +48,10 @@ final class FormFieldFactory {
     private static final String TYPE_CHECKBOX = "checkbox";
     private static final String TYPE_DATE = "date";
     private static final String TYPE_FILE = "file";
+    /** A secondary navigation link declared beside the form's own fields - not a field itself, and
+     *  not rendered here at all: {@link FormBlockBuilder#secondaryLink} reads it directly off the
+     *  schema and emits it as a standalone component alongside the form. */
+    private static final String TYPE_LINK = "link";
     /** A static section divider inside the field list - "Communication preferences", "LET US KNOW
      *  YOU BETTER" - not a value the user supplies. Reuses the {@code title} component's shape
      *  ({@code size}/{@code text}/{@code weight}/{@code textAlignment}), the only heading-shaped
@@ -213,6 +217,9 @@ final class FormFieldFactory {
         if (TYPE_HEADING.equals(type)) {
             final String id = StringUtils.defaultIfBlank(str(field.get("id")), "heading-" + order);
             return component(id, order, COMPONENT_TITLE, headingContent(str(field.get("label"))));
+        }
+        if (TYPE_LINK.equals(type)) {
+            return null;
         }
 
         final String component = componentFor(type);

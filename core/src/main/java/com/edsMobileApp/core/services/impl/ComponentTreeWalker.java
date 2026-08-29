@@ -55,6 +55,16 @@ final class ComponentTreeWalker {
     private final ComponentMappings mappings;
     private final FormBlockBuilder formBuilder;
 
+    /**
+     * The {@code loginScreen}/{@code profileScreen}/{@code registrationScreen} keys this export's own
+     * {@code navigation} already resolved to - set once per {@code export()} call (see
+     * {@code PageJsonExporterImpl#export}), since it varies per export and not, like
+     * {@link #setSiteDefaults}, only per bundle activation. Used to point any form's schema-declared
+     * {@link FormBlockBuilder#secondaryLink} at the same screen the app's own nav sends a user to for
+     * that role.
+     */
+    private Map<String, String> navScreensByRole = Collections.emptyMap();
+
     ComponentTreeWalker(final ModelFactory modelFactory, final UrlService urlService,
                         final FormSchemaService formSchemaService, final StyleResolver styleResolver,
                         final ComponentMappings mappings) {
@@ -69,6 +79,11 @@ final class ComponentTreeWalker {
     /** Forwarded to the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
     void setSiteDefaults(final SiteDefaults siteDefaults) {
         this.formBuilder.setSiteDefaults(siteDefaults);
+    }
+
+    /** See {@link #navScreensByRole}. */
+    void setNavScreensByRole(final Map<String, String> navScreensByRole) {
+        this.navScreensByRole = navScreensByRole == null ? Collections.emptyMap() : navScreensByRole;
     }
 
     /**
@@ -487,6 +502,12 @@ final class ComponentTreeWalker {
                     sink.add(heading);
                 }
                 sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), resolvedAuthored));
+                final Map<String, Object> secondaryLink = formBuilder.secondaryLink(formName,
+                        navScreensByRole, AbstractComponentModel.generateId(child.getPath() + "/secondary-link"),
+                        sink.size());
+                if (secondaryLink != null) {
+                    sink.add(secondaryLink);
+                }
                 continue;
             }
 

@@ -16,5 +16,11 @@
     "type": "password",
     "placeholder": "",
     "defaultValue": ""
+  },
+  {
+    "id": "createAccountLink",
+    "type": "link",
+    "label": "Create an account",
+    "target": "registrationScreen"
   }
 ]

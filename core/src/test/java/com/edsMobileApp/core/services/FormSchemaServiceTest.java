@@ -117,7 +117,7 @@ class FormSchemaServiceTest {
     @Test
     @DisplayName("field order follows the file - a form is rendered top to bottom")
     void fieldOrderIsPreserved() {
-        assertEquals(List.of("email", "password"), fieldIds("sign-in"));
+        assertEquals(List.of("email", "password", "createAccountLink"), fieldIds("sign-in"));
     }
 
     @Test
@@ -130,7 +130,7 @@ class FormSchemaServiceTest {
     @DisplayName("every field names a type the client can render")
     void knownFieldTypes() {
         final java.util.Set<String> types = java.util.Set.of(
-                "text", "select", "checkbox", "radio", "file", "password", "date", "heading");
+                "text", "select", "checkbox", "radio", "file", "password", "date", "heading", "link");
 
         service.getFormNames().forEach(form -> service.getSchema(form).forEach(field ->
                 assertTrue(types.contains(field.get("type")),
@@ -140,11 +140,12 @@ class FormSchemaServiceTest {
     @Test
     @DisplayName("every field has an id and a name - both are load-bearing")
     void everyFieldIsAddressable() {
-        // A heading is a static section divider, not a value the user supplies - it has no path in
-        // the profile model to name.
+        // A heading is a static section divider and a link is secondary navigation - neither is a
+        // value the user supplies, so neither has a path in the profile model to name.
+        final java.util.Set<String> namelessTypes = java.util.Set.of("heading", "link");
         service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
             assertNotNull(field.get("id"), form + " has a field with no id");
-            if (!"heading".equals(field.get("type"))) {
+            if (!namelessTypes.contains(field.get("type"))) {
                 assertNotNull(field.get("name"), form + "." + field.get("id") + " has no name");
             }
         }));

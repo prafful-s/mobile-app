@@ -138,6 +138,17 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> navigation = buildNavigation(rootProps, menu, screenList, homeRoot);
         final Map<String, String> screenPresets = screenPresets(navigation);
 
+        // Set before screens are walked so that any form's schema-declared secondary link (built by
+        // ComponentTreeWalker/FormBlockBuilder while walking each page below, e.g. sign-in's "Create
+        // an account") points at the same screen this export's own nav already resolved for that role.
+        walker.setNavScreensByRole(Map.of(
+                SchemaConstants.PN_LOGIN_SCREEN, StringUtils.defaultString(
+                        (String) navigation.get(SchemaConstants.PN_LOGIN_SCREEN)),
+                SchemaConstants.PN_PROFILE_SCREEN, StringUtils.defaultString(
+                        (String) navigation.get(SchemaConstants.PN_PROFILE_SCREEN)),
+                SchemaConstants.PN_REGISTRATION_SCREEN, StringUtils.defaultString(
+                        (String) navigation.get(SchemaConstants.PN_REGISTRATION_SCREEN))));
+
         // Every screen key the app will actually expose, gathered once so a Cards-block-to-list
         // conversion (see ComponentTreeWalker) can tell a real screen link from a dangling one
         // without re-walking the page tree per block.
