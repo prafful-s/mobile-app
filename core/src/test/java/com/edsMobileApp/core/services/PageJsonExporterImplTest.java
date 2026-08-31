@@ -434,13 +434,18 @@ class PageJsonExporterImplTest {
                         + "/content/dam/contentbridge/en/images/exotic-vibes.jpg", matched.get("image"),
                 "the catalog product's own image wins over the card's authored image");
         assertEquals("Catalog description for Exotic Vibes.", matched.get("subtitle"));
+        assertEquals("product.html?productId=SKU1", matched.get("link"),
+                "the productId screenTarget cuts off is re-appended onto the leaf");
 
         final Map<String, Object> unmatched = map(cards.get(1).get("content"));
         assertEquals("No Matching Product", unmatched.get("title"),
                 "a sku with no matching product is left exactly as the card rule resolved it");
+        assertEquals("product.html?productId=SKU-UNKNOWN", unmatched.get("link"),
+                "the productId is restored even without a catalog match - it was authored, not invented");
 
         final Map<String, Object> noLink = map(cards.get(2).get("content"));
         assertEquals("No Link At All", noLink.get("title"),
                 "a card with no product link at all is untouched by the enrichment");
+        assertEquals("#", noLink.get("link"), "no href authored - link stays the rule's own default");
     }
 }

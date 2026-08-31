@@ -740,6 +740,14 @@ final class ComponentTreeWalker {
      * segment, see {@link ComponentMapping#screenTarget}), so it is pulled independently, straight
      * off the authored property {@code ref} names.
      *
+     * <p>{@code screenTarget} cuts {@code link}/{@code linkTo} down to a bare leaf, discarding the
+     * query string the sku came from - same problem {@code linkQuery} solves for
+     * {@code contentFragmentRef} rules, but {@code linkQuery} reads its parameter off an authored
+     * property merged into {@code source}, and nothing merges the sku there for a link-embedded one.
+     * So the sku this method already extracted is re-appended onto {@code content}'s own
+     * {@code link}/{@code linkTo} directly - restoring what was authored, not inventing anything -
+     * whether or not it goes on to match a catalogue product below.</p>
+     *
      * <p>When the sku matches a product in {@link #productsById}, {@code ref}'s {@code map} fields
      * take that product's own values, replacing whatever the rule itself resolved - the product
      * catalogue is the authoritative source for a product's own name and image, the same precedence
@@ -763,12 +771,29 @@ final class ComponentTreeWalker {
         if (StringUtils.isBlank(sku)) {
             return;
         }
+        appendQueryParam(content, "link", ref.getQueryParam(), sku);
+        appendQueryParam(content, "linkTo", ref.getQueryParam(), sku);
+
         final Map<String, Object> product = productsById.get(sku);
         if (product == null) {
             return;
         }
         for (final Map.Entry<String, String> entry : ref.getFieldMap().entrySet()) {
             putIfNotBlank(content, entry.getKey(), product.get(entry.getValue()));
+        }
+    }
+
+    /**
+     * Re-appends {@code ?param=value} onto {@code content[key]} when it is a plain leaf (no query
+     * string of its own already) - undoes {@link ComponentMapping#screenTarget}'s unconditional cut,
+     * for the one case ({@link #applyProductLinkRef}) that needs the query string back.
+     */
+    private static void appendQueryParam(final Map<String, Object> content, final String key,
+                                         final String param, final String value) {
+        final Object link = content.get(key);
+        if (link instanceof String && StringUtils.isNotBlank((String) link)
+                && ((String) link).indexOf('?') < 0) {
+            content.put(key, link + "?" + param + "=" + value);
         }
     }
 
