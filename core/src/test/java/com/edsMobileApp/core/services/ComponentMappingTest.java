@@ -796,25 +796,35 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a separator block becomes a divider with the reference's style defaults")
-    @Disabled("mapping temporarily removed from index.json; re-enable when the rule is restored")
+    @DisplayName("a separator block's authored style/spacing translate to divider's size/length/showLine")
     void dividerMapping() {
         final Map<String, Object> exported = export(true,
                 "model", "separator",
-                "showLine", "false",
-                "trackingId", "div-1");
+                "style", "hidden",
+                "spacing", "large");
+
+        assertEquals("divider", component(exported));
+        final Map<String, Object> content = content(exported);
+        assertEquals("L", content.get("size"), "spacing 'large' maps to size 'L'");
+        assertEquals("L", content.get("length"), "spacing 'large' maps to length 'L'");
+        assertEquals("normal", content.get("variant"));
+        assertEquals(Boolean.FALSE, content.get("showLine"), "style 'hidden' maps to showLine false");
+        assertEquals("center", content.get("alignment"));
+        assertEquals("vertical", content.get("orientation"));
+        assertTrue(content.containsKey("horizontalInset"), "nullable schema key present");
+        assertEquals(Boolean.FALSE, content.get("horizontalInset"), "unauthored boolean, typed empty default");
+    }
+
+    @Test
+    @DisplayName("a separator with no authored style/spacing falls back to the rule's defaults")
+    void dividerMappingDefaults() {
+        final Map<String, Object> exported = export(true, "model", "separator");
 
         assertEquals("divider", component(exported));
         final Map<String, Object> content = content(exported);
         assertEquals("S", content.get("size"));
         assertEquals("S", content.get("length"));
-        assertEquals("normal", content.get("variant"));
         assertEquals(Boolean.FALSE, content.get("showLine"));
-        assertEquals("center", content.get("alignment"));
-        assertEquals("vertical", content.get("orientation"));
-        assertTrue(content.containsKey("horizontalInset"), "nullable schema key present");
-        assertEquals(Boolean.FALSE, content.get("horizontalInset"), "unauthored boolean, typed empty default");
-        assertEquals("div-1", content.get("trackingId"), "extras through");
     }
 
     @Test

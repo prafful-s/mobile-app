@@ -35,6 +35,7 @@ final class ComponentMapping {
     private final List<Variant> variants;
     private final LinkQuery linkQuery;
     private final Set<String> ignoreExtras;
+    private final ProductLinkRef productLinkRef;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final List<FieldRule> fields, final List<FieldRule> styleFields,
@@ -42,7 +43,7 @@ final class ComponentMapping {
                              final ContentFragmentFolderRef contentFragmentFolderRef,
                              final String requiresField, final ComponentMapping fallback,
                              final List<Variant> variants, final LinkQuery linkQuery,
-                             final Set<String> ignoreExtras) {
+                             final Set<String> ignoreExtras, final ProductLinkRef productLinkRef) {
         this.matches = matches;
         this.component = component;
         this.fields = fields;
@@ -55,15 +56,17 @@ final class ComponentMapping {
         this.variants = variants;
         this.linkQuery = linkQuery;
         this.ignoreExtras = ignoreExtras;
+        this.productLinkRef = productLinkRef;
     }
 
-    /** A {@code fallback} mapping: no {@code requires}, no further fallback, no variants/linkQuery/ignoreExtras. */
+    /** A {@code fallback} mapping: no {@code requires}, no further fallback, no variants/linkQuery/ignoreExtras/productLinkRef. */
     private ComponentMapping(final List<String> matches, final String component,
                              final List<FieldRule> fields, final List<FieldRule> styleFields,
                              final boolean skeleton, final String contentFragmentRef,
                              final ContentFragmentFolderRef contentFragmentFolderRef) {
         this(matches, component, fields, styleFields, skeleton, contentFragmentRef,
-                contentFragmentFolderRef, null, null, Collections.emptyList(), null, Collections.emptySet());
+                contentFragmentFolderRef, null, null, Collections.emptyList(), null,
+                Collections.emptySet(), null);
     }
 
     /**
@@ -87,10 +90,11 @@ final class ComponentMapping {
         final List<Variant> variants = variants(definition.get("variants"));
         final LinkQuery linkQuery = LinkQuery.of(definition.get("linkQuery"));
         final Set<String> ignoreExtras = new LinkedHashSet<>(names(definition.get("ignoreExtras")));
+        final ProductLinkRef productLinkRef = ProductLinkRef.of(definition.get("productLinkRef"));
         return new ComponentMapping(Collections.unmodifiableList(matches), component,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
                 skeleton, contentFragmentRef, contentFragmentFolderRef, requiresField, fallback,
-                variants, linkQuery, Collections.unmodifiableSet(ignoreExtras));
+                variants, linkQuery, Collections.unmodifiableSet(ignoreExtras), productLinkRef);
     }
 
     /**
@@ -312,6 +316,77 @@ final class ComponentMapping {
         }
     }
 
+    /**
+     * Declares that this rule's authored {@code text} may carry a link to a product page with the
+     * product's sku as a query parameter - the shape a plain {@code Cards} group takes when it links
+     * out to a product instead of an in-app screen (Frescopa's home page cards, for one). When the
+     * sku is found and matches a product in this export's own catalogue, {@code map}'s target fields
+     * take that product's own values instead of whatever the rule's own fields resolved - the same
+     * "the fragment wins" precedence {@link #contentFragmentRef} gives secur-financial's
+     * {@code product-card} block, reached here from a sku pulled out of a link instead of an
+     * authored Content Fragment path.
+     *
+     * <p>Declared once on {@code card.json} (see {@link ComponentTreeWalker#applyProductLinkRef}),
+     * it applies to every site's cards uniformly - a card whose link never carries a matching sku is
+     * left exactly as its rule resolved it, so this is a no-op for every card that doesn't have this
+     * shape.</p>
+     */
+    static final class ProductLinkRef {
+
+        private final String from;
+        private final String select;
+        private final String queryParam;
+        private final Map<String, String> fieldMap;
+
+        private ProductLinkRef(final String from, final String select, final String queryParam,
+                               final Map<String, String> fieldMap) {
+            this.from = from;
+            this.select = select;
+            this.queryParam = queryParam;
+            this.fieldMap = fieldMap;
+        }
+
+        static ProductLinkRef of(final Object definition) {
+            if (!(definition instanceof Map)) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> map = (Map<String, Object>) definition;
+            final String from = trimmed(map.get("from"));
+            final String select = trimmed(map.get("select"));
+            final String queryParam = trimmed(map.get("queryParam"));
+            final Map<String, String> fieldMap = stringMap(map.get("map"));
+            if (from == null || select == null || queryParam == null || fieldMap.isEmpty()) {
+                return null;
+            }
+            return new ProductLinkRef(from, select, queryParam, Collections.unmodifiableMap(fieldMap));
+        }
+
+        /** @return {"target field name" -> "product field name"}, e.g. {@code title -> name}. */
+        private static Map<String, String> stringMap(final Object declared) {
+            final Map<String, String> out = new LinkedHashMap<>();
+            if (declared instanceof Map) {
+                for (final Map.Entry<?, ?> entry : ((Map<?, ?>) declared).entrySet()) {
+                    final String key = trimmed(entry.getKey());
+                    final String value = trimmed(entry.getValue());
+                    if (key != null && value != null) {
+                        out.put(key, value);
+                    }
+                }
+            }
+            return out;
+        }
+
+        /** The authored property carrying the link, e.g. {@code text}. */
+        String getFrom() { return from; }
+        /** CSS selector locating the anchor within {@link #from}, e.g. {@code a}. */
+        String getSelect() { return select; }
+        /** Query parameter on the anchor's {@code href} carrying the product sku. */
+        String getQueryParam() { return queryParam; }
+        /** Target field name -> product field name. */
+        Map<String, String> getFieldMap() { return fieldMap; }
+    }
+
     /** Parses either a rule file's {@code fields} or its optional {@code styles} - same shape. */
     private static List<FieldRule> fieldRules(final Object declared) {
         final List<FieldRule> rules = new ArrayList<>();
@@ -369,6 +444,11 @@ final class ComponentMapping {
         return contentFragmentFolderRef;
     }
 
+    /** @see ProductLinkRef */
+    ProductLinkRef getProductLinkRef() {
+        return productLinkRef;
+    }
+
     /**
      * Every CRX property this rule reads from, across every field. Used by the walker to
      * filter extras passthrough - a property this rule consumed must not reappear as an extra.
@@ -388,6 +468,9 @@ final class ComponentMapping {
         }
         if (contentFragmentFolderRef != null) {
             consumed.add(contentFragmentFolderRef.getProperty());
+        }
+        if (productLinkRef != null) {
+            consumed.add(productLinkRef.getFrom());
         }
         consumed.addAll(ignoreExtras);
         return consumed;

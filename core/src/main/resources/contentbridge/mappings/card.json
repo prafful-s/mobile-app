@@ -2,6 +2,12 @@
   "match": ["card"],
   "component": "card",
   "requires": "image",
+  "productLinkRef": {
+    "from": "text",
+    "select": "a",
+    "queryParam": "productId",
+    "map": { "title": "name", "image": "image", "subtitle": "description" }
+  },
   "fallback": {
     "component": "htmlText",
     "fields": [

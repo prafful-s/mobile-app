@@ -1,5 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -65,6 +67,15 @@ final class ComponentTreeWalker {
      */
     private Map<String, String> navScreensByRole = Collections.emptyMap();
 
+    /**
+     * This export's product catalogue, keyed by {@code id} (the product's sku) - set once per
+     * {@code export()} call, same lifecycle as {@link #navScreensByRole}. Lets
+     * {@link #applyProductLinkRef} resolve a component whose link carries a product sku (e.g.
+     * {@code product.html?productId=<sku>}) against the same products this export's own
+     * {@code products[]} already computed, without a second DAM walk.
+     */
+    private Map<String, Map<String, Object>> productsById = Collections.emptyMap();
+
     ComponentTreeWalker(final ModelFactory modelFactory, final UrlService urlService,
                         final FormSchemaService formSchemaService, final StyleResolver styleResolver,
                         final ComponentMappings mappings) {
@@ -79,6 +90,20 @@ final class ComponentTreeWalker {
     /** Forwarded to the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
     void setSiteDefaults(final SiteDefaults siteDefaults) {
         this.formBuilder.setSiteDefaults(siteDefaults);
+    }
+
+    /** See {@link #productsById}. */
+    void setProducts(final List<Map<String, Object>> products) {
+        final Map<String, Map<String, Object>> byId = new LinkedHashMap<>();
+        if (products != null) {
+            for (final Map<String, Object> product : products) {
+                final Object id = product.get(SchemaConstants.KEY_ID);
+                if (id instanceof String && StringUtils.isNotBlank((String) id)) {
+                    byId.put((String) id, product);
+                }
+            }
+        }
+        this.productsById = Collections.unmodifiableMap(byId);
     }
 
     /** See {@link #navScreensByRole}. */
@@ -423,13 +448,19 @@ final class ComponentTreeWalker {
                     sink.add(list);
                     continue;
                 }
-                if (isCardsBlockEligibleForList(child)) {
-                    // Exactly a 3-card group, but not every card resolves to a real screen (or none
-                    // of them carry a link at all) - the whole block is dropped rather than falling
-                    // through to individual cards, so a client never sees a mix of live and dead
-                    // cards, or a set of cards with nowhere to go.
+                if (isCardsBlockEligibleForList(child)
+                        && !hasUnresolvedRealCardLink(child, knownScreenKeys)) {
+                    // Either no card carries a link at all (a decorative icon strip - Luma's
+                    // "feature-support" cards), or at least one resolves to a real screen and at
+                    // least one doesn't (a genuine mix) - either way the whole block is dropped
+                    // rather than falling through to individual cards, so a client never sees a mix
+                    // of live and dead cards, or a set of cards with nowhere to go.
                     continue;
                 }
+                // Every card has a real link (not the "#" a missing one defaults to), and none of
+                // them resolve to an app screen - e.g. they link out to a product page instead. Fall
+                // through to the normal per-child walk below and export each card as its own
+                // component (see applyProductLinkRef for the product-sku case).
             }
 
             // Children but nothing of its own to say: a wrapper such as an Edge Delivery cards or
@@ -484,6 +515,9 @@ final class ComponentTreeWalker {
                         // Extras come from the component's own properties only - a referenced
                         // fragment's fields that no rule targeted stay internal, not leaked as extras.
                         appendUnconsumedExtras(content, authored, mapping.consumedProperties());
+                    }
+                    if (mapping.getProductLinkRef() != null) {
+                        applyProductLinkRef(content, authored, mapping.getProductLinkRef());
                     }
                 }
             }
@@ -556,6 +590,39 @@ final class ComponentTreeWalker {
     /** {@code isCardsBlock} plus exactly three {@code card}-modelled item children. */
     private boolean isCardsBlockEligibleForList(final Resource resource) {
         return cardItemsOf(resource) != null;
+    }
+
+    /**
+     * @return true only when every one of {@code resource}'s three cards carries a real link (not
+     *         the {@code "#"} a missing one resolves to) and none of them is a known screen key -
+     *         the shape a product-linking {@code Cards} group takes. False for a decorative group
+     *         with no links at all (nothing to fall through to), and false for a genuine mix of
+     *         screen-resolving and non-resolving cards (the {@code isCardsBlockEligibleForList} call
+     *         site keeps dropping both of those, as it always has).
+     */
+    private boolean hasUnresolvedRealCardLink(final Resource resource, final Set<String> knownScreenKeys) {
+        final List<Resource> items = cardItemsOf(resource);
+        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
+        if (items == null || cardRule == null) {
+            return false;
+        }
+        boolean anyRealLink = false;
+        for (final Resource item : items) {
+            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
+            final Map<String, Object> mapped = cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
+            final Object link = mapped.get("link");
+            if (!(link instanceof String)) {
+                continue;
+            }
+            final String value = (String) link;
+            if (knownScreenKeys.contains(value)) {
+                return false;
+            }
+            if (!"#".equals(value)) {
+                anyRealLink = true;
+            }
+        }
+        return anyRealLink;
     }
 
     /**
@@ -663,6 +730,71 @@ final class ComponentTreeWalker {
         list.put(SchemaConstants.KEY_STYLES, styles);
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
+    }
+
+    /**
+     * Applies a rule's declared {@link ComponentMapping.ProductLinkRef}: a link that carries a
+     * product's sku as a query parameter (e.g. {@code product.html?productId=<sku>}) rather than
+     * pointing at an app screen (see {@link #hasUnresolvedRealCardLink}) - a rule's own {@code link}
+     * field cannot surface the sku itself (a link target's query string is cut off before the leaf
+     * segment, see {@link ComponentMapping#screenTarget}), so it is pulled independently, straight
+     * off the authored property {@code ref} names.
+     *
+     * <p>When the sku matches a product in {@link #productsById}, {@code ref}'s {@code map} fields
+     * take that product's own values, replacing whatever the rule itself resolved - the product
+     * catalogue is the authoritative source for a product's own name and image, the same precedence
+     * {@link #withContentFragmentRef} gives secur-financial's {@code product-card} block, just
+     * reached from a sku found in a link instead of an authored Content Fragment path. A component
+     * with no such link, or a sku with no matching product, is left exactly as its rule resolved it -
+     * this only ever adds data, never removes it.</p>
+     */
+    private void applyProductLinkRef(final Map<String, Object> content, final Map<String, Object> authored,
+                                     final ComponentMapping.ProductLinkRef ref) {
+        if (productsById.isEmpty()) {
+            return;
+        }
+        final Object source = authored.get(ref.getFrom());
+        if (!(source instanceof String)) {
+            return;
+        }
+        final String href = HtmlExtractor.extract((String) source, ref.getSelect(),
+                HtmlExtractor.AS_ATTRIBUTE, "href", false);
+        final String sku = queryParam(href, ref.getQueryParam());
+        if (StringUtils.isBlank(sku)) {
+            return;
+        }
+        final Map<String, Object> product = productsById.get(sku);
+        if (product == null) {
+            return;
+        }
+        for (final Map.Entry<String, String> entry : ref.getFieldMap().entrySet()) {
+            putIfNotBlank(content, entry.getKey(), product.get(entry.getValue()));
+        }
+    }
+
+    private static void putIfNotBlank(final Map<String, Object> content, final String key, final Object value) {
+        if (value instanceof String && StringUtils.isNotBlank((String) value)) {
+            content.put(key, value);
+        }
+    }
+
+    /** @return {@code param}'s value in {@code url}'s query string, or null when absent or blank. */
+    private static String queryParam(final String url, final String param) {
+        if (StringUtils.isBlank(url)) {
+            return null;
+        }
+        final String query = StringUtils.substringAfter(url, "?");
+        if (query.isEmpty()) {
+            return null;
+        }
+        for (final String pair : query.split("&")) {
+            final String key = StringUtils.substringBefore(pair, "=");
+            if (param.equals(key)) {
+                final String value = StringUtils.substringAfter(pair, "=");
+                return StringUtils.isBlank(value) ? null : URLDecoder.decode(value, StandardCharsets.UTF_8);
+            }
+        }
+        return null;
     }
 
     /**

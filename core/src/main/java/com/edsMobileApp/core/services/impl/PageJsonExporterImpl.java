@@ -130,6 +130,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // placeholders lookup should not be repeated per page.
         final String assetHost = deliveryHost();
 
+        // Built before the screens are walked (not lazily at KEY_PRODUCTS below) so a component
+        // whose link carries a product sku (see ComponentTreeWalker#applyProductLinkRef) can look
+        // its product up while the tree is being walked, rather than after. Reused at KEY_PRODUCTS
+        // too, so this is also the only DAM walk per export, not two.
+        final List<Map<String, Object>> products = productCatalog.export(envelopeSource, assetHost);
+        walker.setProducts(products);
+
         // Two different questions, deliberately answered by two different methods. The menu is what
         // an author curated on the nav page; the screens are every page the app can reach. A page
         // can be a screen without being in the menu - a plan detail page reached from a card, say -
@@ -178,7 +185,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         applyScreenThumbnailOverrides(screens, screenThumbnailOverrides, assetHost);
         app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
-        app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
+        app.put(SchemaConstants.KEY_PRODUCTS, products);
         app.put(SchemaConstants.KEY_INTEGRATIONS, buildIntegrations(envelopeSource, extras));
         app.put(SchemaConstants.KEY_PROFILE_VIEWER, buildProfileViewer(envelopeSource, extras));
 
