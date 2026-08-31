@@ -241,6 +241,11 @@ class ComponentMappingTest {
         assertEquals("card", component(exported));
         assertEquals("partial-overlay", content(exported).get("cardType"),
                 "the teaser-overlay style resolves cardType to partial-overlay");
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertNotNull(styles, "a partial-overlay card carries styles");
+        assertEquals("#ffffff", styles.get("color"),
+                "a partial-overlay card renders its text white over the image");
     }
 
     @Test
@@ -253,6 +258,10 @@ class ComponentMappingTest {
 
         assertEquals("stacked", content(exported).get("cardType"),
                 "a blank style defaults cardType to stacked");
+
+        final Map<String, Object> styles = map(exported.get("styles"));
+        assertTrue(styles == null || !styles.containsKey("color"),
+                "only partial-overlay cards force a white text color");
     }
 
     @Test

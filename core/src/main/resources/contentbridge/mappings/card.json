@@ -24,6 +24,10 @@
     { "target": "subtitleVariant", "const": "titleMedium" },
     { "target": "titleFontWeight", "const": "regular" },
     { "target": "subtitleFontWeight", "const": "regular" }
+  ],
+  "styles": [
+    { "target": "color", "from": "style",
+      "map": { "teaser-overlay": "#ffffff", "*": "" }, "nullable": true }
   ]
 }
 
