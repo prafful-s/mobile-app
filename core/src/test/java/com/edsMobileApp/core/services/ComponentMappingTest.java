@@ -147,8 +147,10 @@ class ComponentMappingTest {
         // Fixed constants, plus alignment carried through from what the author set.
         assertEquals("titleLarge", content.get("titleVariant"));
         assertEquals("cover", content.get("imageResize"));
-        assertFalse(content.containsKey("linkTo"), "const empty string is blank-filtered out");
-        assertEquals("false", content.get("showButton"));
+        assertEquals("medicare-plan-selection", content.get("linkTo"),
+                "the CTA anchor's href reduces to the leaf screen key");
+        assertEquals(Boolean.TRUE, content.get("showButton"), "the authored CTA anchor turns the button on");
+        assertEquals("contained", content.get("buttonVariant"), "ctastyle 'button' maps to the primary variant");
         assertEquals("center", content.get("contentAlignment"), "content follows the authored alignment");
         assertEquals("middle", content.get("verticalAlignment"), "authored verticalalignment maps across");
         assertEquals("left", content.get("horizontalAlignment"), "an overlay hero keeps its text left");
@@ -550,15 +552,15 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a hero's linkTo is a fixed anchor, not derived from the rich text")
+    @DisplayName("a hero's linkTo is taken from the CTA anchor href in the rich text")
     void heroLinkIsConstant() {
         context.create().page(SITE + "/placeholders", "",
                 Map.of("hostname", "https://author-p1-e2.adobeaemcloud.com"));
 
         final Map<String, Object> content = content(export(true, "model", "hero", "text", HERO_TEXT));
 
-        assertFalse(content.containsKey("linkTo"),
-                "linkTo is a const empty string and is blank-filtered out of the output");
+        assertEquals("medicare-plan-selection", content.get("linkTo"),
+                "linkTo follows the CTA anchor href, reduced to the leaf screen key");
     }
 
     @Test
@@ -943,8 +945,8 @@ class ComponentMappingTest {
         assertEquals("Sub", content.get("subtitle"));
         assertEquals("titleLarge", content.get("titleVariant"));
         assertEquals("cover", content.get("imageResize"));
-        assertFalse(content.containsKey("linkTo"), "const empty string is blank-filtered out");
-        assertEquals("false", content.get("showButton"));
+        assertFalse(content.containsKey("linkTo"), "no CTA anchor, so nullable linkTo is omitted");
+        assertEquals(Boolean.FALSE, content.get("showButton"), "no authored CTA anchor, so the button stays off");
         assertEquals("left", content.get("contentAlignment"));
         assertEquals("top", content.get("verticalAlignment"));
         assertEquals("left", content.get("horizontalAlignment"));
