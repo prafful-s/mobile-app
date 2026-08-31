@@ -3,4 +3,5 @@
     <filter root="/apps/EdsMobileApp/clientlibs"/>
     <filter root="/apps/EdsMobileApp/components"/>
     <filter root="/apps/EdsMobileApp/i18n"/>
+    <filter root="/apps/contentbridge"/>
 </workspaceFilter>
