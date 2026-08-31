@@ -50,7 +50,7 @@ final class FormBlockBuilder {
     private static final String DEFAULT_SUBMIT_LABEL = "Submit";
 
     /** Authored property names per emitted setting, most specific first. */
-    private static final String[] EVENT_TYPE_KEYS = {"eventType", "buttoneventtype", "event"};
+    private static final String[] EVENT_TYPE_KEYS = {"mobilebuttoneventtype"};
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {

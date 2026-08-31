@@ -189,7 +189,7 @@ final class EnvelopeMeta {
      * off the menu, since {@code 0} would falsely claim the first slot.</p>
      *
      * <p>Field order: icon, iconInactive, name, event, title, preset, template, customEvent,
-     * isRootScreen, navigationOrder, includeInNavigation.</p>
+     * eventType, isRootScreen, navigationOrder, includeInNavigation.</p>
      *
      * @param page       the screen
      * @param root       the site root, used to decide whether this screen is the root one
@@ -227,6 +227,10 @@ final class EnvelopeMeta {
         meta.put("template", screenTemplate(props));
 
         meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
+
+        // Page-level event type: the page's own authored mobilepageeventtype, emitted under the
+        // normalized eventType key the client reads (block-level forms use the same key name).
+        meta.put("eventType", StringUtils.defaultString(props.get("mobilepageeventtype", String.class)));
 
         meta.put("isRootScreen", StringUtils.equals(page.getPath(), root.getPath()));
 

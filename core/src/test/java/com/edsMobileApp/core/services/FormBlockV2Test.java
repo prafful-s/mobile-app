@@ -88,7 +88,7 @@ class FormBlockV2Test {
         context.build().resource(ROOT + "/signin",
                 "sling:resourceType", "core/franklin/components/block/v1/block",
                 "model", "sign-in",
-                "buttoneventtype", "login",
+                "mobilebuttoneventtype", "login",
                 "sign-in-btn-text", "Get Started");
     }
 
@@ -99,7 +99,7 @@ class FormBlockV2Test {
 
         final Map<String, Object> meta = map(form().get("meta"));
         assertEquals("form", meta.get("component"));
-        assertEquals("login", meta.get("eventType"), "authored buttoneventtype becomes eventType");
+        assertEquals("login", meta.get("eventType"), "authored mobilebuttoneventtype becomes eventType");
         assertEquals("Get Started", meta.get("submitButtonLabel"));
         assertEquals("Reset", meta.get("resetButtonLabel"));
         assertEquals(Boolean.TRUE, meta.get("hideResetButton"));
