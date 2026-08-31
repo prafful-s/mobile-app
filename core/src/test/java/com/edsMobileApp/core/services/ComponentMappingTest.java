@@ -223,8 +223,10 @@ class ComponentMappingTest {
         assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
 
         final Map<String, Object> styles = map(exported.get("styles"));
-        assertEquals("30", styles.get("marginLeft"), "every card carries a fixed left margin");
-        assertEquals("30", styles.get("marginRight"), "every card carries a fixed right margin");
+        assertTrue(styles == null || !styles.containsKey("marginLeft"),
+                "cards no longer carry a fixed left margin");
+        assertTrue(styles == null || !styles.containsKey("marginRight"),
+                "cards no longer carry a fixed right margin");
     }
 
     @Test

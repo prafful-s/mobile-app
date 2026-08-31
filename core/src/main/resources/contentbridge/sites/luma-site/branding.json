@@ -4,7 +4,7 @@
   "bodyFont": "Proxima Nova",
   "dark_logo": "https://dsn-upload.s3.us-east-2.amazonaws.com/projects/luma3-mobile-development/branding-logo-dark",
   "roundness": 4,
-  "textColor": "",
+  "textColor": "#ffffff",
   "footerLogo": "",
   "headingFont": "Proxima Nova",
   "primaryColor": "#1979C3",

@@ -16,7 +16,7 @@
     { "target": "imageResize", "from": "imageResize", "default": "contain" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
     { "target": "cardType", "from": "style",
-      "map": { "teaser-overlay": "overlay", "*": "stacked" }, "default": "stacked" },
+      "map": { "teaser-overlay": "partial-overlay", "*": "stacked" }, "default": "stacked" },
     { "target": "subtitle",
       "extract": { "from": "text", "select": "p:not(:has(a)), li", "as": "text", "all": true },
       "nullable": true },
@@ -24,10 +24,6 @@
     { "target": "subtitleVariant", "const": "titleMedium" },
     { "target": "titleFontWeight", "const": "regular" },
     { "target": "subtitleFontWeight", "const": "regular" }
-  ],
-  "styles": [
-    { "target": "marginLeft", "const": "30" },
-    { "target": "marginRight", "const": "30" }
   ]
 }
 
