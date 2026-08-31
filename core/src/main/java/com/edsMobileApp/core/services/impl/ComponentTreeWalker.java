@@ -53,6 +53,7 @@ final class ComponentTreeWalker {
     private final FormSchemaService formSchemaService;
     private final StyleResolver styleResolver;
     private final ComponentMappings mappings;
+    private final QuizSchemas quizSchemas;
     private final FormBlockBuilder formBuilder;
 
     /**
@@ -67,12 +68,13 @@ final class ComponentTreeWalker {
 
     ComponentTreeWalker(final ModelFactory modelFactory, final UrlService urlService,
                         final FormSchemaService formSchemaService, final StyleResolver styleResolver,
-                        final ComponentMappings mappings) {
+                        final ComponentMappings mappings, final QuizSchemas quizSchemas) {
         this.modelFactory = modelFactory;
         this.urlService = urlService;
         this.formSchemaService = formSchemaService;
         this.styleResolver = styleResolver;
         this.mappings = mappings == null ? ComponentMappings.EMPTY : mappings;
+        this.quizSchemas = quizSchemas == null ? QuizSchemas.EMPTY : quizSchemas;
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
@@ -438,6 +440,22 @@ final class ComponentTreeWalker {
                 // component, using whatever its own rule resolves.
             }
 
+            // A quiz block (e.g. Frescopa's coffee-quiz-frescopa) authors only its own behaviour
+            // settings - completion URL, event names, a progress toggle. Its questions, options and
+            // submit button are fixed in the block's own front-end code, not authored in AEM at all,
+            // so there is no child content here to walk. QuizSchemas holds that fixed content
+            // instead - each step is stamped with a fresh id/order and added as its own top-level
+            // component, exactly as if it had been authored as separate title/dropdown/... blocks.
+            if (hierarchical) {
+                final List<Map<String, Object>> quizSteps = quizSchemas.getSteps(model.getComponentName());
+                if (!quizSteps.isEmpty()) {
+                    for (final Map<String, Object> step : quizSteps) {
+                        sink.add(quizStepComponent(step, child.getPath(), sink.size()));
+                    }
+                    continue;
+                }
+            }
+
             // Children but nothing of its own to say: a wrapper such as an Edge Delivery cards or
             // accordion block. Exporting it would emit an empty component and hide its items.
             // Evaluated from the authored content, before any mapping, so that a rule cannot turn a
@@ -702,6 +720,34 @@ final class ComponentTreeWalker {
         list.put(SchemaConstants.KEY_STYLES, styles);
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
+    }
+
+    /**
+     * One {@link QuizSchemas} step, stamped into the shape every other component takes. The step
+     * itself already carries {@code component} and {@code content} (and, optionally, {@code
+     * styles}) - only {@code id} and {@code order} are synthesised, the same way any other
+     * non-authored component's are ({@link AbstractComponentModel#generateId}).
+     *
+     * @param resourcePath the quiz block's own path - every step shares it, so {@code order} is
+     *                     folded into the id to keep them distinct
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> quizStepComponent(final Map<String, Object> step, final String resourcePath,
+                                                   final int order) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resourcePath + "#" + order));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, step.get(SchemaConstants.KEY_COMPONENT));
+
+        final Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put(SchemaConstants.KEY_META, meta);
+        final Object styles = step.get(SchemaConstants.KEY_STYLES);
+        if (styles instanceof Map && !((Map<String, Object>) styles).isEmpty()) {
+            entry.put(SchemaConstants.KEY_STYLES, styles);
+        }
+        final Object content = step.get(SchemaConstants.KEY_CONTENT);
+        entry.put(SchemaConstants.KEY_CONTENT, content instanceof Map ? content : Collections.emptyMap());
+        return entry;
     }
 
     /**

@@ -372,6 +372,51 @@ class PageJsonExporterImplTest {
     }
 
     @Test
+    @DisplayName("a coffee-quiz-frescopa block expands into its fixed step sequence from QuizSchemas")
+    void quizBlockExpandsIntoFixedSteps() {
+        context.build().resource(
+                ContentBridgeTestContext.APP_ROOT + "/subpage-1/jcr:content/root/container/coffeeQuiz",
+                "sling:resourceType", "core/franklin/components/block/v1/block",
+                "model", "coffee-quiz-frescopa",
+                "name", "Coffee Quiz Frescopa",
+                "completion-url", "/content/frescopa/language-masters/en/quiz-results",
+                "sign-in-url", "/content/frescopa/language-masters/en/sign-in",
+                "step-event-type", "quizStep");
+
+        final List<Map<String, Object>> content = subpage1Content();
+        final List<String> components = content.stream()
+                .map(c -> String.valueOf(map(c.get("meta")).get("component")))
+                .collect(java.util.stream.Collectors.toList());
+
+        assertTrue(components.contains("dropdown"), "the quiz's steps are individual top-level "
+                + "components, not a wrapped 'form': " + components);
+        assertTrue(components.contains("formSubmitButton"));
+        assertFalse(components.contains("coffee-quiz-frescopa"),
+                "the block itself is never exported unmapped - only its synthesised steps are");
+
+        final List<Map<String, Object>> dropdowns = content.stream()
+                .filter(c -> "dropdown".equals(map(c.get("meta")).get("component")))
+                .collect(java.util.stream.Collectors.toList());
+        assertEquals(4, dropdowns.size());
+        assertEquals("quiz.favourieCoffeeLocation", map(dropdowns.get(0).get("content")).get("path"));
+        assertEquals(java.util.List.of("sand", "sunrise", "villa", "cabbin"),
+                ((List<Map<String, Object>>) map(dropdowns.get(0).get("content")).get("options")).stream()
+                        .map(o -> o.get("value")).collect(java.util.stream.Collectors.toList()));
+
+        final Map<String, Object> submit = content.stream()
+                .filter(c -> "formSubmitButton".equals(map(c.get("meta")).get("component")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a formSubmitButton step"));
+        assertEquals("quiz.complete", map(submit.get("content")).get("customEvent"));
+
+        // Every step shares the block's own resource path - ids still have to be distinct per step,
+        // same invariant every other component on the page already has to satisfy.
+        final long totalIds = content.size();
+        final long distinctIds = content.stream().map(c -> map(c.get("meta")).get("id")).distinct().count();
+        assertEquals(totalIds, distinctIds, "no two components on the page share an id: " + content);
+    }
+
+    @Test
     @DisplayName("a card authored with a Section Link property (plain text, no rich-text anchor) "
             + "resolves link from that property")
     void cardWithSectionLinkProperty() {

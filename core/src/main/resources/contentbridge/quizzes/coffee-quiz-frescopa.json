@@ -1,0 +1,122 @@
+[
+  {
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "Where would you choose to enjoy your favorite coffee?",
+      "weight": "regular",
+      "textAlignment": "left"
+    }
+  },
+  {
+    "component": "dropdown",
+    "content": {
+      "path": "quiz.favourieCoffeeLocation",
+      "formId": "coffee-quiz",
+      "options": [
+        { "label": "With your toes in the sand", "value": "sand" },
+        { "label": "Watching the sunrise", "value": "sunrise" },
+        { "label": "In a rustic villa abroad", "value": "villa" },
+        { "label": "Cozied up in a cabbin", "value": "cabbin" }
+      ],
+      "preFill": true,
+      "alignment": "left"
+    }
+  },
+  {
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "How many cups of coffee do you make a day?",
+      "weight": "regular",
+      "textAlignment": "left"
+    }
+  },
+  {
+    "component": "dropdown",
+    "content": {
+      "path": "quiz.amountOfCoffeeCups",
+      "formId": "coffee-quiz",
+      "options": [
+        { "label": "1 Cup", "value": "1cup" },
+        { "label": "2-3 Cups", "value": "23cups" },
+        { "label": "3-4 Cups", "value": "34cups" },
+        { "label": "5+ Cups", "value": "5cups" }
+      ],
+      "preFill": true,
+      "alignment": "left"
+    }
+  },
+  {
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "How do you like to make your coffee?",
+      "weight": "regular",
+      "textAlignment": "left"
+    }
+  },
+  {
+    "component": "dropdown",
+    "content": {
+      "path": "quiz.coffeeMa",
+      "formId": "coffee-quiz",
+      "options": [
+        { "label": "French Press", "value": "frenchPress" },
+        { "label": "Coffee Pods", "value": "coffeePods" },
+        { "label": "Espresso Machine", "value": "espressoMachine" },
+        { "label": "Drip Machine", "value": "dripMachine" },
+        { "label": "Pour Over", "value": "pourOver" },
+        { "label": "Moka Pot", "value": "mokaPot" }
+      ],
+      "preFill": true,
+      "alignment": "left"
+    }
+  },
+  {
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "What flavor profile describes your perfect cup?",
+      "weight": "regular",
+      "textAlignment": "left"
+    }
+  },
+  {
+    "component": "dropdown",
+    "content": {
+      "path": "quiz.favouriteFlavor",
+      "formId": "coffee-quiz",
+      "options": [
+        { "label": "Light Roast", "value": "1cup" },
+        { "label": "Dark Roast", "value": "23cups" },
+        { "label": "Herbal", "value": "34cups" },
+        { "label": "Nutty", "value": "5cups" }
+      ],
+      "preFill": true,
+      "alignment": "left"
+    }
+  },
+  {
+    "component": "formSubmitButton",
+    "content": {
+      "link": "Home",
+      "label": "SUBMIT",
+      "events": "customEvent",
+      "formId": "coffee-quiz",
+      "message": "",
+      "alignItems": "center",
+      "customEvent": "quiz.complete"
+    }
+  },
+  {
+    "component": "divider",
+    "content": {
+      "size": "M",
+      "length": "M",
+      "showLine": false,
+      "alignment": "center",
+      "orientation": "vertical"
+    }
+  }
+]
