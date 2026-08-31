@@ -118,8 +118,10 @@ class ProductCardMappingTest {
         assertEquals("https://publish-p189874-e1977911.adobeaemcloud.com"
                         + "/content/dam/secur-financial/en/images/Secure-credit-cards/card-gold.png",
                 content.get("image"), "image comes from the fragment's productImage");
-        assertEquals("Premium rewards.\nNo annual fee", content.get("subtitle"),
-                "subtitle text comes from the fragment's productDescription");
+        assertEquals("<p>Premium rewards.</p><ul><li>No annual fee</li></ul>", content.get("subtitle"),
+                "subtitle keeps the fragment's productDescription markup verbatim");
+        assertEquals(Boolean.TRUE, content.get("isSubtitleRichText"),
+                "the description is flagged as rich text so the card renders its markup");
         assertEquals("credit-card-application?productId=QCjXPYxvM", content.get("link"),
                 "link is the screen key with the fragment's sku appended as productId");
         assertEquals("stacked", content.get("cardType"));
@@ -169,7 +171,7 @@ class ProductCardMappingTest {
         assertEquals("card", map(exported.get("meta")).get("component"), "no image, but still a card");
         final Map<String, Object> content = map(exported.get("content"));
         assertEquals("SecurFinancial GOLD", content.get("title"));
-        assertEquals("Premium rewards.", content.get("subtitle"));
+        assertEquals("<p>Premium rewards.</p>", content.get("subtitle"));
         assertEquals("credit-card-application", content.get("link"));
         assertFalse(content.containsKey("image"), "no image was authored on the fragment");
     }
