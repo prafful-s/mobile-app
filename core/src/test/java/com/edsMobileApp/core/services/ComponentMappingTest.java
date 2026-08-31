@@ -563,15 +563,24 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a hero's linkTo is taken from the CTA anchor href in the rich text")
-    void heroLinkIsConstant() {
+    @DisplayName("a hero's linkTo is derived from the rich text's own <a href>, reduced to a screen key")
+    void heroLinkComesFromRichText() {
         context.create().page(SITE + "/placeholders", "",
                 Map.of("hostname", "https://author-p1-e2.adobeaemcloud.com"));
 
         final Map<String, Object> content = content(export(true, "model", "hero", "text", HERO_TEXT));
 
-        assertEquals("medicare-plan-selection", content.get("linkTo"),
-                "linkTo follows the CTA anchor href, reduced to the leaf screen key");
+        assertEquals("medicare-plan-selection", content.get("linkTo"));
+        assertEquals(Boolean.TRUE, content.get("showButton"));
+    }
+
+    @Test
+    @DisplayName("a hero with no <a> at all has no linkTo and showButton stays false")
+    void heroWithNoLinkHasNoButton() {
+        final Map<String, Object> content = content(export(true, "model", "hero", "text", "<h1>Hi</h1>"));
+
+        assertFalse(content.containsKey("linkTo"), "no anchor authored - nullable field stays absent");
+        assertEquals(Boolean.FALSE, content.get("showButton"));
     }
 
     @Test
