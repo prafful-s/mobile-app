@@ -643,6 +643,7 @@ final class ComponentTreeWalker {
         content.put("items", screenKeys);
         content.put("layout", "horizontal");
         content.put("listType", "screenList");
+        content.put("textColor", "#f4f3f3");
         content.put("imageWidth", 130);
         content.put("itemHeight", null);
         content.put("itemRadius", null);
@@ -651,9 +652,9 @@ final class ComponentTreeWalker {
         content.put("filterProperty", "Category");
         content.put("imageResizeMode", "cover");
 
-        // Text colour is left to the app's branding theme (branding.textColor / textOnImageColor).
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
+        styles.put("color", "#ffffff");
         styles.put("marginBottom", "16");
         styles.put("marginHorizontal", "8");
 
