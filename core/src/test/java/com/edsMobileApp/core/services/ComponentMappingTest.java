@@ -230,7 +230,7 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a card styled teaser-overlay maps its cardType to overlay")
+    @DisplayName("a card styled teaser-overlay maps its cardType to partial-overlay")
     void cardTeaserOverlayBecomesOverlay() {
         final Map<String, Object> exported = export(true,
                 "model", "card",
@@ -239,8 +239,8 @@ class ComponentMappingTest {
                 "style", "teaser-overlay");
 
         assertEquals("card", component(exported));
-        assertEquals("overlay", content(exported).get("cardType"),
-                "the teaser-overlay style resolves cardType to overlay");
+        assertEquals("partial-overlay", content(exported).get("cardType"),
+                "the teaser-overlay style resolves cardType to partial-overlay");
     }
 
     @Test
