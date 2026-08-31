@@ -195,13 +195,22 @@ final class FieldRule {
         return constant != null ? null : coerce(translate(resolve(source, parentSource)));
     }
 
-    /** Looks the resolved value up in {@code map}; unmapped or absent-map values pass through as-is. */
+    /**
+     * Looks the resolved value up in {@code map}. An exact key wins; otherwise a {@code "*"}
+     * wildcard entry, when present, catches every other non-blank value (so a rule can translate
+     * one authored token to a target value and collapse all the rest to a single default). With
+     * neither an exact match nor a {@code "*"} entry the value passes through unchanged.
+     */
     private Object translate(final Object value) {
         if (valueMap == null || value == null) {
             return value;
         }
         final Object mapped = valueMap.get(String.valueOf(value));
-        return mapped != null ? mapped : value;
+        if (mapped != null) {
+            return mapped;
+        }
+        final Object wildcard = valueMap.get("*");
+        return wildcard != null ? wildcard : value;
     }
 
     /** The value to use when nothing was authored: the constant, or the declared default. */

@@ -199,6 +199,32 @@ class ComponentMappingTest {
     }
 
     @Test
+    @DisplayName("a card styled teaser-overlay maps its cardType to overlay")
+    void cardTeaserOverlayBecomesOverlay() {
+        final Map<String, Object> exported = export(true,
+                "model", "card",
+                "image", "/content/dam/we-healthcare/en/images/family.jpeg",
+                "text", "<h2>Women</h2>\n<p><a href=\"/content/x/women\">Shop</a></p>",
+                "style", "teaser-overlay");
+
+        assertEquals("card", component(exported));
+        assertEquals("overlay", content(exported).get("cardType"),
+                "the teaser-overlay style resolves cardType to overlay");
+    }
+
+    @Test
+    @DisplayName("a card with no style falls back to a stacked cardType")
+    void cardWithoutStyleStaysStacked() {
+        final Map<String, Object> exported = export(true,
+                "model", "card",
+                "image", "/content/dam/we-healthcare/en/images/family.jpeg",
+                "text", "<h2>Men</h2>\n<p><a href=\"/content/x/men\">Shop</a></p>");
+
+        assertEquals("stacked", content(exported).get("cardType"),
+                "a blank style defaults cardType to stacked");
+    }
+
+    @Test
     @DisplayName("a card with no anchor in its text falls back to a '#' link")
     void cardLinkDefaultsToHash() {
         final Map<String, Object> exported = export(true,
