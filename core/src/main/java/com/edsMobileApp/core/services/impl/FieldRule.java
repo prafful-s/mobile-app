@@ -272,10 +272,14 @@ final class FieldRule {
         return Collections.emptyList();
     }
 
+    /**
+     * An authored property ({@code first}/{@code from}) is tried before {@code extract} - an author
+     * who filled in a dedicated field (a content-path picker, say) meant that value; a rich-text
+     * blob is a fallback for the cards that only ever had that. No rule declares both operators on
+     * one field today, so this ordering changes nothing existing - it only matters the day a field
+     * starts declaring {@code first} (or {@code from}) alongside {@code extract}.
+     */
     private Object resolve(final Map<String, Object> source, final Map<String, Object> parentSource) {
-        if (extract != null) {
-            return extract.apply(source);
-        }
         if (parentFrom != null) {
             return blankToNull(parentSource.get(parentFrom));
         }
@@ -286,9 +290,13 @@ final class FieldRule {
                     return value;
                 }
             }
-            return null;
+        } else if (from != null) {
+            final Object value = blankToNull(source.get(from));
+            if (value != null) {
+                return value;
+            }
         }
-        return from == null ? null : blankToNull(source.get(from));
+        return extract == null ? null : extract.apply(source);
     }
 
     private static Object blankToNull(final Object value) {

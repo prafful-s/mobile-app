@@ -2,12 +2,6 @@
   "match": ["card"],
   "component": "card",
   "requires": "image",
-  "productLinkRef": {
-    "from": "text",
-    "select": "a",
-    "queryParam": "productId",
-    "map": { "title": "name", "image": "image", "subtitle": "description" }
-  },
   "fallback": {
     "component": "htmlText",
     "fields": [
@@ -16,6 +10,7 @@
   },
   "fields": [
     { "target": "link",
+      "first": ["link"],
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "default": "#" },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },

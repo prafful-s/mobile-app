@@ -371,52 +371,35 @@ class PageJsonExporterImplTest {
                 "the block itself is not exported unmapped just because it carries 'classes'");
     }
 
-    private static final String PRODUCT_MODEL =
-            "/conf/secur-financial/settings/dam/cfm/models/secur-financial-product";
-    private static final String PRODUCT_FRAGMENTS = "/content/dam/contentbridge/en/fragments";
+    @Test
+    @DisplayName("a card authored with a Section Link property (plain text, no rich-text anchor) "
+            + "resolves link from that property")
+    void cardWithSectionLinkProperty() {
+        context.build().resource(
+                ContentBridgeTestContext.APP_ROOT + "/subpage-1/jcr:content/root/container/bundlesCard",
+                "sling:resourceType", "core/franklin/components/block/v1/block/item",
+                "model", "card",
+                "image", "/content/dam/contentbridge/images/bundles-icon.png",
+                "text", "Bundles",
+                "link", ContentBridgeTestContext.APP_ROOT + "/coffee");
 
-    /** Authors one product Content Fragment under the site's DAM tree - mirrors ProductCatalogTest. */
-    private void product(final String folder, final Object... elements) {
-        final String base = PRODUCT_FRAGMENTS + "/" + folder;
-        context.build().resource(base, "jcr:primaryType", "dam:Asset");
-        context.build().resource(base + "/jcr:content",
-                "jcr:primaryType", "dam:AssetContent", "contentFragment", true);
-        context.build().resource(base + "/jcr:content/data", "cq:model", PRODUCT_MODEL);
-        context.build().resource(base + "/jcr:content/data/master", elements);
+        final Map<String, Object> card = subpage1Content().stream()
+                .filter(c -> "card".equals(map(c.get("meta")).get("component")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a card component"));
+
+        assertEquals("coffee", map(card.get("content")).get("link"),
+                "the Section Link property's leaf wins over the (absent) rich-text anchor");
     }
 
     @Test
     @DisplayName("a 3-card block linking to product pages falls through to individual cards, "
-            + "enriched from the matching product's own Content Fragment")
-    void cardsBlockWithProductLinksFallsThroughEnrichedFromCatalog() {
-        product("coffee/exotic-vibes",
-                "productSku", "SKU1",
-                "productName", "Exotic Vibes - Medium Roast (Catalog Name)",
-                "productDescription", "Catalog description for Exotic Vibes.",
-                "productImage", "/content/dam/contentbridge/en/images/exotic-vibes.jpg");
-
-        final String base = ContentBridgeTestContext.APP_ROOT + "/subpage-1/jcr:content/root/container/cardsBlock";
-        context.build().resource(base,
-                "sling:resourceType", "core/franklin/components/block/v1/block",
-                "filter", "cards",
-                "name", "Cards");
-        context.build().resource(base + "/item0",
-                "sling:resourceType", "core/franklin/components/block/v1/block/item",
-                "model", "card",
-                "image", "/content/dam/contentbridge/images/exotic-vibes-authored.png",
-                "text", "<h3>Exotic Vibes - Medium Roast</h3>"
-                        + "<p><a href=\"/product.html?productId=SKU1\" title=\"Shop Now\">Shop Now</a></p>");
-        context.build().resource(base + "/item1",
-                "sling:resourceType", "core/franklin/components/block/v1/block/item",
-                "model", "card",
-                "image", "/content/dam/contentbridge/images/no-match.png",
-                "text", "<h3>No Matching Product</h3>"
-                        + "<p><a href=\"/product.html?productId=SKU-UNKNOWN\">Shop Now</a></p>");
-        context.build().resource(base + "/item2",
-                "sling:resourceType", "core/franklin/components/block/v1/block/item",
-                "model", "card",
-                "image", "/content/dam/contentbridge/images/no-link.png",
-                "text", "<h3>No Link At All</h3><p>Just text</p>");
+            + "each keeping its own authored fields and a clean link with the sku restored")
+    void cardsBlockWithProductLinksFallsThroughWithAuthoredFields() {
+        buildCardsBlock(
+                "/product.html?productId=_fIgob5sZR",
+                "/product.html?productId=vNk3tQP1b",
+                "");
 
         final List<Map<String, Object>> content = subpage1Content();
         assertTrue(content.stream().noneMatch(c -> "list".equals(map(c.get("meta")).get("component"))),
@@ -427,25 +410,14 @@ class PageJsonExporterImplTest {
                 .collect(java.util.stream.Collectors.toList());
         assertEquals(3, cards.size(), "all three cards fall through individually: " + content);
 
-        final Map<String, Object> matched = map(cards.get(0).get("content"));
-        assertEquals("Exotic Vibes - Medium Roast (Catalog Name)", matched.get("title"),
-                "the catalog product's own name wins over the authored h3");
-        assertEquals(ContentBridgeTestContext.PUBLISH_DOMAIN
-                        + "/content/dam/contentbridge/en/images/exotic-vibes.jpg", matched.get("image"),
-                "the catalog product's own image wins over the card's authored image");
-        assertEquals("Catalog description for Exotic Vibes.", matched.get("subtitle"));
-        assertEquals("product.html?productId=SKU1", matched.get("link"),
-                "the productId screenTarget cuts off is re-appended onto the leaf");
+        final Map<String, Object> first = map(cards.get(0).get("content"));
+        assertEquals("product?productId=_fIgob5sZR", first.get("link"),
+                "the leaf's .html is dropped and the authored query string is kept as-is");
 
-        final Map<String, Object> unmatched = map(cards.get(1).get("content"));
-        assertEquals("No Matching Product", unmatched.get("title"),
-                "a sku with no matching product is left exactly as the card rule resolved it");
-        assertEquals("product.html?productId=SKU-UNKNOWN", unmatched.get("link"),
-                "the productId is restored even without a catalog match - it was authored, not invented");
+        final Map<String, Object> second = map(cards.get(1).get("content"));
+        assertEquals("product?productId=vNk3tQP1b", second.get("link"));
 
         final Map<String, Object> noLink = map(cards.get(2).get("content"));
-        assertEquals("No Link At All", noLink.get("title"),
-                "a card with no product link at all is untouched by the enrichment");
         assertEquals("#", noLink.get("link"), "no href authored - link stays the rule's own default");
     }
 }

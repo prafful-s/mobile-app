@@ -128,6 +128,28 @@ class FieldRuleTest {
     }
 
     @Test
+    @DisplayName("first is tried before extract; extract is the fallback when the property is blank")
+    void firstBeforeExtractFallback() {
+        final FieldRule rule = FieldRule.of(Map.of(
+                "target", "link",
+                "first", List.of("link"),
+                "extract", Map.of("from", "text", "select", "a", "as", "attr", "attribute", "href")));
+
+        assertEquals("/content/frescopa/language-masters/en/machines", rule.fromSource(
+                Map.of("link", "/content/frescopa/language-masters/en/machines",
+                        "text", "<p><a href=\"/content/should-not-win\">x</a></p>"),
+                Map.of()),
+                "the authored link property wins even though text also has an anchor");
+
+        assertEquals("/content/rich-text-href", rule.fromSource(
+                Map.of("text", "<p><a href=\"/content/rich-text-href\">x</a></p>"), Map.of()),
+                "no link property authored - falls back to the rich-text anchor");
+
+        assertEquals(null, rule.fromSource(Map.of(), Map.of()),
+                "neither authored - resolves to nothing, caller applies its own default");
+    }
+
+    @Test
     @DisplayName("nullable defaults to false, opts in when set")
     void nullable() {
         final FieldRule off = FieldRule.of(Map.of("target", "subtitle", "from", "subtitle"));

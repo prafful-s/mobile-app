@@ -1,7 +1,5 @@
 package com.edsMobileApp.core.services.impl;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -67,15 +65,6 @@ final class ComponentTreeWalker {
      */
     private Map<String, String> navScreensByRole = Collections.emptyMap();
 
-    /**
-     * This export's product catalogue, keyed by {@code id} (the product's sku) - set once per
-     * {@code export()} call, same lifecycle as {@link #navScreensByRole}. Lets
-     * {@link #applyProductLinkRef} resolve a component whose link carries a product sku (e.g.
-     * {@code product.html?productId=<sku>}) against the same products this export's own
-     * {@code products[]} already computed, without a second DAM walk.
-     */
-    private Map<String, Map<String, Object>> productsById = Collections.emptyMap();
-
     ComponentTreeWalker(final ModelFactory modelFactory, final UrlService urlService,
                         final FormSchemaService formSchemaService, final StyleResolver styleResolver,
                         final ComponentMappings mappings) {
@@ -90,20 +79,6 @@ final class ComponentTreeWalker {
     /** Forwarded to the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
     void setSiteDefaults(final SiteDefaults siteDefaults) {
         this.formBuilder.setSiteDefaults(siteDefaults);
-    }
-
-    /** See {@link #productsById}. */
-    void setProducts(final List<Map<String, Object>> products) {
-        final Map<String, Map<String, Object>> byId = new LinkedHashMap<>();
-        if (products != null) {
-            for (final Map<String, Object> product : products) {
-                final Object id = product.get(SchemaConstants.KEY_ID);
-                if (id instanceof String && StringUtils.isNotBlank((String) id)) {
-                    byId.put((String) id, product);
-                }
-            }
-        }
-        this.productsById = Collections.unmodifiableMap(byId);
     }
 
     /** See {@link #navScreensByRole}. */
@@ -460,7 +435,7 @@ final class ComponentTreeWalker {
                 // Every card has a real link (not the "#" a missing one defaults to), and none of
                 // them resolve to an app screen - e.g. they link out to a product page instead. Fall
                 // through to the normal per-child walk below and export each card as its own
-                // component (see applyProductLinkRef for the product-sku case).
+                // component, using whatever its own rule resolves.
             }
 
             // Children but nothing of its own to say: a wrapper such as an Edge Delivery cards or
@@ -515,9 +490,6 @@ final class ComponentTreeWalker {
                         // Extras come from the component's own properties only - a referenced
                         // fragment's fields that no rule targeted stay internal, not leaked as extras.
                         appendUnconsumedExtras(content, authored, mapping.consumedProperties());
-                    }
-                    if (mapping.getProductLinkRef() != null) {
-                        applyProductLinkRef(content, authored, mapping.getProductLinkRef());
                     }
                 }
             }
@@ -730,96 +702,6 @@ final class ComponentTreeWalker {
         list.put(SchemaConstants.KEY_STYLES, styles);
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
-    }
-
-    /**
-     * Applies a rule's declared {@link ComponentMapping.ProductLinkRef}: a link that carries a
-     * product's sku as a query parameter (e.g. {@code product.html?productId=<sku>}) rather than
-     * pointing at an app screen (see {@link #hasUnresolvedRealCardLink}) - a rule's own {@code link}
-     * field cannot surface the sku itself (a link target's query string is cut off before the leaf
-     * segment, see {@link ComponentMapping#screenTarget}), so it is pulled independently, straight
-     * off the authored property {@code ref} names.
-     *
-     * <p>{@code screenTarget} cuts {@code link}/{@code linkTo} down to a bare leaf, discarding the
-     * query string the sku came from - same problem {@code linkQuery} solves for
-     * {@code contentFragmentRef} rules, but {@code linkQuery} reads its parameter off an authored
-     * property merged into {@code source}, and nothing merges the sku there for a link-embedded one.
-     * So the sku this method already extracted is re-appended onto {@code content}'s own
-     * {@code link}/{@code linkTo} directly - restoring what was authored, not inventing anything -
-     * whether or not it goes on to match a catalogue product below.</p>
-     *
-     * <p>When the sku matches a product in {@link #productsById}, {@code ref}'s {@code map} fields
-     * take that product's own values, replacing whatever the rule itself resolved - the product
-     * catalogue is the authoritative source for a product's own name and image, the same precedence
-     * {@link #withContentFragmentRef} gives secur-financial's {@code product-card} block, just
-     * reached from a sku found in a link instead of an authored Content Fragment path. A component
-     * with no such link, or a sku with no matching product, is left exactly as its rule resolved it -
-     * this only ever adds data, never removes it.</p>
-     */
-    private void applyProductLinkRef(final Map<String, Object> content, final Map<String, Object> authored,
-                                     final ComponentMapping.ProductLinkRef ref) {
-        if (productsById.isEmpty()) {
-            return;
-        }
-        final Object source = authored.get(ref.getFrom());
-        if (!(source instanceof String)) {
-            return;
-        }
-        final String href = HtmlExtractor.extract((String) source, ref.getSelect(),
-                HtmlExtractor.AS_ATTRIBUTE, "href", false);
-        final String sku = queryParam(href, ref.getQueryParam());
-        if (StringUtils.isBlank(sku)) {
-            return;
-        }
-        appendQueryParam(content, "link", ref.getQueryParam(), sku);
-        appendQueryParam(content, "linkTo", ref.getQueryParam(), sku);
-
-        final Map<String, Object> product = productsById.get(sku);
-        if (product == null) {
-            return;
-        }
-        for (final Map.Entry<String, String> entry : ref.getFieldMap().entrySet()) {
-            putIfNotBlank(content, entry.getKey(), product.get(entry.getValue()));
-        }
-    }
-
-    /**
-     * Re-appends {@code ?param=value} onto {@code content[key]} when it is a plain leaf (no query
-     * string of its own already) - undoes {@link ComponentMapping#screenTarget}'s unconditional cut,
-     * for the one case ({@link #applyProductLinkRef}) that needs the query string back.
-     */
-    private static void appendQueryParam(final Map<String, Object> content, final String key,
-                                         final String param, final String value) {
-        final Object link = content.get(key);
-        if (link instanceof String && StringUtils.isNotBlank((String) link)
-                && ((String) link).indexOf('?') < 0) {
-            content.put(key, link + "?" + param + "=" + value);
-        }
-    }
-
-    private static void putIfNotBlank(final Map<String, Object> content, final String key, final Object value) {
-        if (value instanceof String && StringUtils.isNotBlank((String) value)) {
-            content.put(key, value);
-        }
-    }
-
-    /** @return {@code param}'s value in {@code url}'s query string, or null when absent or blank. */
-    private static String queryParam(final String url, final String param) {
-        if (StringUtils.isBlank(url)) {
-            return null;
-        }
-        final String query = StringUtils.substringAfter(url, "?");
-        if (query.isEmpty()) {
-            return null;
-        }
-        for (final String pair : query.split("&")) {
-            final String key = StringUtils.substringBefore(pair, "=");
-            if (param.equals(key)) {
-                final String value = StringUtils.substringAfter(pair, "=");
-                return StringUtils.isBlank(value) ? null : URLDecoder.decode(value, StandardCharsets.UTF_8);
-            }
-        }
-        return null;
     }
 
     /**
