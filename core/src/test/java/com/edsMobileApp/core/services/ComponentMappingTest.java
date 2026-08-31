@@ -144,18 +144,45 @@ class ComponentMappingTest {
                         + "/content/dam/we-healthcare/en/images/banner-medicare-hero.jpg",
                 content.get("image"));
 
-        // Every hero renders with this fixed set of constants regardless of what was authored.
+        // Fixed constants, plus alignment carried through from what the author set.
         assertEquals("titleLarge", content.get("titleVariant"));
         assertEquals("cover", content.get("imageResize"));
         assertFalse(content.containsKey("linkTo"), "const empty string is blank-filtered out");
         assertEquals("false", content.get("showButton"));
-        assertEquals("left", content.get("horizontalAlignment"));
-        assertEquals(" top", content.get("verticalAlignment"));
-        assertEquals("left", content.get("contentAlignment"));
+        assertEquals("center", content.get("contentAlignment"), "content follows the authored alignment");
+        assertEquals("middle", content.get("verticalAlignment"), "authored verticalalignment maps across");
+        assertEquals("left", content.get("horizontalAlignment"), "an overlay hero keeps its text left");
+        assertEquals(0.5, content.get("opacity"), "textoverlay defaults to the 50% overlay");
 
         assertFalse(content.containsKey("text"), "the source blob must not survive alongside its parts");
         assertFalse(content.containsKey("herolayout"), "unconsumed authored fields no longer pass through");
         assertFalse(content.containsKey("isfullwidth"), "unconsumed authored fields no longer pass through");
+    }
+
+    @Test
+    @DisplayName("a hero with its text overlay switched off drops the banner overlay to zero")
+    void heroTextOverlayOffZeroesOpacity() {
+        final Map<String, Object> exported = export(true,
+                "model", "hero",
+                "image", "/content/dam/x/hero.jpg",
+                "text", "<h1>Hi</h1>",
+                "textoverlay", "false");
+
+        assertEquals(0, ((Number) content(exported).get("opacity")).intValue(),
+                "textoverlay=false removes the overlay tint");
+    }
+
+    @Test
+    @DisplayName("an image-left hero pushes its text to the right of the image")
+    void heroImageLeftAlignsTextRight() {
+        final Map<String, Object> exported = export(true,
+                "model", "hero",
+                "image", "/content/dam/x/hero.jpg",
+                "text", "<h1>Hi</h1>",
+                "herolayout", "image-left");
+
+        assertEquals("right", content(exported).get("horizontalAlignment"),
+                "image on the left puts the text on the right");
     }
 
     @Test
@@ -919,7 +946,7 @@ class ComponentMappingTest {
         assertFalse(content.containsKey("linkTo"), "const empty string is blank-filtered out");
         assertEquals("false", content.get("showButton"));
         assertEquals("left", content.get("contentAlignment"));
-        assertEquals(" top", content.get("verticalAlignment"));
+        assertEquals("top", content.get("verticalAlignment"));
         assertEquals("left", content.get("horizontalAlignment"));
 
         assertFalse(content.containsKey("someAuthoredExtra"), "extras no longer pass through");

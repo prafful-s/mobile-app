@@ -16,9 +16,13 @@
     { "target": "imageResize", "const": "cover" },
     { "target": "linkTo", "const": "" },
     { "target": "showButton", "const": "false" },
-    { "target": "horizontalAlignment", "const": "left" },
-    { "target": "verticalAlignment", "const": " top" },
-    { "target": "contentAlignment", "const": "left" }
+    { "target": "horizontalAlignment", "from": "herolayout",
+      "map": { "image-left": "right", "image-background-text-right": "right", "*": "left" },
+      "default": "left" },
+    { "target": "verticalAlignment", "from": "verticalalignment", "default": "top" },
+    { "target": "contentAlignment", "from": "alignment", "default": "left" },
+    { "target": "opacity", "from": "textoverlay", "type": "number",
+      "map": { "true": 0.5, "false": 0 }, "default": 0.5 }
   ],
   "styles": [
     { "target": "gap", "const": 8 },
