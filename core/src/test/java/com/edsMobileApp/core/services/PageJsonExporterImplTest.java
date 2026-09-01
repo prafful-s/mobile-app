@@ -390,7 +390,8 @@ class PageJsonExporterImplTest {
 
         assertTrue(components.contains("dropdown"), "the quiz's steps are individual top-level "
                 + "components, not a wrapped 'form': " + components);
-        assertTrue(components.contains("formSubmitButton"));
+        assertTrue(components.contains("button"), "the submit step is a real, registered 'button' - "
+                + "'formSubmitButton' is not a component the client renders");
         assertFalse(components.contains("coffee-quiz-frescopa"),
                 "the block itself is never exported unmapped - only its synthesised steps are");
 
@@ -404,10 +405,12 @@ class PageJsonExporterImplTest {
                         .map(o -> o.get("value")).collect(java.util.stream.Collectors.toList()));
 
         final Map<String, Object> submit = content.stream()
-                .filter(c -> "formSubmitButton".equals(map(c.get("meta")).get("component")))
+                .filter(c -> "button".equals(map(c.get("meta")).get("component"))
+                        && "SUBMIT".equals(map(c.get("content")).get("label")))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("expected a formSubmitButton step"));
+                .orElseThrow(() -> new AssertionError("expected a submit button step"));
         assertEquals("quiz.complete", map(submit.get("content")).get("customEvent"));
+        assertEquals("Home", map(submit.get("content")).get("linkTo"));
 
         // Every step shares the block's own resource path - ids still have to be distinct per step,
         // same invariant every other component on the page already has to satisfy.
