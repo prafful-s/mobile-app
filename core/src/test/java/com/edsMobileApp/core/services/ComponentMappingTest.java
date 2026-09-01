@@ -230,7 +230,7 @@ class ComponentMappingTest {
     }
 
     @Test
-    @DisplayName("a card styled teaser-overlay maps its cardType to partial-overlay")
+    @DisplayName("a card styled teaser-overlay maps its cardType to overlay")
     void cardTeaserOverlayBecomesOverlay() {
         final Map<String, Object> exported = export(true,
                 "model", "card",
@@ -239,13 +239,47 @@ class ComponentMappingTest {
                 "style", "teaser-overlay");
 
         assertEquals("card", component(exported));
-        assertEquals("partial-overlay", content(exported).get("cardType"),
-                "the teaser-overlay style resolves cardType to partial-overlay");
+        assertEquals("overlay", content(exported).get("cardType"),
+                "the teaser-overlay style resolves cardType to overlay");
 
         final Map<String, Object> styles = map(exported.get("styles"));
-        assertNotNull(styles, "a partial-overlay card carries styles");
+        assertNotNull(styles, "an overlay card carries styles");
         assertEquals("#ffffff", styles.get("color"),
-                "a partial-overlay card renders its text white over the image");
+                "an overlay card renders its text white over the image");
+    }
+
+    @Test
+    @DisplayName("a card styled teaser-card maps its cardType to partial-overlay")
+    void cardTeaserCardBecomesPartialOverlay() {
+        final Map<String, Object> exported = export(true,
+                "model", "card",
+                "image", "/content/dam/we-healthcare/en/images/family.jpeg",
+                "text", "<h2>Women</h2>\n<p><a href=\"/content/x/women\">Shop</a></p>",
+                "style", "teaser-card");
+
+        assertEquals("card", component(exported));
+        assertEquals("partial-overlay", content(exported).get("cardType"),
+                "the teaser-card style resolves cardType to partial-overlay");
+    }
+
+    @Test
+    @DisplayName("a card styled image-left or image-right maps its cardType to image-text-one-line")
+    void cardImageSideBySideBecomesOneLine() {
+        final Map<String, Object> left = export(true,
+                "model", "card",
+                "image", "/content/dam/we-healthcare/en/images/family.jpeg",
+                "text", "<h2>Women</h2>\n<p><a href=\"/content/x/women\">Shop</a></p>",
+                "style", "image-left");
+        assertEquals("image-text-one-line", content(left).get("cardType"),
+                "the image-left style lays image and text side by side");
+
+        final Map<String, Object> right = export(true,
+                "model", "card",
+                "image", "/content/dam/we-healthcare/en/images/family.jpeg",
+                "text", "<h2>Women</h2>\n<p><a href=\"/content/x/women\">Shop</a></p>",
+                "style", "image-right");
+        assertEquals("image-text-one-line", content(right).get("cardType"),
+                "the image-right style lays image and text side by side");
     }
 
     @Test
