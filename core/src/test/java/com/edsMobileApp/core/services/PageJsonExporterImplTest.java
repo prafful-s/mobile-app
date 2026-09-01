@@ -410,7 +410,7 @@ class PageJsonExporterImplTest {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("expected a submit button step"));
         assertEquals("quiz.complete", map(submit.get("content")).get("customEvent"));
-        assertEquals("Home", map(submit.get("content")).get("linkTo"));
+        assertEquals("Home", map(submit.get("content")).get("link"));
 
         // Every step shares the block's own resource path - ids still have to be distinct per step,
         // same invariant every other component on the page already has to satisfy.

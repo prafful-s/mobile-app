@@ -104,7 +104,7 @@
       "label": "SUBMIT",
       "events": "customEvent",
       "formId": "coffee-quiz",
-      "linkTo": "Home",
+      "link": "Home",
       "message": "",
       "variant": "contained",
       "alignment": "center",
