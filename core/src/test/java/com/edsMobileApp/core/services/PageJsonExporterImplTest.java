@@ -372,7 +372,7 @@ class PageJsonExporterImplTest {
     }
 
     @Test
-    @DisplayName("a coffee-quiz-frescopa block expands into its fixed step sequence from QuizSchemas")
+    @DisplayName("a coffee-quiz-frescopa block expands into its fixed step sequence from its bundled schema")
     void quizBlockExpandsIntoFixedSteps() {
         context.build().resource(
                 ContentBridgeTestContext.APP_ROOT + "/subpage-1/jcr:content/root/container/coffeeQuiz",

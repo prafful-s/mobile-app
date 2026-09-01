@@ -54,7 +54,7 @@ class FormSchemaServiceTest {
     @Test
     @DisplayName("every shipped schema is discovered")
     void allSchemasLoad() {
-        assertEquals(20, service.getFormNames().size(), service.getFormNames().toString());
+        assertEquals(21, service.getFormNames().size(), service.getFormNames().toString());
     }
 
     @Test
@@ -132,9 +132,13 @@ class FormSchemaServiceTest {
         final java.util.Set<String> types = java.util.Set.of(
                 "text", "select", "checkbox", "radio", "file", "password", "date", "heading", "link");
 
-        service.getFormNames().forEach(form -> service.getSchema(form).forEach(field ->
-                assertTrue(types.contains(field.get("type")),
-                        form + "." + field.get("id") + " has unexpected type " + field.get("type"))));
+        service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
+            if (isQuizStep(field)) {
+                return;
+            }
+            assertTrue(types.contains(field.get("type")),
+                    form + "." + field.get("id") + " has unexpected type " + field.get("type"));
+        }));
     }
 
     @Test
@@ -144,11 +148,24 @@ class FormSchemaServiceTest {
         // value the user supplies, so neither has a path in the profile model to name.
         final java.util.Set<String> namelessTypes = java.util.Set.of("heading", "link");
         service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
+            if (isQuizStep(field)) {
+                return;
+            }
             assertNotNull(field.get("id"), form + " has a field with no id");
             if (!namelessTypes.contains(field.get("type"))) {
                 assertNotNull(field.get("name"), form + "." + field.get("id") + " has no name");
             }
         }));
+    }
+
+    /**
+     * True for a quiz's fixed step (see {@code ComponentTreeWalker#isQuizSchema}) rather than a real
+     * form's field - it names a {@code component} the walker emits directly, not a {@code type}
+     * {@link com.edsMobileApp.core.services.impl.FormFieldFactory} interprets, so the field-vocabulary
+     * checks below do not apply to it.
+     */
+    private static boolean isQuizStep(final Map<String, Object> field) {
+        return field.get("type") == null && field.get("component") != null;
     }
 
     @Test
@@ -158,6 +175,9 @@ class FormSchemaServiceTest {
         final java.util.Set<String> needsOptions = java.util.Set.of("select", "radio", "checkbox");
 
         service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
+            if (isQuizStep(field)) {
+                return;
+            }
             if (needsOptions.contains(field.get("type"))) {
                 final Object options = field.get("options");
                 assertTrue(options instanceof List && !((List<?>) options).isEmpty(),

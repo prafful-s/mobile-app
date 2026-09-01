@@ -83,7 +83,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
-                new StyleResolver(config.styleTokens()), ComponentMappings.load(), QuizSchemas.load());
+                new StyleResolver(config.styleTokens()), ComponentMappings.load());
         this.siteBranding = SiteBranding.load();
         this.siteProfileViewer = SiteProfileViewer.load();
         this.siteIntegrations = SiteIntegrations.load();
@@ -746,7 +746,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * empty once their other children are removed. Extend {@link #ENABLED_COMPONENTS} as more
      * mappings are re-enabled; remove this call and method when the full component set is restored.
      */
-    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list", "title", "image", "button", "productCard", "cartSummary");
+    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
+            "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {

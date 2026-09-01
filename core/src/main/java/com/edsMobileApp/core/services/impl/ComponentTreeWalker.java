@@ -53,7 +53,6 @@ final class ComponentTreeWalker {
     private final FormSchemaService formSchemaService;
     private final StyleResolver styleResolver;
     private final ComponentMappings mappings;
-    private final QuizSchemas quizSchemas;
     private final FormBlockBuilder formBuilder;
 
     /**
@@ -68,13 +67,12 @@ final class ComponentTreeWalker {
 
     ComponentTreeWalker(final ModelFactory modelFactory, final UrlService urlService,
                         final FormSchemaService formSchemaService, final StyleResolver styleResolver,
-                        final ComponentMappings mappings, final QuizSchemas quizSchemas) {
+                        final ComponentMappings mappings) {
         this.modelFactory = modelFactory;
         this.urlService = urlService;
         this.formSchemaService = formSchemaService;
         this.styleResolver = styleResolver;
         this.mappings = mappings == null ? ComponentMappings.EMPTY : mappings;
-        this.quizSchemas = quizSchemas == null ? QuizSchemas.EMPTY : quizSchemas;
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
@@ -443,13 +441,16 @@ final class ComponentTreeWalker {
             // A quiz block (e.g. Frescopa's coffee-quiz-frescopa) authors only its own behaviour
             // settings - completion URL, event names, a progress toggle. Its questions, options and
             // submit button are fixed in the block's own front-end code, not authored in AEM at all,
-            // so there is no child content here to walk. QuizSchemas holds that fixed content
-            // instead - each step is stamped with a fresh id/order and added as its own top-level
-            // component, exactly as if it had been authored as separate title/dropdown/... blocks.
+            // so there is no child content here to walk. Its bundled schema (contentbridge/forms/,
+            // same as every other form) holds that fixed content instead - but unlike a real form's
+            // fields, a quiz step is already the exact component shape the export emits (see
+            // isQuizSchema), so each one is stamped with a fresh id/order and added as its own
+            // top-level component here, rather than going through isFormBlock/FormBlockBuilder below
+            // and being wrapped into one 'form' component the way an actual submitted field list is.
             if (hierarchical) {
-                final List<Map<String, Object>> quizSteps = quizSchemas.getSteps(model.getComponentName());
-                if (!quizSteps.isEmpty()) {
-                    for (final Map<String, Object> step : quizSteps) {
+                final List<Map<String, Object>> schema = formSchemaService.getSchema(model.getComponentName());
+                if (isQuizSchema(schema)) {
+                    for (final Map<String, Object> step : schema) {
                         sink.add(quizStepComponent(step, child.getPath(), sink.size()));
                     }
                     continue;
@@ -723,10 +724,29 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * One {@link QuizSchemas} step, stamped into the shape every other component takes. The step
-     * itself already carries {@code component} and {@code content} (and, optionally, {@code
-     * styles}) - only {@code id} and {@code order} are synthesised, the same way any other
-     * non-authored component's are ({@link AbstractComponentModel#generateId}).
+     * True when {@code schema} is a quiz's fixed step list rather than a real form's field list -
+     * every entry names a {@code component} (the shape this class emits directly) instead of a
+     * {@code type} (the shape {@link FormFieldFactory} interprets). Empty for a block with no
+     * bundled schema at all, so the caller's own {@code isEmpty()}-shaped check still works: a block
+     * that is neither a quiz nor a form falls straight through untouched.
+     */
+    private static boolean isQuizSchema(final List<Map<String, Object>> schema) {
+        if (schema.isEmpty()) {
+            return false;
+        }
+        for (final Map<String, Object> field : schema) {
+            if (field.get(SchemaConstants.KEY_COMPONENT) == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * One quiz step (see {@link #isQuizSchema}), stamped into the shape every other component
+     * takes. The step itself already carries {@code component} and {@code content} (and,
+     * optionally, {@code styles}) - only {@code id} and {@code order} are synthesised, the same way
+     * any other non-authored component's are ({@link AbstractComponentModel#generateId}).
      *
      * @param resourcePath the quiz block's own path - every step shares it, so {@code order} is
      *                     folded into the id to keep them distinct
