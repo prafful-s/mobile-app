@@ -98,18 +98,20 @@
     }
   },
   {
-    "component": "button",
+    "component": "formSubmitButton",
+    "events": " --- ",
+    "formId": "",
     "content": {
-      "icon": "",
+      "link": "Home",
       "label": "SUBMIT",
       "events": "customEvent",
       "formId": "coffee-quiz",
-      "link": "Home",
       "message": "",
-      "variant": "contained",
-      "alignment": "center",
+      "alignItems": "center",
       "customEvent": "quiz.complete"
-    }
+    },
+    "webhookUrl": "",
+    "customEvent": "custom"
   },
   {
     "component": "divider",

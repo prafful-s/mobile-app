@@ -390,8 +390,8 @@ class PageJsonExporterImplTest {
 
         assertTrue(components.contains("dropdown"), "the quiz's steps are individual top-level "
                 + "components, not a wrapped 'form': " + components);
-        assertTrue(components.contains("button"), "the submit step is a real, registered 'button' - "
-                + "'formSubmitButton' is not a component the client renders");
+        assertTrue(components.contains("formSubmitButton"), "the submit step is emitted as its own "
+                + "top-level component from the schema: " + components);
         assertFalse(components.contains("coffee-quiz-frescopa"),
                 "the block itself is never exported unmapped - only its synthesised steps are");
 
@@ -405,7 +405,7 @@ class PageJsonExporterImplTest {
                         .map(o -> o.get("value")).collect(java.util.stream.Collectors.toList()));
 
         final Map<String, Object> submit = content.stream()
-                .filter(c -> "button".equals(map(c.get("meta")).get("component"))
+                .filter(c -> "formSubmitButton".equals(map(c.get("meta")).get("component"))
                         && "SUBMIT".equals(map(c.get("content")).get("label")))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("expected a submit button step"));

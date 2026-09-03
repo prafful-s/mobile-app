@@ -761,12 +761,27 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
-        final Object styles = step.get(SchemaConstants.KEY_STYLES);
-        if (styles instanceof Map && !((Map<String, Object>) styles).isEmpty()) {
-            entry.put(SchemaConstants.KEY_STYLES, styles);
+        // Every schema key other than 'component' (which the walker owns, via meta) is carried
+        // through in the file's own order - 'content' and 'styles' get their contract shape, and any
+        // other top-level key (e.g. a formSubmitButton's events/formId/webhookUrl siblings) passes
+        // through verbatim, so a quiz step can carry the exact envelope the reference declares.
+        for (final Map.Entry<String, Object> field : step.entrySet()) {
+            final String key = field.getKey();
+            if (SchemaConstants.KEY_COMPONENT.equals(key)) {
+                continue;
+            }
+            if (SchemaConstants.KEY_STYLES.equals(key)) {
+                if (field.getValue() instanceof Map && !((Map<String, Object>) field.getValue()).isEmpty()) {
+                    entry.put(SchemaConstants.KEY_STYLES, field.getValue());
+                }
+            } else if (SchemaConstants.KEY_CONTENT.equals(key)) {
+                entry.put(SchemaConstants.KEY_CONTENT,
+                        field.getValue() instanceof Map ? field.getValue() : Collections.emptyMap());
+            } else {
+                entry.put(key, field.getValue());
+            }
         }
-        final Object content = step.get(SchemaConstants.KEY_CONTENT);
-        entry.put(SchemaConstants.KEY_CONTENT, content instanceof Map ? content : Collections.emptyMap());
+        entry.putIfAbsent(SchemaConstants.KEY_CONTENT, Collections.emptyMap());
         return entry;
     }
 
