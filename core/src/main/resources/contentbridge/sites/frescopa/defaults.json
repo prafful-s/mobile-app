@@ -1,0 +1,7 @@
+{
+  "rightIcon": {
+    "icon": "shopping-cart",
+    "name": "shopping-cart",
+    "target": "cart"
+  }
+}
