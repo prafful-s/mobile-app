@@ -130,7 +130,8 @@ class FormSchemaServiceTest {
     @DisplayName("every field names a type the client can render")
     void knownFieldTypes() {
         final java.util.Set<String> types = java.util.Set.of(
-                "text", "select", "checkbox", "radio", "file", "password", "date", "heading", "link");
+                "text", "select", "checkbox", "radio", "file", "password", "date", "heading", "link",
+                "timeslot");
 
         service.getFormNames().forEach(form -> service.getSchema(form).forEach(field -> {
             if (isQuizStep(field)) {
