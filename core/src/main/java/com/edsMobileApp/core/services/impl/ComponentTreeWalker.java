@@ -54,6 +54,7 @@ final class ComponentTreeWalker {
     private final StyleResolver styleResolver;
     private final ComponentMappings mappings;
     private final FormBlockBuilder formBuilder;
+    private SiteDefaults siteDefaults;
 
     /**
      * The {@code loginScreen}/{@code profileScreen}/{@code registrationScreen} keys this export's own
@@ -76,8 +77,10 @@ final class ComponentTreeWalker {
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
-    /** Forwarded to the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
+    /** Kept for this walker's own per-site lookups (see {@link #rendersLinklessCards}) and forwarded to
+     * the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
     void setSiteDefaults(final SiteDefaults siteDefaults) {
+        this.siteDefaults = siteDefaults;
         this.formBuilder.setSiteDefaults(siteDefaults);
     }
 
@@ -430,7 +433,14 @@ final class ComponentTreeWalker {
                     // least one doesn't (a genuine mix) - either way the whole block is dropped
                     // rather than falling through to individual cards, so a client never sees a mix
                     // of live and dead cards, or a set of cards with nowhere to go.
-                    continue;
+                    //
+                    // Exception: a site may opt in (renderLinklessCards in its defaults.json) to keep
+                    // linkless cards that are real content, not decoration - e.g. carvelo's
+                    // icon+heading+body "feature" cards. That only relaxes the all-links-dead case; a
+                    // genuine live/dead mix is still dropped, so the no-mixed-cards guarantee holds.
+                    if (!(rendersLinklessCards(child) && allCardLinksDead(child))) {
+                        continue;
+                    }
                 }
                 // Every card has a real link (not the "#" a missing one defaults to), and none of
                 // them resolve to an app screen - e.g. they link out to a product page instead. Fall
@@ -614,6 +624,43 @@ final class ComponentTreeWalker {
             }
         }
         return anyRealLink;
+    }
+
+    /**
+     * @return true when every one of {@code resource}'s cards resolves to the {@code "#"} placeholder
+     *         a missing link defaults to - i.e. no card carries any link at all. This is the pure
+     *         "linkless content cards" shape (carvelo's icon+heading+body feature cards); a block
+     *         with even one real link is not all-dead, so a genuine live/dead mix stays droppable.
+     */
+    private boolean allCardLinksDead(final Resource resource) {
+        final List<Resource> items = cardItemsOf(resource);
+        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
+        if (items == null || cardRule == null) {
+            return false;
+        }
+        for (final Resource item : items) {
+            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
+            final Map<String, Object> mapped = cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
+            final Object link = mapped.get("link");
+            final String value = link instanceof String ? (String) link : "#";
+            if (!"#".equals(value)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @return true when the site owning {@code resource} opts in to keeping linkless cards via
+     *         {@code renderLinklessCards} in its {@code defaults.json}. Absent (the default) means the
+     *         historical behaviour is unchanged - linkless card blocks are dropped.
+     */
+    private boolean rendersLinklessCards(final Resource resource) {
+        if (siteDefaults == null) {
+            return false;
+        }
+        final Object flag = siteDefaults.forPath(resource.getPath()).get("renderLinklessCards");
+        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
     }
 
     /**
