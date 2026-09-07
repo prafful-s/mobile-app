@@ -41,6 +41,11 @@
     "defaultValue": ""
   },
   {
+    "id": "appointment-heading",
+    "type": "heading",
+    "label": "Choose available day and time"
+  },
+  {
     "id": "appointment-slot",
     "type": "timeslot",
     "name": "appointment.dateTime",
