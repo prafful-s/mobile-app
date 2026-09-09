@@ -14,10 +14,25 @@
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "default": "#" },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },
-    { "target": "imageResize", "from": "imageResize", "default": "contain" },
+    { "target": "imageResize", "from": "mobileimagestyle",
+      "map": {
+        "": "cover",
+        "contain": "contain",
+        "*": "cover"
+      }, "default": "cover" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
     { "target": "cardType", "from": "style",
-      "map": { "teaser-overlay": "partial-overlay", "*": "stacked" }, "default": "stacked" },
+      "map": {
+        "": "stacked",
+        "image-top": "stacked",
+        "image-bottom": "stacked",
+        "image-left": "image-text-one-line",
+        "image-right": "image-text-one-line",
+        "teaser-overlay": "partial-overlay",
+        "teaser-card": "overlay",
+        "icon-cards": "stacked",
+        "*": "stacked"
+      }, "default": "stacked" },
     { "target": "subtitle",
       "extract": { "from": "text", "select": "p:not(:has(a)), li", "as": "text", "all": true },
       "nullable": true },

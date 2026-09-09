@@ -716,6 +716,7 @@ final class ComponentTreeWalker {
         }
         final List<String> screenKeys = new ArrayList<>(items.size());
         final Map<String, String> thumbnails = new LinkedHashMap<>();
+        final Set<String> cardTypes = new LinkedHashSet<>();
         for (final Resource item : items) {
             final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
             final Map<String, Object> mapped =
@@ -730,7 +731,15 @@ final class ComponentTreeWalker {
             if (image instanceof String && StringUtils.isNotBlank((String) image)) {
                 thumbnails.put(key, (String) image);
             }
+            final Object cardType = mapped.get("cardType");
+            if (cardType instanceof String && StringUtils.isNotBlank((String) cardType)) {
+                cardTypes.add((String) cardType);
+            }
         }
+        // itemRenderer is list-wide (list.json has no per-item shape), so it can only reflect the
+        // cards' cardType when every card in the group agreed on one; otherwise keep the LUMA
+        // MOBILE reference's "overlay" default.
+        final String itemRenderer = cardTypes.size() == 1 ? cardTypes.iterator().next() : "overlay";
         if (screenThumbnailOverrides != null) {
             screenThumbnailOverrides.putAll(thumbnails);
         }
@@ -753,7 +762,7 @@ final class ComponentTreeWalker {
         content.put("itemHeight", null);
         content.put("itemRadius", null);
         content.put("itemsInRow", screenKeys.size());
-        content.put("itemRenderer", "overlay");
+        content.put("itemRenderer", itemRenderer);
         content.put("filterProperty", "Category");
         content.put("imageResizeMode", "cover");
 
