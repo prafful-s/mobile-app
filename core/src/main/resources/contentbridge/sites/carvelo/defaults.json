@@ -5,5 +5,11 @@
     "vertical": "Automotive",
     "thumbnail": "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/carvelo-mobile/thumbnail",
     "useCart": true
-  }
+  },
+  "rightIcon": {
+    "icon": "shopping-cart",
+    "name": "shopping-cart",
+    "target": "cart"
+  },
+  "renderLinklessCards": true
 }

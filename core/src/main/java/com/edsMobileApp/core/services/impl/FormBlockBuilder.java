@@ -95,7 +95,11 @@ final class FormBlockBuilder {
                 new String[]{"formHeading", "formheading"}, "Which type of Medicare plan should I get?"));
         headings.put("new-account",
                 new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
-        headings.put("test-drive", new Heading(new String[]{"form-title", "formtitle"}, "Schedule test drive"));
+        // No compiled default: test-drive (and its schedule-appointment variant) show a pre-form
+        // title only when the block authors form-title, or a site overrides it (e.g. luma's
+        // defaults.json). With neither, heading() emits nothing - the form's own field-list heading
+        // ("Your personal informations") is the first title, so the outer one is not duplicated.
+        headings.put("test-drive", new Heading(new String[]{"form-title", "formtitle"}, ""));
 
         // Forms with no heading property in their block - default is the form's own name.
         headings.put("add-external", new Heading(NO_KEYS, "Add External"));
@@ -197,6 +201,12 @@ final class FormBlockBuilder {
         // The keys (block property names) stay compiled-in - those describe the block itself, not
         // the site. Only the display text is site-overridable.
         final String defaultText = siteOverride(formName, resourcePath, config.defaultText);
+        final String text = first(authored, config.keys, defaultText);
+        // A form whose block authors no title and whose reference carries no default (test-drive)
+        // gets no pre-form heading at all, rather than an empty title box.
+        if (StringUtils.isBlank(text)) {
+            return null;
+        }
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
@@ -205,7 +215,7 @@ final class FormBlockBuilder {
 
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("size", "medium");
-        content.put("text", first(authored, config.keys, defaultText));
+        content.put("text", text);
         content.put("weight", "bold");
         content.put("textAlignment", "left");
 

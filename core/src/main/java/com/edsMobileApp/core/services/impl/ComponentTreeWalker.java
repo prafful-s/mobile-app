@@ -54,6 +54,7 @@ final class ComponentTreeWalker {
     private final StyleResolver styleResolver;
     private final ComponentMappings mappings;
     private final FormBlockBuilder formBuilder;
+    private SiteDefaults siteDefaults;
 
     /**
      * The {@code loginScreen}/{@code profileScreen}/{@code registrationScreen} keys this export's own
@@ -76,8 +77,10 @@ final class ComponentTreeWalker {
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
-    /** Forwarded to the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
+    /** Kept for this walker's own per-site lookups (see {@link #rendersLinklessCards}) and forwarded to
+     * the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
     void setSiteDefaults(final SiteDefaults siteDefaults) {
+        this.siteDefaults = siteDefaults;
         this.formBuilder.setSiteDefaults(siteDefaults);
     }
 
@@ -423,11 +426,43 @@ final class ComponentTreeWalker {
                     sink.add(list);
                     continue;
                 }
-                if (isCardsBlockEligibleForList(child)) {
-                    // Exactly a 3-card group, but not every card resolves to a real screen (or none
-                    // of them carry a link at all) - the whole block is dropped rather than falling
-                    // through to individual cards, so a client never sees a mix of live and dead
-                    // cards, or a set of cards with nowhere to go.
+                if (isCardsBlockEligibleForList(child)
+                        && !hasUnresolvedRealCardLink(child, knownScreenKeys)) {
+                    // Either no card carries a link at all (a decorative icon strip - Luma's
+                    // "feature-support" cards), or at least one resolves to a real screen and at
+                    // least one doesn't (a genuine mix) - either way the whole block is dropped
+                    // rather than falling through to individual cards, so a client never sees a mix
+                    // of live and dead cards, or a set of cards with nowhere to go.
+                    //
+                    // Exception: a site may opt in (renderLinklessCards in its defaults.json) to keep
+                    // linkless cards that are real content, not decoration - e.g. carvelo's
+                    // icon+heading+body "feature" cards. That only relaxes the all-links-dead case; a
+                    // genuine live/dead mix is still dropped, so the no-mixed-cards guarantee holds.
+                    if (!(rendersLinklessCards(child) && allCardLinksDead(child))) {
+                        continue;
+                    }
+                }
+                // Every card has a real link (not the "#" a missing one defaults to), and none of
+                // them resolve to an app screen - e.g. they link out to a product page instead. Fall
+                // through to the normal per-child walk below and export each card as its own
+                // component, using whatever its own rule resolves.
+            }
+
+            // A quiz block (e.g. Frescopa's coffee-quiz-frescopa) authors only its own behaviour
+            // settings - completion URL, event names, a progress toggle. Its questions, options and
+            // submit button are fixed in the block's own front-end code, not authored in AEM at all,
+            // so there is no child content here to walk. Its bundled schema (contentbridge/forms/,
+            // same as every other form) holds that fixed content instead - but unlike a real form's
+            // fields, a quiz step is already the exact component shape the export emits (see
+            // isQuizSchema), so each one is stamped with a fresh id/order and added as its own
+            // top-level component here, rather than going through isFormBlock/FormBlockBuilder below
+            // and being wrapped into one 'form' component the way an actual submitted field list is.
+            if (hierarchical) {
+                final List<Map<String, Object>> schema = formSchemaService.getSchema(model.getComponentName());
+                if (isQuizSchema(schema)) {
+                    for (final Map<String, Object> step : schema) {
+                        sink.add(quizStepComponent(step, child.getPath(), sink.size()));
+                    }
                     continue;
                 }
             }
@@ -559,6 +594,76 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * @return true only when every one of {@code resource}'s three cards carries a real link (not
+     *         the {@code "#"} a missing one resolves to) and none of them is a known screen key -
+     *         the shape a product-linking {@code Cards} group takes. False for a decorative group
+     *         with no links at all (nothing to fall through to), and false for a genuine mix of
+     *         screen-resolving and non-resolving cards (the {@code isCardsBlockEligibleForList} call
+     *         site keeps dropping both of those, as it always has).
+     */
+    private boolean hasUnresolvedRealCardLink(final Resource resource, final Set<String> knownScreenKeys) {
+        final List<Resource> items = cardItemsOf(resource);
+        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
+        if (items == null || cardRule == null) {
+            return false;
+        }
+        boolean anyRealLink = false;
+        for (final Resource item : items) {
+            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
+            final Map<String, Object> mapped = cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
+            final Object link = mapped.get("link");
+            if (!(link instanceof String)) {
+                continue;
+            }
+            final String value = (String) link;
+            if (knownScreenKeys.contains(value)) {
+                return false;
+            }
+            if (!"#".equals(value)) {
+                anyRealLink = true;
+            }
+        }
+        return anyRealLink;
+    }
+
+    /**
+     * @return true when every one of {@code resource}'s cards resolves to the {@code "#"} placeholder
+     *         a missing link defaults to - i.e. no card carries any link at all. This is the pure
+     *         "linkless content cards" shape (carvelo's icon+heading+body feature cards); a block
+     *         with even one real link is not all-dead, so a genuine live/dead mix stays droppable.
+     */
+    private boolean allCardLinksDead(final Resource resource) {
+        final List<Resource> items = cardItemsOf(resource);
+        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
+        if (items == null || cardRule == null) {
+            return false;
+        }
+        for (final Resource item : items) {
+            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
+            final Map<String, Object> mapped = cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
+            final Object link = mapped.get("link");
+            final String value = link instanceof String ? (String) link : "#";
+            if (!"#".equals(value)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @return true when the site owning {@code resource} opts in to keeping linkless cards via
+     *         {@code renderLinklessCards} in its {@code defaults.json}. Absent (the default) means the
+     *         historical behaviour is unchanged - linkless card blocks are dropped.
+     */
+    private boolean rendersLinklessCards(final Resource resource) {
+        if (siteDefaults == null) {
+            return false;
+        }
+        final Object flag = siteDefaults.forPath(resource.getPath()).get("renderLinklessCards");
+        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
+    }
+
+    /**
      * @return {@code resource}'s children, when there are exactly three and every one of them
      *         resolves (by name, via {@link GenericComponent#getComponentName()}) to {@code card} -
      *         or {@code null} when the block does not have that shape
@@ -672,6 +777,68 @@ final class ComponentTreeWalker {
         list.put(SchemaConstants.KEY_STYLES, styles);
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
+    }
+
+    /**
+     * True when {@code schema} is a quiz's fixed step list rather than a real form's field list -
+     * every entry names a {@code component} (the shape this class emits directly) instead of a
+     * {@code type} (the shape {@link FormFieldFactory} interprets). Empty for a block with no
+     * bundled schema at all, so the caller's own {@code isEmpty()}-shaped check still works: a block
+     * that is neither a quiz nor a form falls straight through untouched.
+     */
+    private static boolean isQuizSchema(final List<Map<String, Object>> schema) {
+        if (schema.isEmpty()) {
+            return false;
+        }
+        for (final Map<String, Object> field : schema) {
+            if (field.get(SchemaConstants.KEY_COMPONENT) == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * One quiz step (see {@link #isQuizSchema}), stamped into the shape every other component
+     * takes. The step itself already carries {@code component} and {@code content} (and,
+     * optionally, {@code styles}) - only {@code id} and {@code order} are synthesised, the same way
+     * any other non-authored component's are ({@link AbstractComponentModel#generateId}).
+     *
+     * @param resourcePath the quiz block's own path - every step shares it, so {@code order} is
+     *                     folded into the id to keep them distinct
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> quizStepComponent(final Map<String, Object> step, final String resourcePath,
+                                                   final int order) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resourcePath + "#" + order));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, step.get(SchemaConstants.KEY_COMPONENT));
+
+        final Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put(SchemaConstants.KEY_META, meta);
+        // Every schema key other than 'component' (which the walker owns, via meta) is carried
+        // through in the file's own order - 'content' and 'styles' get their contract shape, and any
+        // other top-level key (e.g. a formSubmitButton's events/formId/webhookUrl siblings) passes
+        // through verbatim, so a quiz step can carry the exact envelope the reference declares.
+        for (final Map.Entry<String, Object> field : step.entrySet()) {
+            final String key = field.getKey();
+            if (SchemaConstants.KEY_COMPONENT.equals(key)) {
+                continue;
+            }
+            if (SchemaConstants.KEY_STYLES.equals(key)) {
+                if (field.getValue() instanceof Map && !((Map<String, Object>) field.getValue()).isEmpty()) {
+                    entry.put(SchemaConstants.KEY_STYLES, field.getValue());
+                }
+            } else if (SchemaConstants.KEY_CONTENT.equals(key)) {
+                entry.put(SchemaConstants.KEY_CONTENT,
+                        field.getValue() instanceof Map ? field.getValue() : Collections.emptyMap());
+            } else {
+                entry.put(key, field.getValue());
+            }
+        }
+        entry.putIfAbsent(SchemaConstants.KEY_CONTENT, Collections.emptyMap());
+        return entry;
     }
 
     /**
