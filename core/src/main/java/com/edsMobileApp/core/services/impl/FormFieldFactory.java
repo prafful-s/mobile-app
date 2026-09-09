@@ -59,6 +59,12 @@ final class FormFieldFactory {
      *  {@link FormBlockBuilder#heading}). */
     private static final String TYPE_HEADING = "heading";
     private static final String COMPONENT_TITLE = "title";
+    /** A day/time grid the user picks an appointment slot from - test-drive and schedule-appointment
+     *  both carry one. Unlike every other field it has its own content contract (timeOptions,
+     *  numberOfDays, numberOfTimeColumns) and a styles block, so it is built directly rather than
+     *  through the typed/choice widget path. */
+    private static final String TYPE_TIME_SLOT = "timeslot";
+    private static final String COMPONENT_TIME_SLOT_PICKER = "timeSlotPicker";
 
     /**
      * The two authored node kinds that are part of a form but are not fields: a panel groups fields
@@ -220,6 +226,9 @@ final class FormFieldFactory {
         }
         if (TYPE_LINK.equals(type)) {
             return null;
+        }
+        if (TYPE_TIME_SLOT.equals(type)) {
+            return timeSlotPicker(field, order);
         }
 
         final String component = componentFor(type);
@@ -683,6 +692,58 @@ final class FormFieldFactory {
         return "text";
     }
 
+
+    /**
+     * A time-slot picker field. Unlike a typed input it carries its own content contract - the day
+     * grid ({@code numberOfDays}), the per-day slots ({@code timeOptions}) and the column count
+     * ({@code numberOfTimeColumns}) - plus a {@code styles.gap}, so it is assembled directly here
+     * rather than through {@link #component} / the typed-content path. Everything comes from the
+     * field's own configuration; only sensible reference defaults fill an unset key.
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> timeSlotPicker(final Map<String, Object> field, final int order) {
+        final String path = StringUtils.defaultString(
+                StringUtils.defaultIfBlank(str(field.get("path")), str(field.get("name"))));
+        final String id = StringUtils.defaultIfBlank(str(field.get("id")),
+                StringUtils.defaultIfBlank(path, "field-" + order));
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("path", path);
+        content.put("prefill", field.get("prefill") instanceof Boolean ? field.get("prefill") : Boolean.TRUE);
+        content.put("timeOptions",
+                field.get("timeOptions") instanceof List ? field.get("timeOptions") : new ArrayList<>());
+        content.put("defaultValue", StringUtils.defaultString(str(field.get("defaultValue"))));
+        content.put("numberOfDays", asInt(field.get("numberOfDays"), 3));
+        content.put("numberOfTimeColumns", asInt(field.get("numberOfTimeColumns"), 3));
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, id);
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_TIME_SLOT_PICKER);
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("gap", asInt(field.get("gap"), 16));
+
+        final Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put(SchemaConstants.KEY_META, meta);
+        entry.put(SchemaConstants.KEY_STYLES, styles);
+        entry.put(SchemaConstants.KEY_CONTENT, content);
+        return entry;
+    }
+
+    private static int asInt(final Object value, final int fallback) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt(((String) value).trim());
+            } catch (final NumberFormatException ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
 
     private static Map<String, Object> component(final String id, final int order,
                                                  final String component,

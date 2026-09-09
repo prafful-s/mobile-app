@@ -41,6 +41,22 @@
     "defaultValue": ""
   },
   {
+    "id": "appointment-heading",
+    "type": "heading",
+    "label": "Choose available day and time"
+  },
+  {
+    "id": "appointment-slot",
+    "type": "timeslot",
+    "name": "appointment.dateTime",
+    "prefill": true,
+    "timeOptions": ["09:00", "10:00", "11:00", "12:00"],
+    "defaultValue": "",
+    "numberOfDays": 3,
+    "numberOfTimeColumns": 3,
+    "gap": 16
+  },
+  {
     "id": "address-heading",
     "type": "heading",
     "label": "Vehicle arrival address",
