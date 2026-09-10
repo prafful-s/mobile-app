@@ -486,9 +486,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             // checkout owns its meta.link via its dedicated patch (formId/eventType too).
             patchCheckoutFormMeta(content, page);
         } else {
-            // Every other screen's form takes its post-submit redirect from the site's own
-            // defaults.json 'forms' section; screens with no entry keep meta.link blank.
-            applyFormRedirect(content, page, key);
+            // Every other screen's form takes its redirect + eventType from the site's own
+            // defaults.json 'forms' section; screens with no entry keep the emitted defaults.
+            applyFormSettings(content, page, key);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -689,14 +689,16 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Sets the screen's form {@code meta.link} - the screen the client opens after a successful
-     * submit - from the site's {@code defaults.json} {@code forms.<screenKey>.redirectAfterSubmit}.
-     * Site config is the only source: no entry for this screen (or no {@code forms} section, or no
-     * defaults file) leaves {@code meta.link} at the blank {@link FormBlockBuilder} emits. Checkout
-     * is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     * Applies the site's per-screen form settings from {@code defaults.json}
+     * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
+     * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
+     * {@code meta.eventType} (the analytics event the submit fires). Each is applied only when the
+     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
+     * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
+     * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      */
     @SuppressWarnings("unchecked")
-    private void applyFormRedirect(final List<Map<String, Object>> content, final Page page,
+    private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
                                    final String screenKey) {
         final Map<String, Object> form = findComponent(content, "form");
         if (form == null) {
@@ -707,9 +709,17 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         if (!(entry instanceof Map)) {
             return;
         }
-        final Object redirect = ((Map<String, Object>) entry).get("redirectAfterSubmit");
-        if (redirect instanceof String && StringUtils.isNotBlank((String) redirect)) {
-            asMeta(form.get(SchemaConstants.KEY_META)).put("link", redirect);
+        final Map<String, Object> settings = (Map<String, Object>) entry;
+        final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
+        putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        putIfConfigured(meta, "eventType", settings.get("eventType"));
+    }
+
+    /** Overwrites {@code meta[key]} only when {@code value} is a non-blank string. */
+    private static void putIfConfigured(final Map<String, Object> meta, final String key,
+                                        final Object value) {
+        if (value instanceof String && StringUtils.isNotBlank((String) value)) {
+            meta.put(key, value);
         }
     }
 
