@@ -13,5 +13,7 @@
   "text",
   "search",
   "actionButton",
-  "divider"
+  "divider",
+  "flight-search",
+  "flights"
 ]

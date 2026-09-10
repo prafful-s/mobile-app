@@ -1,0 +1,23 @@
+{
+  "match": ["flight-search"],
+  "component": "flightSearch",
+  "fields": [
+    { "target": "link", "const": "flight-results" },
+    { "target": "mode", "const": "outlined" },
+    { "target": "type", "const": "automaticPicker" },
+    { "target": "formId", "const": "flightSearch" },
+    { "target": "toPath", "const": "flight.to" },
+    { "target": "options", "const": [
+        { "path": "flight.options.businessClass", "label": "Business class" },
+        { "path": "flight.options.directFlightsOnly", "label": "Direct flights only" }
+      ] },
+    { "target": "prefill", "const": true },
+    { "target": "toLabel", "const": "To" },
+    { "target": "fromPath", "const": "flight.from" },
+    { "target": "eventType", "first": ["mobilebuttoneventtype", "buttoneventtype"], "default": "flight.search" },
+    { "target": "fromLabel", "const": "From" },
+    { "target": "dateToPath", "const": "flight.date" },
+    { "target": "toDefaultValue", "const": "" },
+    { "target": "fromDefaultValue", "const": "" }
+  ]
+}
