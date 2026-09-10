@@ -483,7 +483,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         } else if ("review-order".equals(key)) {
             content = reviewOrderContent(content, page);
         } else if ("checkout".equals(key)) {
+            // checkout owns its meta.link via its dedicated patch (formId/eventType too).
             patchCheckoutFormMeta(content, page);
+        } else {
+            // Every other screen's form takes its post-submit redirect from the site's own
+            // defaults.json 'forms' section; screens with no entry keep meta.link blank.
+            applyFormRedirect(content, page, key);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -681,6 +686,31 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /** Reads {@code key} from {@code overrides}, falling back to {@link #CHECKOUT_FORM_DEFAULTS}. */
     private static Object override(final Map<String, Object> overrides, final String key) {
         return overrides.getOrDefault(key, CHECKOUT_FORM_DEFAULTS.get(key));
+    }
+
+    /**
+     * Sets the screen's form {@code meta.link} - the screen the client opens after a successful
+     * submit - from the site's {@code defaults.json} {@code forms.<screenKey>.redirectAfterSubmit}.
+     * Site config is the only source: no entry for this screen (or no {@code forms} section, or no
+     * defaults file) leaves {@code meta.link} at the blank {@link FormBlockBuilder} emits. Checkout
+     * is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFormRedirect(final List<Map<String, Object>> content, final Page page,
+                                   final String screenKey) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Object entry = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FORMS).get(screenKey);
+        if (!(entry instanceof Map)) {
+            return;
+        }
+        final Object redirect = ((Map<String, Object>) entry).get("redirectAfterSubmit");
+        if (redirect instanceof String && StringUtils.isNotBlank((String) redirect)) {
+            asMeta(form.get(SchemaConstants.KEY_META)).put("link", redirect);
+        }
     }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */

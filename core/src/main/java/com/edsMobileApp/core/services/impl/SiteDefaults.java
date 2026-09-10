@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "screenKeyAliases":  { "&lt;jcr-name&gt;":  "&lt;screen-key&gt;" },
  *   "checkoutForm":      { "formId": "...", "eventType": "...", ... },
  *   "formHeadings":      { "&lt;form-name&gt;": "&lt;title text&gt;" },
+ *   "forms":             { "&lt;screen-key&gt;": { "redirectAfterSubmit": "&lt;screen-key&gt;" } },
  *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
  *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true }
@@ -69,6 +70,14 @@ final class SiteDefaults {
     static final String KEY_FORM_HEADINGS = "formHeadings";
     static final String KEY_RIGHT_ICON = "rightIcon";
     static final String KEY_META = "meta";
+    /**
+     * Per-screen form settings, keyed by screen key:
+     * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>" } }}. The one setting
+     * read today is {@code redirectAfterSubmit} - the screen the client opens after a successful
+     * submit ({@code meta.link}). Absent screen, absent section, or absent file all leave
+     * {@code meta.link} blank. See {@code PageJsonExporterImpl#applyFormRedirect}.
+     */
+    static final String KEY_FORMS = "forms";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 

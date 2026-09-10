@@ -4,5 +4,14 @@
     "name": "shopping-cart",
     "target": "cart"
   },
-  "renderLinklessCards": true
+  "renderLinklessCards": true,
+  "forms": {
+    "login":                { "redirectAfterSubmit": "home" },
+    "registration":         { "redirectAfterSubmit": "home" },
+    "schedule-appointment": { "redirectAfterSubmit": "home" },
+    "test-drive":           { "redirectAfterSubmit": "home" },
+    "request-a-quote":      { "redirectAfterSubmit": "home" },
+    "car-loan":             { "redirectAfterSubmit": "carloan-application-submitted" },
+    "build-your-own":       { "redirectAfterSubmit": "home" }
+  }
 }
