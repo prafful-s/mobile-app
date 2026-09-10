@@ -19,7 +19,7 @@ import com.edsMobileApp.core.services.FormSchemaService;
  * Assembles an authored form into the single {@code form} component the client renders.
  *
  * <pre>
- * { "meta":    { "id", "order", "component": "form", "eventType", "webhookUrl",
+ * { "meta":    { "id", "link", "order", "component": "form", "eventType", "webhookUrl",
  *                "toastMessage", "hideResetButton", "resetButtonLabel", "submitButtonLabel" },
  *   "content": [ field, field, … ] }
  * </pre>
@@ -254,6 +254,10 @@ final class FormBlockBuilder {
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
+        // Post-submit redirect target screen. Emitted blank here (key always present); a per-site
+        // 'forms' entry in defaults.json fills it in downstream - see
+        // PageJsonExporterImpl#applyFormRedirect. Blank means the client stays on the form.
+        meta.put("link", StringUtils.EMPTY);
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_FORM);
         meta.put("eventType", first(authored, EVENT_TYPE_KEYS, StringUtils.EMPTY));
