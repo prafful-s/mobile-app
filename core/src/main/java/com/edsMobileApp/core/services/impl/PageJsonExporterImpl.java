@@ -653,12 +653,18 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         if (form == null) {
             return;
         }
-        final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
 
         // A site may override any subset of these in defaults.json.checkoutForm; everything absent
-        // there falls back to the compiled-in reference values below.
+        // there falls back to the compiled-in reference values below. A site whose checkout block
+        // authors its own eventType/formId/etc. (unlike the reference, which has no authored source
+        // for them) can opt out of this patch entirely via "checkoutForm": { "disabled": true },
+        // keeping whatever FormBlockBuilder derived from the authored block.
         final Map<String, Object> overrides = SiteDefaults.objectMap(
                 siteDefaults.forPage(page), SiteDefaults.KEY_CHECKOUT_FORM);
+        if (Boolean.TRUE.equals(overrides.get("disabled"))) {
+            return;
+        }
+        final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
 
         // Rebuilt rather than mutated in place: the reference's key order (id, link, order, formId,
         // component, ...) differs from FormBlockBuilder's default, and insertion order is part of
