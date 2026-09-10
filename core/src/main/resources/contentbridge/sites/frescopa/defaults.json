@@ -3,5 +3,10 @@
     "icon": "shopping-cart",
     "name": "shopping-cart",
     "target": "cart"
+  },
+  "forms": {
+    "login":        { "redirectAfterSubmit": "home" },
+    "registration": { "redirectAfterSubmit": "home" },
+    "subscription": { "redirectAfterSubmit": "home" }
   }
 }
