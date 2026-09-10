@@ -1,6 +1,7 @@
 {
   "match": ["flight-search"],
   "component": "flightSearch",
+  "skeleton": true,
   "fields": [
     { "target": "link", "const": "flight-results" },
     { "target": "mode", "const": "outlined" },
@@ -19,5 +20,6 @@
     { "target": "dateToPath", "const": "flight.date" },
     { "target": "toDefaultValue", "const": "" },
     { "target": "fromDefaultValue", "const": "" }
-  ]
+  ],
+  "ignoreExtras": ["*"]
 }

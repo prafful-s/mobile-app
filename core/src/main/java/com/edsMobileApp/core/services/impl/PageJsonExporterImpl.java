@@ -747,7 +747,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * mappings are re-enabled; remove this call and method when the full component set is restored.
      */
     private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
-            "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton");
+            "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
+            "flightSearch", "flightResults");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
