@@ -1,6 +1,7 @@
 {
   "checkoutForm": {
-    "link": "home",
+    "link": "en",
+    "hideResetButton": true,
     "toastMessage": "Thank you for booking!",
     "submitButtonLabel": "Confirm purchase"
   }
