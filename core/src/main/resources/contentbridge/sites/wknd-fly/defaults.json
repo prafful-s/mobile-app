@@ -1,5 +1,7 @@
 {
   "checkoutForm": {
-    "disabled": true
+    "link": "home",
+    "toastMessage": "Thank you for booking!",
+    "submitButtonLabel": "Confirm purchase"
   }
 }
