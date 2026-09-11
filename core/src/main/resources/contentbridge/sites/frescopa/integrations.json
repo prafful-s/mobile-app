@@ -1,0 +1,16 @@
+{
+  "aep": {
+    "imsOrg": {
+      "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+      "name": "Adobe Demo System Shared",
+      "tenantID": "demosystem4",
+      "acstenant": null,
+      "__typename": "IMSOrg"
+    },
+    "sandbox": "public-frescopa"
+  },
+  "launch": {
+    "appId": "59610d662d36/eb9ca7682c60/launch-8c0c4cf20108-development",
+    "propertyName": "trehan - Frescopa (mobile)"
+  }
+}

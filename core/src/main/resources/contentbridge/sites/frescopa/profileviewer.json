@@ -1,0 +1,103 @@
+{
+  "segments": {
+    "segmentFilter": [
+      "Frescopa"
+    ]
+  },
+  "identities": [
+    {
+      "id": "D054IFN6u",
+      "path": "entity.$tenantId.identification.core.email",
+      "label": "Email"
+    },
+    {
+      "id": "zcFdv3ORn4",
+      "path": "entity.$tenantId.identification.core.phoneNumber",
+      "label": "Phone number"
+    }
+  ],
+  "eventGroups": [
+    {
+      "id": "9S54vZn5L",
+      "label": "Product Views",
+      "filter": "entity.commerce.productViews"
+    },
+    {
+      "id": "IahP2c8vyI",
+      "label": "Coffee Quiz Complete",
+      "filter": "web.coffeeQuizEnd"
+    },
+    {
+      "id": "CP$0wXjm4u",
+      "label": "Coffe Quiz Started",
+      "filter": "web.coffeeQuizStep-1"
+    },
+    {
+      "id": "YfOX4Ie$i2",
+      "label": "Purchases",
+      "filter": "kiosk.item.pickedUp"
+    },
+    {
+      "id": "qQ42g2TbH",
+      "label": "Added to Cart",
+      "filter": "entity.commerce.productListAdds"
+    },
+    {
+      "id": "BLg3BDJBO",
+      "label": "Checkouts",
+      "filter": "entity.commerce.checkouts"
+    },
+    {
+      "id": "kyxnEpGyj",
+      "label": "Offers Interactions",
+      "filter": "entity.$tenantId.interactionDetails.proposition.name"
+    },
+    {
+      "id": "DA$F$TQpi",
+      "label": "Mobile Registration",
+      "filter": "mobile.registration"
+    },
+    {
+      "id": "gC$nKuRxD",
+      "label": "Purchase",
+      "filter": "commerce.purchases"
+    },
+    {
+      "id": "Nw9_ghuzPx",
+      "label": "Web Registration",
+      "filter": "web.registration"
+    }
+  ],
+  "profileFields": [
+    {
+      "id": "uz5bsjbYY",
+      "path": "person.name.firstName person.name.lastName",
+      "label": "Name"
+    },
+    {
+      "id": "60OzPOcOh0",
+      "path": "person.gender",
+      "label": "Gender"
+    },
+    {
+      "id": "l6$y_f1lay",
+      "path": "homeAddress.street1 homeAddress.city",
+      "label": "Address"
+    },
+    {
+      "id": "d$CQoPAj2b",
+      "path": "_demosystem4.individualCharacteristics.cpg.activeSubscription.name",
+      "label": "Active Subscription"
+    },
+    {
+      "id": "Kp5MjQkrZT",
+      "path": "_demosystem4.individualCharacteristics.cpg.activeSubscription.startDate",
+      "label": "Subscription Start Date"
+    },
+    {
+      "id": "l1QxAgr9x",
+      "path": "pushNotificationDetails[].token",
+      "label": "Push Token"
+    }
+  ]
+}

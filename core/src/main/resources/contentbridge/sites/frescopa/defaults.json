@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "brand": "Fréscopa",
+    "template": "mobile/generic-retail-v3",
+    "vertical": "CPG",
+    "thumbnail": "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/frescopa-mobile/thumbnail",
+    "useCart": true
+  },
+  "rightIcon": {
+    "icon": "shopping-cart",
+    "name": "shopping-cart",
+    "target": "cart"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "aep": {
+    "id": 13934,
+    "imsOrg": {
+      "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+      "name": "Adobe Demo System Shared",
+      "tenantID": "demosystem4",
+      "__typename": "IMSOrg",
+      "targetClientCode": "demosystem4"
+    },
+    "sandbox": "public-citi-signal",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "__typename": "AEP",
+    "sandboxName": "public-citi-signal"
+  },
+  "imsOrg": {
+    "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "name": "Adobe Demo System Shared",
+    "tenantID": "demosystem4",
+    "__typename": "IMSOrg",
+    "targetClientCode": "demosystem4"
+  },
+  "launch": {
+    "id": 12390,
+    "type": "mobile",
+    "aepID": 13934,
+    "appID": "59610d662d36/b028f4dc18e1/launch-a7fc9cf08993-development",
+    "appId": "59610d662d36/b028f4dc18e1/launch-a7fc9cf08993-development",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "companyId": "CO248bee8aabe04648b1421ee94f8e416b",
+    "createdAt": 1665737031739,
+    "__typename": "Launch",
+    "propertyID": "PR87547211420148c1b706caf8ca24f62c",
+    "sandboxName": "public-citi-signal",
+    "propertyName": "CitiSignal (DO NOT DELETE) (mobile)",
+    "primarySolution": "AEP"
+  }
+}
