@@ -660,8 +660,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
 
-        // A site may override any subset of these in defaults.json.checkoutForm; everything absent
-        // there falls back to the compiled-in reference values below.
+        // A site may override any subset of these in defaults.json.checkoutForm. A key the site
+        // doesn't override keeps whatever the authored block itself produced (via FormBlockBuilder)
+        // when that's present, and only falls back to the compiled-in reference value below when
+        // neither exists - so a site whose checkout block authors its own eventType/formId/etc.
+        // keeps those, while link/toastMessage/submitButtonLabel (which no block authors) still get
+        // a sensible default.
         final Map<String, Object> overrides = SiteDefaults.objectMap(
                 siteDefaults.forPage(page), SiteDefaults.KEY_CHECKOUT_FORM);
 
@@ -670,22 +674,29 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // this contract everywhere else in the export.
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, old.get(SchemaConstants.KEY_ID));
-        meta.put("link", override(overrides, "link"));
+        meta.put("link", override(overrides, "link", old.get("link")));
         meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
-        meta.put("formId", override(overrides, "formId"));
+        meta.put("formId", override(overrides, "formId", old.get("formId")));
         meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
-        meta.put("eventType", override(overrides, "eventType"));
-        meta.put("webhookUrl", overrides.containsKey("webhookUrl")
-                ? overrides.get("webhookUrl") : old.get("webhookUrl"));
-        meta.put("toastMessage", overrides.containsKey("toastMessage")
-                ? overrides.get("toastMessage") : old.get("toastMessage"));
-        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel"));
+        meta.put("eventType", override(overrides, "eventType", old.get("eventType")));
+        meta.put("webhookUrl", override(overrides, "webhookUrl", old.get("webhookUrl")));
+        meta.put("toastMessage", override(overrides, "toastMessage", old.get("toastMessage")));
+        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel", old.get("submitButtonLabel")));
         form.put(SchemaConstants.KEY_META, meta);
     }
 
-    /** Reads {@code key} from {@code overrides}, falling back to {@link #CHECKOUT_FORM_DEFAULTS}. */
-    private static Object override(final Map<String, Object> overrides, final String key) {
-        return overrides.getOrDefault(key, CHECKOUT_FORM_DEFAULTS.get(key));
+    /**
+     * @return the site's override for {@code key}, else {@code authored} when the block itself
+     *         produced a non-blank value, else the compiled-in reference default.
+     */
+    private static Object override(final Map<String, Object> overrides, final String key, final Object authored) {
+        if (overrides.containsKey(key)) {
+            return overrides.get(key);
+        }
+        if (authored instanceof String ? StringUtils.isNotBlank((String) authored) : authored != null) {
+            return authored;
+        }
+        return CHECKOUT_FORM_DEFAULTS.get(key);
     }
 
     /**
@@ -722,6 +733,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             meta.put(key, value);
         }
     }
+
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
     @SuppressWarnings("unchecked")
@@ -787,7 +799,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * mappings are re-enabled; remove this call and method when the full component set is restored.
      */
     private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
-            "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton");
+            "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
+            "flightSearch", "flightResults");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
