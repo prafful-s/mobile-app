@@ -36,7 +36,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
  *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true },
- *   "forms":             { "&lt;screen-key&gt;": { "redirectAfterSubmit": "...", "eventType": "..." } },
  *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown"
  * }
  * </pre>
@@ -73,16 +72,6 @@ final class SiteDefaults {
     static final String KEY_FORM_HEADINGS = "formHeadings";
     static final String KEY_RIGHT_ICON = "rightIcon";
     static final String KEY_META = "meta";
-    /**
-     * Per-screen form settings, keyed by screen key:
-     * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>", "eventType": "..." } }}.
-     * {@code redirectAfterSubmit} sets the screen the client opens after a successful submit
-     * ({@code meta.link}); {@code eventType} sets the analytics event the submit fires
-     * ({@code meta.eventType}). Each is applied only when present and non-blank; anything absent
-     * (setting, screen, section, or file) leaves the value {@code FormBlockBuilder} already emitted.
-     * See {@code PageJsonExporterImpl#applyFormSettings}.
-     */
-    static final String KEY_FORMS = "forms";
     /**
      * Path to the site's destination-dropdown Content Fragment, whose {@code destination_mapping}
      * multifield supplies the country a {@code flightResults} block should filter by, keyed by
