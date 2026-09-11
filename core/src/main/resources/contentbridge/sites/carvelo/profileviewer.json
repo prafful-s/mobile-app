@@ -1,0 +1,117 @@
+{
+  "identities": [
+    {
+      "id": "PLWP9qUAq",
+      "path": " $tenantId.identification.core.email  ",
+      "label": "Email"
+    },
+    {
+      "id": "Dk3p$RB_0U",
+      "path": "$tenantId.identification.core.phoneNumber",
+      "label": "Phone number"
+    }
+  ],
+  "eventGroups": [
+    {
+      "id": "yOsZBGQ1D",
+      "label": "Product View",
+      "filter": "commerce.productViews"
+    },
+    {
+      "id": "kb0K6EIbRP",
+      "label": "Test Drive Completed",
+      "filter": "testDrive.completed"
+    },
+    {
+      "id": "1_ntS6WaO",
+      "label": "Bot interactions",
+      "filter": "bot.interaction"
+    },
+    {
+      "id": "Qqqh$QuiO",
+      "label": "Registration",
+      "filter": "web.registration"
+    },
+    {
+      "id": "1EgwwIpKVW",
+      "label": "Login",
+      "filter": "web.login"
+    },
+    {
+      "id": "oMRS_9bjN",
+      "image": "https://t4.ftcdn.net/jpg/09/84/54/89/240_F_984548969_vowHdTZb5qxUSXpWT5fENIseXoUqzUpc.jpg",
+      "label": "Test Drive Scheduled",
+      "title": "",
+      "filter": "testDrive.scheduled"
+    },
+    {
+      "id": "RhK$_VeIB",
+      "label": "Call from Call Center Started",
+      "filter": "contactCenter.call.start"
+    },
+    {
+      "id": "row-7-1750698812760",
+      "label": "Added to Cart",
+      "filter": "entity.commerce.productListAdds"
+    },
+    {
+      "id": "row-8-1750698812760",
+      "label": "Checkouts",
+      "filter": "entity.commerce.checkouts"
+    },
+    {
+      "id": "row-9-1750698812760",
+      "label": "Added to favourites",
+      "filter": "commerce.saveForLaters"
+    },
+    {
+      "id": "row-10-1750698812760",
+      "label": "Application Launch",
+      "filter": "application.launch"
+    },
+    {
+      "id": "row-11-1750698812760",
+      "label": "Application Login",
+      "filter": "application.login"
+    },
+    {
+      "id": "row-12-1750698841109",
+      "image": "https://t4.ftcdn.net/jpg/15/16/39/97/240_F_1516399773_dWM7cc651VYEQMFuNhMJLG7sMAJENUzL.jpg",
+      "label": "Scheduled a service",
+      "filter": "scheduleService"
+    },
+    {
+      "id": "row-13-1750782902013",
+      "image": "https://t4.ftcdn.net/jpg/13/90/08/35/240_F_1390083548_ChPVf1SsZ2XwjBI1GwPKzgfx5oshUOVC.jpg",
+      "label": "Navigation open",
+      "filter": "navigation.open"
+    },
+    {
+      "id": "row-14-1751282114552",
+      "label": "Screen View",
+      "filter": "web.webpagedetails.pageViews"
+    }
+  ],
+  "profileFields": [
+    {
+      "id": "ggKijN_tP",
+      "path": "entity.person.name.firstName entity.person.name.lastName",
+      "label": "Name"
+    },
+    {
+      "id": "pH$7p2Q5RM",
+      "path": "entity.person.gender",
+      "label": "Gender"
+    },
+    {
+      "id": "iOV4c1n9M$",
+      "path": "entity.person.birthDate",
+      "label": "Birth date"
+    },
+    {
+      "id": "Em5gJvl2yO",
+      "path": "entity.homeAddress.street1 entity.homeAddress.postalCode entity.homeAddress.city",
+      "label": "Address"
+    }
+  ]
+}

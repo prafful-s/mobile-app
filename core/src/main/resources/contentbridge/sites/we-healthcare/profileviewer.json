@@ -1,0 +1,158 @@
+{
+  "segments": {
+    "segmentFilter": [
+      "we.Healthcare"
+    ]
+  },
+  "identities": [
+    {
+      "id": "VaacDLMmm",
+      "path": "_demosystem4.identification.core.email",
+      "label": "Email"
+    },
+    {
+      "id": "WIYVNAF0KW",
+      "path": "_demosystem4.identification.core.phoneNumber",
+      "label": "Phone number"
+    }
+  ],
+  "eventGroups": [
+    {
+      "id": "Gn6Zj$L01",
+      "label": "Product Views",
+      "filter": "entity.commerce.productViews"
+    },
+    {
+      "id": "Qipyt2LrVb",
+      "label": "Bot Interactions",
+      "filter": "Bot.interaction"
+    },
+    {
+      "id": "DPfs_8VsX3",
+      "label": "Video Started",
+      "filter": "web.video.start"
+    },
+    {
+      "id": "1NU1WJmnl",
+      "label": "Webinar Signup",
+      "filter": "web.webinar.signup"
+    },
+    {
+      "id": "lgAI6S9Q$",
+      "label": "Plan Selection Wizard Step 2",
+      "filter": "web.planSelectionStep-2"
+    },
+    {
+      "id": "emb2k1QFQ",
+      "label": "Finished Plan Selection Wizard",
+      "filter": "web.planSelectionEnded"
+    },
+    {
+      "id": "OPwQzzzEn",
+      "label": "Start Plan Selection Wizard",
+      "filter": "web.planSelectionStarted"
+    },
+    {
+      "id": "H5fnKVWK5",
+      "label": "Plan Selection Wizard Step 1",
+      "filter": "web.planSelectionStep-1"
+    },
+    {
+      "id": "r$TOyMTCV",
+      "label": "Plan Selection Wizard Step 3",
+      "filter": "web.planSelectionStep-3"
+    },
+    {
+      "id": "1KTyotUGUjh",
+      "label": "Enrollment Step 1",
+      "filter": "enrollment.step-1"
+    },
+    {
+      "id": "Ep7jID3VW",
+      "label": "Enrollment Step 2",
+      "filter": "enrollment.step-2"
+    },
+    {
+      "id": "wjWxlk6o_",
+      "label": "Video Ended",
+      "filter": "web.video.end"
+    },
+    {
+      "id": "SVqgxiMLE",
+      "label": "Plan Selection Wizard Step 2",
+      "filter": "web.planSelectionStep-2"
+    },
+    {
+      "id": "loYtKCb9M",
+      "label": "Newsletter Subscription",
+      "filter": "web.newsletter.subscription"
+    },
+    {
+      "id": "nyoN5z9Ej",
+      "label": "Click from newsletter",
+      "filter": "newsletter.visit"
+    },
+    {
+      "id": "T3Vls_Mu5",
+      "label": "Finish Plan Selection Quiz",
+      "filter": "web.planSelection.submitted"
+    },
+    {
+      "id": "O6l7D2Ty4",
+      "label": "Plan Enrollment",
+      "filter": "web.planEnrollment.finished"
+    },
+    {
+      "id": "row-17-1752223258210",
+      "label": "Application login",
+      "filter": "application.login"
+    },
+    {
+      "id": "row-18-1752223258210",
+      "label": "Application Launch",
+      "filter": "application.launch"
+    },
+    {
+      "id": "row-19-1752223294870",
+      "label": "Screen View",
+      "filter": "web.webpagedetails.pageViews"
+    },
+    {
+      "id": "row-20-1752223370707",
+      "label": "Mobile Registration",
+      "filter": "registration"
+    }
+  ],
+  "profileFields": [
+    {
+      "id": "_noQ_q0kl",
+      "path": "entity.person.name.firstName entity.person.name.lastName",
+      "label": "Name"
+    },
+    {
+      "id": "_kBvpNnx5_",
+      "path": "entity.person.gender",
+      "label": "Gender"
+    },
+    {
+      "id": "Xcj$9uIIRo",
+      "path": "entity.person.birthDate",
+      "label": "Birth date"
+    },
+    {
+      "id": "M4cL1b7NWt",
+      "path": "entity.homeAddress.street1 entity.homeAddress.state entity.homeAddress.postalCode",
+      "label": "Address"
+    },
+    {
+      "id": "Y0bBObhzEb",
+      "path": "$tenantId.individualCharacteristics.healthcare.healthPlan",
+      "label": "Enrolled Plan"
+    },
+    {
+      "id": "fMP3CrEMN",
+      "path": "pushNotificationDetails[].token",
+      "label": "Push Token"
+    }
+  ]
+}

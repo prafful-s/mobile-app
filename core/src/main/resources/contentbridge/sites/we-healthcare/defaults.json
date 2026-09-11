@@ -1,0 +1,9 @@
+{
+  "meta": {
+    "brand": "we.Healthcare",
+    "template": "mobile-v2/generic-retail-v4",
+    "vertical": "Healthcare",
+    "thumbnail": "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/we-healthcare-mobile/thumbnail",
+    "useCart": false
+  }
+}

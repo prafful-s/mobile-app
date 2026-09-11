@@ -734,6 +734,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
     }
 
+
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
     @SuppressWarnings("unchecked")
     private static Map<String, Object> findComponent(final List<Map<String, Object>> tree,

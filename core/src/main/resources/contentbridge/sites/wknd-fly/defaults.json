@@ -1,4 +1,15 @@
 {
+  "meta": {
+    "template": "mobile-v2/generic-travel-v2",
+    "vertical": "Travel",
+    "thumbnail": "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/zkorczyc-BNS7/branding-logo",
+    "useCart": true
+  },
+  "rightIcon": {
+    "icon": "shopping-cart",
+    "name": "shopping-cart",
+    "target": "cart"
+  },
   "checkoutForm": {
     "link": "en",
     "hideResetButton": true,

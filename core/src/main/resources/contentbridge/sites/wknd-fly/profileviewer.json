@@ -1,0 +1,139 @@
+{
+  "segments": {
+    "segmentFilter": [
+      "WKND Fly"
+    ]
+  },
+  "identities": [
+    {
+      "id": "Z79VhndnU",
+      "path": "personalEmail.address",
+      "label": "Email"
+    },
+    {
+      "id": "Sw32UJfIlJ",
+      "path": "mobilePhone.number",
+      "label": "Phone number"
+    }
+  ],
+  "eventGroups": [
+    {
+      "id": "cX7GfHOvck",
+      "label": "Product View",
+      "filter": "commerce.productViews"
+    },
+    {
+      "id": "row-1-1750942843724",
+      "label": "Flight reservation",
+      "filter": "flight.reservation"
+    },
+    {
+      "id": "row-2-1750942843724",
+      "image": "https://t4.ftcdn.net/jpg/15/37/32/21/240_F_1537322130_tlTMmfgSVHg5o2h7Aglwy5eLWcVllIhw.jpg",
+      "label": "Flight booking",
+      "title": "${entity.reservations.flightReservations.0.arrivalAirportCode} - ${entity.reservations.flightReservations.0.departureAirportCode}",
+      "filter": "flight.booking"
+    },
+    {
+      "id": "row-3-1750942843724",
+      "image": "https://t4.ftcdn.net/jpg/15/37/34/63/240_F_1537346376_4Yn0om8J9VK1PImLqRbLZX42EUIsFwxL.jpg",
+      "label": "Flight Search",
+      "title": "${entity.reservations.flightReservations.0.arrivalAirportCode} - ${entity.reservations.flightReservations.0.departureAirportCode}",
+      "filter": "flight.search"
+    },
+    {
+      "id": "row-4-1750942843724",
+      "label": "Arriving to airport",
+      "filter": "beacon.entry"
+    },
+    {
+      "id": "row-5-1750942843724",
+      "label": "Leaving airport",
+      "filter": "beacon.exit"
+    },
+    {
+      "id": "row-7-1751272891001",
+      "image": "https://t3.ftcdn.net/jpg/15/48/38/90/240_F_1548389028_ZRopDXRET3NprIseh3M2utjwj6OTJIck.jpg",
+      "label": "Flight selection",
+      "filter": "flight.select"
+    },
+    {
+      "id": "row-6-1750942845222",
+      "label": "Screen View",
+      "filter": "web.webpagedetails.pageViews"
+    },
+    {
+      "id": "row-8-1751281801572",
+      "label": "Joined WKND Fly Club",
+      "title": "",
+      "filter": "loyaltyClub.join"
+    },
+    {
+      "id": "row-9-1761131896497",
+      "label": "Web Registration",
+      "filter": "web.registration"
+    },
+    {
+      "id": "row-10-1761131903654",
+      "label": "Web Login",
+      "filter": "web.login"
+    },
+    {
+      "id": "row-11-1761131909970",
+      "label": "Application Start",
+      "filter": "application.start"
+    },
+    {
+      "id": "row-12-1761131918037",
+      "label": "Application Login",
+      "filter": "application.login"
+    },
+    {
+      "id": "row-13-1761132048763",
+      "label": "POI Entry",
+      "filter": "poi.entry"
+    }
+  ],
+  "profileFields": [
+    {
+      "id": "Z_HM9a2sT",
+      "path": "entity.person.name.firstName entity.person.name.lastName ",
+      "label": "Name"
+    },
+    {
+      "id": "MiMfn1G4uL",
+      "path": "entity.homeAddress.street1 entity.homeAddress.postalCode entity.homeAddress.city",
+      "label": "Address"
+    },
+    {
+      "id": "7_LLiH40sH",
+      "path": "identityMap.loyaltyid[].id",
+      "label": "Frequent Flyer ID"
+    },
+    {
+      "id": "EmadVcLxmm",
+      "path": "travelPreferences.meal",
+      "label": "Preferred meal"
+    },
+    {
+      "id": "AejoWjemkl",
+      "path": "travelPreferences.seat",
+      "label": "Preferred seat"
+    },
+    {
+      "id": "Z$e7aogSYD",
+      "path": "travelPreferences.seatSection",
+      "label": "Preferred seat section"
+    },
+    {
+      "id": "tu1Eaise3$",
+      "path": "loyalty.tier",
+      "label": "WKND Fly Tier"
+    },
+    {
+      "id": "EA4ypKk9b1",
+      "path": "pushNotificationDetails[].token",
+      "label": "Push Token"
+    }
+  ]
+}
