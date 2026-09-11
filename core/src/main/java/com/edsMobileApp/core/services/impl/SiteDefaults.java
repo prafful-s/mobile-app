@@ -33,7 +33,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "formHeadings":      { "&lt;form-name&gt;": "&lt;title text&gt;" },
  *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
- *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true }
+ *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true },
+ *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown"
  * }
  * </pre>
  *
@@ -69,6 +70,16 @@ final class SiteDefaults {
     static final String KEY_FORM_HEADINGS = "formHeadings";
     static final String KEY_RIGHT_ICON = "rightIcon";
     static final String KEY_META = "meta";
+    /**
+     * Path to the site's destination-dropdown Content Fragment, whose {@code destination_mapping}
+     * multifield supplies the country a {@code flightResults} block should filter by, keyed by
+     * screen key: {@code "flightDestinationsFragment": "/content/dam/.../flight-source-destination-
+     * dropdown"}. A destination screen's block authors no such field itself (unlike the web block,
+     * which reads it from the URL path), so this fragment is the only source; a screen key with no
+     * matching row leaves {@code flightResults} with no {@code destination}, unchanged from today.
+     * See {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
+     */
+    static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
@@ -129,6 +140,16 @@ final class SiteDefaults {
     static Map<String, Object> objectMap(final Map<String, Object> defaults, final String sectionKey) {
         final Object section = defaults.get(sectionKey);
         return section instanceof Map ? (Map<String, Object>) section : Collections.emptyMap();
+    }
+
+    /**
+     * Convenience for a top-level string value (e.g. {@code flightDestinationsFragment}).
+     *
+     * @return the value at {@code key}, or {@code null} when absent or not a string
+     */
+    static String stringValue(final Map<String, Object> defaults, final String key) {
+        final Object value = defaults.get(key);
+        return value instanceof String ? (String) value : null;
     }
 
     private static Optional<Map<String, Object>> read(final String site) {

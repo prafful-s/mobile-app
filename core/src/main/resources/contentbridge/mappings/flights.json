@@ -1,0 +1,11 @@
+{
+  "match": ["flights"],
+  "component": "flightResults",
+  "fields": [
+    { "target": "link", "const": "checkout" },
+    { "target": "eventType", "first": ["mobilebuttoneventtype", "buttoneventtype"], "default": "flight.select" },
+    { "target": "noResultsLabel", "const": "We're sorry. We didn't find any flights matching your criteria." },
+    { "target": "emptyOptionLabel", "const": "Not available" },
+    { "target": "flightSearchFormId", "const": "flightSearch" }
+  ]
+}

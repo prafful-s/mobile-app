@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -104,6 +105,64 @@ final class ContentFragmentReader {
             }
         }
         return values;
+    }
+
+    /**
+     * Reads one multi-value element as its raw list of strings - e.g. a dropdown's
+     * {@code destination_mapping} multifield - keeping each item apart rather than the {@code ","}-
+     * joined single string {@link #read} would produce via {@link #stringify}. Needed whenever an
+     * item's own text may itself contain commas, which a later {@code split(",")} could not
+     * distinguish from the join.
+     *
+     * @return the element's values in authored order, or an empty list when the fragment, element,
+     *         or value is missing
+     */
+    static List<String> readMultiValue(final Resource resource, final String elementName) {
+        if (resource == null || elementName == null || elementName.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        final ContentFragment fragment = adaptQuietly(resource);
+        if (fragment != null) {
+            final List<String> viaApi = readMultiValueViaApi(fragment, elementName);
+            if (!viaApi.isEmpty()) {
+                return viaApi;
+            }
+        }
+        final Resource master = resource.getChild("jcr:content/data/master");
+        if (master != null) {
+            final String[] raw = master.getValueMap().get(elementName, String[].class);
+            if (raw != null) {
+                return Arrays.asList(raw);
+            }
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    private static List<String> readMultiValueViaApi(final ContentFragment fragment, final String elementName) {
+        final Iterator<ContentElement> iterator = fragment.getElements();
+        while (iterator.hasNext()) {
+            final ContentElement element = iterator.next();
+            if (!elementName.equals(element.getName())) {
+                continue;
+            }
+            try {
+                final FragmentData data = element.getValue();
+                final Object value = data == null ? null : data.getValue();
+                if (value instanceof Object[]) {
+                    final Object[] array = (Object[]) value;
+                    final List<String> values = new ArrayList<>(array.length);
+                    for (final Object item : array) {
+                        if (item != null) {
+                            values.add(String.valueOf(item));
+                        }
+                    }
+                    return values;
+                }
+            } catch (final RuntimeException e) {
+                LOG.debug("Could not read element {} of {}", elementName, fragment.getName(), e);
+            }
+        }
+        return java.util.Collections.emptyList();
     }
 
     private static Map<String, String> readViaNode(final Resource master) {

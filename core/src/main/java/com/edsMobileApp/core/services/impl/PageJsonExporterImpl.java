@@ -484,6 +484,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             content = reviewOrderContent(content, page);
         } else if ("checkout".equals(key)) {
             patchCheckoutFormMeta(content, page);
+        } else {
+            applyFlightDestination(content, page, key);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -655,8 +657,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
 
-        // A site may override any subset of these in defaults.json.checkoutForm; everything absent
-        // there falls back to the compiled-in reference values below.
+        // A site may override any subset of these in defaults.json.checkoutForm. A key the site
+        // doesn't override keeps whatever the authored block itself produced (via FormBlockBuilder)
+        // when that's present, and only falls back to the compiled-in reference value below when
+        // neither exists - so a site whose checkout block authors its own eventType/formId/etc.
+        // keeps those, while link/toastMessage/submitButtonLabel (which no block authors) still get
+        // a sensible default.
         final Map<String, Object> overrides = SiteDefaults.objectMap(
                 siteDefaults.forPage(page), SiteDefaults.KEY_CHECKOUT_FORM);
 
@@ -665,22 +671,60 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // this contract everywhere else in the export.
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, old.get(SchemaConstants.KEY_ID));
-        meta.put("link", override(overrides, "link"));
+        meta.put("link", override(overrides, "link", old.get("link")));
         meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
-        meta.put("formId", override(overrides, "formId"));
+        meta.put("formId", override(overrides, "formId", old.get("formId")));
         meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
-        meta.put("eventType", override(overrides, "eventType"));
-        meta.put("webhookUrl", overrides.containsKey("webhookUrl")
-                ? overrides.get("webhookUrl") : old.get("webhookUrl"));
-        meta.put("toastMessage", overrides.containsKey("toastMessage")
-                ? overrides.get("toastMessage") : old.get("toastMessage"));
-        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel"));
+        meta.put("eventType", override(overrides, "eventType", old.get("eventType")));
+        meta.put("webhookUrl", override(overrides, "webhookUrl", old.get("webhookUrl")));
+        meta.put("toastMessage", override(overrides, "toastMessage", old.get("toastMessage")));
+        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel", old.get("submitButtonLabel")));
         form.put(SchemaConstants.KEY_META, meta);
     }
 
-    /** Reads {@code key} from {@code overrides}, falling back to {@link #CHECKOUT_FORM_DEFAULTS}. */
-    private static Object override(final Map<String, Object> overrides, final String key) {
-        return overrides.getOrDefault(key, CHECKOUT_FORM_DEFAULTS.get(key));
+    /**
+     * @return the site's override for {@code key}, else {@code authored} when the block itself
+     *         produced a non-blank value, else the compiled-in reference default.
+     */
+    private static Object override(final Map<String, Object> overrides, final String key, final Object authored) {
+        if (overrides.containsKey(key)) {
+            return overrides.get(key);
+        }
+        if (authored instanceof String ? StringUtils.isNotBlank((String) authored) : authored != null) {
+            return authored;
+        }
+        return CHECKOUT_FORM_DEFAULTS.get(key);
+    }
+
+    /**
+     * Sets {@code content.destination} on every {@code flightResults} block on this screen (a
+     * screen can carry more than one, e.g. one per content section) from the site's destination-
+     * dropdown Content Fragment at {@code defaults.json}'s {@code flightDestinationsFragment} path,
+     * matched by this screen's key - e.g. the "mexico" screen so the client fetches Mexico's
+     * flights directly instead of waiting on a {@code flightSearch} form the screen doesn't have.
+     * Unlike the web block, which derives the destination from the page URL at runtime, this
+     * fragment is the only source here; a screen key with no matching row leaves every
+     * {@code flightResults} block exactly as mapped today. See {@link FlightDestinationLookup}.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFlightDestination(final List<Map<String, Object>> content, final Page page,
+                                        final String screenKey) {
+        final List<Map<String, Object>> flightResultsBlocks = findComponents(content, "flightResults");
+        if (flightResultsBlocks.isEmpty()) {
+            return;
+        }
+        final String fragmentPath = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FLIGHT_DESTINATIONS_FRAGMENT);
+        if (StringUtils.isBlank(fragmentPath)) {
+            return;
+        }
+        final Resource fragment = page.getContentResource().getResourceResolver().getResource(fragmentPath);
+        final String destination = FlightDestinationLookup.countryForScreen(fragment, screenKey);
+        if (StringUtils.isNotBlank(destination)) {
+            for (final Map<String, Object> flightResults : flightResultsBlocks) {
+                ((Map<String, Object>) flightResults.get(SchemaConstants.KEY_CONTENT)).put("destination", destination);
+            }
+        }
     }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
@@ -702,6 +746,30 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
         }
         return null;
+    }
+
+    /** Depth-first search for every component in {@code tree} whose meta.component matches. */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> findComponents(final List<Map<String, Object>> tree,
+                                                             final String componentName) {
+        final List<Map<String, Object>> found = new ArrayList<>();
+        collectComponents(tree, componentName, found);
+        return found;
+    }
+
+    private static void collectComponents(final List<Map<String, Object>> tree, final String componentName,
+                                          final List<Map<String, Object>> sink) {
+        for (final Map<String, Object> component : tree) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (meta instanceof Map
+                    && componentName.equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                sink.add(component);
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                collectComponents((List<Map<String, Object>>) inner, componentName, sink);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -746,7 +814,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * empty once their other children are removed. Extend {@link #ENABLED_COMPONENTS} as more
      * mappings are re-enabled; remove this call and method when the full component set is restored.
      */
-    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list", "title", "image", "button", "productCard", "cartSummary");
+    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
+            "title", "image", "button", "productCard", "cartSummary", "flightSearch", "flightResults");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
@@ -1007,7 +1076,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * result is lower-cased, and leading/trailing hyphens are trimmed. Non-blank input always
      * yields non-blank output.
      */
-    private static String kebab(final String value) {
+    static String kebab(final String value) {
         if (StringUtils.isBlank(value)) {
             return value;
         }
