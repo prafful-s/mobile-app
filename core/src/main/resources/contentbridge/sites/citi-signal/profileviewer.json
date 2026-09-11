@@ -1,0 +1,119 @@
+{
+  "segments": {
+    "segmentFilter": []
+  },
+  "identities": [
+    {
+      "id": "oXZz73qoI",
+      "path": "_$tenantId.identification.core.email",
+      "label": "Email"
+    },
+    {
+      "id": "J1C99xwJ1",
+      "path": "_$tenantId.identification.core.phoneNumber",
+      "label": "Phone number"
+    },
+    {
+      "id": "16o04YWC5",
+      "path": "userAccount.ID",
+      "label": "User ID"
+    }
+  ],
+  "eventGroups": [
+    {
+      "label": "Product Views",
+      "filter": "entity.commerce.productViews"
+    },
+    {
+      "label": "Added to Cart",
+      "filter": "entity.commerce.productListAdds"
+    },
+    {
+      "label": "Checkouts",
+      "filter": "entity.commerce.checkouts"
+    },
+    {
+      "label": "Offers Interactions",
+      "filter": "entity._salesvelocity.interactionDetails.proposition.name"
+    },
+    {
+      "label": "Join Luma+",
+      "filter": "luma.join.lumaplus"
+    },
+    {
+      "label": "Mobile Registration",
+      "filter": "mobile.registration"
+    },
+    {
+      "label": "Chatbot interaction",
+      "filter": "Bot.interaction"
+    },
+    {
+      "label": "Purchase",
+      "filter": "entity.commerce.purchases"
+    },
+    {
+      "label": "Web Registration",
+      "filter": "web.registration"
+    },
+    {
+      "label": "Application Launch",
+      "filter": "application.launch"
+    },
+    {
+      "label": "Added to favourites",
+      "filter": "commerce.saveForLaters"
+    },
+    {
+      "label": "Store Entry",
+      "filter": "poi.entry"
+    },
+    {
+      "label": "Store Exit",
+      "filter": "poi.exit"
+    },
+    {
+      "label": "Logout",
+      "filter": "application.logout"
+    },
+    {
+      "label": "Login",
+      "filter": "application.login"
+    },
+    {
+      "label": "Screen View",
+      "filter": "web.webpagedetails.pageViews"
+    },
+    {
+      "label": "Registration",
+      "filter": "mobile.registration"
+    }
+  ],
+  "profileFields": [
+    {
+      "id": "J_OJ63Tgd",
+      "path": "entity.person.name.firstName entity.person.name.lastName",
+      "label": "Name"
+    },
+    {
+      "id": "HTY3jPMvk",
+      "path": "entity.person.gender",
+      "label": "Gender"
+    },
+    {
+      "id": "nciYAnjbWZ",
+      "path": "entity.person.birthDate",
+      "label": "Birth date"
+    },
+    {
+      "id": "UxZKHRHRf",
+      "path": "entity.homeAddress.street1 entity.homeAddress.postalCode entity.homeAddress.city",
+      "label": "Address"
+    },
+    {
+      "id": "JMMqzDTIT8",
+      "path": "pushNotificationDetails[].token",
+      "label": "Push Token"
+    }
+  ]
+}

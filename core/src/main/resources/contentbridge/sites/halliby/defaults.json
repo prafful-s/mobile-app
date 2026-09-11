@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "brand": "Halliby",
+    "template": "mobile/generic-retail-v3",
+    "vertical": "Grocery/Dining",
+    "thumbnail": "https://demo-system-next.s3.amazonaws.com/assets/halliby/products/AdobeStock_189384391.jpg",
+    "useCart": true
+  },
+  "rightIcon": {
+    "icon": "shopping-cart",
+    "name": "shopping-cart",
+    "target": "cart"
+  }
+}

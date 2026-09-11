@@ -1,0 +1,38 @@
+{
+  "aep": {
+    "id": 15365,
+    "imsOrg": {
+      "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+      "name": "Adobe Demo System Shared",
+      "tenantID": "demosystem4",
+      "__typename": "IMSOrg",
+      "targetClientCode": "demosystem4"
+    },
+    "sandbox": "public-wknd-fly",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "__typename": "AEP",
+    "sandboxName": "public-wknd-fly"
+  },
+  "imsOrg": {
+    "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "name": "Adobe Demo System Shared",
+    "tenantID": "demosystem4",
+    "__typename": "IMSOrg",
+    "targetClientCode": "demosystem4"
+  },
+  "launch": {
+    "id": 17136,
+    "type": "mobile",
+    "aepID": 15365,
+    "appID": "59610d662d36/3b1794ad6037/launch-42deda50c7ab-development",
+    "appId": "59610d662d36/3b1794ad6037/launch-42deda50c7ab-development",
+    "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "companyId": "CO248bee8aabe04648b1421ee94f8e416b",
+    "createdAt": 1687959511105,
+    "__typename": "Launch",
+    "propertyID": "PR9d4f9d58c7e94db1ae125d6a995afca4",
+    "sandboxName": "public-wknd-fly",
+    "propertyName": "zkorczyc - WKND Fly (mobile) (DO NOT DELETE) (mobile)",
+    "primarySolution": "AEP"
+  }
+}

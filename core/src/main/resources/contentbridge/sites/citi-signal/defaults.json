@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "template": "mobile-v2/generic-retail-v4",
+    "thumbnail": "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/citi-signal-mobile/thumbnail",
+    "useCart": true
+  },
+  "rightIcon": {
+    "icon": "shopping-cart",
+    "name": "shopping-cart",
+    "target": "cart"
+  }
+}
