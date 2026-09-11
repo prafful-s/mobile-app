@@ -484,6 +484,11 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             content = reviewOrderContent(content, page);
         } else if ("checkout".equals(key)) {
             patchCheckoutFormMeta(content, page);
+        } else {
+            // Every other screen's form takes its redirect + eventType from the site's own
+            // defaults.json 'forms' section; screens with no entry keep the emitted defaults.
+            applyFormSettings(content, page, key);
+            applyFlightDestination(content, page, key);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -694,6 +699,72 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return CHECKOUT_FORM_DEFAULTS.get(key);
     }
 
+    /**
+     * Applies the site's per-screen form settings from {@code defaults.json}
+     * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
+     * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
+     * {@code meta.eventType} (the analytics event the submit fires). Each is applied only when the
+     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
+     * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
+     * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
+                                   final String screenKey) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Object entry = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FORMS).get(screenKey);
+        if (!(entry instanceof Map)) {
+            return;
+        }
+        final Map<String, Object> settings = (Map<String, Object>) entry;
+        final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
+        putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        putIfConfigured(meta, "eventType", settings.get("eventType"));
+    }
+
+    /** Overwrites {@code meta[key]} only when {@code value} is a non-blank string. */
+    private static void putIfConfigured(final Map<String, Object> meta, final String key,
+                                        final Object value) {
+        if (value instanceof String && StringUtils.isNotBlank((String) value)) {
+            meta.put(key, value);
+        }
+    }
+
+    /**
+     * Sets {@code content.destination} on every {@code flightResults} block on this screen (a
+     * screen can carry more than one, e.g. one per content section) from the site's destination-
+     * dropdown Content Fragment at {@code defaults.json}'s {@code flightDestinationsFragment} path,
+     * matched by this screen's key - e.g. the "mexico" screen so the client fetches Mexico's
+     * flights directly instead of waiting on a {@code flightSearch} form the screen doesn't have.
+     * Unlike the web block, which derives the destination from the page URL at runtime, this
+     * fragment is the only source here; a screen key with no matching row leaves every
+     * {@code flightResults} block exactly as mapped today. See {@link FlightDestinationLookup}.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFlightDestination(final List<Map<String, Object>> content, final Page page,
+                                        final String screenKey) {
+        final List<Map<String, Object>> flightResultsBlocks = findComponents(content, "flightResults");
+        if (flightResultsBlocks.isEmpty()) {
+            return;
+        }
+        final String fragmentPath = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FLIGHT_DESTINATIONS_FRAGMENT);
+        if (StringUtils.isBlank(fragmentPath)) {
+            return;
+        }
+        final Resource fragment = page.getContentResource().getResourceResolver().getResource(fragmentPath);
+        final String destination = FlightDestinationLookup.countryForScreen(fragment, screenKey);
+        if (StringUtils.isNotBlank(destination)) {
+            for (final Map<String, Object> flightResults : flightResultsBlocks) {
+                ((Map<String, Object>) flightResults.get(SchemaConstants.KEY_CONTENT)).put("destination", destination);
+            }
+        }
+    }
+
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
     @SuppressWarnings("unchecked")
     private static Map<String, Object> findComponent(final List<Map<String, Object>> tree,
@@ -713,6 +784,30 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
         }
         return null;
+    }
+
+    /** Depth-first search for every component in {@code tree} whose meta.component matches. */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> findComponents(final List<Map<String, Object>> tree,
+                                                             final String componentName) {
+        final List<Map<String, Object>> found = new ArrayList<>();
+        collectComponents(tree, componentName, found);
+        return found;
+    }
+
+    private static void collectComponents(final List<Map<String, Object>> tree, final String componentName,
+                                          final List<Map<String, Object>> sink) {
+        for (final Map<String, Object> component : tree) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (meta instanceof Map
+                    && componentName.equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                sink.add(component);
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                collectComponents((List<Map<String, Object>>) inner, componentName, sink);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -1020,7 +1115,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * result is lower-cased, and leading/trailing hyphens are trimmed. Non-blank input always
      * yields non-blank output.
      */
-    private static String kebab(final String value) {
+    static String kebab(final String value) {
         if (StringUtils.isBlank(value)) {
             return value;
         }
