@@ -697,13 +697,15 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Sets {@code content.destination} on every {@code flightResults} block on this screen (a
-     * screen can carry more than one, e.g. one per content section) from the site's destination-
-     * dropdown Content Fragment at {@code defaults.json}'s {@code flightDestinationsFragment} path,
-     * matched by this screen's key - e.g. the "mexico" screen so the client fetches Mexico's
-     * flights directly instead of waiting on a {@code flightSearch} form the screen doesn't have.
-     * Unlike the web block, which derives the destination from the page URL at runtime, this
-     * fragment is the only source here; a screen key with no matching row leaves every
+     * Rewrites every {@code flightResults} block on this screen (a screen can carry more than one,
+     * e.g. one per content section) into a {@code productList} block filtered to this screen's
+     * destination city - the same shape the reference app uses for a destination screen (a
+     * {@code flightResults} block there is never filterable; only the generic flight-results screen
+     * uses one, driven by a {@code flightSearch} form's state). The filter city comes from the
+     * site's destination-dropdown Content Fragment at {@code defaults.json}'s
+     * {@code flightDestinationsFragment} path, matched by this screen's key - e.g. the "mexico"
+     * screen resolves to "Cancún" (or whichever row matches first; a country with more than one
+     * city isn't fully handled yet). A screen key with no matching row leaves every
      * {@code flightResults} block exactly as mapped today. See {@link FlightDestinationLookup}.
      */
     @SuppressWarnings("unchecked")
@@ -719,12 +721,34 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             return;
         }
         final Resource fragment = page.getContentResource().getResourceResolver().getResource(fragmentPath);
-        final String destination = FlightDestinationLookup.countryForScreen(fragment, screenKey);
-        if (StringUtils.isNotBlank(destination)) {
+        final String city = FlightDestinationLookup.cityForScreen(fragment, screenKey);
+        if (StringUtils.isNotBlank(city)) {
             for (final Map<String, Object> flightResults : flightResultsBlocks) {
-                ((Map<String, Object>) flightResults.get(SchemaConstants.KEY_CONTENT)).put("destination", destination);
+                asMeta(flightResults.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_COMPONENT, "list");
+                flightResults.put(SchemaConstants.KEY_CONTENT, destinationProductList(city));
             }
         }
+    }
+
+    /**
+     * The {@code productList} content shape a destination screen's flight listing takes, filtered
+     * to {@code city}. Every field but {@code filter} is a fixed constant matching the reference
+     * app's own destination screens (e.g. its "france" screen filters "Paris" the same way).
+     */
+    private static Map<String, Object> destinationProductList(final String city) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("items", Collections.emptyList());
+        content.put("filter", city);
+        content.put("layout", "vertical/grid");
+        content.put("linkTo", "flight-search");
+        content.put("listType", "productList");
+        content.put("itemsInRow", 1);
+        content.put("itemRenderer", "image-text-one-line");
+        content.put("filterProperty", "Category");
+        content.put("filterOnlyProductScreens", true);
+        content.put("searchParamDestinationPath", "search.flights.to");
+        content.put("searchParamSearchValueSelector", "to");
+        return content;
     }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */

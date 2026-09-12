@@ -8,7 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 
 /**
- * Resolves a screen's flight-inventory country from the site's destination-dropdown Content
+ * Resolves a screen's flight-inventory filter value - the city products are filtered by on a
+ * destination screen's {@code productList} block - from the site's destination-dropdown Content
  * Fragment (see {@code SiteDefaults#KEY_FLIGHT_DESTINATIONS_FRAGMENT}), so adding a destination is
  * a content change - a new row in the fragment's {@code destination_mapping} multifield - rather
  * than a code deployment.
@@ -18,7 +19,11 @@ import org.apache.sling.api.resource.Resource;
  * {@link #ROW_PATTERN} parses it rather than a JSON reader. A screen key is matched against the
  * row's kebab-cased {@code city} first (covers city-named screens like {@code las-vegas}), then
  * its kebab-cased {@code country} (covers country-named screens like {@code poland}) - the two
- * screen-key conventions this site's destination screens actually use.</p>
+ * screen-key conventions this site's destination screens actually use. Either way the row's
+ * {@code city} is what's returned: flight products are tagged with their destination city (see
+ * {@code ProductCatalog}), not country, so the filter value must match that. A country with more
+ * than one city (Mexico's Cancún/Tulum) returns whichever row is found first - a screen covering
+ * several cities under one filter isn't handled yet.</p>
  */
 final class FlightDestinationLookup {
 
@@ -32,10 +37,10 @@ final class FlightDestinationLookup {
     /**
      * @param fragment  the destination-dropdown Content Fragment's own resource, or {@code null}
      * @param screenKey the exported screen key, e.g. {@code "las-vegas"} or {@code "poland"}
-     * @return the matching row's country, or {@code null} when the fragment, or a matching row, is
+     * @return the matching row's city, or {@code null} when the fragment, or a matching row, is
      *         not found
      */
-    static String countryForScreen(final Resource fragment, final String screenKey) {
+    static String cityForScreen(final Resource fragment, final String screenKey) {
         if (fragment == null || StringUtils.isBlank(screenKey)) {
             return null;
         }
@@ -48,10 +53,10 @@ final class FlightDestinationLookup {
             final String city = matcher.group(2).trim();
             final String country = matcher.group(3).trim();
             if (screenKey.equals(PageJsonExporterImpl.kebab(city))) {
-                return country;
+                return city;
             }
             if (byCountry == null && screenKey.equals(PageJsonExporterImpl.kebab(country))) {
-                byCountry = country;
+                byCountry = city;
             }
         }
         return byCountry;
