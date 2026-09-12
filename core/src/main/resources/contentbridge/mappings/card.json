@@ -10,6 +10,7 @@
   },
   "fields": [
     { "target": "link",
+      "first": ["link"],
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "default": "#" },
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },

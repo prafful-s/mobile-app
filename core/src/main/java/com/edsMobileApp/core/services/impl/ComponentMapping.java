@@ -369,6 +369,7 @@ final class ComponentMapping {
         return contentFragmentFolderRef;
     }
 
+
     /**
      * Every CRX property this rule reads from, across every field. Used by the walker to
      * filter extras passthrough - a property this rule consumed must not reappear as an extra.
@@ -446,10 +447,18 @@ final class ComponentMapping {
 
     /**
      * A {@code link} names a destination screen, so it carries that screen's key - the last path
-     * segment, the same key the export files a page under - not the whole authoring path. A value
-     * that is not a {@code /content} path (a bare {@code #}, an anchor, {@code mailto:}, ...) is
-     * left as authored. When the rule declares a {@code linkQuery}, its parameter is appended so a
-     * product card's link carries the product it opens (e.g. {@code credit-card-basic?productId=…}).
+     * segment, the same key the export files a page under, with a trailing {@code .html} dropped
+     * (an authoring artefact, not part of the key) - not the whole authoring path. A value that is
+     * not a {@code /content} path (a bare {@code #}, an anchor, {@code mailto:}, ...) is left as
+     * authored.
+     *
+     * <p>Whatever query string or fragment the author put on the link (a product page link's
+     * {@code ?productId=<sku>}, say) is carried through onto the leaf unchanged - it was authored,
+     * not invented, so cutting it silently would lose real data. When the rule declares a
+     * {@code linkQuery} instead, that takes over entirely: its own parameter is appended so a
+     * product card's link carries the product it opens (e.g. {@code credit-card-basic?productId=…})
+     * from an authored field merged in via {@code contentFragmentRef}, and whatever suffix the raw
+     * href happened to have is dropped in favour of it.</p>
      */
     private Object screenTarget(final String targetKey, final Object value,
                                 final Map<String, Object> source) {
@@ -458,15 +467,16 @@ final class ComponentMapping {
         }
         final String text = ((String) value).trim();
         final int cut = StringUtils.indexOfAny(text, '?', '#');
+        final String suffix = cut >= 0 ? text.substring(cut) : "";
         final String path = StringUtils.stripEnd(cut >= 0 ? text.substring(0, cut) : text, "/");
         if (path.indexOf('/') < 0) {
             return value;
         }
-        final String leaf = StringUtils.substringAfterLast(path, "/");
+        final String leaf = StringUtils.removeEndIgnoreCase(StringUtils.substringAfterLast(path, "/"), ".html");
         if (leaf.isEmpty()) {
             return value;
         }
-        return linkQuery == null ? leaf : linkQuery.appendedTo(leaf, source);
+        return linkQuery == null ? leaf + suffix : linkQuery.appendedTo(leaf, source);
     }
 
     /** A query parameter appended to the {@code link}, sourced from another authored field. */

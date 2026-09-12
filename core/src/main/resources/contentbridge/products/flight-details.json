@@ -1,0 +1,17 @@
+{
+  "match": ["/conf/wknd-fly/settings/dam/cfm/models/flight-details"],
+  "component": "product",
+  "sites": ["/content/wknd-fly"],
+  "scope": ["/content/dam/wknd-fly/en/fragments/flight-details"],
+  "fields": [
+    { "target": "id", "from": "id" },
+    { "target": "to", "from": "flightToShortName" },
+    { "target": "from", "from": "flightFromShortName" },
+    { "target": "name", "first": ["name", "flightFromFullName"] },
+    { "target": "image", "from": "bannerimage" },
+    { "target": "price", "from": "flightPrice", "type": "number" },
+    { "target": "arrival", "from": "arrivalTime" },
+    { "target": "departure", "from": "departureTime" },
+    { "target": "category", "const": "flight" }
+  ]
+}

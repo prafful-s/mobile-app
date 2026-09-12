@@ -3,10 +3,10 @@
   "component": "divider",
   "skeleton": true,
   "fields": [
-    { "target": "size", "from": "size", "default": "S" },
-    { "target": "length", "from": "length", "default": "S" },
+    { "target": "size", "from": "spacing", "map": { "small": "S", "medium": "M", "large": "L" }, "default": "S" },
+    { "target": "length", "from": "spacing", "map": { "small": "S", "medium": "M", "large": "L" }, "default": "S" },
     { "target": "variant", "from": "variant", "default": "normal" },
-    { "target": "showLine", "from": "showLine", "type": "boolean", "default": false },
+    { "target": "showLine", "from": "style", "type": "boolean", "map": { "visible": true, "hidden": false }, "default": false },
     { "target": "alignment", "from": "alignment", "default": "center" },
     { "target": "orientation", "from": "orientation", "default": "vertical" },
     { "target": "horizontalInset", "from": "horizontalInset", "type": "boolean", "nullable": true }

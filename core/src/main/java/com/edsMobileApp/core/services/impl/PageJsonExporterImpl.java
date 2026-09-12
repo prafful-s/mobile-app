@@ -483,7 +483,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         } else if ("review-order".equals(key)) {
             content = reviewOrderContent(content, page);
         } else if ("checkout".equals(key)) {
+            // checkout owns its meta.link via its dedicated patch (formId/eventType too).
             patchCheckoutFormMeta(content, page);
+        } else {
+            // Every other screen's form takes its redirect + eventType from the site's own
+            // defaults.json 'forms' section; screens with no entry keep the emitted defaults.
+            applyFormSettings(content, page, key);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -655,8 +660,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
 
-        // A site may override any subset of these in defaults.json.checkoutForm; everything absent
-        // there falls back to the compiled-in reference values below.
+        // A site may override any subset of these in defaults.json.checkoutForm. A key the site
+        // doesn't override keeps whatever the authored block itself produced (via FormBlockBuilder)
+        // when that's present, and only falls back to the compiled-in reference value below when
+        // neither exists - so a site whose checkout block authors its own eventType/formId/etc.
+        // keeps those, while link/toastMessage/submitButtonLabel (which no block authors) still get
+        // a sensible default.
         final Map<String, Object> overrides = SiteDefaults.objectMap(
                 siteDefaults.forPage(page), SiteDefaults.KEY_CHECKOUT_FORM);
 
@@ -665,23 +674,66 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // this contract everywhere else in the export.
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, old.get(SchemaConstants.KEY_ID));
-        meta.put("link", override(overrides, "link"));
+        meta.put("link", override(overrides, "link", old.get("link")));
         meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
-        meta.put("formId", override(overrides, "formId"));
+        meta.put("formId", override(overrides, "formId", old.get("formId")));
         meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
-        meta.put("eventType", override(overrides, "eventType"));
-        meta.put("webhookUrl", overrides.containsKey("webhookUrl")
-                ? overrides.get("webhookUrl") : old.get("webhookUrl"));
-        meta.put("toastMessage", overrides.containsKey("toastMessage")
-                ? overrides.get("toastMessage") : old.get("toastMessage"));
-        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel"));
+        meta.put("eventType", override(overrides, "eventType", old.get("eventType")));
+        meta.put("webhookUrl", override(overrides, "webhookUrl", old.get("webhookUrl")));
+        meta.put("toastMessage", override(overrides, "toastMessage", old.get("toastMessage")));
+        meta.put("submitButtonLabel", override(overrides, "submitButtonLabel", old.get("submitButtonLabel")));
         form.put(SchemaConstants.KEY_META, meta);
     }
 
-    /** Reads {@code key} from {@code overrides}, falling back to {@link #CHECKOUT_FORM_DEFAULTS}. */
-    private static Object override(final Map<String, Object> overrides, final String key) {
-        return overrides.getOrDefault(key, CHECKOUT_FORM_DEFAULTS.get(key));
+    /**
+     * @return the site's override for {@code key}, else {@code authored} when the block itself
+     *         produced a non-blank value, else the compiled-in reference default.
+     */
+    private static Object override(final Map<String, Object> overrides, final String key, final Object authored) {
+        if (overrides.containsKey(key)) {
+            return overrides.get(key);
+        }
+        if (authored instanceof String ? StringUtils.isNotBlank((String) authored) : authored != null) {
+            return authored;
+        }
+        return CHECKOUT_FORM_DEFAULTS.get(key);
     }
+
+    /**
+     * Applies the site's per-screen form settings from {@code defaults.json}
+     * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
+     * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
+     * {@code meta.eventType} (the analytics event the submit fires). Each is applied only when the
+     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
+     * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
+     * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
+                                   final String screenKey) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Object entry = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FORMS).get(screenKey);
+        if (!(entry instanceof Map)) {
+            return;
+        }
+        final Map<String, Object> settings = (Map<String, Object>) entry;
+        final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
+        putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        putIfConfigured(meta, "eventType", settings.get("eventType"));
+    }
+
+    /** Overwrites {@code meta[key]} only when {@code value} is a non-blank string. */
+    private static void putIfConfigured(final Map<String, Object> meta, final String key,
+                                        final Object value) {
+        if (value instanceof String && StringUtils.isNotBlank((String) value)) {
+            meta.put(key, value);
+        }
+    }
+
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
     @SuppressWarnings("unchecked")
@@ -746,7 +798,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * empty once their other children are removed. Extend {@link #ENABLED_COMPONENTS} as more
      * mappings are re-enabled; remove this call and method when the full component set is restored.
      */
-    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list", "title", "image", "button", "productCard", "cartSummary");
+    private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
+            "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
+            "flightSearch", "flightResults");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
