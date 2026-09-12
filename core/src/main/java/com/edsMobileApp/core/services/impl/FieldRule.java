@@ -136,11 +136,12 @@ final class FieldRule {
     private final String type;
     private final boolean nullable;
     private final Map<String, Object> valueMap;
+    private final String prefix;
 
     private FieldRule(final String target, final String from, final String parentFrom,
                       final List<String> first, final Object constant, final Extract extract,
                       final Object defaultValue, final String type, final boolean nullable,
-                      final Map<String, Object> valueMap) {
+                      final Map<String, Object> valueMap, final String prefix) {
         this.target = target;
         this.from = from;
         this.parentFrom = parentFrom;
@@ -151,6 +152,7 @@ final class FieldRule {
         this.type = type;
         this.nullable = nullable;
         this.valueMap = valueMap;
+        this.prefix = prefix;
     }
 
     /**
@@ -171,7 +173,8 @@ final class FieldRule {
                 definition.get("default"),
                 string(definition.get("type")),
                 Boolean.TRUE.equals(definition.get("nullable")),
-                stringMap(definition.get("map")));
+                stringMap(definition.get("map")),
+                string(definition.get("prefix")));
     }
 
     String getTarget() {
@@ -192,7 +195,25 @@ final class FieldRule {
      * @return the authored value, or {@code null} when this field has no source or it is unset
      */
     Object fromSource(final Map<String, Object> source, final Map<String, Object> parentSource) {
-        return constant != null ? null : coerce(translate(resolve(source, parentSource)));
+        if (constant != null) {
+            return null;
+        }
+        return withPrefix(coerce(translate(resolve(source, parentSource))));
+    }
+
+    /**
+     * Prepends the rule's declared {@code prefix} to a resolved string value, comma-joined the same
+     * way {@link #TYPE_CATEGORY_LABEL} joins multiple tags (e.g. a flight's resolved city "Paris"
+     * becomes "Flight, Paris" for a rule declaring {@code "prefix": "Flight"}) - a fixed tag
+     * standing alongside a per-item value in one multi-tag {@code category} field, without a
+     * separate field or a code change per site. A blank or non-string value passes through
+     * unchanged: there is nothing to tag.
+     */
+    private Object withPrefix(final Object value) {
+        if (prefix == null || !(value instanceof String) || StringUtils.isBlank((String) value)) {
+            return value;
+        }
+        return prefix + ", " + value;
     }
 
     /**
