@@ -489,6 +489,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             // Every other screen's form takes its redirect + eventType from the site's own
             // defaults.json 'forms' section; screens with no entry keep the emitted defaults.
             applyFormSettings(content, page, key);
+            applyFlightDestination(content, page, key);
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -700,6 +701,40 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
+     * Rewrites every {@code flightResults} block on this screen (a screen can carry more than one,
+     * e.g. one per content section) into a {@code productList} block filtered to this screen's
+     * destination city - the same shape the reference app uses for a destination screen (a
+     * {@code flightResults} block there is never filterable; only the generic flight-results screen
+     * uses one, driven by a {@code flightSearch} form's state). The filter city comes from the
+     * site's destination-dropdown Content Fragment at {@code defaults.json}'s
+     * {@code flightDestinationsFragment} path, matched by this screen's key - e.g. the "mexico"
+     * screen resolves to "Cancún" (or whichever row matches first; a country with more than one
+     * city isn't fully handled yet). A screen key with no matching row leaves every
+     * {@code flightResults} block exactly as mapped today. See {@link FlightDestinationLookup}.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFlightDestination(final List<Map<String, Object>> content, final Page page,
+                                        final String screenKey) {
+        final List<Map<String, Object>> flightResultsBlocks = findComponents(content, "flightResults");
+        if (flightResultsBlocks.isEmpty()) {
+            return;
+        }
+        final String fragmentPath = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FLIGHT_DESTINATIONS_FRAGMENT);
+        if (StringUtils.isBlank(fragmentPath)) {
+            return;
+        }
+        final Resource fragment = page.getContentResource().getResourceResolver().getResource(fragmentPath);
+        final String city = FlightDestinationLookup.cityForScreen(fragment, screenKey);
+        if (StringUtils.isNotBlank(city)) {
+            for (final Map<String, Object> flightResults : flightResultsBlocks) {
+                asMeta(flightResults.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_COMPONENT, "list");
+                flightResults.put(SchemaConstants.KEY_CONTENT, destinationProductList(city));
+            }
+        }
+    }
+
+    /**
      * Applies the site's per-screen form settings from {@code defaults.json}
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
      * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
@@ -734,6 +769,26 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
     }
 
+    /**
+     * The {@code productList} content shape a destination screen's flight listing takes, filtered
+     * to {@code city}. Every field but {@code filter} is a fixed constant matching the reference
+     * app's own destination screens (e.g. its "france" screen filters "Paris" the same way).
+     */
+    private static Map<String, Object> destinationProductList(final String city) {
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("items", Collections.emptyList());
+        content.put("filter", city);
+        content.put("layout", "vertical/grid");
+        content.put("linkTo", "flight-search");
+        content.put("listType", "productList");
+        content.put("itemsInRow", 1);
+        content.put("itemRenderer", "image-text-one-line");
+        content.put("filterProperty", "Category");
+        content.put("filterOnlyProductScreens", true);
+        content.put("searchParamDestinationPath", "search.flights.to");
+        content.put("searchParamSearchValueSelector", "to");
+        return content;
+    }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
     @SuppressWarnings("unchecked")
@@ -754,6 +809,30 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
         }
         return null;
+    }
+
+    /** Depth-first search for every component in {@code tree} whose meta.component matches. */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> findComponents(final List<Map<String, Object>> tree,
+                                                             final String componentName) {
+        final List<Map<String, Object>> found = new ArrayList<>();
+        collectComponents(tree, componentName, found);
+        return found;
+    }
+
+    private static void collectComponents(final List<Map<String, Object>> tree, final String componentName,
+                                          final List<Map<String, Object>> sink) {
+        for (final Map<String, Object> component : tree) {
+            final Object meta = component.get(SchemaConstants.KEY_META);
+            if (meta instanceof Map
+                    && componentName.equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                sink.add(component);
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                collectComponents((List<Map<String, Object>>) inner, componentName, sink);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -1061,7 +1140,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * result is lower-cased, and leading/trailing hyphens are trimmed. Non-blank input always
      * yields non-blank output.
      */
-    private static String kebab(final String value) {
+    static String kebab(final String value) {
         if (StringUtils.isBlank(value)) {
             return value;
         }

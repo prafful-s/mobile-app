@@ -12,6 +12,6 @@
     { "target": "price", "from": "flightPrice", "type": "number" },
     { "target": "arrival", "from": "arrivalTime" },
     { "target": "departure", "from": "departureTime" },
-    { "target": "category", "const": "flight" }
+    { "target": "category", "from": "flightToFullName", "prefix": "flight" }
   ]
 }
