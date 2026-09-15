@@ -16,7 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Global settings for the ContentBridge JSON exporter, read once from {@code config.json} at
+ * Global settings for the EdsMobileApp JSON exporter, read once from {@code config.json} at
  * activation instead of an OSGi {@code @ObjectClassDefinition}.
  *
  * <p>These knobs ({@code maxDepth}, {@code navPageNames},
@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * exporter setting in one place instead of split across OSGi config and per-site JSON.</p>
  *
  * <p>Same classloader-only loading arrangement as {@link SiteDefaults}, read from
- * {@code /contentbridge/config.json} on the classpath, so behaviour is identical in OSGi, in
+ * {@code /edsMobileApp/config.json} on the classpath, so behaviour is identical in OSGi, in
  * tests and in a plain JVM. Loaded once at activation, not per request: the file ships inside the
  * bundle and cannot change without a redeploy.</p>
  *
@@ -38,11 +38,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * there wins over {@code config.json}, so a test can still pin a narrower {@code maxDepth}
  * without needing its own {@code config.json} on the test classpath.</p>
  */
-final class ContentBridgeSettings {
+final class EdsMobileAppSettings {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ContentBridgeSettings.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EdsMobileAppSettings.class);
 
-    private static final String PATH = "/contentbridge/config.json";
+    private static final String PATH = "/edsMobileApp/config.json";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final int maxDepth;
@@ -53,7 +53,7 @@ final class ContentBridgeSettings {
     private final boolean overrideEnabled;
     private final String overridePropertyName;
 
-    private ContentBridgeSettings(final Map<String, Object> values) {
+    private EdsMobileAppSettings(final Map<String, Object> values) {
         this.maxDepth = intValue(values, "maxDepth", 3);
         this.navPageNames = stringArray(values, "navPageNames",
                 new String[] {"nav"});
@@ -67,20 +67,20 @@ final class ContentBridgeSettings {
                 stringValue(values, "overridePropertyName"), "cbJson");
     }
 
-    static ContentBridgeSettings load() {
-        return new ContentBridgeSettings(read());
+    static EdsMobileAppSettings load() {
+        return new EdsMobileAppSettings(read());
     }
 
     /**
      * @param overrides component properties from {@code @Activate}; any key present here wins
      *                  over the same key in {@code config.json}
      */
-    static ContentBridgeSettings load(final Map<String, Object> overrides) {
+    static EdsMobileAppSettings load(final Map<String, Object> overrides) {
         final Map<String, Object> merged = new LinkedHashMap<>(read());
         if (overrides != null) {
             merged.putAll(overrides);
         }
-        return new ContentBridgeSettings(merged);
+        return new EdsMobileAppSettings(merged);
     }
 
     int maxDepth() {
@@ -112,7 +112,7 @@ final class ContentBridgeSettings {
     }
 
     private static Map<String, Object> read() {
-        try (InputStream in = ContentBridgeSettings.class.getResourceAsStream(PATH)) {
+        try (InputStream in = EdsMobileAppSettings.class.getResourceAsStream(PATH)) {
             if (in == null) {
                 LOG.error("{} not present on the classpath - falling back to compiled-in defaults", PATH);
                 return Collections.emptyMap();
@@ -120,7 +120,7 @@ final class ContentBridgeSettings {
             final Map<String, Object> obj = MAPPER.readValue(
                     new String(in.readAllBytes(), StandardCharsets.UTF_8),
                     new TypeReference<Map<String, Object>>() { });
-            LOG.info("Loaded ContentBridge settings from {}", PATH);
+            LOG.info("Loaded EdsMobileApp settings from {}", PATH);
             return obj;
         } catch (final IOException | RuntimeException e) {
             LOG.error("{} could not be read - falling back to compiled-in defaults", PATH, e);

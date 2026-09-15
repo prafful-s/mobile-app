@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Shipped, per-site {@code integrations}: the AEP/IMS/Launch wiring the app reports. Like
  * {@link SiteBranding} and {@link SiteProfileViewer} it never varies with anything on a page, so
- * each site keeps it as data under {@code /contentbridge/sites/<site>/integrations.json} (site = the
+ * each site keeps it as data under {@code /edsMobileApp/sites/<site>/integrations.json} (site = the
  * site root's last segment, e.g. {@code secur-financial}) - one folder per site, alongside that
  * site's other shipped config, and ships with the bundle. A site with no such file simply exports no
  * integrations.
@@ -59,7 +59,7 @@ final class SiteIntegrations {
     }
 
     private static Optional<Map<String, Object>> read(final String site) {
-        final String path = "/contentbridge/sites/" + site + "/" + FILE;
+        final String path = "/edsMobileApp/sites/" + site + "/" + FILE;
         try (InputStream in = SiteIntegrations.class.getResourceAsStream(path)) {
             if (in == null) {
                 LOG.debug("{} not present - no shipped integrations for {}", path, site);

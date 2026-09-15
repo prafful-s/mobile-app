@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Shipped, per-site {@code profileViewer}: the AEP segment, identity, event-group and profile-field
  * configuration the app's profile screen reads. Like {@link SiteBranding} it never varies with
  * anything on a page, so each site keeps it as data under
- * {@code /contentbridge/sites/<site>/profileviewer.json} (site = the site root's last segment, e.g.
+ * {@code /edsMobileApp/sites/<site>/profileviewer.json} (site = the site root's last segment, e.g.
  * {@code secur-financial}) - one folder per site, alongside that site's other shipped config, and
  * ships with the bundle. A site with no such file simply exports no profileViewer.
  *
@@ -59,7 +59,7 @@ final class SiteProfileViewer {
     }
 
     private static Optional<Map<String, Object>> read(final String site) {
-        final String path = "/contentbridge/sites/" + site + "/" + FILE;
+        final String path = "/edsMobileApp/sites/" + site + "/" + FILE;
         try (InputStream in = SiteProfileViewer.class.getResourceAsStream(path)) {
             if (in == null) {
                 LOG.debug("{} not present - no shipped profileViewer for {}", path, site);

@@ -165,7 +165,7 @@ final class EnvelopeMeta {
      * <p>Taken from the page's own language rather than parsed out of the path. AEM resolves that
      * from {@code jcr:language} where set and from the language root above it otherwise, which is
      * exactly the rule the rest of AEM uses - so a site under {@code /language-masters/en} and one
-     * under {@code /us/en} both answer correctly without ContentBridge knowing either layout.</p>
+     * under {@code /us/en} both answer correctly without EdsMobileApp knowing either layout.</p>
      *
      * @return a tag such as {@code en-us}, or empty when the page has no language
      */

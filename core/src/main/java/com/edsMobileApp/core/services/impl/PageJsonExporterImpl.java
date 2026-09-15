@@ -73,7 +73,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     @Activate
     protected void activate(final Map<String, Object> properties) {
-        final ContentBridgeSettings config = ContentBridgeSettings.load(properties);
+        final EdsMobileAppSettings config = EdsMobileAppSettings.load(properties);
         this.navPageNames = config.navPageNames();
         this.excludedPageNames = new HashSet<>(Arrays.asList(config.excludedPageNames()));
         this.includeHomeScreen = config.includeHomeScreen();

@@ -92,9 +92,9 @@ public final class SchemaConstants {
     public static final String PN_EXCLUDE_FROM_APP = "excludeFromApp";
 
     /** Child node of jcr:content holding the branding palette. */
-    public static final String NN_BRANDING = "contentbridge/branding";
+    public static final String NN_BRANDING = "edsMobileApp/branding";
     /** Child node of jcr:content holding raw JSON blobs for integrations/profileViewer/products. */
-    public static final String NN_EXTRAS = "contentbridge/extras";
+    public static final String NN_EXTRAS = "edsMobileApp/extras";
 
     public static final String PN_INTEGRATIONS_JSON = "integrationsJson";
     public static final String PN_PROFILE_VIEWER_JSON = "profileViewerJson";

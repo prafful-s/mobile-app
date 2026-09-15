@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.edsMobileApp.core.models.impl.AbstractComponentModel;
 import com.edsMobileApp.core.models.impl.GenericComponent;
-import com.edsMobileApp.core.schema.ContentBridgeComponent;
+import com.edsMobileApp.core.schema.EdsMobileAppComponent;
 import com.edsMobileApp.core.schema.SchemaConstants;
 import com.edsMobileApp.core.services.FormSchemaService;
 import com.edsMobileApp.core.services.UrlService;
@@ -199,7 +199,7 @@ final class ComponentTreeWalker {
             if (isSystemNode(child)) {
                 continue;
             }
-            ContentBridgeComponent model = adaptStrictly(child);
+            EdsMobileAppComponent model = adaptStrictly(child);
             if (model == null) {
                 model = new GenericComponent(child, urlService);
             }
@@ -341,7 +341,7 @@ final class ComponentTreeWalker {
      * Walks the component tree depth-first, in authoring order, flattening every structural node
      * into a single ordered list.
      *
-     * <p>Hand-built ContentBridge pages are one level deep, but Edge Delivery content nests
+     * <p>Hand-built EdsMobileApp pages are one level deep, but Edge Delivery content nests
      * {@code root > section > columns > row > col > block > item}. Structural nodes carry layout,
      * not content, so they are descended into rather than exported - which keeps the flat
      * {@code content[]} contract identical for both authoring models.</p>
@@ -397,7 +397,7 @@ final class ComponentTreeWalker {
 
             // A registered model wins so curated components keep their exact shape; everything
             // else is projected generically, which is what lets the API serve an arbitrary site.
-            ContentBridgeComponent model = adaptStrictly(child);
+            EdsMobileAppComponent model = adaptStrictly(child);
             if (model == null) {
                 model = new GenericComponent(child, urlService);
             }
@@ -451,7 +451,7 @@ final class ComponentTreeWalker {
             // A quiz block (e.g. Frescopa's coffee-quiz-frescopa) authors only its own behaviour
             // settings - completion URL, event names, a progress toggle. Its questions, options and
             // submit button are fixed in the block's own front-end code, not authored in AEM at all,
-            // so there is no child content here to walk. Its bundled schema (contentbridge/forms/,
+            // so there is no child content here to walk. Its bundled schema (edsMobileApp/forms/,
             // same as every other form) holds that fixed content instead - but unlike a real form's
             // fields, a quiz step is already the exact component shape the export emits (see
             // isQuizSchema), so each one is stamped with a fresh id/order and added as its own
@@ -1255,7 +1255,7 @@ final class ComponentTreeWalker {
 
     /**
      * Machinery rather than content: {@code cq:responsive} breakpoints, live-copy bookkeeping and
-     * the ContentBridge configuration node itself. Relevant mainly when a page keeps its components
+     * the EdsMobileApp configuration node itself. Relevant mainly when a page keeps its components
      * directly under {@code jcr:content} and the walk starts there.
      */
     private static boolean isSystemNode(final Resource resource) {
@@ -1264,7 +1264,7 @@ final class ComponentTreeWalker {
                 || name.startsWith("jcr:")
                 || name.startsWith("rep:")
                 || name.startsWith("oak:")
-                || "contentbridge".equals(name);
+                || "edsMobileApp".equals(name);
     }
 
     private static boolean isKnownContainerType(final String resourceType) {
@@ -1307,10 +1307,10 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * Adapts a resource to its ContentBridge model <em>only</em> when a model is registered for that
+     * Adapts a resource to its EdsMobileApp model <em>only</em> when a model is registered for that
      * exact {@code sling:resourceType}.
      *
-     * <p>A plain {@code adaptTo(ContentBridgeComponent.class)} is not safe here. When no
+     * <p>A plain {@code adaptTo(EdsMobileAppComponent.class)} is not safe here. When no
      * implementation matches the resource type, Sling falls back to
      * {@code FirstImplementationPicker}, which returns whichever implementation sorts first by class
      * name - so an unmapped resource would be silently exported as a {@code banner}. Resolving
@@ -1318,21 +1318,21 @@ final class ComponentTreeWalker {
      *
      * @return the model, or {@code null} when this resource is not part of the JSON contract
      */
-    private ContentBridgeComponent adaptStrictly(final Resource resource) {
+    private EdsMobileAppComponent adaptStrictly(final Resource resource) {
         try {
             if (!modelFactory.isModelAvailableForResource(resource)) {
-                LOG.debug("No ContentBridge model registered for {} ({}) - skipping",
+                LOG.debug("No EdsMobileApp model registered for {} ({}) - skipping",
                         resource.getPath(), resource.getResourceType());
                 return null;
             }
             final Object model = modelFactory.getModelFromResource(resource);
-            if (model instanceof ContentBridgeComponent) {
-                return (ContentBridgeComponent) model;
+            if (model instanceof EdsMobileAppComponent) {
+                return (EdsMobileAppComponent) model;
             }
-            LOG.debug("Model for {} ({}) is not a ContentBridgeComponent - skipping",
+            LOG.debug("Model for {} ({}) is not a EdsMobileAppComponent - skipping",
                     resource.getPath(), resource.getResourceType());
         } catch (final RuntimeException e) {
-            LOG.warn("Could not build a ContentBridge model for {} - skipping", resource.getPath(), e);
+            LOG.warn("Could not build a EdsMobileApp model for {} - skipping", resource.getPath(), e);
         }
         return null;
     }

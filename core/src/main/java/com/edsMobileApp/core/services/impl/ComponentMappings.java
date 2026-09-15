@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * The loaded set of component mapping rules, keyed by the authored component name.
  *
- * <p>Rules live as JSON under {@code /contentbridge/mappings}, one file per authored component, plus
+ * <p>Rules live as JSON under {@code /edsMobileApp/mappings}, one file per authored component, plus
  * an {@code index.json} naming them all - the same arrangement as the form schemas, and for the same
  * reason: a bundle cannot reliably list its own contents, because {@code findEntries} is an OSGi
  * framework call that mocks and plain classloaders do not implement. Reading a manifest of names and
@@ -34,7 +34,7 @@ final class ComponentMappings {
 
     private static final Logger LOG = LoggerFactory.getLogger(ComponentMappings.class);
 
-    static final String MAPPING_PATH = "/contentbridge/mappings";
+    static final String MAPPING_PATH = "/edsMobileApp/mappings";
     static final String INDEX = MAPPING_PATH + "/index.json";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

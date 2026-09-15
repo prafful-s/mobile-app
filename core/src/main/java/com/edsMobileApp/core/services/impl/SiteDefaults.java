@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * form when the block itself has no authored title. Every consumer keeps its own compiled-in
  * default; this class narrows the scope of a change to one file per site instead of a code edit.
  *
- * <p>Shape of {@code /contentbridge/sites/<site>/defaults.json}:</p>
+ * <p>Shape of {@code /edsMobileApp/sites/<site>/defaults.json}:</p>
  * <pre>
  * {
  *   "screenKeyAliases":  { "&lt;jcr-name&gt;":  "&lt;screen-key&gt;" },
@@ -165,7 +165,7 @@ final class SiteDefaults {
     }
 
     private static Optional<Map<String, Object>> read(final String site) {
-        final String path = "/contentbridge/sites/" + site + "/" + FILE;
+        final String path = "/edsMobileApp/sites/" + site + "/" + FILE;
         try (InputStream in = SiteDefaults.class.getResourceAsStream(path)) {
             if (in == null) {
                 LOG.debug("{} not present - {} keeps compiled-in defaults", path, site);

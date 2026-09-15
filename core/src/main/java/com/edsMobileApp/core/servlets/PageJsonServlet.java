@@ -29,23 +29,23 @@ import com.day.cq.wcm.api.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * The ContentBridge read API.
+ * The EdsMobileApp read API.
  *
  * <pre>
- * GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en
- * GET /apps/contentbridge/api.json?path=/content/contentbridge/us/en/subpage-1
+ * GET /apps/edsMobileApp/api.json?path=/content/edsMobileApp/us/en
+ * GET /apps/edsMobileApp/api.json?path=/content/edsMobileApp/us/en/subpage-1
  * </pre>
  *
  * <p>Bound by <strong>resource type</strong> rather than by path. Adobe's guidance for AEM as a
  * Cloud Service is to avoid {@code @SlingServletPaths}: path-bound servlets bypass Sling's resource
  * resolution, so the repository ACLs on the requested resource are never consulted, they cannot be
  * cached by the dispatcher against a real resource, and they sit outside the standard
- * resource/selector/extension contract. Binding to {@code contentbridge/api} means the request first
+ * resource/selector/extension contract. Binding to {@code edsMobileApp/api} means the request first
  * resolves a real node, which the requesting user must be allowed to read.</p>
  *
- * <p>Content is read through the {@code contentbridge-reader} system user, which repoinit grants
+ * <p>Content is read through the {@code edsMobileApp-reader} system user, which repoinit grants
  * {@code jcr:read} on {@code /content}. That is what lets one endpoint serve every site on the
- * instance, including projects that know nothing about ContentBridge, and it means the response does
+ * instance, including projects that know nothing about EdsMobileApp, and it means the response does
  * <em>not</em> reflect the requesting user's permissions - the service user's own {@code jcr:read}
  * grant is the access boundary, so keep it meaningful.</p>
  *
@@ -58,15 +58,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * an {@code error} key so clients never have to parse an HTML error page.</p>
  */
 @Component(service = Servlet.class,
-           property = {"service.description=ContentBridge - Page JSON API"})
+           property = {"service.description=EdsMobileApp - Page JSON API"})
 @SlingServletResourceTypes(
         resourceTypes = PageJsonServlet.RESOURCE_TYPE,
         methods = HttpConstants.METHOD_GET,
         extensions = PageJsonServlet.EXTENSION)
 public class PageJsonServlet extends SlingSafeMethodsServlet {
 
-    /** Resource type the endpoint node carries; the node itself lives at /apps/contentbridge/api. */
-    public static final String RESOURCE_TYPE = "contentbridge/api";
+    /** Resource type the endpoint node carries; the node itself lives at /apps/edsMobileApp/api. */
+    public static final String RESOURCE_TYPE = "edsMobileApp/api";
 
     static final String EXTENSION = "json";
 
@@ -78,10 +78,10 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
     private static final String CONTENT_TYPE = "application/json";
 
     /**
-     * Sub-service name. Mapped to the {@code contentbridge-reader} system user, which repoinit
+     * Sub-service name. Mapped to the {@code edsMobileApp-reader} system user, which repoinit
      * grants {@code jcr:read} on {@code /content}.
      */
-    private static final String SUBSERVICE = "contentbridge-reader";
+    private static final String SUBSERVICE = "edsMobileApp-reader";
 
     private final transient ObjectMapper mapper = new ObjectMapper();
 
@@ -105,7 +105,7 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
                     "Missing required query parameter 'path'.");
             return;
         }
-        // Prefer the contentbridge-reader system user so the API can serve every site under /content
+        // Prefer the edsMobileApp-reader system user so the API can serve every site under /content
         // regardless of who is asking.
         try (ResourceResolver serviceResolver = openServiceResolver()) {
 
@@ -158,10 +158,10 @@ public class PageJsonServlet extends SlingSafeMethodsServlet {
             // "excessive" access log below - avoids Jackson streaming the payload twice.
             final String body = mapper.writeValueAsString(payload);
             response.getWriter().write(body);
-            LOG.debug("ContentBridge served path={} bytes={} body={}", path, body.length(), body);
+            LOG.debug("EdsMobileApp served path={} bytes={} body={}", path, body.length(), body);
 
         } catch (final IOException e) {
-            LOG.error("Failed to serialise ContentBridge payload for {}", path, e);
+            LOG.error("Failed to serialise EdsMobileApp payload for {}", path, e);
             writeError(response, SlingHttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Could not serialise the page.");
         } catch (final RuntimeException e) {
