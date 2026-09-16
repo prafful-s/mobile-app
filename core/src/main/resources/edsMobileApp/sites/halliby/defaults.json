@@ -12,5 +12,9 @@
     "target": "cart"
   },
   "renderLinklessCards": true,
-  "productDetailScreen": "food"
+  "productListComponent": true,
+  "productDetailScreen": "food",
+  "productScreenByScreen": {
+    "recipes": "recipe"
+  }
 }

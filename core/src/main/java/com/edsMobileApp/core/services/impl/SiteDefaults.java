@@ -93,13 +93,27 @@ final class SiteDefaults {
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
     /**
-     * The screen a product-list item navigates to, carrying the product's sku as a {@code productId}
-     * query param: {@code "productDetailScreen": "food"}. Emitted as {@code content.link} on every
-     * {@code listType: productList} so the client opens {@code <screen>?productId=<sku>} on tap - the
-     * same pattern the web uses ({@code /en/food?productId=<sku>}). Absent leaves productLists with no
-     * link, unchanged from today. See {@code PageJsonExporterImpl#applyProductListLink}.
+     * The default screen a {@code productList} item navigates to (as {@code productScreen}), carrying
+     * the product's sku as a {@code productId} query param: {@code "productDetailScreen": "food"}. Used
+     * only when {@link #KEY_PRODUCT_LIST_COMPONENT} is on; overridden per screen by
+     * {@link #KEY_PRODUCT_SCREEN_BY_SCREEN}. Matches the web pattern {@code /en/food?productId=<sku>}.
      */
     static final String KEY_PRODUCT_DETAIL_SCREEN = "productDetailScreen";
+    /**
+     * Site opt-in ({@code "productListComponent": true}) to render the Category Products Lister as the
+     * public app's dedicated {@code productList} component instead of the default {@code list}: on tap
+     * the client opens {@code <productScreen>?productId=<sku>}. The detail screen is
+     * {@link #KEY_PRODUCT_DETAIL_SCREEN} by default, overridden per screen by
+     * {@link #KEY_PRODUCT_SCREEN_BY_SCREEN}. Absent (every other site) keeps the {@code list} shape,
+     * so this is fully reversible by removing the flag. See {@code PageJsonExporterImpl#applyProductListComponent}.
+     */
+    static final String KEY_PRODUCT_LIST_COMPONENT = "productListComponent";
+    /**
+     * Per-screen override for {@code productScreen}, keyed by screen key:
+     * {@code "productScreenByScreen": { "recipes": "recipe" }}. A screen with no entry falls back to
+     * {@link #KEY_PRODUCT_DETAIL_SCREEN}.
+     */
+    static final String KEY_PRODUCT_SCREEN_BY_SCREEN = "productScreenByScreen";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
@@ -170,6 +184,15 @@ final class SiteDefaults {
     static String stringValue(final Map<String, Object> defaults, final String key) {
         final Object value = defaults.get(key);
         return value instanceof String ? (String) value : null;
+    }
+
+    /**
+     * @return the boolean at {@code key} (JSON {@code true} or the string {@code "true"}),
+     *         {@code false} when absent or anything else - so an unset flag keeps the default off.
+     */
+    static boolean booleanValue(final Map<String, Object> defaults, final String key) {
+        final Object value = defaults.get(key);
+        return Boolean.TRUE.equals(value) || "true".equalsIgnoreCase(String.valueOf(value));
     }
 
     private static Optional<Map<String, Object>> read(final String site) {

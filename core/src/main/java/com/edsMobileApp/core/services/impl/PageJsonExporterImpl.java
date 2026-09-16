@@ -491,9 +491,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
-        // Point every product-list item at the site's product-detail screen (client appends
-        // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
-        applyProductListLink(content, page);
+        // Opt-in sites render product lists as the public app's productList component (with
+        // productScreen for on-tap navigation); a no-op for sites without the flag.
+        applyProductListComponent(content, page, key);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -738,44 +738,59 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Applies the site's per-screen form settings from {@code defaults.json}
-     * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
-     * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
-     * {@code meta.eventType} (the analytics event the submit fires). Each is applied only when the
-     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
-     * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
-     * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
-     */
-    /**
-     * Sets {@code content.link} on every {@code listType: productList} to the site's
-     * {@code productDetailScreen} ({@code defaults.json}), so the client opens
-     * {@code <screen>?productId=<sku>} when an item is tapped - the same navigation the web uses.
-     * A list that already carries a non-blank {@code link} keeps it (authored override wins), and a
-     * site with no {@code productDetailScreen} configured is left untouched.
+     * When the site opts in via {@code productListComponent} in its {@code defaults.json}, rewrites
+     * every product list on the screen (the {@code list} the Category Products Lister maps to, i.e.
+     * {@code listType: productList}) into the public app's dedicated {@code productList} component:
+     * {@code meta.component} becomes {@code productList}, {@code items} becomes {@code products}, and a
+     * {@code productScreen} is added so a tapped item opens {@code <productScreen>?productId=<sku>} -
+     * the navigation the public app uses. {@code productScreen} is the site's
+     * {@code productDetailScreen} default, overridden per screen by
+     * {@code productScreenByScreen.<screenKey>} (the recipes screen resolves to the recipe detail, not
+     * food). A site without the flag keeps the {@code list} shape untouched, so this is fully
+     * reversible by removing the config.
      */
     @SuppressWarnings("unchecked")
-    private void applyProductListLink(final List<Map<String, Object>> content, final Page page) {
-        final String detailScreen = SiteDefaults.stringValue(
-                siteDefaults.forPage(page), SiteDefaults.KEY_PRODUCT_DETAIL_SCREEN);
-        if (StringUtils.isBlank(detailScreen)) {
+    private void applyProductListComponent(final List<Map<String, Object>> content, final Page page,
+                                           final String screenKey) {
+        final Map<String, Object> defaults = siteDefaults.forPage(page);
+        if (!SiteDefaults.booleanValue(defaults, SiteDefaults.KEY_PRODUCT_LIST_COMPONENT)) {
             return;
         }
+        final String productScreen = StringUtils.defaultIfBlank(
+                SiteDefaults.stringMap(defaults, SiteDefaults.KEY_PRODUCT_SCREEN_BY_SCREEN).get(screenKey),
+                SiteDefaults.stringValue(defaults, SiteDefaults.KEY_PRODUCT_DETAIL_SCREEN));
         for (final Map<String, Object> list : findComponents(content, "list")) {
             final Object raw = list.get(SchemaConstants.KEY_CONTENT);
             if (!(raw instanceof Map)) {
                 continue;
             }
-            final Map<String, Object> listContent = (Map<String, Object>) raw;
-            if (!"productList".equals(listContent.get("listType"))) {
+            final Map<String, Object> lc = (Map<String, Object>) raw;
+            if (!"productList".equals(lc.get("listType"))) {
                 continue;
             }
-            final Object existing = listContent.get("link");
-            if (!(existing instanceof String) || StringUtils.isBlank((String) existing)) {
-                listContent.put("link", detailScreen);
+            asMeta(list.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_COMPONENT, "productList");
+            final Map<String, Object> pl = new LinkedHashMap<>();
+            pl.put("layout", lc.getOrDefault("layout", "vertical/grid"));
+            pl.put("products", lc.get("items"));
+            pl.put("imageWidth", lc.getOrDefault("imageWidth", 120));
+            pl.put("itemsInRow", lc.getOrDefault("itemsInRow", 1));
+            pl.put("itemRenderer", "category-item-renderer");
+            if (StringUtils.isNotBlank(productScreen)) {
+                pl.put("productScreen", productScreen);
             }
+            pl.put("imageResizeMode", lc.getOrDefault("imageResize", "cover"));
+            list.put(SchemaConstants.KEY_CONTENT, pl);
         }
     }
 
+    /**
+     * Applies the site's per-screen form settings from {@code defaults.json}
+     * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
+     * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
+     * {@code meta.eventType} (the analytics event the submit fires). Each is applied only when the
+     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
+     * already emitted. Checkout is handled by {@link #patchCheckoutFormMeta} instead.
+     */
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
                                    final String screenKey) {
@@ -912,7 +927,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
             "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
-            "flightSearch", "flightResults");
+            "flightSearch", "flightResults", "productList");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
