@@ -494,8 +494,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
         applyProductListLink(content, page);
-        // Opt-in sites render linkless card blocks as a row (panel -> horizontal); no-op otherwise.
-        applyLinklessCardsRow(content, page);
+        // Opt-in sites force a cardType on linkless cards (e.g. image-left one-per-row); no-op otherwise.
+        applyLinklessCardFormat(content, page);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -756,39 +756,25 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * site with no {@code productDetailScreen} configured is left untouched.
      */
     /**
-     * When the site sets {@code linklessCardsInRow} in its {@code defaults.json}, lays out its
-     * linkless card blocks in a row instead of stacked: any panel whose children are all linkless
-     * cards ({@code component: card}, {@code link: "#"}) has its {@code layout} flipped to
-     * {@code horizontal} - with the panel's existing {@code itemsFillWidth} the cards then sit side by
-     * side (e.g. the home "how it works" trio). A site without the setting keeps the vertical stack,
-     * so this is reversible and other sites are untouched.
+     * When the site sets {@code linklessCardType} in its {@code defaults.json}, forces that
+     * {@code cardType} on every linkless content card ({@code component: card}, {@code link: "#"}) -
+     * e.g. {@code image-text-one-line} lays each card out image-left, title/text beside it, one per
+     * row (the home "how it works" trio, about-us). A site without the setting keeps the authored
+     * {@code cardType}, so other sites are unchanged and it is reversible.
      */
     @SuppressWarnings("unchecked")
-    private void applyLinklessCardsRow(final List<Map<String, Object>> content, final Page page) {
-        final Object cfg = siteDefaults.forPage(page).get(SiteDefaults.KEY_LINKLESS_CARDS_IN_ROW);
-        if (!(cfg instanceof Number) || ((Number) cfg).intValue() < 2) {
+    private void applyLinklessCardFormat(final List<Map<String, Object>> content, final Page page) {
+        final String cardType = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_LINKLESS_CARD_TYPE);
+        if (StringUtils.isBlank(cardType)) {
             return;
         }
-        for (final Map<String, Object> panel : findComponents(content, "panel")) {
-            final Object raw = panel.get(SchemaConstants.KEY_CONTENT);
-            if (!(raw instanceof List)) {
-                continue;
+        for (final Map<String, Object> card : findComponents(content, "card")) {
+            final Object raw = card.get(SchemaConstants.KEY_CONTENT);
+            if (raw instanceof Map && "#".equals(((Map<String, Object>) raw).get("link"))) {
+                ((Map<String, Object>) raw).put("cardType", cardType);
             }
-            final List<Map<String, Object>> children = (List<Map<String, Object>>) raw;
-            if (children.size() < 2 || !children.stream().allMatch(PageJsonExporterImpl::isLinklessCard)) {
-                continue;
-            }
-            asMeta(panel.get(SchemaConstants.KEY_META)).put("layout", "horizontal");
         }
-    }
-
-    /** @return true when {@code component} is a {@code card} whose link is the {@code "#"} placeholder. */
-    @SuppressWarnings("unchecked")
-    private static boolean isLinklessCard(final Map<String, Object> component) {
-        final Object meta = component.get(SchemaConstants.KEY_META);
-        final Object content = component.get(SchemaConstants.KEY_CONTENT);
-        return meta instanceof Map && "card".equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))
-                && content instanceof Map && "#".equals(((Map<String, Object>) content).get("link"));
     }
 
     @SuppressWarnings("unchecked")
