@@ -491,6 +491,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
+        // Point every product-list item at the site's product-detail screen (client appends
+        // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
+        applyProductListLink(content, page);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -743,6 +746,36 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
      * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      */
+    /**
+     * Sets {@code content.link} on every {@code listType: productList} to the site's
+     * {@code productDetailScreen} ({@code defaults.json}), so the client opens
+     * {@code <screen>?productId=<sku>} when an item is tapped - the same navigation the web uses.
+     * A list that already carries a non-blank {@code link} keeps it (authored override wins), and a
+     * site with no {@code productDetailScreen} configured is left untouched.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyProductListLink(final List<Map<String, Object>> content, final Page page) {
+        final String detailScreen = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_PRODUCT_DETAIL_SCREEN);
+        if (StringUtils.isBlank(detailScreen)) {
+            return;
+        }
+        for (final Map<String, Object> list : findComponents(content, "list")) {
+            final Object raw = list.get(SchemaConstants.KEY_CONTENT);
+            if (!(raw instanceof Map)) {
+                continue;
+            }
+            final Map<String, Object> listContent = (Map<String, Object>) raw;
+            if (!"productList".equals(listContent.get("listType"))) {
+                continue;
+            }
+            final Object existing = listContent.get("link");
+            if (!(existing instanceof String) || StringUtils.isBlank((String) existing)) {
+                listContent.put("link", detailScreen);
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
                                    final String screenKey) {
