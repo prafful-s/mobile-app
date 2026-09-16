@@ -773,6 +773,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             if (!(existing instanceof String) || StringUtils.isBlank((String) existing)) {
                 listContent.put("link", detailScreen);
             }
+            // Also emit linkTo for testing which nav field the list component honors.
+            listContent.put("linkTo", detailScreen);
         }
     }
 
