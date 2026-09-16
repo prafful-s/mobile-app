@@ -100,6 +100,14 @@ final class SiteDefaults {
      * link, unchanged from today. See {@code PageJsonExporterImpl#applyProductListLink}.
      */
     static final String KEY_PRODUCT_DETAIL_SCREEN = "productDetailScreen";
+    /**
+     * Renders a site's linkless card blocks (the {@code renderLinklessCards} content cards) in a row
+     * rather than stacked: {@code "linklessCardsInRow": 3}. Set on the site, flips the enclosing
+     * panel's {@code layout} to {@code horizontal} so the cards sit side by side. Absent leaves the
+     * default vertical stack, so every other site is unchanged. See
+     * {@code PageJsonExporterImpl#applyLinklessCardsRow}.
+     */
+    static final String KEY_LINKLESS_CARDS_IN_ROW = "linklessCardsInRow";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
