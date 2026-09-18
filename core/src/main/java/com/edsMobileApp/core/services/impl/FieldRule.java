@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -15,6 +17,10 @@ import org.apache.commons.lang3.StringUtils;
  * <p>Exactly one operator applies per field, checked in this order:</p>
  * <ul>
  *   <li>{@code const} - a fixed value, for target fields AEM has no equivalent of</li>
+ *   <li>{@code template} - a string with {@code {fieldName}} placeholders, each substituted with
+ *       that property's authored value - for a target field built from more than one authored
+ *       property (e.g. a flight's {@code "{flightFromFullName} ({flightFromShortName}) to
+ *       {flightToFullName} ({flightToShortName})"})</li>
  *   <li>{@code extract} - a CSS selector run over an authored rich-text property</li>
  *   <li>{@code first} - the first non-blank of several candidate properties, for sites that
  *       renamed a field over time</li>
@@ -126,6 +132,9 @@ final class FieldRule {
      */
     private static final String TYPE_PRESENCE = "presence";
 
+    /** Matches a {@code {fieldName}} placeholder inside a {@code template} string. */
+    private static final Pattern TEMPLATE_FIELD = Pattern.compile("\\{([^{}]+)\\}");
+
     private final String target;
     private final String from;
     private final String parentFrom;
@@ -137,11 +146,12 @@ final class FieldRule {
     private final boolean nullable;
     private final Map<String, Object> valueMap;
     private final String prefix;
+    private final String template;
 
     private FieldRule(final String target, final String from, final String parentFrom,
                       final List<String> first, final Object constant, final Extract extract,
                       final Object defaultValue, final String type, final boolean nullable,
-                      final Map<String, Object> valueMap, final String prefix) {
+                      final Map<String, Object> valueMap, final String prefix, final String template) {
         this.target = target;
         this.from = from;
         this.parentFrom = parentFrom;
@@ -153,6 +163,7 @@ final class FieldRule {
         this.nullable = nullable;
         this.valueMap = valueMap;
         this.prefix = prefix;
+        this.template = template;
     }
 
     /**
@@ -174,7 +185,8 @@ final class FieldRule {
                 string(definition.get("type")),
                 Boolean.TRUE.equals(definition.get("nullable")),
                 stringMap(definition.get("map")),
-                string(definition.get("prefix")));
+                string(definition.get("prefix")),
+                string(definition.get("template")));
     }
 
     String getTarget() {
@@ -199,6 +211,26 @@ final class FieldRule {
             return null;
         }
         return withPrefix(coerce(translate(resolve(source, parentSource))));
+    }
+
+    /**
+     * Substitutes every {@code {fieldName}} placeholder in {@link #template} with that property's
+     * authored value off {@code source} (blank/missing becomes an empty string), e.g.
+     * {@code "{flightFromFullName} ({flightFromShortName}) to {flightToFullName}
+     * ({flightToShortName})"} becomes {@code "Chicago (ORD) to Paris (CDG)"}.
+     */
+    private String applyTemplate(final Map<String, Object> source) {
+        final StringBuilder result = new StringBuilder();
+        final Matcher matcher = TEMPLATE_FIELD.matcher(template);
+        int lastEnd = 0;
+        while (matcher.find()) {
+            result.append(template, lastEnd, matcher.start());
+            final Object value = source.get(matcher.group(1));
+            result.append(value == null ? "" : String.valueOf(value));
+            lastEnd = matcher.end();
+        }
+        result.append(template, lastEnd, template.length());
+        return result.toString();
     }
 
     /**
@@ -280,6 +312,9 @@ final class FieldRule {
      * consumes anything from the component's own authored properties.
      */
     List<String> consumedProperties() {
+        if (template != null) {
+            return templateFields();
+        }
         if (extract != null) {
             final String source = extract.sourceProperty();
             return source == null ? Collections.emptyList() : List.of(source);
@@ -293,6 +328,16 @@ final class FieldRule {
         return Collections.emptyList();
     }
 
+    /** The property names named by {@code {fieldName}} placeholders in {@link #template}. */
+    private List<String> templateFields() {
+        final List<String> fields = new ArrayList<>();
+        final Matcher matcher = TEMPLATE_FIELD.matcher(template);
+        while (matcher.find()) {
+            fields.add(matcher.group(1));
+        }
+        return fields;
+    }
+
     /**
      * An authored property ({@code first}/{@code from}) is tried before {@code extract} - an author
      * who filled in a dedicated field (a content-path picker, say) meant that value; a rich-text
@@ -303,6 +348,9 @@ final class FieldRule {
     private Object resolve(final Map<String, Object> source, final Map<String, Object> parentSource) {
         if (parentFrom != null) {
             return blankToNull(parentSource.get(parentFrom));
+        }
+        if (template != null) {
+            return blankToNull(applyTemplate(source));
         }
         if (!first.isEmpty()) {
             for (final String candidate : first) {
