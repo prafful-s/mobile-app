@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Loads form schemas from JSON bundled under {@code /contentbridge/forms}.
+ * Loads form schemas from JSON bundled under {@code /edsMobileApp/forms}.
  *
  * <p>One file per form, named after the form, plus an {@code index.json} naming them all. Everything
  * is read once at activation and held immutable: the files ship inside the bundle, so they cannot
@@ -38,7 +38,7 @@ public class FormSchemaServiceImpl implements FormSchemaService {
 
     private static final Logger LOG = LoggerFactory.getLogger(FormSchemaServiceImpl.class);
 
-    static final String SCHEMA_PATH = "/contentbridge/forms";
+    static final String SCHEMA_PATH = "/edsMobileApp/forms";
     static final String INDEX = SCHEMA_PATH + "/index.json";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();

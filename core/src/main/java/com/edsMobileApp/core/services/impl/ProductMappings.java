@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * about sites and scope keep the old walk-the-site's-DAM behaviour, so an existing rule (secur-
  * financial's, for one) needs no changes.</p>
  *
- * <p>Files live under {@code /contentbridge/products}, one per model, with an {@code index.json}
+ * <p>Files live under {@code /edsMobileApp/products}, one per model, with an {@code index.json}
  * manifest - the same classloader-only arrangement the component mappings and form schemas use, so
  * loading behaves identically in OSGi, in tests and in a plain JVM.</p>
  */
@@ -44,7 +44,7 @@ final class ProductMappings {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProductMappings.class);
 
-    static final String PRODUCTS_PATH = "/contentbridge/products";
+    static final String PRODUCTS_PATH = "/edsMobileApp/products";
     static final String INDEX = PRODUCTS_PATH + "/index.json";
 
     private static final String CONTENT_ROOT = "/content/";

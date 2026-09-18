@@ -11,7 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
 
-import com.edsMobileApp.core.schema.ContentBridgeComponent;
+import com.edsMobileApp.core.schema.EdsMobileAppComponent;
 import com.edsMobileApp.core.schema.SchemaConstants;
 import com.edsMobileApp.core.services.UrlService;
 
@@ -35,7 +35,7 @@ import com.edsMobileApp.core.services.UrlService;
  * <p>Not a Sling Model on purpose: registering one adapter for every resource type in the
  * repository would collide with genuinely registered models and with other bundles.</p>
  */
-public final class GenericComponent implements ContentBridgeComponent {
+public final class GenericComponent implements EdsMobileAppComponent {
 
     /**
      * Identity and bookkeeping - never content.
