@@ -7,7 +7,7 @@ import org.osgi.annotation.versioning.ProviderType;
 import com.day.cq.wcm.api.Page;
 
 /**
- * Turns an authored AEM page tree into the ContentBridge JSON contract.
+ * Turns an authored AEM page tree into the EdsMobileApp JSON contract.
  */
 @ProviderType
 public interface PageJsonExporter {

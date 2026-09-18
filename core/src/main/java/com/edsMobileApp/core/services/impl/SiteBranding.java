@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Shipped, per-site branding: the colour palette, logos, fonts and style groups the app dresses
  * itself in. It never varies with anything on a page, so each site keeps it as data under
- * {@code /contentbridge/sites/<site>/branding.json} (site = the site root's last segment, e.g.
+ * {@code /edsMobileApp/sites/<site>/branding.json} (site = the site root's last segment, e.g.
  * {@code secur-financial}) - one folder per site, alongside that site's other shipped config, and
  * ships with the bundle. A site with no such file simply exports no branding.
  *
@@ -58,7 +58,7 @@ final class SiteBranding {
     }
 
     private static Optional<Map<String, Object>> read(final String site) {
-        final String path = "/contentbridge/sites/" + site + "/" + FILE;
+        final String path = "/edsMobileApp/sites/" + site + "/" + FILE;
         try (InputStream in = SiteBranding.class.getResourceAsStream(path)) {
             if (in == null) {
                 LOG.debug("{} not present - no shipped branding for {}", path, site);

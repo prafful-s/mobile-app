@@ -11,14 +11,14 @@ import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.models.annotations.injectorspecific.OSGiService;
 import org.apache.sling.models.annotations.injectorspecific.SlingObject;
 
-import com.edsMobileApp.core.schema.ContentBridgeComponent;
+import com.edsMobileApp.core.schema.EdsMobileAppComponent;
 import com.edsMobileApp.core.services.UrlService;
 
 /**
- * Shared plumbing for every ContentBridge component model: id generation, property access and
+ * Shared plumbing for every EdsMobileApp component model: id generation, property access and
  * null-safe map building.
  */
-public abstract class AbstractComponentModel implements ContentBridgeComponent {
+public abstract class AbstractComponentModel implements EdsMobileAppComponent {
 
     @SlingObject
     protected Resource resource;

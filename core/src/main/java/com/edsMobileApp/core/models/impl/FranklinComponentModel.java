@@ -10,7 +10,7 @@ import org.apache.sling.models.annotations.Model;
 import org.apache.sling.models.annotations.injectorspecific.OSGiService;
 import org.apache.sling.models.annotations.injectorspecific.SlingObject;
 
-import com.edsMobileApp.core.schema.ContentBridgeComponent;
+import com.edsMobileApp.core.schema.EdsMobileAppComponent;
 import com.edsMobileApp.core.schema.SchemaConstants;
 import com.edsMobileApp.core.services.UrlService;
 
@@ -24,7 +24,7 @@ import com.edsMobileApp.core.services.UrlService;
  * looks when the export comes back empty.</p>
  */
 @Model(adaptables = Resource.class,
-       adapters = {ContentBridgeComponent.class, FranklinComponentModel.class},
+       adapters = {EdsMobileAppComponent.class, FranklinComponentModel.class},
        resourceType = {
            SchemaConstants.RT_FRANKLIN_BLOCK,
            SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
@@ -32,7 +32,7 @@ import com.edsMobileApp.core.services.UrlService;
            SchemaConstants.RT_FRANKLIN_TITLE
        },
        defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL)
-public class FranklinComponentModel implements ContentBridgeComponent {
+public class FranklinComponentModel implements EdsMobileAppComponent {
 
     @SlingObject
     private Resource resource;
@@ -40,7 +40,7 @@ public class FranklinComponentModel implements ContentBridgeComponent {
     @OSGiService
     private UrlService urlService;
 
-    private ContentBridgeComponent delegate;
+    private EdsMobileAppComponent delegate;
 
     @PostConstruct
     protected void init() {

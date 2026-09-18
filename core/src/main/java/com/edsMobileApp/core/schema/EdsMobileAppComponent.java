@@ -5,7 +5,7 @@ import java.util.Map;
 import org.osgi.annotation.versioning.ConsumerType;
 
 /**
- * Contract every ContentBridge component Sling Model must fulfil.
+ * Contract every EdsMobileApp component Sling Model must fulfil.
  *
  * <p>The exporter adapts each child resource of a page's container to this interface. Whichever
  * model is registered for that {@code sling:resourceType} wins, so adding a new component to the
@@ -21,7 +21,7 @@ import org.osgi.annotation.versioning.ConsumerType;
  * </pre>
  */
 @ConsumerType
-public interface ContentBridgeComponent {
+public interface EdsMobileAppComponent {
 
     /**
      * @return stable identifier for this component instance, unique within the app.

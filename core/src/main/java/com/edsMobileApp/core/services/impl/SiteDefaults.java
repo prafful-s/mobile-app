@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * form when the block itself has no authored title. Every consumer keeps its own compiled-in
  * default; this class narrows the scope of a change to one file per site instead of a code edit.
  *
- * <p>Shape of {@code /contentbridge/sites/<site>/defaults.json}:</p>
+ * <p>Shape of {@code /edsMobileApp/sites/<site>/defaults.json}:</p>
  * <pre>
  * {
  *   "screenKeyAliases":  { "&lt;jcr-name&gt;":  "&lt;screen-key&gt;" },
@@ -72,6 +72,16 @@ final class SiteDefaults {
     static final String KEY_FORM_HEADINGS = "formHeadings";
     static final String KEY_RIGHT_ICON = "rightIcon";
     static final String KEY_META = "meta";
+    /**
+     * Per-screen form settings, keyed by screen key:
+     * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>", "eventType": "..." } }}.
+     * {@code redirectAfterSubmit} sets the screen the client opens after a successful submit
+     * ({@code meta.link}); {@code eventType} sets the analytics event the submit fires
+     * ({@code meta.eventType}). Each is applied only when present and non-blank; anything absent
+     * (setting, screen, section, or file) leaves the value {@code FormBlockBuilder} already emitted.
+     * See {@code PageJsonExporterImpl#applyFormSettings}.
+     */
+    static final String KEY_FORMS = "forms";
     /**
      * Path to the site's destination-dropdown Content Fragment, whose {@code destination_mapping}
      * multifield supplies the country a {@code flightResults} block should filter by, keyed by
@@ -155,7 +165,7 @@ final class SiteDefaults {
     }
 
     private static Optional<Map<String, Object>> read(final String site) {
-        final String path = "/contentbridge/sites/" + site + "/" + FILE;
+        final String path = "/edsMobileApp/sites/" + site + "/" + FILE;
         try (InputStream in = SiteDefaults.class.getResourceAsStream(path)) {
             if (in == null) {
                 LOG.debug("{} not present - {} keeps compiled-in defaults", path, site);

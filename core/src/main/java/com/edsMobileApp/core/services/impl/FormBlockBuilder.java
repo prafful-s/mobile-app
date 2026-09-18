@@ -293,7 +293,7 @@ final class FormBlockBuilder {
      * .buildNavigation} already resolves for every export - {@code loginScreen}, {@code
      * profileScreen} or {@code registrationScreen} - so a link always points wherever the app's own
      * nav already sends a user for that role, whichever form declares it. Emitted as a standalone
-     * {@code button} component, the same shape {@code contentbridge/mappings/button.json} produces
+     * {@code button} component, the same shape {@code edsMobileApp/mappings/button.json} produces
      * for any other navigable link, styled {@code text} rather than a filled button since it is a
      * secondary action beside the submit button, not a competing one.
      *
