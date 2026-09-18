@@ -93,14 +93,6 @@ final class SiteDefaults {
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
     /**
-     * The screen a product-list item navigates to, carrying the product's sku as a {@code productId}
-     * query param: {@code "productDetailScreen": "food"}. Emitted as {@code content.link} on every
-     * {@code listType: productList} so the client opens {@code <screen>?productId=<sku>} on tap - the
-     * same pattern the web uses ({@code /en/food?productId=<sku>}). Absent leaves productLists with no
-     * link, unchanged from today. See {@code PageJsonExporterImpl#applyProductListLink}.
-     */
-    static final String KEY_PRODUCT_DETAIL_SCREEN = "productDetailScreen";
-    /**
      * Renders a site's linkless card blocks (the {@code renderLinklessCards} content cards) in a row
      * rather than stacked: {@code "linklessCardsInRow": 3}. Set on the site, flips the enclosing
      * panel's {@code layout} to {@code horizontal} so the cards sit side by side. Absent leaves the

@@ -12,6 +12,5 @@
     "target": "cart"
   },
   "renderLinklessCards": true,
-  "linklessCardType": "image-text-one-line",
-  "productDetailScreen": "food"
+  "linklessCardType": "image-text-one-line"
 }

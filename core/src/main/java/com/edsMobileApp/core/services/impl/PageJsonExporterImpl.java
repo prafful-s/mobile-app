@@ -493,7 +493,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
-        applyProductListLink(content, page);
         // Opt-in sites force a cardType on linkless cards (e.g. image-left one-per-row); no-op otherwise.
         applyLinklessCardFormat(content, page);
         screen.put(SchemaConstants.KEY_CONTENT,
@@ -774,31 +773,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             if (raw instanceof Map && "#".equals(((Map<String, Object>) raw).get("link"))) {
                 ((Map<String, Object>) raw).put("cardType", cardType);
             }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void applyProductListLink(final List<Map<String, Object>> content, final Page page) {
-        final String detailScreen = SiteDefaults.stringValue(
-                siteDefaults.forPage(page), SiteDefaults.KEY_PRODUCT_DETAIL_SCREEN);
-        if (StringUtils.isBlank(detailScreen)) {
-            return;
-        }
-        for (final Map<String, Object> list : findComponents(content, "list")) {
-            final Object raw = list.get(SchemaConstants.KEY_CONTENT);
-            if (!(raw instanceof Map)) {
-                continue;
-            }
-            final Map<String, Object> listContent = (Map<String, Object>) raw;
-            if (!"productList".equals(listContent.get("listType"))) {
-                continue;
-            }
-            final Object existing = listContent.get("link");
-            if (!(existing instanceof String) || StringUtils.isBlank((String) existing)) {
-                listContent.put("link", detailScreen);
-            }
-            // Also emit linkTo for testing which nav field the list component honors.
-            listContent.put("linkTo", detailScreen);
         }
     }
 
