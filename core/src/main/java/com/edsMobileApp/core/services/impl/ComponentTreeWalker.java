@@ -8,6 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
@@ -256,12 +258,82 @@ final class ComponentTreeWalker {
                 @SuppressWarnings("unchecked")
                 final Map<String, Object> payload = (Map<String, Object>) content;
                 prefixAssets(payload, assetHost);
+                if (isHtmlText(component)) {
+                    rewriteHtmlTextLinks(payload);
+                }
             } else if (content instanceof List) {
                 @SuppressWarnings("unchecked")
                 final List<Map<String, Object>> children = (List<Map<String, Object>>) content;
                 prefixAssetsDeep(children, assetHost);
             }
         }
+    }
+
+    private static boolean isHtmlText(final Map<String, Object> component) {
+        final Object meta = component.get(SchemaConstants.KEY_META);
+        return meta instanceof Map && "htmlText".equals(((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT));
+    }
+
+    /**
+     * Matches an htmlText block's {@code <a href="...">} authored as a full URL into a non-asset
+     * {@code /content/...} page - e.g. a "Book Trip" CTA typed against one specific AEM
+     * environment's publish host, rather than a repository-relative path. Never matched by
+     * {@link ContentPaths}'s own rewrite, which only recognises a bare {@code /content/...} href,
+     * so a link authored this way passes through completely broken otherwise. Captures the quote
+     * character and the repository path; the scheme and host are consumed by the match but dropped
+     * from the replacement entirely - a {@code /content/dam/...} link (a downloadable asset, not a
+     * screen) is left alone by the {@code (?!dam/)} exclusion.
+     */
+    private static final Pattern HTML_TEXT_ABSOLUTE_LINK = Pattern.compile(
+            "\\bhref\\s*=\\s*([\"'])https?://[^/\"']+(/content/(?!dam/)[^\"']*)\\1");
+
+    /**
+     * Rewrites every {@code <a href="...">} inside an htmlText block's {@code text} field matching
+     * {@link #HTML_TEXT_ABSOLUTE_LINK} to the in-app screen key that link names - the same key a
+     * curated {@code link}/{@code linkTo} field resolves to (see
+     * {@code ComponentMapping#screenTarget}). A field with nothing to rewrite, or a match whose
+     * leaf can't be derived (already bare), is left exactly as authored.
+     */
+    private static void rewriteHtmlTextLinks(final Map<String, Object> payload) {
+        final Object value = payload.get("text");
+        if (!(value instanceof String)) {
+            return;
+        }
+        final String text = (String) value;
+        if (text.indexOf('<') < 0 || !text.contains("href") || !text.contains(ContentPaths.CONTENT_PREFIX)) {
+            return;
+        }
+        final Matcher matcher = HTML_TEXT_ABSOLUTE_LINK.matcher(text);
+        final StringBuffer rewritten = new StringBuffer(text.length());
+        while (matcher.find()) {
+            final String screenKey = screenKeyOf(matcher.group(2));
+            final String replacement = screenKey == null
+                    ? matcher.group(0)
+                    : "href=" + matcher.group(1) + screenKey + matcher.group(1);
+            matcher.appendReplacement(rewritten, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(rewritten);
+        payload.put("text", rewritten.toString());
+    }
+
+    /**
+     * The in-app screen key a {@code /content/...} page path names - its last path segment, with a
+     * trailing {@code .html} dropped - plus whatever query string or fragment it carried.
+     *
+     * @return the screen key (with any {@code ?}/{@code #} suffix appended), or {@code null} when
+     *         {@code path} has no segment to name one
+     */
+    private static String screenKeyOf(final String path) {
+        final String trimmed = path.trim();
+        final int cut = StringUtils.indexOfAny(trimmed, '?', '#');
+        final String suffix = cut >= 0 ? trimmed.substring(cut) : "";
+        final String withoutSuffix = StringUtils.stripEnd(cut >= 0 ? trimmed.substring(0, cut) : trimmed, "/");
+        if (withoutSuffix.indexOf('/') < 0) {
+            return null;
+        }
+        final String leaf =
+                StringUtils.removeEndIgnoreCase(StringUtils.substringAfterLast(withoutSuffix, "/"), ".html");
+        return leaf.isEmpty() ? null : leaf + suffix;
     }
 
     /**
