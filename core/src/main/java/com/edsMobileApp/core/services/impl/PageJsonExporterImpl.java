@@ -812,7 +812,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         content.put("items", Collections.emptyList());
         content.put("filter", city);
         content.put("layout", "vertical/grid");
-        content.put("linkTo", "flight-search");
+        content.put("linkTo", "en");
         content.put("listType", "productList");
         content.put("itemsInRow", 1);
         content.put("itemRenderer", "image-text-one-line");
