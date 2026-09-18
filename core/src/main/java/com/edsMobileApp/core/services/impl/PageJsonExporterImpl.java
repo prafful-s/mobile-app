@@ -491,6 +491,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
+        // Outside the branch on purpose: cart, review-order and checkout take their own paths above
+        // and so never reach applyFormSettings, but a site can configure a heading for any screen
+        // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
+        applyFormHeading(content, page, key);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -765,7 +769,24 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
         putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
-        insertFormHeading(content, form, settings, page, screenKey);
+    }
+
+    /**
+     * Applies {@code forms.<screenKey>.heading} to the screen's form, for every screen rather than
+     * only the ones {@link #applyFormSettings} handles - see the call site.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFormHeading(final List<Map<String, Object>> content, final Page page,
+                                  final String screenKey) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Object entry = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FORMS).get(screenKey);
+        if (entry instanceof Map) {
+            insertFormHeading(content, form, (Map<String, Object>) entry, page, screenKey);
+        }
     }
 
     /**
