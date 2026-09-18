@@ -491,6 +491,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
+        // Point every product-list item at the site's product-detail screen (client appends
+        // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
+        // Opt-in sites force a cardType on linkless cards (e.g. image-left one-per-row); no-op otherwise.
+        applyLinklessCardFormat(content, page);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -743,6 +747,35 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
      * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      */
+    /**
+     * Sets {@code content.link} on every {@code listType: productList} to the site's
+     * {@code productDetailScreen} ({@code defaults.json}), so the client opens
+     * {@code <screen>?productId=<sku>} when an item is tapped - the same navigation the web uses.
+     * A list that already carries a non-blank {@code link} keeps it (authored override wins), and a
+     * site with no {@code productDetailScreen} configured is left untouched.
+     */
+    /**
+     * When the site sets {@code linklessCardType} in its {@code defaults.json}, forces that
+     * {@code cardType} on every linkless content card ({@code component: card}, {@code link: "#"}) -
+     * e.g. {@code image-text-one-line} lays each card out image-left, title/text beside it, one per
+     * row (the home "how it works" trio, about-us). A site without the setting keeps the authored
+     * {@code cardType}, so other sites are unchanged and it is reversible.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyLinklessCardFormat(final List<Map<String, Object>> content, final Page page) {
+        final String cardType = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_LINKLESS_CARD_TYPE);
+        if (StringUtils.isBlank(cardType)) {
+            return;
+        }
+        for (final Map<String, Object> card : findComponents(content, "card")) {
+            final Object raw = card.get(SchemaConstants.KEY_CONTENT);
+            if (raw instanceof Map && "#".equals(((Map<String, Object>) raw).get("link"))) {
+                ((Map<String, Object>) raw).put("cardType", cardType);
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
                                    final String screenKey) {
