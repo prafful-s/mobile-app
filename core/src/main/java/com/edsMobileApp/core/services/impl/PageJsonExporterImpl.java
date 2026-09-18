@@ -495,6 +495,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
         // Opt-in sites force a cardType on linkless cards (e.g. image-left one-per-row); no-op otherwise.
         applyLinklessCardFormat(content, page);
+        // Outside the branch on purpose: cart, review-order and checkout take their own paths above
+        // and so never reach applyFormSettings, but a site can configure a heading for any screen
+        // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
+        applyFormHeading(content, page, key);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -798,7 +802,24 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
         putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
-        insertFormHeading(content, form, settings, page, screenKey);
+    }
+
+    /**
+     * Applies {@code forms.<screenKey>.heading} to the screen's form, for every screen rather than
+     * only the ones {@link #applyFormSettings} handles - see the call site.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFormHeading(final List<Map<String, Object>> content, final Page page,
+                                  final String screenKey) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Object entry = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FORMS).get(screenKey);
+        if (entry instanceof Map) {
+            insertFormHeading(content, form, (Map<String, Object>) entry, page, screenKey);
+        }
     }
 
     /**
@@ -806,6 +827,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * in whichever list the form actually sits in - the form is usually nested inside a panel rather
      * than at the top of {@code content[]}, and the heading has to end up beside it to render above
      * it.
+     *
+     * <p>When the form already has a heading of its own, that title is rewritten in place rather
+     * than a second one inserted - so a site moving its {@code formHeadings} text into
+     * {@code forms.<screenKey>.heading} gets one heading, not two.</p>
      *
      * <p>{@code headingAlignment} sets the title's {@code textAlignment} and defaults to
      * {@code left}, matching {@link FormBlockBuilder#heading}'s own titles so a site that asks for a
@@ -831,6 +856,22 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Object alignment = settings.get("headingAlignment");
         final String textAlignment = alignment instanceof String
                 && StringUtils.isNotBlank((String) alignment) ? (String) alignment : "left";
+
+        // A form that already carries a heading has it sitting directly before it in this same list
+        // (ComponentTreeWalker adds FormBlockBuilder's heading, then the form). Overwrite that one
+        // rather than inserting a second title above it: the site is choosing this form's heading,
+        // not asking for two.
+        final Map<String, Object> existing = at > 0 ? siblings.get(at - 1) : null;
+        if (existing != null && SchemaConstants.COMPONENT_TITLE.equals(
+                asMeta(existing.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
+            final Object raw = existing.get(SchemaConstants.KEY_CONTENT);
+            if (raw instanceof Map) {
+                final Map<String, Object> existingContent = (Map<String, Object>) raw;
+                existingContent.put("text", configured);
+                existingContent.put("textAlignment", textAlignment);
+                return;
+            }
+        }
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         // Synthetic path, keyed on the screen, so the id is stable across exports the same way
