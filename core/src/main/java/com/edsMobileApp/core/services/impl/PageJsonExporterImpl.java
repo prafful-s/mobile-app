@@ -774,6 +774,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * than at the top of {@code content[]}, and the heading has to end up beside it to render above
      * it.
      *
+     * <p>When the form already has a heading of its own, that title is rewritten in place rather
+     * than a second one inserted - so a site moving its {@code formHeadings} text into
+     * {@code forms.<screenKey>.heading} gets one heading, not two.</p>
+     *
      * <p>{@code headingAlignment} sets the title's {@code textAlignment} and defaults to
      * {@code left}, matching {@link FormBlockBuilder#heading}'s own titles so a site that asks for a
      * heading without naming an alignment gets the same look as every other form heading.</p>
@@ -798,6 +802,22 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Object alignment = settings.get("headingAlignment");
         final String textAlignment = alignment instanceof String
                 && StringUtils.isNotBlank((String) alignment) ? (String) alignment : "left";
+
+        // A form that already carries a heading has it sitting directly before it in this same list
+        // (ComponentTreeWalker adds FormBlockBuilder's heading, then the form). Overwrite that one
+        // rather than inserting a second title above it: the site is choosing this form's heading,
+        // not asking for two.
+        final Map<String, Object> existing = at > 0 ? siblings.get(at - 1) : null;
+        if (existing != null && SchemaConstants.COMPONENT_TITLE.equals(
+                asMeta(existing.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
+            final Object raw = existing.get(SchemaConstants.KEY_CONTENT);
+            if (raw instanceof Map) {
+                final Map<String, Object> existingContent = (Map<String, Object>) raw;
+                existingContent.put("text", configured);
+                existingContent.put("textAlignment", textAlignment);
+                return;
+            }
+        }
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         // Synthetic path, keyed on the screen, so the id is stable across exports the same way
