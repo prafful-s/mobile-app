@@ -172,7 +172,7 @@ final class ComponentTreeWalker {
         if (applyScreenExclusions) {
             dropExcludedDeep(components);
         }
-        prefixAssetsDeep(components, assetHost);
+        prefixAssetsDeep(components, assetHost, page);
         return components;
     }
 
@@ -248,11 +248,15 @@ final class ComponentTreeWalker {
      * Walks the finished tree applying the asset host. Recursive because a nested panel's children
      * are just as likely to hold DAM references as a top-level component's.
      */
-    private void prefixAssetsDeep(final List<Map<String, Object>> components, final String assetHost) {
+    private void prefixAssetsDeep(final List<Map<String, Object>> components, final String assetHost,
+                                  final Page page) {
         if (StringUtils.isBlank(assetHost)) {
             return;
         }
-        for (final Map<String, Object> component : components) {
+        final boolean extractLinks = extractsInlineLinks(page);
+        boolean inserted = false;
+        for (int i = 0; i < components.size(); i++) {
+            final Map<String, Object> component = components.get(i);
             final Object content = component.get(SchemaConstants.KEY_CONTENT);
             if (content instanceof Map) {
                 @SuppressWarnings("unchecked")
@@ -260,13 +264,118 @@ final class ComponentTreeWalker {
                 prefixAssets(payload, assetHost);
                 if (isHtmlText(component)) {
                     rewriteHtmlTextLinks(payload);
+                    if (extractLinks) {
+                        for (final Map<String, Object> button : extractInlineLinkButtons(payload)) {
+                            components.add(++i, button);
+                            inserted = true;
+                        }
+                    }
                 }
             } else if (content instanceof List) {
                 @SuppressWarnings("unchecked")
                 final List<Map<String, Object>> children = (List<Map<String, Object>>) content;
-                prefixAssetsDeep(children, assetHost);
+                prefixAssetsDeep(children, assetHost, page);
             }
         }
+        if (inserted) {
+            reindexOrder(components);
+        }
+    }
+
+    /**
+     * @return true when the site owning {@code page} opts in to extracting a rich-text link into
+     *         its own tappable {@code button} via {@code extractInlineLinks} in its
+     *         {@code defaults.json}. Absent (the default) means today's behaviour is unchanged - a
+     *         link embedded in an htmlText block stays exactly where it was authored. See
+     *         {@link #extractInlineLinkButtons}.
+     */
+    private boolean extractsInlineLinks(final Page page) {
+        if (siteDefaults == null || page == null) {
+            return false;
+        }
+        final Object flag = siteDefaults.forPage(page).get("extractInlineLinks");
+        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
+    }
+
+    /** Renumbers every component's {@code meta.order} to match its actual position in the list. */
+    private static void reindexOrder(final List<Map<String, Object>> components) {
+        for (int i = 0; i < components.size(); i++) {
+            asMeta(components.get(i).get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, i);
+        }
+    }
+
+    /** Matches one {@code <a href="...">label</a>} - label captured raw, inner markup and all. */
+    private static final Pattern INLINE_LINK = Pattern.compile(
+            "<a\\s+[^>]*href\\s*=\\s*([\"'])([^\"']*)\\1[^>]*>(.*?)</a>",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+    /**
+     * Extracts every navigable {@code <a>} out of an htmlText block's {@code text} into its own
+     * sibling {@code button} component (inserted right after it by the caller), de-linking the
+     * anchor in place - its label stays as plain text, so the surrounding sentence still reads the
+     * same ("Already have an account? Sign In" instead of a dead "Sign In" link). An anchor whose
+     * href isn't a real navigation target ({@code #}, {@code mailto:}, {@code tel:},
+     * {@code javascript:}, blank) is de-linked with no companion button - there is nowhere for one
+     * to go.
+     *
+     * <p>A link embedded in rich text is never tappable in the app regardless of what its href says
+     * ({@link #rewriteHtmlTextLinks} only fixes the href value, not tappability) - a dedicated
+     * {@code button} is the shape the app actually routes through.</p>
+     *
+     * @return the buttons to insert, in the order their anchors appeared; empty when the text had
+     *         no navigable link (the text is left untouched in that case)
+     */
+    private static List<Map<String, Object>> extractInlineLinkButtons(final Map<String, Object> payload) {
+        final Object value = payload.get("text");
+        if (!(value instanceof String) || !((String) value).contains("href")) {
+            return Collections.emptyList();
+        }
+        final String text = (String) value;
+        final Matcher matcher = INLINE_LINK.matcher(text);
+        final StringBuffer delinked = new StringBuffer(text.length());
+        final List<Map<String, Object>> buttons = new ArrayList<>();
+        while (matcher.find()) {
+            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
+            matcher.appendReplacement(delinked, Matcher.quoteReplacement(label));
+            final String linkTo = navigableScreenKey(matcher.group(2).trim());
+            if (linkTo != null && !label.isEmpty()) {
+                buttons.add(inlineLinkButton(label, linkTo));
+            }
+        }
+        if (buttons.isEmpty()) {
+            return Collections.emptyList();
+        }
+        matcher.appendTail(delinked);
+        payload.put("text", delinked.toString());
+        return buttons;
+    }
+
+    /** @return the screen key {@code href} navigates to, or {@code null} when it names no screen. */
+    private static String navigableScreenKey(final String href) {
+        if (StringUtils.isBlank(href) || href.startsWith("#")
+                || href.regionMatches(true, 0, "mailto:", 0, 7)
+                || href.regionMatches(true, 0, "tel:", 0, 4)
+                || href.regionMatches(true, 0, "javascript:", 0, 11)) {
+            return null;
+        }
+        final String leaf = screenKeyOf(href);
+        return leaf != null ? leaf : href;
+    }
+
+    /** A {@code text}-variant button carrying one extracted inline link, styled as plain link text. */
+    private static Map<String, Object> inlineLinkButton(final String label, final String linkTo) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(linkTo + ':' + label));
+        meta.put(SchemaConstants.KEY_COMPONENT, "button");
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("label", label);
+        content.put("linkTo", linkTo);
+        content.put("variant", "text");
+        content.put("alignment", "center");
+        final Map<String, Object> button = new LinkedHashMap<>();
+        button.put(SchemaConstants.KEY_META, meta);
+        button.put(SchemaConstants.KEY_CONTENT, content);
+        return button;
     }
 
     private static boolean isHtmlText(final Map<String, Object> component) {
@@ -736,6 +845,20 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * @return the site's {@code defaults.json} {@code screenList.<key>} override for
+     *         {@code resource}'s site, or {@code fallback} when the site, the section, or this
+     *         specific key is absent or blank - see {@link SiteDefaults#KEY_SCREEN_LIST}.
+     */
+    private String screenListColor(final Resource resource, final String key, final String fallback) {
+        if (siteDefaults == null) {
+            return fallback;
+        }
+        final Object value = SiteDefaults.objectMap(
+                siteDefaults.forPath(resource.getPath()), SiteDefaults.KEY_SCREEN_LIST).get(key);
+        return value instanceof String && StringUtils.isNotBlank((String) value) ? (String) value : fallback;
+    }
+
+    /**
      * @return {@code resource}'s children, when there are exactly three and every one of them
      *         resolves (by name, via {@link GenericComponent#getComponentName()}) to {@code card} -
      *         or {@code null} when the block does not have that shape
@@ -824,12 +947,14 @@ final class ComponentTreeWalker {
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
-        // the client has nothing to size a screenList overlay item against.
+        // the client has nothing to size a screenList overlay item against. textColor assumes that
+        // reference's dark background; a site whose screenList sits on a light one overrides it (and
+        // the section's own background color below) via defaults.json - see screenListColor.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
         content.put("layout", "horizontal");
         content.put("listType", "screenList");
-        content.put("textColor", "#f4f3f3");
+        content.put("textColor", screenListColor(resource, "textColor", "#f4f3f3"));
         content.put("imageWidth", 130);
         content.put("itemHeight", null);
         content.put("itemRadius", null);
@@ -840,7 +965,7 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
-        styles.put("color", "#ffffff");
+        styles.put("color", screenListColor(resource, "color", "#ffffff"));
         styles.put("marginBottom", "16");
         styles.put("marginHorizontal", "8");
 
