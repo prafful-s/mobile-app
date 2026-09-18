@@ -36,7 +36,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
  *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true },
- *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown"
+ *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown",
+ *   "screenList":        { "textColor": "...", "color": "..." },
+ *   "extractInlineLinks": true
  * }
  * </pre>
  *
@@ -92,6 +94,17 @@ final class SiteDefaults {
      * See {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
+    /**
+     * Overrides the fixed colors {@code ComponentTreeWalker#cardsBlockAsList} otherwise hardcodes
+     * for a cards-block-to-screenList conversion (a near-white {@code textColor} meant to sit over
+     * a photo, copied from the LUMA MOBILE reference's own dark-background screenList): {@code
+     * "screenList": { "textColor": "...", "color": "..." } }. {@code textColor} is the item label
+     * color, {@code color} the section's own background. Each is applied only when present and
+     * non-blank; a site that overrides neither keeps today's hardcoded values - needed by any site
+     * whose cards render on a light background, where light-on-light text would otherwise be
+     * unreadable regardless of what an individual card authored.
+     */
+    static final String KEY_SCREEN_LIST = "screenList";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
