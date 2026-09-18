@@ -9,5 +9,11 @@
     "name": "shopping-cart",
     "target": "cart"
   },
-  "renderLinklessCards": true
+  "renderLinklessCards": true,
+  "forms": {
+    "support": {
+      "heading": "Need More Help?",
+      "headingAlignment": "center"
+    }
+  }
 }

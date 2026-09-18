@@ -746,6 +746,12 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
      * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
      * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     *
+     * <p>{@code heading} additionally inserts a {@code title} component immediately before the form
+     * (see {@link #insertFormHeading}). {@link FormBlockBuilder#heading} cannot serve these forms:
+     * it keys off the schema name, and a block whose fields are authored rather than taken from a
+     * bundled schema has no schema name at all - so a site that wants a title above such a form has
+     * nowhere else to say so.</p>
      */
     /**
      * Sets {@code content.link} on every {@code listType: productList} to the site's
@@ -792,6 +798,90 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
         putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
+        insertFormHeading(content, form, settings, page, screenKey);
+    }
+
+    /**
+     * Inserts the configured {@code heading} as a {@code title} component directly before the form,
+     * in whichever list the form actually sits in - the form is usually nested inside a panel rather
+     * than at the top of {@code content[]}, and the heading has to end up beside it to render above
+     * it.
+     *
+     * <p>{@code headingAlignment} sets the title's {@code textAlignment} and defaults to
+     * {@code left}, matching {@link FormBlockBuilder#heading}'s own titles so a site that asks for a
+     * heading without naming an alignment gets the same look as every other form heading.</p>
+     *
+     * <p>Siblings after the insertion point have their {@code order} shifted by one, keeping
+     * {@code order} equal to the component's index in its list as it is everywhere else.</p>
+     */
+    private void insertFormHeading(final List<Map<String, Object>> content,
+                                   final Map<String, Object> form,
+                                   final Map<String, Object> settings, final Page page,
+                                   final String screenKey) {
+        final Object configured = settings.get("heading");
+        if (!(configured instanceof String) || StringUtils.isBlank((String) configured)) {
+            return;
+        }
+        final List<Map<String, Object>> siblings = listContaining(content, form);
+        if (siblings == null) {
+            return;
+        }
+        final int at = siblings.indexOf(form);
+
+        final Object alignment = settings.get("headingAlignment");
+        final String textAlignment = alignment instanceof String
+                && StringUtils.isNotBlank((String) alignment) ? (String) alignment : "left";
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        // Synthetic path, keyed on the screen, so the id is stable across exports the same way
+        // every other synthetic component's is.
+        meta.put(SchemaConstants.KEY_ID,
+                AbstractComponentModel.generateId(page.getPath() + "/" + screenKey + "/form-heading"));
+        meta.put(SchemaConstants.KEY_ORDER, at);
+        meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_TITLE);
+
+        final Map<String, Object> titleContent = new LinkedHashMap<>();
+        titleContent.put("size", "medium");
+        titleContent.put("text", configured);
+        titleContent.put("weight", "bold");
+        titleContent.put("textAlignment", textAlignment);
+
+        final Map<String, Object> title = new LinkedHashMap<>();
+        title.put(SchemaConstants.KEY_META, meta);
+        title.put(SchemaConstants.KEY_CONTENT, titleContent);
+
+        siblings.add(at, title);
+        for (int i = at + 1; i < siblings.size(); i++) {
+            final Map<String, Object> sibling = siblings.get(i);
+            final Map<String, Object> siblingMeta = asMeta(sibling.get(SchemaConstants.KEY_META));
+            if (siblingMeta.get(SchemaConstants.KEY_ORDER) instanceof Number) {
+                siblingMeta.put(SchemaConstants.KEY_ORDER, i);
+            }
+        }
+    }
+
+    /**
+     * @return the list {@code target} is a direct member of, searched depth-first through nested
+     *         {@code content} lists, or {@code null} when it is not in this tree. Identity, not
+     *         equality: two components with the same payload are still different components.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> listContaining(final List<Map<String, Object>> tree,
+                                                            final Map<String, Object> target) {
+        for (final Map<String, Object> component : tree) {
+            if (component == target) {
+                return tree;
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                final List<Map<String, Object>> found =
+                        listContaining((List<Map<String, Object>>) inner, target);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /** Overwrites {@code meta[key]} only when {@code value} is a non-blank string. */
