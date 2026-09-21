@@ -8,8 +8,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
@@ -172,7 +170,7 @@ final class ComponentTreeWalker {
         if (applyScreenExclusions) {
             dropExcludedDeep(components);
         }
-        prefixAssetsDeep(components, assetHost, page);
+        prefixAssetsDeep(components, assetHost);
         return components;
     }
 
@@ -248,201 +246,22 @@ final class ComponentTreeWalker {
      * Walks the finished tree applying the asset host. Recursive because a nested panel's children
      * are just as likely to hold DAM references as a top-level component's.
      */
-    private void prefixAssetsDeep(final List<Map<String, Object>> components, final String assetHost,
-                                  final Page page) {
+    private void prefixAssetsDeep(final List<Map<String, Object>> components, final String assetHost) {
         if (StringUtils.isBlank(assetHost)) {
             return;
         }
-        final boolean extractLinks = extractsInlineLinks(page);
-        boolean inserted = false;
-        for (int i = 0; i < components.size(); i++) {
-            final Map<String, Object> component = components.get(i);
+        for (final Map<String, Object> component : components) {
             final Object content = component.get(SchemaConstants.KEY_CONTENT);
             if (content instanceof Map) {
                 @SuppressWarnings("unchecked")
                 final Map<String, Object> payload = (Map<String, Object>) content;
                 prefixAssets(payload, assetHost);
-                if (isHtmlText(component)) {
-                    rewriteHtmlTextLinks(payload);
-                    if (extractLinks) {
-                        for (final Map<String, Object> button : extractInlineLinkButtons(payload)) {
-                            components.add(++i, button);
-                            inserted = true;
-                        }
-                    }
-                }
             } else if (content instanceof List) {
                 @SuppressWarnings("unchecked")
                 final List<Map<String, Object>> children = (List<Map<String, Object>>) content;
-                prefixAssetsDeep(children, assetHost, page);
+                prefixAssetsDeep(children, assetHost);
             }
         }
-        if (inserted) {
-            reindexOrder(components);
-        }
-    }
-
-    /**
-     * @return true when the site owning {@code page} opts in to extracting a rich-text link into
-     *         its own tappable {@code button} via {@code extractInlineLinks} in its
-     *         {@code defaults.json}. Absent (the default) means today's behaviour is unchanged - a
-     *         link embedded in an htmlText block stays exactly where it was authored. See
-     *         {@link #extractInlineLinkButtons}.
-     */
-    private boolean extractsInlineLinks(final Page page) {
-        if (siteDefaults == null || page == null) {
-            return false;
-        }
-        final Object flag = siteDefaults.forPage(page).get("extractInlineLinks");
-        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
-    }
-
-    /** Renumbers every component's {@code meta.order} to match its actual position in the list. */
-    private static void reindexOrder(final List<Map<String, Object>> components) {
-        for (int i = 0; i < components.size(); i++) {
-            asMeta(components.get(i).get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, i);
-        }
-    }
-
-    /** Matches one {@code <a href="...">label</a>} - label captured raw, inner markup and all. */
-    private static final Pattern INLINE_LINK = Pattern.compile(
-            "<a\\s+[^>]*href\\s*=\\s*([\"'])([^\"']*)\\1[^>]*>(.*?)</a>",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    /**
-     * Extracts every navigable {@code <a>} out of an htmlText block's {@code text} into its own
-     * sibling {@code button} component (inserted right after it by the caller), de-linking the
-     * anchor in place - its label stays as plain text, so the surrounding sentence still reads the
-     * same ("Already have an account? Sign In" instead of a dead "Sign In" link). An anchor whose
-     * href isn't a real navigation target ({@code #}, {@code mailto:}, {@code tel:},
-     * {@code javascript:}, blank) is de-linked with no companion button - there is nowhere for one
-     * to go.
-     *
-     * <p>A link embedded in rich text is never tappable in the app regardless of what its href says
-     * ({@link #rewriteHtmlTextLinks} only fixes the href value, not tappability) - a dedicated
-     * {@code button} is the shape the app actually routes through.</p>
-     *
-     * @return the buttons to insert, in the order their anchors appeared; empty when the text had
-     *         no navigable link (the text is left untouched in that case)
-     */
-    private static List<Map<String, Object>> extractInlineLinkButtons(final Map<String, Object> payload) {
-        final Object value = payload.get("text");
-        if (!(value instanceof String) || !((String) value).contains("href")) {
-            return Collections.emptyList();
-        }
-        final String text = (String) value;
-        final Matcher matcher = INLINE_LINK.matcher(text);
-        final StringBuffer delinked = new StringBuffer(text.length());
-        final List<Map<String, Object>> buttons = new ArrayList<>();
-        while (matcher.find()) {
-            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
-            matcher.appendReplacement(delinked, Matcher.quoteReplacement(label));
-            final String linkTo = navigableScreenKey(matcher.group(2).trim());
-            if (linkTo != null && !label.isEmpty()) {
-                buttons.add(inlineLinkButton(label, linkTo));
-            }
-        }
-        if (buttons.isEmpty()) {
-            return Collections.emptyList();
-        }
-        matcher.appendTail(delinked);
-        payload.put("text", delinked.toString());
-        return buttons;
-    }
-
-    /** @return the screen key {@code href} navigates to, or {@code null} when it names no screen. */
-    private static String navigableScreenKey(final String href) {
-        if (StringUtils.isBlank(href) || href.startsWith("#")
-                || href.regionMatches(true, 0, "mailto:", 0, 7)
-                || href.regionMatches(true, 0, "tel:", 0, 4)
-                || href.regionMatches(true, 0, "javascript:", 0, 11)) {
-            return null;
-        }
-        final String leaf = screenKeyOf(href);
-        return leaf != null ? leaf : href;
-    }
-
-    /** A {@code text}-variant button carrying one extracted inline link, styled as plain link text. */
-    private static Map<String, Object> inlineLinkButton(final String label, final String linkTo) {
-        final Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(linkTo + ':' + label));
-        meta.put(SchemaConstants.KEY_COMPONENT, "button");
-        final Map<String, Object> content = new LinkedHashMap<>();
-        content.put("label", label);
-        content.put("linkTo", linkTo);
-        content.put("variant", "text");
-        content.put("alignment", "center");
-        final Map<String, Object> button = new LinkedHashMap<>();
-        button.put(SchemaConstants.KEY_META, meta);
-        button.put(SchemaConstants.KEY_CONTENT, content);
-        return button;
-    }
-
-    private static boolean isHtmlText(final Map<String, Object> component) {
-        final Object meta = component.get(SchemaConstants.KEY_META);
-        return meta instanceof Map && "htmlText".equals(((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT));
-    }
-
-    /**
-     * Matches an htmlText block's {@code <a href="...">} authored as a full URL into a non-asset
-     * {@code /content/...} page - e.g. a "Book Trip" CTA typed against one specific AEM
-     * environment's publish host, rather than a repository-relative path. Never matched by
-     * {@link ContentPaths}'s own rewrite, which only recognises a bare {@code /content/...} href,
-     * so a link authored this way passes through completely broken otherwise. Captures the quote
-     * character and the repository path; the scheme and host are consumed by the match but dropped
-     * from the replacement entirely - a {@code /content/dam/...} link (a downloadable asset, not a
-     * screen) is left alone by the {@code (?!dam/)} exclusion.
-     */
-    private static final Pattern HTML_TEXT_ABSOLUTE_LINK = Pattern.compile(
-            "\\bhref\\s*=\\s*([\"'])https?://[^/\"']+(/content/(?!dam/)[^\"']*)\\1");
-
-    /**
-     * Rewrites every {@code <a href="...">} inside an htmlText block's {@code text} field matching
-     * {@link #HTML_TEXT_ABSOLUTE_LINK} to the in-app screen key that link names - the same key a
-     * curated {@code link}/{@code linkTo} field resolves to (see
-     * {@code ComponentMapping#screenTarget}). A field with nothing to rewrite, or a match whose
-     * leaf can't be derived (already bare), is left exactly as authored.
-     */
-    private static void rewriteHtmlTextLinks(final Map<String, Object> payload) {
-        final Object value = payload.get("text");
-        if (!(value instanceof String)) {
-            return;
-        }
-        final String text = (String) value;
-        if (text.indexOf('<') < 0 || !text.contains("href") || !text.contains(ContentPaths.CONTENT_PREFIX)) {
-            return;
-        }
-        final Matcher matcher = HTML_TEXT_ABSOLUTE_LINK.matcher(text);
-        final StringBuffer rewritten = new StringBuffer(text.length());
-        while (matcher.find()) {
-            final String screenKey = screenKeyOf(matcher.group(2));
-            final String replacement = screenKey == null
-                    ? matcher.group(0)
-                    : "href=" + matcher.group(1) + screenKey + matcher.group(1);
-            matcher.appendReplacement(rewritten, Matcher.quoteReplacement(replacement));
-        }
-        matcher.appendTail(rewritten);
-        payload.put("text", rewritten.toString());
-    }
-
-    /**
-     * The in-app screen key a {@code /content/...} page path names - its last path segment, with a
-     * trailing {@code .html} dropped - plus whatever query string or fragment it carried.
-     *
-     * @return the screen key (with any {@code ?}/{@code #} suffix appended), or {@code null} when
-     *         {@code path} has no segment to name one
-     */
-    private static String screenKeyOf(final String path) {
-        final String trimmed = path.trim();
-        final int cut = StringUtils.indexOfAny(trimmed, '?', '#');
-        final String suffix = cut >= 0 ? trimmed.substring(cut) : "";
-        final String withoutSuffix = StringUtils.stripEnd(cut >= 0 ? trimmed.substring(0, cut) : trimmed, "/");
-        if (withoutSuffix.indexOf('/') < 0) {
-            return null;
-        }
-        final String leaf =
-                StringUtils.removeEndIgnoreCase(StringUtils.substringAfterLast(withoutSuffix, "/"), ".html");
-        return leaf.isEmpty() ? null : leaf + suffix;
     }
 
     /**
