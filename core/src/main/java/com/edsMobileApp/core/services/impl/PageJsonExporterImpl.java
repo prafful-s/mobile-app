@@ -791,11 +791,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /**
      * Applies the site's per-screen form settings from {@code defaults.json}
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
-     * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
-     * {@code meta.eventType} (the analytics event the submit fires). Each is applied only when the
-     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
-     * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
-     * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     * {@code meta.link} (the screen opened after a successful submit), {@code navigateOnSubmit} -&gt;
+     * {@code meta.navigateOnSubmit} (an alternate post-submit navigation target the client honours
+     * for forms that use it, e.g. registration) and {@code eventType} -&gt; {@code meta.eventType}
+     * (the analytics event the submit fires). Each is applied only when the config carries a
+     * non-blank value; anything absent leaves the value {@link FormBlockBuilder} already emitted
+     * (blank {@code link}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
+     * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      */
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
@@ -811,7 +813,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         final Map<String, Object> settings = (Map<String, Object>) entry;
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
-        putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        // A redirect authored on the block itself (FormBlockBuilder reads redirectUrl /
+        // submit-redirect-url into meta.link) is the author's explicit choice and wins; the per-site
+        // 'redirectAfterSubmit' only fills in the default when the block left it blank.
+        final Object authoredLink = meta.get("link");
+        if (!(authoredLink instanceof String) || StringUtils.isBlank((String) authoredLink)) {
+            putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        }
+        putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
     }
 

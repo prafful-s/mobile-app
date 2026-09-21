@@ -421,11 +421,15 @@ final class FormFieldFactory {
                     StringUtils.defaultIfBlank(str(source.get("path")), path)));
             target.put("label", StringUtils.defaultString(
                     StringUtils.defaultIfBlank(str(source.get("label")), label)));
-            target.put("checkedValue", StringUtils.defaultString(
+            // Consent/opt-in checkboxes feed AEP eVars downstream, which expect the reference
+            // client's "y"/"n" domain - emitting boolean-looking "true"/"false" (or a blank) sends
+            // the wrong value. So a checkbox that names no explicit checked/unchecked value defaults
+            // to "y"/"n" here, the single place both the authored and configured routes converge on.
+            target.put("checkedValue", StringUtils.defaultIfBlank(
                     StringUtils.defaultIfBlank(str(source.get("checkedValue")),
-                            str(source.get("value")))));
-            target.put("uncheckedValue",
-                    StringUtils.defaultString(str(source.get("uncheckedValue"))));
+                            str(source.get("value"))), "y"));
+            target.put("uncheckedValue", StringUtils.defaultIfBlank(
+                    str(source.get("uncheckedValue")), "n"));
             rewritten.add(target);
         }
 
@@ -571,12 +575,13 @@ final class FormFieldFactory {
             return fromEnum;
         }
 
-        // One node, one choice. The option is built here rather than in toggleContent so it carries
-        // the node's own checkedValue instead of a value invented from the field.
+        // One node, one choice. The option carries the node's own checkedValue/uncheckedValue when
+        // authored; when neither is set, both are left blank here so checkboxGroupContent supplies
+        // the "y"/"n" default in one place for both the authored and configured routes.
         final Map<String, Object> option = new LinkedHashMap<>();
         option.put("path", StringUtils.defaultString(path));
         option.put("label", StringUtils.defaultString(label));
-        option.put("checkedValue", StringUtils.defaultIfBlank(checkedValue, "true"));
+        option.put("checkedValue", StringUtils.defaultString(checkedValue));
         option.put("uncheckedValue",
                 StringUtils.defaultString(props.get("uncheckedValue", String.class)));
 

@@ -11,6 +11,14 @@
     "toastMessage": "",
     "submitButtonLabel": "Checkout"
   },
+  "forms": {
+    "luma-plus": {
+      "redirectAfterSubmit": "home"
+    },
+    "registration": {
+      "redirectAfterSubmit": "home"
+    }
+  },
   "formHeadings": {
     "create-account": "Create an account",
     "credit-card-application-form": "Credit Card Application",
