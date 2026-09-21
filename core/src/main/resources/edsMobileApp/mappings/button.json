@@ -6,7 +6,7 @@
   "fields": [
     { "target": "icon", "from": "icon", "default": "" },
     { "target": "label", "first": ["label", "linkText", "text"], "default": "" },
-    { "target": "events", "from": "events", "default": "" },
+    { "target": "eventType", "from": "mobilebuttoneventtype", "default": "" },
     { "target": "formId", "from": "formId", "default": "" },
     { "target": "linkTo", "from": "link", "map": { "/": "home" }, "default": "" },
     { "target": "message", "from": "message", "default": "" },

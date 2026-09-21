@@ -66,7 +66,7 @@
   },
   {
     "id": "phoneNumber",
-    "name": "mobilePhone.number",
+    "name": "person.mobileNumber",
     "label": "Mobile phone number",
     "value": "",
     "type": "text",
@@ -97,7 +97,7 @@
   },
   {
     "id": "address",
-    "name": "homeAddress.street1",
+    "name": "person.address.street",
     "label": "Street Address",
     "value": "",
     "type": "text",

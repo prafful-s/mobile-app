@@ -33,7 +33,7 @@
   },
   {
     "id": "phone",
-    "name": "mobilePhone.number",
+    "name": "person.mobileNumber",
     "label": "Phone number",
     "value": "",
     "type": "text",
@@ -66,7 +66,7 @@
   },
   {
     "id": "address",
-    "name": "homeAddress.street1",
+    "name": "person.address.street",
     "label": "Address",
     "value": "",
     "type": "text",
@@ -78,7 +78,7 @@
   },
   {
     "id": "city",
-    "name": "homeAddress.city",
+    "name": "person.address.city",
     "label": "City",
     "value": "",
     "type": "text",

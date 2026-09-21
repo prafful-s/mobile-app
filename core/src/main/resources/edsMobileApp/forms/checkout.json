@@ -75,7 +75,7 @@
   },
   {
     "id": "",
-    "name": "mobilePhone.number",
+    "name": "person.mobileNumber",
     "label": "Phone Number",
     "value": "",
     "type": "text",
@@ -97,7 +97,7 @@
   },
   {
     "id": "",
-    "name": "consents.marketing.sms.val",
+    "name": "profile.consent.sms",
     "value": "",
     "type": "checkbox",
     "variant": "switch",
@@ -110,7 +110,7 @@
   },
   {
     "id": "",
-    "name": "consents.marketing.email.val",
+    "name": "profile.consent.email",
     "value": "",
     "type": "checkbox",
     "variant": "switch",

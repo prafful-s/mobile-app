@@ -28,7 +28,7 @@
   },
   {
     "id": "phone",
-    "name": "mobilePhone.number",
+    "name": "person.mobileNumber",
     "label": "Phone number",
     "value": "",
     "type": "text",
@@ -58,7 +58,7 @@
   },
   {
     "id": "address",
-    "name": "homeAddress.street1",
+    "name": "person.address.street",
     "label": "Address",
     "value": "",
     "type": "text",
@@ -84,7 +84,7 @@
   },
   {
     "id": "city",
-    "name": "homeAddress.city",
+    "name": "person.address.city",
     "label": "City",
     "value": "",
     "type": "text",
@@ -341,7 +341,7 @@
   },
   {
     "id": "prefEmail",
-    "name": "consents.marketing.email.val",
+    "name": "profile.consent.email",
     "value": "",
     "type": "checkbox",
     "variant": "switch",
@@ -364,7 +364,7 @@
   },
   {
     "id": "prefPhone",
-    "name": "consents.marketing.call.val",
+    "name": "profile.consent.phone",
     "value": "",
     "type": "checkbox",
     "variant": "switch",
@@ -387,7 +387,7 @@
   },
   {
     "id": "prefSms",
-    "name": "consents.marketing.sms.val",
+    "name": "profile.consent.sms",
     "value": "",
     "type": "checkbox",
     "variant": "switch",
