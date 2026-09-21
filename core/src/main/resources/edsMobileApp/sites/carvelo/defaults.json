@@ -12,6 +12,7 @@
     "target": "cart"
   },
   "renderLinklessCards": true,
+  "linklessCardType": "image-text-one-line",
   "forms": {
     "login":                { "redirectAfterSubmit": "home" },
     "registration":         { "redirectAfterSubmit": "home", "eventType": "mobile.registration" },
