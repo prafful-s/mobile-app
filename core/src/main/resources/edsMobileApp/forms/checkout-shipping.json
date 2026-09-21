@@ -107,7 +107,7 @@
   },
   {
     "id": "paymentMethod",
-    "name": "paymentMethod",
+    "name": "orderProfile.lastOrderPaymentMethod",
     "label": "Payment",
     "value": "card",
     "type": "radio",
@@ -142,7 +142,7 @@
   },
   {
     "id": "shippingMethod",
-    "name": "shippingMethod",
+    "name": "orderProfile.lastOrderType",
     "label": "Shipping",
     "value": "standard",
     "type": "radio",

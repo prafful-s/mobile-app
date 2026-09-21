@@ -41,6 +41,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
 
+    /**
+     * The account/profile screen every export gets by default. No AEM page has to back it - see
+     * {@link #buildUserDetailsScreen(Page)} - so every site's logged-in account icon has somewhere
+     * to land even before a site author builds a dedicated profile page.
+     */
+    private static final String SCREEN_USER_DETAILS = "user-details";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
             "jcr:primaryType", "jcr:mixinTypes", "jcr:createdBy", "jcr:created",
@@ -176,6 +183,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> screens = buildScreens(screenList, homeRoot, assetHost, opts, menu,
                 screenPresets, knownScreenKeys, screenThumbnailOverrides);
         applyScreenThumbnailOverrides(screens, screenThumbnailOverrides, assetHost);
+        // Only added when no AEM page already exports under this key, so a site that has authored
+        // its own user-details page keeps that content untouched.
+        screens.putIfAbsent(SCREEN_USER_DETAILS, buildUserDetailsScreen(homeRoot));
         app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
@@ -254,9 +264,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         navigation.put("menu", menu);
         navigation.put("loginScreen",
                 resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
-        // No dedicated profile page exists here, so the logged-in account icon lands on settings.
-        navigation.put("profileScreen",
-                resolveScreenRef(props, SchemaConstants.PN_PROFILE_SCREEN, "settings", screens, homeRoot));
+        // Fixed for every site, unlike loginScreen/registrationScreen below: the profile action
+        // always opens the synthetic user-details screen built in buildUserDetailsScreen, never an
+        // authored page or a scanned form match.
+        navigation.put("profileScreen", SCREEN_USER_DETAILS);
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
         navigation.put("registrationScreen",
@@ -493,6 +504,49 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
+        return screen;
+    }
+
+    /**
+     * The account/profile screen every export gets, whether or not the site has authored a page
+     * for it - see {@link #SCREEN_USER_DETAILS}. No AEM block backs it: like
+     * {@link #cartActionsPanel}, this is the LUMA MOBILE reference's static content, added verbatim
+     * so every site's account icon opens the same shape of screen. Only used as a fallback -
+     * {@code screens.putIfAbsent} in {@link #export} keeps an authored user-details page as-is.
+     */
+    private Map<String, Object> buildUserDetailsScreen(final Page homeRoot) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("icon", "account");
+        meta.put("name", SCREEN_USER_DETAILS);
+        meta.put("title", "User Details");
+        meta.put("preset", "userDetails");
+        meta.put("template", "FreeformScreen");
+        meta.put("iconInactive", "account-outline");
+        meta.put("isRootScreen", false);
+        meta.put("navigationOrder", null);
+        meta.put("includeInNavigation", false);
+
+        final Map<String, Object> position = new LinkedHashMap<>();
+        position.put("top", 275);
+        position.put("left", 450);
+        final Map<String, Object> editor = new LinkedHashMap<>();
+        editor.put("zIndex", 7);
+        editor.put("position", position);
+
+        final String syntheticPath = homeRoot.getPath() + "/" + SCREEN_USER_DETAILS;
+        final Map<String, Object> componentMeta = new LinkedHashMap<>();
+        componentMeta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(syntheticPath));
+        componentMeta.put(SchemaConstants.KEY_ORDER, 0);
+        componentMeta.put(SchemaConstants.KEY_COMPONENT, "userDetails");
+
+        final Map<String, Object> component = new LinkedHashMap<>();
+        component.put(SchemaConstants.KEY_META, componentMeta);
+        component.put(SchemaConstants.KEY_CONTENT, Collections.singletonMap("showLogoutButton", true));
+
+        final Map<String, Object> screen = new LinkedHashMap<>();
+        screen.put(SchemaConstants.KEY_META, meta);
+        screen.put(SchemaConstants.KEY_EDITOR, editor);
+        screen.put(SchemaConstants.KEY_CONTENT, List.of(component));
         return screen;
     }
 
