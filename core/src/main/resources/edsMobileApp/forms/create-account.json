@@ -286,7 +286,7 @@
   },
   {
     "id": "joinLoyaltyProgram",
-    "name": "joinLoyaltyProgram",
+    "name": "person.loyaltyConsent",
     "value": "",
     "type": "checkbox",
     "variant": "switch",

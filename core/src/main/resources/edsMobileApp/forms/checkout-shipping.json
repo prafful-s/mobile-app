@@ -109,12 +109,12 @@
     "id": "paymentMethod",
     "name": "orderProfile.lastOrderPaymentMethod",
     "label": "Payment",
-    "value": "card",
+    "value": "credit-card",
     "type": "radio",
     "options": [
       {
         "label": "Credit or Debit Card",
-        "value": "card"
+        "value": "credit-card"
       },
       {
         "label": "Paypal",
@@ -144,28 +144,28 @@
     "id": "shippingMethod",
     "name": "orderProfile.lastOrderType",
     "label": "Shipping",
-    "value": "standard",
+    "value": "STANDARD SHIPPING",
     "type": "radio",
     "options": [
       {
         "label": "Standard: 5-14 business days",
-        "value": "standard"
+        "value": "STANDARD SHIPPING"
       },
       {
         "label": "Ground: 3-7 business days",
-        "value": "ground"
+        "value": "GROUND SHIPPING"
       },
       {
         "label": "Priority: 2 business days",
-        "value": "priority"
+        "value": "PRIORITY SHIPPING"
       },
       {
         "label": "Express: 1 business day",
-        "value": "express"
+        "value": "EXPRESS SHIPPING"
       },
       {
         "label": "Next-day pickup",
-        "value": "pickup"
+        "value": "PICKUP"
       }
     ]
   },

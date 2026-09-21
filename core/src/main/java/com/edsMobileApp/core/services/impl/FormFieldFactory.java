@@ -422,14 +422,16 @@ final class FormFieldFactory {
             target.put("label", StringUtils.defaultString(
                     StringUtils.defaultIfBlank(str(source.get("label")), label)));
             // Consent/opt-in checkboxes feed AEP eVars downstream, which expect the reference
-            // client's "y"/"n" domain - emitting boolean-looking "true"/"false" (or a blank) sends
-            // the wrong value. So a checkbox that names no explicit checked/unchecked value defaults
-            // to "y"/"n" here, the single place both the authored and configured routes converge on.
-            target.put("checkedValue", StringUtils.defaultIfBlank(
+            // client's "y"/"n" domain. The bundled schemas and authored nodes carry the checked
+            // state as the boolean placeholder "true" (unchecked usually left blank), which would
+            // land in AEP as the literal "true"/"" rather than the y/n the eVar is mapped to. So the
+            // toggle domain is normalised here - the single place both the authored and configured
+            // routes converge on: "true"/blank -> "y", "false"/blank -> "n". An explicit non-boolean
+            // value a schema sets deliberately (e.g. "accepted") is preserved.
+            target.put("checkedValue", toggleValue(
                     StringUtils.defaultIfBlank(str(source.get("checkedValue")),
                             str(source.get("value"))), "y"));
-            target.put("uncheckedValue", StringUtils.defaultIfBlank(
-                    str(source.get("uncheckedValue")), "n"));
+            target.put("uncheckedValue", toggleValue(str(source.get("uncheckedValue")), "n"));
             rewritten.add(target);
         }
 
@@ -767,5 +769,27 @@ final class FormFieldFactory {
 
     private static String str(final Object value) {
         return value instanceof String ? (String) value : null;
+    }
+
+    /**
+     * Normalises a checkbox toggle value to the reference client's {@code "y"}/{@code "n"} domain,
+     * which is what the AEP eVars these fields feed are mapped to. A blank value (the common case -
+     * the schemas and authored nodes rarely set an unchecked value) becomes {@code fallback}; the
+     * boolean placeholders {@code "true"}/{@code "false"} the schemas use to mean "checked"/
+     * "unchecked" become {@code "y"}/{@code "n"}. Any other value a schema sets deliberately is
+     * returned unchanged, so a checkbox that genuinely needs a domain-specific value keeps it.
+     */
+    private static String toggleValue(final String raw, final String fallback) {
+        if (StringUtils.isBlank(raw)) {
+            return fallback;
+        }
+        final String trimmed = raw.trim();
+        if ("true".equalsIgnoreCase(trimmed)) {
+            return "y";
+        }
+        if ("false".equalsIgnoreCase(trimmed)) {
+            return "n";
+        }
+        return raw;
     }
 }
