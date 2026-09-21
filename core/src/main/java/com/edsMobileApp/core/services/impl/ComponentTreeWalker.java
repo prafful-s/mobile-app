@@ -8,6 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
@@ -170,7 +172,7 @@ final class ComponentTreeWalker {
         if (applyScreenExclusions) {
             dropExcludedDeep(components);
         }
-        prefixAssetsDeep(components, assetHost);
+        prefixAssetsDeep(components, assetHost, page);
         return components;
     }
 
@@ -246,22 +248,165 @@ final class ComponentTreeWalker {
      * Walks the finished tree applying the asset host. Recursive because a nested panel's children
      * are just as likely to hold DAM references as a top-level component's.
      */
-    private void prefixAssetsDeep(final List<Map<String, Object>> components, final String assetHost) {
+    private void prefixAssetsDeep(final List<Map<String, Object>> components, final String assetHost,
+                                  final Page page) {
         if (StringUtils.isBlank(assetHost)) {
             return;
         }
-        for (final Map<String, Object> component : components) {
+        final boolean extractLinks = extractsInlineLinks(page);
+        boolean inserted = false;
+        for (int i = 0; i < components.size(); i++) {
+            final Map<String, Object> component = components.get(i);
             final Object content = component.get(SchemaConstants.KEY_CONTENT);
             if (content instanceof Map) {
                 @SuppressWarnings("unchecked")
                 final Map<String, Object> payload = (Map<String, Object>) content;
                 prefixAssets(payload, assetHost);
+                if (extractLinks && isHtmlText(component)) {
+                    for (final Map<String, Object> button : extractInlineLinkButtons(payload)) {
+                        components.add(++i, button);
+                        inserted = true;
+                    }
+                }
             } else if (content instanceof List) {
                 @SuppressWarnings("unchecked")
                 final List<Map<String, Object>> children = (List<Map<String, Object>>) content;
-                prefixAssetsDeep(children, assetHost);
+                prefixAssetsDeep(children, assetHost, page);
             }
         }
+        if (inserted) {
+            reindexOrder(components);
+        }
+    }
+
+    /**
+     * @return true when the site owning {@code page} opts in to extracting a rich-text link into
+     *         its own tappable {@code button} via {@code extractInlineLinks} in its
+     *         {@code defaults.json}. Absent (the default) means today's behaviour is unchanged - a
+     *         link embedded in an htmlText block stays exactly where it was authored. See
+     *         {@link #extractInlineLinkButtons}.
+     */
+    private boolean extractsInlineLinks(final Page page) {
+        if (siteDefaults == null || page == null) {
+            return false;
+        }
+        final Object flag = siteDefaults.forPage(page).get("extractInlineLinks");
+        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
+    }
+
+    /** Renumbers every component's {@code meta.order} to match its actual position in the list. */
+    private static void reindexOrder(final List<Map<String, Object>> components) {
+        for (int i = 0; i < components.size(); i++) {
+            asMeta(components.get(i).get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, i);
+        }
+    }
+
+    private static boolean isHtmlText(final Map<String, Object> component) {
+        final Object meta = component.get(SchemaConstants.KEY_META);
+        return meta instanceof Map && "htmlText".equals(((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT));
+    }
+
+    /** Matches one {@code <a href="...">label</a>} - label captured raw, inner markup and all. */
+    private static final Pattern INLINE_LINK = Pattern.compile(
+            "<a\\s+[^>]*href\\s*=\\s*([\"'])([^\"']*)\\1[^>]*>(.*?)</a>",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+    /**
+     * Extracts every navigable {@code <a>} out of an htmlText block's {@code text} into its own
+     * sibling {@code button} component (inserted right after it by the caller), removing the
+     * anchor - label and all - from the text rather than just de-linking it, so the label doesn't
+     * appear twice ("Book Trip" as the button, not also sitting there as dead plain text beside
+     * it). An anchor whose href isn't a real navigation target ({@code #}, {@code mailto:},
+     * {@code tel:}, {@code javascript:}, blank) has no button to stand in for it, so it is
+     * de-linked in place instead - its label kept as plain text - rather than silently dropped.
+     *
+     * <p>A link embedded in rich text is never tappable in the app regardless of what its href says
+     * (confirmed against every reference app export available - none embeds a tappable link inside
+     * rich text) - a dedicated {@code button} is the shape the app actually routes through.</p>
+     *
+     * @return the buttons to insert, in the order their anchors appeared; empty when the text had
+     *         no navigable link (the text is left untouched in that case)
+     */
+    private static List<Map<String, Object>> extractInlineLinkButtons(final Map<String, Object> payload) {
+        final Object value = payload.get("text");
+        if (!(value instanceof String) || !((String) value).contains("href")) {
+            return Collections.emptyList();
+        }
+        final String text = (String) value;
+        final Matcher matcher = INLINE_LINK.matcher(text);
+        final StringBuffer delinked = new StringBuffer(text.length());
+        final List<Map<String, Object>> buttons = new ArrayList<>();
+        while (matcher.find()) {
+            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
+            final String linkTo = navigableScreenKey(matcher.group(2).trim());
+            final boolean hasButton = linkTo != null && !label.isEmpty();
+            matcher.appendReplacement(delinked, hasButton ? "" : Matcher.quoteReplacement(label));
+            if (hasButton) {
+                buttons.add(inlineLinkButton(label, linkTo));
+            }
+        }
+        if (buttons.isEmpty()) {
+            return Collections.emptyList();
+        }
+        matcher.appendTail(delinked);
+        payload.put("text", delinked.toString());
+        return buttons;
+    }
+
+    /**
+     * The screen key {@code href} navigates to - the last path segment of a {@code /content/...}
+     * path (or a full URL ending in one), trailing {@code .html} dropped, e.g.
+     * {@code /content/wknd-fly/.../destinations/mexico.html} becomes {@code mexico}. An href with no
+     * path to strip (already a bare screen key) is used as-is.
+     *
+     * @return the screen key, or {@code null} when {@code href} names no screen at all ({@code #},
+     *         {@code mailto:}, {@code tel:}, {@code javascript:}, blank)
+     */
+    private static String navigableScreenKey(final String href) {
+        if (StringUtils.isBlank(href) || href.startsWith("#")
+                || href.regionMatches(true, 0, "mailto:", 0, 7)
+                || href.regionMatches(true, 0, "tel:", 0, 4)
+                || href.regionMatches(true, 0, "javascript:", 0, 11)) {
+            return null;
+        }
+        final String leaf = screenKeyOf(href);
+        return leaf != null ? leaf : href;
+    }
+
+    /**
+     * The screen key a {@code /content/...} page path names - its last path segment, with a
+     * trailing {@code .html} dropped - plus whatever query string or fragment it carried.
+     *
+     * @return the screen key (with any {@code ?}/{@code #} suffix appended), or {@code null} when
+     *         {@code path} has no segment to name one
+     */
+    private static String screenKeyOf(final String path) {
+        final String trimmed = path.trim();
+        final int cut = StringUtils.indexOfAny(trimmed, '?', '#');
+        final String suffix = cut >= 0 ? trimmed.substring(cut) : "";
+        final String withoutSuffix = StringUtils.stripEnd(cut >= 0 ? trimmed.substring(0, cut) : trimmed, "/");
+        if (withoutSuffix.indexOf('/') < 0) {
+            return null;
+        }
+        final String leaf =
+                StringUtils.removeEndIgnoreCase(StringUtils.substringAfterLast(withoutSuffix, "/"), ".html");
+        return leaf.isEmpty() ? null : leaf + suffix;
+    }
+
+    /** A {@code text}-variant button carrying one extracted inline link, aligned left. */
+    private static Map<String, Object> inlineLinkButton(final String label, final String linkTo) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(linkTo + ':' + label));
+        meta.put(SchemaConstants.KEY_COMPONENT, "button");
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("label", label);
+        content.put("linkTo", linkTo);
+        content.put("variant", "text");
+        content.put("alignment", "left");
+        final Map<String, Object> button = new LinkedHashMap<>();
+        button.put(SchemaConstants.KEY_META, meta);
+        button.put(SchemaConstants.KEY_CONTENT, content);
+        return button;
     }
 
     /**
