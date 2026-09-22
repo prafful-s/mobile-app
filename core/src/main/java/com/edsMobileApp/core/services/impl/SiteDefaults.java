@@ -94,30 +94,29 @@ final class SiteDefaults {
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
 
     /**
-     * Text colour to force on a site's {@code cardType: overlay} cards:
-     * {@code "overlayCardTextColor": "#FFFFFF"}. An overlay card prints its title and subtitle
-     * directly over its image, but the {@code card} rule only emits a colour for the
-     * {@code partial-overlay} variant ({@code teaser-overlay}), so a full-overlay card
-     * ({@code teaser-card}) carries no colour at all and the client falls back to its default dark
-     * text - unreadable over a dark photo. Absent leaves those cards exactly as they are, so no
-     * other site is affected. See {@code PageJsonExporterImpl#applyOverlayCardTextColor}.
-     */
-    static final String KEY_OVERLAY_CARD_TEXT_COLOR = "overlayCardTextColor";
-
-    /**
-     * Text colour to force on a site's {@code banner} components:
-     * {@code "bannerTextColor": "#333333"}. The {@code hero} rule emits {@code styles.color} as a
-     * {@code const} of {@code #FFF} for every banner on every site, which assumes the image behind
-     * the text is dark. A site whose hero imagery is bright - and whose author switched the
-     * {@code textoverlay} scrim off, leaving {@code opacity: 0} - gets white text on a pale photo.
+     * Per-component style overrides, keyed {@code <screenKey>.<component>.<id>}:
      *
-     * <p>Unlike {@link #KEY_OVERLAY_CARD_TEXT_COLOR}, which only fills in a colour that is missing,
-     * this one <em>replaces</em> the mapped {@code #FFF}: that value is a rule constant rather than
-     * anything an author chose, so there is no authored intent to preserve. Absent leaves every
-     * banner on {@code #FFF} exactly as today. See
-     * {@code PageJsonExporterImpl#applyBannerTextColor}.</p>
+     * <pre>
+     * "componentStyles": {
+     *   "en.banner.65721cdd": { "color": "#333333" }
+     * }
+     * </pre>
+     *
+     * <p>The value is merged into that one component's {@code styles}, setting a key the mapping
+     * left out or replacing one it wrote. The mapping rules cannot express a per-instance decision -
+     * {@code hero} emits {@code styles.color} as a {@code const} of {@code #FFF}, and {@code card}
+     * emits a colour only for the {@code partial-overlay} variant - so a single banner over bright
+     * imagery, or a single full-overlay card over a dark photo, has no way to ask for a different
+     * colour. A site-wide setting would drag every banner or every card along with it; this moves
+     * only the component named.</p>
+     *
+     * <p>The id is the hex hash of the component's JCR path that the export already emits as
+     * {@code meta.id}, stable unless the component moves in the repository. All three segments must
+     * match, so a hash collision misses rather than restyling the wrong component; an {@code id_}
+     * prefix on the id is accepted. Absent leaves every component on its mapped styles.
+     * See {@code PageJsonExporterImpl#applyComponentStyles}.</p>
      */
-    static final String KEY_BANNER_TEXT_COLOR = "bannerTextColor";
+    static final String KEY_COMPONENT_STYLES = "componentStyles";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 

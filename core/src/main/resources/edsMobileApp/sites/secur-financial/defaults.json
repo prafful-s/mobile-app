@@ -5,7 +5,13 @@
     "vertical": "FSI",
     "useCart": false
   },
-  "overlayCardTextColor": "#FFFFFF",
   "extractInlineLinks": true,
-  "bannerTextColor": "#333333"
+  "componentStyles": {
+    "en.banner.65721cdd": {
+      "color": "#333333"
+    },
+    "en.card.b7ac2fab": {
+      "color": "#FFFFFF"
+    }
+  }
 }
