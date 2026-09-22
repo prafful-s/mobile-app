@@ -494,6 +494,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // Opt-in sites give their overlay cards a readable text colour; no-op otherwise. Outside the
         // branch because an overlay card can sit on any screen, cart and checkout included.
         applyOverlayCardTextColor(content, page);
+        // Same for banners, whose colour the hero rule hardcodes to #FFF; no-op otherwise.
+        applyBannerTextColor(content, page);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -861,6 +863,44 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             rebuilt.put(SchemaConstants.KEY_CONTENT, raw);
             card.clear();
             card.putAll(rebuilt);
+        }
+    }
+
+    /**
+     * Gives a site's banners the text colour it configures as {@code bannerTextColor}, replacing the
+     * {@code #FFF} the {@code hero} rule emits as a constant for every banner on every site.
+     *
+     * <p>That constant assumes dark imagery behind the text. Where the imagery is bright - and more
+     * so where the author switched the {@code textoverlay} scrim off, leaving {@code opacity: 0} -
+     * white text is unreadable, and no authored property can currently say otherwise.</p>
+     *
+     * <p>This replaces rather than fills: {@code #FFF} is a rule constant, not an authored choice,
+     * so there is no authored intent to protect. A site that configures nothing keeps {@code #FFF}
+     * on every banner.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void applyBannerTextColor(final List<Map<String, Object>> content, final Page page) {
+        final String color = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_BANNER_TEXT_COLOR);
+        if (StringUtils.isBlank(color)) {
+            return;
+        }
+        for (final Map<String, Object> banner : findComponents(content, SchemaConstants.COMPONENT_BANNER)) {
+            final Object existing = banner.get(SchemaConstants.KEY_STYLES);
+            if (existing instanceof Map) {
+                ((Map<String, Object>) existing).put("color", color);
+                continue;
+            }
+            // Rebuilt rather than appended to, so the key order stays meta, styles, content as it is
+            // for every other component.
+            final Map<String, Object> styles = new LinkedHashMap<>();
+            styles.put("color", color);
+            final Map<String, Object> rebuilt = new LinkedHashMap<>();
+            rebuilt.put(SchemaConstants.KEY_META, banner.get(SchemaConstants.KEY_META));
+            rebuilt.put(SchemaConstants.KEY_STYLES, styles);
+            rebuilt.put(SchemaConstants.KEY_CONTENT, banner.get(SchemaConstants.KEY_CONTENT));
+            banner.clear();
+            banner.putAll(rebuilt);
         }
     }
 

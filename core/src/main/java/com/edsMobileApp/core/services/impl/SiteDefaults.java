@@ -104,6 +104,21 @@ final class SiteDefaults {
      */
     static final String KEY_OVERLAY_CARD_TEXT_COLOR = "overlayCardTextColor";
 
+    /**
+     * Text colour to force on a site's {@code banner} components:
+     * {@code "bannerTextColor": "#333333"}. The {@code hero} rule emits {@code styles.color} as a
+     * {@code const} of {@code #FFF} for every banner on every site, which assumes the image behind
+     * the text is dark. A site whose hero imagery is bright - and whose author switched the
+     * {@code textoverlay} scrim off, leaving {@code opacity: 0} - gets white text on a pale photo.
+     *
+     * <p>Unlike {@link #KEY_OVERLAY_CARD_TEXT_COLOR}, which only fills in a colour that is missing,
+     * this one <em>replaces</em> the mapped {@code #FFF}: that value is a rule constant rather than
+     * anything an author chose, so there is no authored intent to preserve. Absent leaves every
+     * banner on {@code #FFF} exactly as today. See
+     * {@code PageJsonExporterImpl#applyBannerTextColor}.</p>
+     */
+    static final String KEY_BANNER_TEXT_COLOR = "bannerTextColor";
+
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
     private SiteDefaults() {

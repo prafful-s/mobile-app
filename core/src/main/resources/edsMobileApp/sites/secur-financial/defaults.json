@@ -6,5 +6,6 @@
     "useCart": false
   },
   "overlayCardTextColor": "#FFFFFF",
-  "extractInlineLinks": true
+  "extractInlineLinks": true,
+  "bannerTextColor": "#333333"
 }
