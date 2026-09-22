@@ -43,7 +43,7 @@
   ],
   "styles": [
     { "target": "color", "from": "style",
-      "map": { "teaser-overlay": "#ffffff", "overlay": "#ffffff", "*": "" }, "nullable": true }
+      "map": { "teaser-overlay": "#ffffff", "teaser-card": "#ffffff", "*": "" }, "nullable": true }
   ]
 }
 
