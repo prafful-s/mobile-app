@@ -534,14 +534,7 @@ final class ComponentTreeWalker {
                 // A section becomes the new nearest ancestor for anything beneath it; a columns/
                 // row/col wrapper is not a section itself, so it just carries the existing one down.
                 final Resource nextSection = isSectionType(resourceType) ? child : ancestorSection;
-                if (hierarchical && isSectionType(resourceType) && isSoleQuizBlock(child)) {
-                    // A section authored purely to host a quiz block is scaffolding, not a layout to
-                    // preserve - its steps (see isQuizSchema) render as direct siblings, exactly like
-                    // a quiz block authored at the screen's own top level. Boxing them in a panel
-                    // leaves the quiz's formSubmitButton not rendering in the app.
-                    collectComponents(child, sink, depth + 1, true, nextSection, knownScreenKeys,
-                            screenThumbnailOverrides);
-                } else if (hierarchical) {
+                if (hierarchical) {
                     // A section carries the spacing and alignment the target's panel wants, so it is
                     // a component in its own right rather than scaffolding to step over.
                     emitPanel(child, sink, depth, resourceType, nextSection, knownScreenKeys,
@@ -951,33 +944,6 @@ final class ComponentTreeWalker {
         list.put(SchemaConstants.KEY_STYLES, styles);
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
-    }
-
-    /**
-     * True when {@code section}'s only authored content is a single quiz block - see
-     * {@link #isQuizSchema}. Checked on the section's raw children, before any model resolution,
-     * the same way {@link #isCardsBlock} is - a section holding anything else at all (a second
-     * block, decorative text alongside the quiz) is left to box normally.
-     */
-    private boolean isSoleQuizBlock(final Resource section) {
-        Resource sole = null;
-        for (final Resource child : section.getChildren()) {
-            if (isSystemNode(child)) {
-                continue;
-            }
-            if (sole != null) {
-                return false;
-            }
-            sole = child;
-        }
-        if (sole == null) {
-            return false;
-        }
-        EdsMobileAppComponent model = adaptStrictly(sole);
-        if (model == null) {
-            model = new GenericComponent(sole, urlService);
-        }
-        return isQuizSchema(formSchemaService.getSchema(model.getComponentName()));
     }
 
     /**
