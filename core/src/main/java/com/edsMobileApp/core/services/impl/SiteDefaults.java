@@ -93,6 +93,17 @@ final class SiteDefaults {
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
 
+    /**
+     * Text colour to force on a site's {@code cardType: overlay} cards:
+     * {@code "overlayCardTextColor": "#FFFFFF"}. An overlay card prints its title and subtitle
+     * directly over its image, but the {@code card} rule only emits a colour for the
+     * {@code partial-overlay} variant ({@code teaser-overlay}), so a full-overlay card
+     * ({@code teaser-card}) carries no colour at all and the client falls back to its default dark
+     * text - unreadable over a dark photo. Absent leaves those cards exactly as they are, so no
+     * other site is affected. See {@code PageJsonExporterImpl#applyOverlayCardTextColor}.
+     */
+    static final String KEY_OVERLAY_CARD_TEXT_COLOR = "overlayCardTextColor";
+
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
     private SiteDefaults() {
