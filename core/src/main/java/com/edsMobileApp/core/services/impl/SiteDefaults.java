@@ -76,12 +76,15 @@ final class SiteDefaults {
     static final String KEY_META = "meta";
     /**
      * Per-screen form settings, keyed by screen key:
-     * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>", "eventType": "..." } }}.
+     * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>", "eventType": "...",
+     * "toastMessage": "..." } }}.
      * {@code redirectAfterSubmit} sets the screen the client opens after a successful submit
      * ({@code meta.link}); {@code eventType} sets the analytics event the submit fires
-     * ({@code meta.eventType}). Each is applied only when present and non-blank; anything absent
-     * (setting, screen, section, or file) leaves the value {@code FormBlockBuilder} already emitted.
-     * See {@code PageJsonExporterImpl#applyFormSettings}.
+     * ({@code meta.eventType}); {@code toastMessage} sets the confirmation text shown after a
+     * successful submit ({@code meta.toastMessage}) - needed for a form block with no authored
+     * toast/success-message field of its own. Each is applied only when present and non-blank;
+     * anything absent (setting, screen, section, or file) leaves the value {@code FormBlockBuilder}
+     * already emitted. See {@code PageJsonExporterImpl#applyFormSettings}.
      */
     static final String KEY_FORMS = "forms";
     /**

@@ -752,11 +752,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /**
      * Applies the site's per-screen form settings from {@code defaults.json}
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
-     * {@code meta.link} (the screen opened after a successful submit) and {@code eventType} -&gt;
-     * {@code meta.eventType} (the analytics event the submit fires). Each is applied only when the
+     * {@code meta.link} (the screen opened after a successful submit), {@code eventType} -&gt;
+     * {@code meta.eventType} (the analytics event the submit fires), and {@code toastMessage} -&gt;
+     * {@code meta.toastMessage} (the confirmation text shown after a successful submit) - needed
+     * because most authored form blocks carry no toast/success-message field at all, so
+     * {@link FormBlockBuilder} has nothing to read and emits blank. Each is applied only when the
      * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
-     * already emitted (blank {@code link}, authored-or-blank {@code eventType}). Checkout is handled
-     * by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     * already emitted (blank {@code link}/{@code toastMessage}, authored-or-blank {@code eventType}).
+     * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      *
      * <p>{@code heading} additionally inserts a {@code title} component immediately before the form
      * (see {@link #insertFormHeading}). {@link FormBlockBuilder#heading} cannot serve these forms:
@@ -809,6 +812,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
         putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
+        putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
     }
 
     /**
