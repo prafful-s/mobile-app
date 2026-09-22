@@ -499,6 +499,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // and so never reach applyFormSettings, but a site can configure a heading for any screen
         // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
         applyFormHeading(content, page, key);
+        // After applyLinklessCardFormat on purpose: that pass can rewrite a linkless card's cardType,
+        // and whether a card needs the overlay text colour depends on the type it ends up with, not
+        // the one it was mapped to. A card moved off 'overlay' prints its text below the image and
+        // must keep the default colour.
+        // Opt-in sites give their overlay cards a readable text colour; no-op otherwise. Outside the
+        // branch because an overlay card can sit on any screen, cart and checkout included.
+        applyOverlayCardTextColor(content, page);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -973,6 +980,56 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
         }
         return null;
+    }
+
+    /** The {@code cardType} whose text prints straight over the image with no scrim behind it. */
+    private static final String CARD_TYPE_OVERLAY = "overlay";
+
+    /**
+     * Gives a site's overlay cards the text colour it configures as {@code overlayCardTextColor},
+     * written to the card's {@code styles.color} - the same channel the {@code card} rule already
+     * uses for the {@code partial-overlay} variant, so the client needs no new field.
+     *
+     * <p>Only {@code cardType: overlay} cards are touched. {@code partial-overlay} already gets
+     * {@code #ffffff} from the mapping, and the stacked variants print their text below the image
+     * where the default colour is correct - recolouring those would break them.</p>
+     *
+     * <p>A card that already carries a {@code styles.color} keeps it, so an authored or mapped
+     * colour still wins. A site that configures nothing is left completely untouched.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void applyOverlayCardTextColor(final List<Map<String, Object>> content, final Page page) {
+        final String color = SiteDefaults.stringValue(
+                siteDefaults.forPage(page), SiteDefaults.KEY_OVERLAY_CARD_TEXT_COLOR);
+        if (StringUtils.isBlank(color)) {
+            return;
+        }
+        for (final Map<String, Object> card : findComponents(content, "card")) {
+            final Object raw = card.get(SchemaConstants.KEY_CONTENT);
+            if (!(raw instanceof Map)
+                    || !CARD_TYPE_OVERLAY.equals(((Map<String, Object>) raw).get("cardType"))) {
+                continue;
+            }
+            final Object existing = card.get(SchemaConstants.KEY_STYLES);
+            if (existing instanceof Map) {
+                final Map<String, Object> styles = (Map<String, Object>) existing;
+                final Object current = styles.get("color");
+                if (!(current instanceof String) || StringUtils.isBlank((String) current)) {
+                    styles.put("color", color);
+                }
+                continue;
+            }
+            // Rebuilt rather than appended to: every other component emits meta, styles, content in
+            // that order, and insertion order is part of this contract everywhere else.
+            final Map<String, Object> styles = new LinkedHashMap<>();
+            styles.put("color", color);
+            final Map<String, Object> rebuilt = new LinkedHashMap<>();
+            rebuilt.put(SchemaConstants.KEY_META, card.get(SchemaConstants.KEY_META));
+            rebuilt.put(SchemaConstants.KEY_STYLES, styles);
+            rebuilt.put(SchemaConstants.KEY_CONTENT, raw);
+            card.clear();
+            card.putAll(rebuilt);
+        }
     }
 
     /** Depth-first search for every component in {@code tree} whose meta.component matches. */
