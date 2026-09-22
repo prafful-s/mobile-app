@@ -257,6 +257,12 @@ final class ComponentTreeWalker {
         boolean inserted = false;
         for (int i = 0; i < components.size(); i++) {
             final Map<String, Object> component = components.get(i);
+            final Object styles = component.get(SchemaConstants.KEY_STYLES);
+            if (styles instanceof Map) {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> styleProps = (Map<String, Object>) styles;
+                prefixAssets(styleProps, assetHost);
+            }
             final Object content = component.get(SchemaConstants.KEY_CONTENT);
             if (content instanceof Map) {
                 @SuppressWarnings("unchecked")
@@ -1277,8 +1283,16 @@ final class ComponentTreeWalker {
      */
     private static final String[] PANEL_STYLE_KEYS = {
         "gap", "margin", "padding", "alignItems", "justifyContent",
-        "borderRadius", "backgroundColor", "height", "marginTop",
+        "borderRadius", "backgroundColor", "height", "marginTop", "backgroundImage",
     };
+
+    /**
+     * Style keys whose authored source property is not the same name as the style key itself.
+     * {@code backgroundImage} reads the section's {@code image} property - the same field an EDS
+     * author already uses for a section background image - rather than a property literally named
+     * {@code backgroundImage}, which nothing authors.
+     */
+    private static final Map<String, String> PANEL_STYLE_SOURCE_OVERRIDES = Map.of("backgroundImage", "image");
 
     /** The panel style contract, as a set - a style token may only contribute one of these keys;
      * screen positioning keys such as {@code left}/{@code top} belong to editor.position, not here. */
@@ -1301,7 +1315,8 @@ final class ComponentTreeWalker {
         final Map<String, Object> styles = new LinkedHashMap<>();
         final ValueMap props = resource.getValueMap();
         for (final String key : PANEL_STYLE_KEYS) {
-            final Object value = props.get(key);
+            final String sourceKey = PANEL_STYLE_SOURCE_OVERRIDES.getOrDefault(key, key);
+            final Object value = props.get(sourceKey);
             styles.put(key, value == null ? "" : value);
         }
         // The style resolver adds anything the panel picked up from its section's style tokens
