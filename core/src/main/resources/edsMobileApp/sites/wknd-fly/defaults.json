@@ -21,5 +21,11 @@
     "textColor": "#1a1a1a",
     "color": "#1a1a1a"
   },
-  "extractInlineLinks": true
+  "extractInlineLinks": true,
+  "componentMeta": {
+    "wknd-club.panel.b1059ca7": {
+      "layout": "horizontal",
+      "wrapOverflowing": true
+    }
+  }
 }
