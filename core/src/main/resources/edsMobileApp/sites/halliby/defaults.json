@@ -11,6 +11,5 @@
     "name": "shopping-cart",
     "target": "cart"
   },
-  "renderLinklessCards": true,
-  "linklessCardType": "image-text-one-line"
+  "renderLinklessCards": true
 }

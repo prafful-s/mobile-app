@@ -504,8 +504,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
-        // Opt-in sites force a cardType on linkless cards (e.g. image-left one-per-row); no-op otherwise.
-        applyLinklessCardFormat(content, page);
         // Outside the branch on purpose: cart, review-order and checkout take their own paths above
         // and so never reach applyFormSettings, but a site can configure a heading for any screen
         // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
@@ -833,28 +831,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * A list that already carries a non-blank {@code link} keeps it (authored override wins), and a
      * site with no {@code productDetailScreen} configured is left untouched.
      */
-    /**
-     * When the site sets {@code linklessCardType} in its {@code defaults.json}, forces that
-     * {@code cardType} on every linkless content card ({@code component: card}, {@code link: "#"}) -
-     * e.g. {@code image-text-one-line} lays each card out image-left, title/text beside it, one per
-     * row (the home "how it works" trio, about-us). A site without the setting keeps the authored
-     * {@code cardType}, so other sites are unchanged and it is reversible.
-     */
-    @SuppressWarnings("unchecked")
-    private void applyLinklessCardFormat(final List<Map<String, Object>> content, final Page page) {
-        final String cardType = SiteDefaults.stringValue(
-                siteDefaults.forPage(page), SiteDefaults.KEY_LINKLESS_CARD_TYPE);
-        if (StringUtils.isBlank(cardType)) {
-            return;
-        }
-        for (final Map<String, Object> card : findComponents(content, "card")) {
-            final Object raw = card.get(SchemaConstants.KEY_CONTENT);
-            if (raw instanceof Map && "#".equals(((Map<String, Object>) raw).get("link"))) {
-                ((Map<String, Object>) raw).put("cardType", cardType);
-            }
-        }
-    }
-
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
                                    final String screenKey) {
