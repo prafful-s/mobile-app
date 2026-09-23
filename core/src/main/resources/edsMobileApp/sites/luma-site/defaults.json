@@ -11,27 +11,10 @@
     "toastMessage": "",
     "submitButtonLabel": "Checkout"
   },
-  "formHeadings": {
-    "create-account": "Create an account",
-    "credit-card-application-form": "Credit Card Application",
-    "insurance": "Life Insurance",
-    "insurance-plan-selection": "Which type of health insurance should I get?",
-    "join-us": "JOIN WKND FLY CLUB",
-    "loan-application-form": "Home Loan Application Form",
-    "medicare-plan-selection": "Which type of Medicare plan should I get?",
-    "new-account": "New Account Application",
-    "test-drive": "Schedule test drive",
-    "add-external": "Add External",
-    "checkout": "Checkout",
-    "checkout-shipping": "Checkout Shipping",
-    "child-account-application": "Child Account Application",
-    "flight-search": "Flight Search",
-    "get-offer": "Get Offer",
-    "name-change-request": "Name Change Request",
-    "plan-application": "Plan Application",
-    "set-up-auto-save": "Set Up Auto Save",
-    "sign-in": "Sign In",
-    "transfer-funds": "Transfer Funds"
+  "forms": {
+    "login": { "heading": "Sign In" },
+    "registration": { "heading": "Create an account" },
+    "checkout": { "heading": "Checkout Shipping" }
   },
   "rightIcon": {
     "icon": "shopping-cart",
