@@ -368,6 +368,11 @@ final class ComponentTreeWalker {
                 continue;
             }
             final String resourceType = StringUtils.trimToEmpty(child.getResourceType());
+            if (isAdaptiveFormComponent(resourceType)) {
+                // Skipped whole, children and all - see isAdaptiveFormComponent.
+                LOG.debug("Skipping Adaptive Form component {} ({})", child.getPath(), resourceType);
+                continue;
+            }
             final boolean hasChildren = child.hasChildren();
 
             // An untyped node with no children is an empty layout cell - a column an author left
@@ -1258,6 +1263,50 @@ final class ComponentTreeWalker {
      * the EdsMobileApp configuration node itself. Relevant mainly when a page keeps its components
      * directly under {@code jcr:content} and the walk starts there.
      */
+    /**
+     * Resource type prefixes of AEM's native Adaptive Forms, which this export does not handle.
+     *
+     * <p>{@code fd/franklin/components/form} is the Franklin-embedded form container;
+     * {@code core/fd/components/form} are the Core Forms fields beneath it (text, textinput,
+     * dropdown, actions/submit and the rest).</p>
+     */
+    private static final String[] ADAPTIVE_FORM_TYPES = {
+        "fd/franklin/components/form",
+        "core/fd/components/form",
+    };
+
+    /**
+     * True when the resource is part of a native Adaptive Form.
+     *
+     * <p>These are a different component family from the Franklin blocks this walker understands: no
+     * mapping rule matches them, and the export's own forms come from the bundled schemas in
+     * {@code /edsMobileApp/forms} keyed off a block's {@code model}. Walking one produced nothing
+     * useful even when it worked.</p>
+     *
+     * <p>It did not always work. Adapting one through {@code ModelFactory} could raise a
+     * {@link LinkageError} rather than an exception, and {@link #adaptStrictly} caught only
+     * {@code RuntimeException}, so the error escaped the servlet's own handlers too and the whole
+     * site's export answered 500 - an HTML error page, from an endpoint whose contract is that
+     * errors are always JSON. Every site carrying an Adaptive Form was down: secur-financial (188
+     * such components), we-healthcare (9) and citi-signal (2), while the four sites with none
+     * exported normally.</p>
+     *
+     * <p>Skipping the subtree is the fix rather than catching the error, because there is nothing to
+     * export here either way. {@link #adaptStrictly} is hardened as well, so the next component
+     * family that behaves this way costs itself instead of the whole response.</p>
+     */
+    private static boolean isAdaptiveFormComponent(final String resourceType) {
+        if (StringUtils.isEmpty(resourceType)) {
+            return false;
+        }
+        for (final String prefix : ADAPTIVE_FORM_TYPES) {
+            if (resourceType.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean isSystemNode(final Resource resource) {
         final String name = resource.getName();
         return name.startsWith("cq:")
@@ -1333,6 +1382,14 @@ final class ComponentTreeWalker {
                     resource.getPath(), resource.getResourceType());
         } catch (final RuntimeException e) {
             LOG.warn("Could not build a EdsMobileApp model for {} - skipping", resource.getPath(), e);
+        } catch (final LinkageError e) {
+            // Not a RuntimeException, so it used to escape this method, the walk, and the servlet's
+            // own handlers, answering the whole request with an HTML 500. Adapting a component from
+            // a bundle this one cannot see raises it, and one such component should cost itself
+            // rather than every screen on the site. Deliberately narrow: LinkageError only, so a
+            // genuinely fatal Error such as OutOfMemoryError still propagates.
+            LOG.error("Could not load the model class for {} ({}) - skipping this component",
+                    resource.getPath(), resource.getResourceType(), e);
         }
         return null;
     }
