@@ -494,6 +494,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // Per-component style overrides the site pins by id; no-op when it configures none. Last so
         // it overrides anything the passes above wrote, and outside the branch because a targeted
         // component can sit on any screen, cart and checkout included.
+        // meta first, then styles: a layout change can alter how a component is rendered, and the
+        // style override should be the last word on how it looks.
+        applyComponentMeta(content, page, key);
         applyComponentStyles(content, page, key);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
@@ -813,6 +816,69 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
         }
         return null;
+    }
+
+    /** Export bookkeeping that configuration must not rewrite - see KEY_COMPONENT_META. */
+    private static final Set<String> PROTECTED_META_KEYS = Set.of(
+            SchemaConstants.KEY_ID, SchemaConstants.KEY_COMPONENT, SchemaConstants.KEY_ORDER);
+
+    /**
+     * Applies the per-component {@code meta} overrides a site pins under {@code componentMeta},
+     * keyed {@code <screenKey>.<component>.<id>} exactly as {@link #applyComponentStyles} is:
+     *
+     * <pre>
+     * "componentMeta": {
+     *   "wknd-club.panel.b1059ca7": { "layout": "horizontal" }
+     * }
+     * </pre>
+     *
+     * <p>A panel's {@code layout} is what makes its children stack or sit in a row, and the mapping
+     * always emits {@code vertical} - nothing authored on the block can say otherwise - so this is
+     * the only way to ask for a row of cards.</p>
+     *
+     * <p>{@code id}, {@code component} and {@code order} are refused and logged: they are the
+     * export's own bookkeeping, keyed on by every other override and by the client, and {@code order}
+     * is maintained to equal the component's index in its list.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void applyComponentMeta(final List<Map<String, Object>> content, final Page page,
+                                    final String screenKey) {
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_COMPONENT_META);
+        if (overrides.isEmpty()) {
+            return;
+        }
+        for (final Map.Entry<String, Object> override : overrides.entrySet()) {
+            if (!(override.getValue() instanceof Map)) {
+                continue;
+            }
+            final String[] parts = override.getKey().split("\\.");
+            if (parts.length != 3) {
+                LOG.warn("componentMeta key '{}' is not <screenKey>.<component>.<id> - ignoring it",
+                        override.getKey());
+                continue;
+            }
+            if (!parts[0].equals(screenKey)) {
+                continue;
+            }
+            final Map<String, Object> target = findById(content, parts[1],
+                    StringUtils.removeStart(parts[2], "id_"));
+            if (target == null) {
+                LOG.debug("componentMeta key '{}' matched no component on screen {}",
+                        override.getKey(), screenKey);
+                continue;
+            }
+            final Map<String, Object> meta = asMeta(target.get(SchemaConstants.KEY_META));
+            for (final Map.Entry<String, Object> field
+                    : ((Map<String, Object>) override.getValue()).entrySet()) {
+                if (PROTECTED_META_KEYS.contains(field.getKey())) {
+                    LOG.warn("componentMeta key '{}' tried to set meta.{} - refused",
+                            override.getKey(), field.getKey());
+                    continue;
+                }
+                meta.put(field.getKey(), field.getValue());
+            }
+        }
     }
 
     /**
