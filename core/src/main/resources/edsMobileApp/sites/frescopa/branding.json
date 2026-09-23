@@ -3,6 +3,7 @@
   "bodyFont": "Proxima Nova",
   "textColor": "#8B8B8B",
   "headingFont": "Proxima Nova",
+  "primaryColor": "#27647d",
   "buttonTextColor": "#FFFFFF",
   "panelDropShadow": "10px 5px 5px black",
   "topBarTextColor": "#F9E5CD",
