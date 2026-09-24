@@ -76,15 +76,20 @@ final class SiteDefaults {
     static final String KEY_META = "meta";
     /**
      * Per-screen form settings, keyed by screen key:
-     * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>", "eventType": "...",
-     * "toastMessage": "..." } }}.
+     * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>",
+     * "navigateOnSubmit": "<screen-key>", "eventType": "...", "toastMessage": "...",
+     * "heading": "...", "headingAlignment": "..." } }}.
      * {@code redirectAfterSubmit} sets the screen the client opens after a successful submit
-     * ({@code meta.link}); {@code eventType} sets the analytics event the submit fires
-     * ({@code meta.eventType}); {@code toastMessage} sets the confirmation text shown after a
-     * successful submit ({@code meta.toastMessage}) - needed for a form block with no authored
-     * toast/success-message field of its own. Each is applied only when present and non-blank;
-     * anything absent (setting, screen, section, or file) leaves the value {@code FormBlockBuilder}
-     * already emitted. See {@code PageJsonExporterImpl#applyFormSettings}.
+     * ({@code meta.link}); {@code navigateOnSubmit} sets an alternate post-submit navigation target
+     * some forms honour ({@code meta.navigateOnSubmit}, e.g. registration); {@code eventType} sets
+     * the analytics event the submit fires ({@code meta.eventType}); {@code toastMessage} sets the
+     * confirmation text shown after a successful submit ({@code meta.toastMessage}) - needed for a
+     * form block with no authored toast/success-message field of its own; {@code heading} (and
+     * optionally {@code headingAlignment}) inserts a title directly above the form (see
+     * {@code PageJsonExporterImpl#insertFormHeading}) for a form block with no heading field of its
+     * own. Each is applied only when present and non-blank; anything absent (setting, screen,
+     * section, or file) leaves the value {@code FormBlockBuilder} already emitted. See
+     * {@code PageJsonExporterImpl#applyFormSettings}.
      */
     static final String KEY_FORMS = "forms";
     /**

@@ -28,7 +28,7 @@
   },
   {
     "id": "permanentAddress",
-    "name": "homeAddress.street1",
+    "name": "person.address.street",
     "label": "Permanent Address",
     "value": "",
     "type": "text",
@@ -37,7 +37,7 @@
   },
   {
     "id": "city",
-    "name": "homeAddress.city",
+    "name": "person.address.city",
     "label": "City",
     "value": "",
     "type": "text",

@@ -51,6 +51,20 @@ final class FormBlockBuilder {
 
     /** Authored property names per emitted setting, most specific first. */
     private static final String[] EVENT_TYPE_KEYS = {"mobilebuttoneventtype"};
+    /**
+     * The authored post-submit redirect field, per form that has one, mapped to the property its own
+     * block model defines: create-account names it {@code redirectUrl}, join-us names it
+     * {@code submit-redirect-url} (both an {@code aem-content} page reference). Keyed by form name
+     * rather than read for every form, because the field name {@code redirectUrl} is shared by many
+     * other form blocks (child-account-application, loan-application-form, transfer-funds, ...) that
+     * this feature is not meant to touch - only the forms listed here surface an authored redirect
+     * into {@code meta.link}; every other form keeps the blank {@code link} it had before. A value
+     * authored here wins over the per-site {@code forms.<screen>.redirectAfterSubmit} default applied
+     * downstream in {@code PageJsonExporterImpl#applyFormSettings}.
+     */
+    private static final Map<String, String[]> REDIRECT_KEYS_BY_FORM = Map.of(
+            "create-account", new String[]{"redirectUrl"},
+            "join-us", new String[]{"submit-redirect-url"});
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
@@ -254,10 +268,15 @@ final class FormBlockBuilder {
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
-        // Post-submit redirect target screen. Emitted blank here (key always present); a per-site
-        // 'forms' entry in defaults.json fills it in downstream - see
-        // PageJsonExporterImpl#applyFormRedirect. Blank means the client stays on the form.
-        meta.put("link", StringUtils.EMPTY);
+        // Post-submit redirect target screen. Taken from the block's own authored redirect field
+        // (create-account's redirectUrl, join-us's submit-redirect-url) when the author set one -
+        // an explicit authored redirect wins. Only the forms in REDIRECT_KEYS_BY_FORM are read;
+        // every other form keeps a blank link here. Left blank when the block authors none, in which
+        // case a per-site 'forms' entry in defaults.json supplies the default downstream (e.g.
+        // "home") - see PageJsonExporterImpl#applyFormSettings. Blank throughout means the client
+        // stays put.
+        meta.put("link", first(authored, REDIRECT_KEYS_BY_FORM.getOrDefault(formName, NO_KEYS),
+                StringUtils.EMPTY));
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_FORM);
         meta.put("eventType", first(authored, EVENT_TYPE_KEYS, StringUtils.EMPTY));

@@ -421,11 +421,17 @@ final class FormFieldFactory {
                     StringUtils.defaultIfBlank(str(source.get("path")), path)));
             target.put("label", StringUtils.defaultString(
                     StringUtils.defaultIfBlank(str(source.get("label")), label)));
-            target.put("checkedValue", StringUtils.defaultString(
+            // Consent/opt-in checkboxes feed AEP eVars downstream, which expect the reference
+            // client's "y"/"n" domain. The bundled schemas and authored nodes carry the checked
+            // state as the boolean placeholder "true" (unchecked usually left blank), which would
+            // land in AEP as the literal "true"/"" rather than the y/n the eVar is mapped to. So the
+            // toggle domain is normalised here - the single place both the authored and configured
+            // routes converge on: "true"/blank -> "y", "false"/blank -> "n". An explicit non-boolean
+            // value a schema sets deliberately (e.g. "accepted") is preserved.
+            target.put("checkedValue", toggleValue(
                     StringUtils.defaultIfBlank(str(source.get("checkedValue")),
-                            str(source.get("value")))));
-            target.put("uncheckedValue",
-                    StringUtils.defaultString(str(source.get("uncheckedValue"))));
+                            str(source.get("value"))), "y"));
+            target.put("uncheckedValue", toggleValue(str(source.get("uncheckedValue")), "n"));
             rewritten.add(target);
         }
 
@@ -571,12 +577,13 @@ final class FormFieldFactory {
             return fromEnum;
         }
 
-        // One node, one choice. The option is built here rather than in toggleContent so it carries
-        // the node's own checkedValue instead of a value invented from the field.
+        // One node, one choice. The option carries the node's own checkedValue/uncheckedValue when
+        // authored; when neither is set, both are left blank here so checkboxGroupContent supplies
+        // the "y"/"n" default in one place for both the authored and configured routes.
         final Map<String, Object> option = new LinkedHashMap<>();
         option.put("path", StringUtils.defaultString(path));
         option.put("label", StringUtils.defaultString(label));
-        option.put("checkedValue", StringUtils.defaultIfBlank(checkedValue, "true"));
+        option.put("checkedValue", StringUtils.defaultString(checkedValue));
         option.put("uncheckedValue",
                 StringUtils.defaultString(props.get("uncheckedValue", String.class)));
 
@@ -762,5 +769,27 @@ final class FormFieldFactory {
 
     private static String str(final Object value) {
         return value instanceof String ? (String) value : null;
+    }
+
+    /**
+     * Normalises a checkbox toggle value to the reference client's {@code "y"}/{@code "n"} domain,
+     * which is what the AEP eVars these fields feed are mapped to. A blank value (the common case -
+     * the schemas and authored nodes rarely set an unchecked value) becomes {@code fallback}; the
+     * boolean placeholders {@code "true"}/{@code "false"} the schemas use to mean "checked"/
+     * "unchecked" become {@code "y"}/{@code "n"}. Any other value a schema sets deliberately is
+     * returned unchanged, so a checkbox that genuinely needs a domain-specific value keeps it.
+     */
+    private static String toggleValue(final String raw, final String fallback) {
+        if (StringUtils.isBlank(raw)) {
+            return fallback;
+        }
+        final String trimmed = raw.trim();
+        if ("true".equalsIgnoreCase(trimmed)) {
+            return "y";
+        }
+        if ("false".equalsIgnoreCase(trimmed)) {
+            return "n";
+        }
+        return raw;
     }
 }

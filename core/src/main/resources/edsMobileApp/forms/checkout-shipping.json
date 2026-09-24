@@ -33,7 +33,7 @@
   },
   {
     "id": "phone",
-    "name": "mobilePhone.number",
+    "name": "person.mobileNumber",
     "label": "Phone number",
     "value": "",
     "type": "text",
@@ -42,7 +42,7 @@
   },
   {
     "id": "street",
-    "name": "homeAddress.street1",
+    "name": "shippingAddress.street1",
     "label": "Street address",
     "value": "",
     "type": "text",
@@ -51,7 +51,7 @@
   },
   {
     "id": "city",
-    "name": "homeAddress.city",
+    "name": "shippingAddress.city",
     "label": "City",
     "value": "",
     "type": "text",
@@ -60,7 +60,7 @@
   },
   {
     "id": "postalCode",
-    "name": "homeAddress.postalCode",
+    "name": "shippingAddress.postalCode",
     "label": "Postal code",
     "value": "",
     "type": "text",
@@ -69,7 +69,7 @@
   },
   {
     "id": "country",
-    "name": "homeAddress.country",
+    "name": "shippingAddress.country",
     "label": "Country",
     "value": "",
     "type": "select",
@@ -107,14 +107,14 @@
   },
   {
     "id": "paymentMethod",
-    "name": "paymentMethod",
+    "name": "orderProfile.lastOrderPaymentMethod",
     "label": "Payment",
-    "value": "card",
+    "value": "credit-card",
     "type": "radio",
     "options": [
       {
         "label": "Credit or Debit Card",
-        "value": "card"
+        "value": "credit-card"
       },
       {
         "label": "Paypal",
@@ -142,30 +142,30 @@
   },
   {
     "id": "shippingMethod",
-    "name": "shippingMethod",
+    "name": "orderProfile.lastOrderType",
     "label": "Shipping",
-    "value": "standard",
+    "value": "STANDARD SHIPPING",
     "type": "radio",
     "options": [
       {
         "label": "Standard: 5-14 business days",
-        "value": "standard"
+        "value": "STANDARD SHIPPING"
       },
       {
         "label": "Ground: 3-7 business days",
-        "value": "ground"
+        "value": "GROUND SHIPPING"
       },
       {
         "label": "Priority: 2 business days",
-        "value": "priority"
+        "value": "PRIORITY SHIPPING"
       },
       {
         "label": "Express: 1 business day",
-        "value": "express"
+        "value": "EXPRESS SHIPPING"
       },
       {
         "label": "Next-day pickup",
-        "value": "pickup"
+        "value": "PICKUP"
       }
     ]
   },

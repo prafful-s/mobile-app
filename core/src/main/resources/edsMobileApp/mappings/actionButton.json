@@ -4,7 +4,7 @@
   "skeleton": true,
   "fields": [
     { "target": "label", "from": "label", "default": "" },
-    { "target": "events", "default": "" },
+    { "target": "eventType", "default": "" },
     { "target": "linkTo", "from": "link", "type": "path", "default": "" },
     { "target": "message", "default": "" },
     {

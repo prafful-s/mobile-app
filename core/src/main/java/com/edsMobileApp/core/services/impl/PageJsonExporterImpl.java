@@ -41,6 +41,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
 
+    /**
+     * The account/profile screen every export gets by default. No AEM page has to back it - see
+     * {@link #buildUserDetailsScreen(Page)} - so every site's logged-in account icon has somewhere
+     * to land even before a site author builds a dedicated profile page.
+     */
+    private static final String SCREEN_USER_DETAILS = "user-details";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
             "jcr:primaryType", "jcr:mixinTypes", "jcr:createdBy", "jcr:created",
@@ -176,6 +183,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> screens = buildScreens(screenList, homeRoot, assetHost, opts, menu,
                 screenPresets, knownScreenKeys, screenThumbnailOverrides);
         applyScreenThumbnailOverrides(screens, screenThumbnailOverrides, assetHost);
+        // Only added when no AEM page already exports under this key, so a site that has authored
+        // its own user-details page keeps that content untouched.
+        screens.putIfAbsent(SCREEN_USER_DETAILS, buildUserDetailsScreen(homeRoot));
         app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
@@ -254,9 +264,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         navigation.put("menu", menu);
         navigation.put("loginScreen",
                 resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
-        // No dedicated profile page exists here, so the logged-in account icon lands on settings.
-        navigation.put("profileScreen",
-                resolveScreenRef(props, SchemaConstants.PN_PROFILE_SCREEN, "settings", screens, homeRoot));
+        // Fixed for every site, unlike loginScreen/registrationScreen below: the profile action
+        // always opens the synthetic user-details screen built in buildUserDetailsScreen, never an
+        // authored page or a scanned form match.
+        navigation.put("profileScreen", SCREEN_USER_DETAILS);
         navigation.put("authorizedMenu",
                 Arrays.asList(props.get(SchemaConstants.PN_AUTHORIZED_MENU, new String[0])));
         navigation.put("registrationScreen",
@@ -514,6 +525,49 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
+     * The account/profile screen every export gets, whether or not the site has authored a page
+     * for it - see {@link #SCREEN_USER_DETAILS}. No AEM block backs it: like
+     * {@link #cartActionsPanel}, this is the LUMA MOBILE reference's static content, added verbatim
+     * so every site's account icon opens the same shape of screen. Only used as a fallback -
+     * {@code screens.putIfAbsent} in {@link #export} keeps an authored user-details page as-is.
+     */
+    private Map<String, Object> buildUserDetailsScreen(final Page homeRoot) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("icon", "account");
+        meta.put("name", SCREEN_USER_DETAILS);
+        meta.put("title", "User Details");
+        meta.put("preset", "userDetails");
+        meta.put("template", "FreeformScreen");
+        meta.put("iconInactive", "account-outline");
+        meta.put("isRootScreen", false);
+        meta.put("navigationOrder", null);
+        meta.put("includeInNavigation", false);
+
+        final Map<String, Object> position = new LinkedHashMap<>();
+        position.put("top", 275);
+        position.put("left", 450);
+        final Map<String, Object> editor = new LinkedHashMap<>();
+        editor.put("zIndex", 7);
+        editor.put("position", position);
+
+        final String syntheticPath = homeRoot.getPath() + "/" + SCREEN_USER_DETAILS;
+        final Map<String, Object> componentMeta = new LinkedHashMap<>();
+        componentMeta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(syntheticPath));
+        componentMeta.put(SchemaConstants.KEY_ORDER, 0);
+        componentMeta.put(SchemaConstants.KEY_COMPONENT, "userDetails");
+
+        final Map<String, Object> component = new LinkedHashMap<>();
+        component.put(SchemaConstants.KEY_META, componentMeta);
+        component.put(SchemaConstants.KEY_CONTENT, Collections.singletonMap("showLogoutButton", true));
+
+        final Map<String, Object> screen = new LinkedHashMap<>();
+        screen.put(SchemaConstants.KEY_META, meta);
+        screen.put(SchemaConstants.KEY_EDITOR, editor);
+        screen.put(SchemaConstants.KEY_CONTENT, List.of(component));
+        return screen;
+    }
+
+    /**
      * The screen's {@code editor} block: canvas layout (zIndex/position) authored in DSN Studio.
      * AEM has no equivalent, so every screen gets a zero-valued skeleton by default - the client
      * sees the shape it expects, and the zeros read as "unpositioned" rather than "missing". The
@@ -752,24 +806,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Applies the site's per-screen form settings from {@code defaults.json}
-     * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
-     * {@code meta.link} (the screen opened after a successful submit), {@code eventType} -&gt;
-     * {@code meta.eventType} (the analytics event the submit fires), and {@code toastMessage} -&gt;
-     * {@code meta.toastMessage} (the confirmation text shown after a successful submit) - needed
-     * because most authored form blocks carry no toast/success-message field at all, so
-     * {@link FormBlockBuilder} has nothing to read and emits blank. Each is applied only when the
-     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
-     * already emitted (blank {@code link}/{@code toastMessage}, authored-or-blank {@code eventType}).
-     * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
-     *
-     * <p>{@code heading} additionally inserts a {@code title} component immediately before the form
-     * (see {@link #insertFormHeading}). {@link FormBlockBuilder#heading} cannot serve these forms:
-     * it keys off the schema name, and a block whose fields are authored rather than taken from a
-     * bundled schema has no schema name at all - so a site that wants a title above such a form has
-     * nowhere else to say so.</p>
-     */
-    /**
      * Sets {@code content.link} on every {@code listType: productList} to the site's
      * {@code productDetailScreen} ({@code defaults.json}), so the client opens
      * {@code <screen>?productId=<sku>} when an item is tapped - the same navigation the web uses.
@@ -798,6 +834,26 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
     }
 
+    /**
+     * Applies the site's per-screen form settings from {@code defaults.json}
+     * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
+     * {@code meta.link} (the screen opened after a successful submit), {@code navigateOnSubmit} -&gt;
+     * {@code meta.navigateOnSubmit} (an alternate post-submit navigation target the client honours
+     * for forms that use it, e.g. registration), {@code eventType} -&gt; {@code meta.eventType}
+     * (the analytics event the submit fires), and {@code toastMessage} -&gt; {@code meta.toastMessage}
+     * (the confirmation text shown after a successful submit) - needed because most authored form
+     * blocks carry no toast/success-message field at all, so {@link FormBlockBuilder} has nothing to
+     * read and emits blank. Each is applied only when the config carries a non-blank value; anything
+     * absent leaves the value {@link FormBlockBuilder} already emitted (blank {@code link}/
+     * {@code toastMessage}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
+     * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     *
+     * <p>{@code heading} additionally inserts a {@code title} component immediately before the form
+     * (see {@link #insertFormHeading}). {@link FormBlockBuilder#heading} cannot serve these forms:
+     * it keys off the schema name, and a block whose fields are authored rather than taken from a
+     * bundled schema has no schema name at all - so a site that wants a title above such a form has
+     * nowhere else to say so.</p>
+     */
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
                                    final String screenKey) {
@@ -812,7 +868,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         final Map<String, Object> settings = (Map<String, Object>) entry;
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
-        putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        // A redirect authored on the block itself (FormBlockBuilder reads redirectUrl /
+        // submit-redirect-url into meta.link) is the author's explicit choice and wins; the per-site
+        // 'redirectAfterSubmit' only fills in the default when the block left it blank.
+        final Object authoredLink = meta.get("link");
+        if (!(authoredLink instanceof String) || StringUtils.isBlank((String) authoredLink)) {
+            putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        }
+        putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
         putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
     }

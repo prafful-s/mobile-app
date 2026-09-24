@@ -1,21 +1,3 @@
 {
-  "logo": "https://demo-system-next.s3.amazonaws.com/assets/frescopa/frescopa-logo.png",
-  "bodyFont": "Proxima Nova",
-  "textColor": "#8B8B8B",
-  "headingFont": "Proxima Nova",
-  "primaryColor": "#f0e0d2",
-  "buttonTextColor": "#FFFFFF",
-  "panelDropShadow": "10px 5px 5px black",
-  "topBarTextColor": "#F9E5CD",
-  "panelBorderColor": "#dedede",
-  "textOnImageColor": "#FFFFFF",
-  "panelBorderRadius": 0,
-  "appBackgroundColor": "#FFFFFF",
-  "bottomBarTextColor": "#973D37",
-  "buttonBorderRadius": 0,
-  "panelBackgroundColor": "#ffffff",
-  "buttonBackgroundColor": "#37637A",
-  "topBarBackgroundColor": "#973D37",
-  "bottomBarHighlightColor": "#37637A",
-  "bottomBarBackgroundColor": "#F9E5CD"
+  "contentFragmentPath": "/content/dam/frescopa/en/fragments/brand-themes/frescopa-mobile"
 }
