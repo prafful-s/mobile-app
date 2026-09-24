@@ -793,10 +793,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
      * {@code meta.link} (the screen opened after a successful submit), {@code navigateOnSubmit} -&gt;
      * {@code meta.navigateOnSubmit} (an alternate post-submit navigation target the client honours
-     * for forms that use it, e.g. registration) and {@code eventType} -&gt; {@code meta.eventType}
-     * (the analytics event the submit fires). Each is applied only when the config carries a
-     * non-blank value; anything absent leaves the value {@link FormBlockBuilder} already emitted
-     * (blank {@code link}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
+     * for forms that use it, e.g. registration), {@code eventType} -&gt; {@code meta.eventType}
+     * (the analytics event the submit fires), and {@code toastMessage} -&gt; {@code meta.toastMessage}
+     * (the confirmation text shown after a successful submit) - needed because most authored form
+     * blocks carry no toast/success-message field at all, so {@link FormBlockBuilder} has nothing to
+     * read and emits blank. Each is applied only when the config carries a non-blank value; anything
+     * absent leaves the value {@link FormBlockBuilder} already emitted (blank {@code link}/
+     * {@code toastMessage}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
      * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      */
     @SuppressWarnings("unchecked")
@@ -822,6 +825,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
+        putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
     }
 
     /** Overwrites {@code meta[key]} only when {@code value} is a non-blank string. */
