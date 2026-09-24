@@ -1,10 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,28 +10,29 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.day.cq.wcm.api.Page;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Per-site branding: the colour palette, logos, fonts and style groups the app dresses itself in -
- * read live from the site's theme Content Fragment rather than shipped as static data.
+ * read live from the site's theme Content Fragment rather than shipped as static data, and found
+ * by searching rather than a path named per site.
  *
- * <p>{@code /edsMobileApp/sites/<site>/branding.json} (site = the site root's last segment, e.g.
- * {@code secur-financial}) now holds only a pointer:</p>
- * <pre>
- * { "contentFragmentPath": "/content/dam/carvelo/en/fragments/brand-themes/carvelo-mobile" }
- * </pre>
- * <p>so a brand color change is a content edit, not a bundle redeploy. That pointer is the only
- * part safe to cache for the bundle's lifetime; the fragment it names is live content an author can
- * change at any time, so it - and every value pulled from it - is re-read on every {@link #forPage}
- * call rather than cached alongside the pointer. A site with no such file, or whose fragment cannot
- * be resolved, simply exports no shipped branding (unchanged from the static-file behaviour this
- * replaces).</p>
+ * <p>No site names its fragment anywhere: {@link #themeModels} (the bundle-wide
+ * {@code themeContentFragmentModels} setting - see {@code config.json}) names the {@code cq:model}
+ * path(s) a fragment must carry to count as a theme, and this class takes the first fragment found
+ * under the site's own {@code /content/dam/<site>} root whose model matches one of those - the same
+ * "search this site's DAM root" idea {@link ProductCatalog} already uses for products, just with a
+ * model-name filter instead of a product-rule match. A site is expected to carry exactly one theme
+ * fragment; if it somehow carries more than one, whichever the walk reaches first wins.</p>
+ *
+ * <p>The site's resolved fragment <em>path</em> is cached for the bundle's lifetime once found - an
+ * unknown/themeless site is only walked once - but the fragment itself is live content an author can
+ * change at any time, so its elements are re-read on every {@link #forPage} call rather than cached
+ * alongside the path. A site with no matching fragment simply exports no shipped branding.</p>
  *
  * <p>Two fragment shapes are understood, distinguished by whether the fragment carries a
  * {@code themePropertyKeys} element:</p>
@@ -63,8 +61,8 @@ final class SiteBranding {
 
     private static final Logger LOG = LoggerFactory.getLogger(SiteBranding.class);
 
-    private static final String FILE = "branding.json";
-    private static final String KEY_CONTENT_FRAGMENT_PATH = "contentFragmentPath";
+    private static final String CONTENT_ROOT = "/content/";
+    private static final String DAM_ROOT = "/content/dam/";
 
     private static final String EL_THEME_PROPERTY_KEYS = "themePropertyKeys";
     private static final String EL_THEME_PROPERTY_VALUES = "themePropertyValues";
@@ -76,36 +74,51 @@ final class SiteBranding {
     /** Flat-model elements typed as a number in the CF model, so the stringified read needs parsing back. */
     private static final Set<String> NUMERIC_FIELDS = Set.of("roundness", "panelBorderRadius", "buttonBorderRadius");
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
+    private final Set<String> themeModels;
     private final Map<String, Optional<String>> fragmentPathBySite = new ConcurrentHashMap<>();
 
-    private SiteBranding() {
+    private SiteBranding(final Set<String> themeModels) {
+        this.themeModels = themeModels;
     }
 
-    static SiteBranding load() {
-        return new SiteBranding();
+    /** @param themeModels the {@code cq:model} path(s) that mark a fragment as a site's theme */
+    static SiteBranding load(final String[] themeModels) {
+        final Set<String> models = new LinkedHashSet<>();
+        if (themeModels != null) {
+            for (final String model : themeModels) {
+                if (StringUtils.isNotBlank(model)) {
+                    models.add(model.trim());
+                }
+            }
+        }
+        return new SiteBranding(models);
     }
 
     /**
      * @param page any page in the site
      * @return that site's branding, read fresh from its theme Content Fragment, or {@code null}
-     *         when the site ships no pointer or the fragment cannot be resolved/read
+     *         when the site's DAM root carries no matching fragment
      */
     Map<String, Object> forPage(final Page page) {
+        if (themeModels.isEmpty() || page == null || page.getContentResource() == null) {
+            return null;
+        }
         final String siteRoot = SiteHostResolver.siteRoot(page.getPath());
-        if (siteRoot == null || page.getContentResource() == null) {
+        if (siteRoot == null) {
             return null;
         }
         final String site = StringUtils.substringAfterLast(siteRoot, "/");
-        final String fragmentPath =
-                fragmentPathBySite.computeIfAbsent(site, SiteBranding::readFragmentPath).orElse(null);
+        final ResourceResolver resolver = page.getContentResource().getResourceResolver();
+        final String fragmentPath = fragmentPathBySite
+                .computeIfAbsent(site, s -> findThemeFragment(resolver, damRoot(siteRoot, s)))
+                .orElse(null);
         if (fragmentPath == null) {
             return null;
         }
-        final Resource fragment = page.getContentResource().getResourceResolver().getResource(fragmentPath);
+        final Resource fragment = resolver.getResource(fragmentPath);
         if (fragment == null) {
-            LOG.warn("Theme Content Fragment {} (site {}) does not resolve - no shipped branding", fragmentPath, site);
+            LOG.warn("Theme Content Fragment {} (site {}) no longer resolves - no shipped branding",
+                    fragmentPath, site);
             return null;
         }
         final Map<String, String> elements = ContentFragmentReader.readElements(fragment);
@@ -116,6 +129,55 @@ final class SiteBranding {
         return elements.containsKey(EL_THEME_PROPERTY_KEYS)
                 ? readHybrid(fragment, elements)
                 : readFlat(elements);
+    }
+
+    /** {@code /content/dam/<site>}, mirroring {@code ProductMappings}'s own site-to-DAM-root rule. */
+    private static String damRoot(final String siteRoot, final String site) {
+        return siteRoot.startsWith(CONTENT_ROOT) ? DAM_ROOT + site : null;
+    }
+
+    /**
+     * Depth-first search for the first fragment under {@code damRoot} whose {@code cq:model} is one
+     * of {@link #themeModels}. A site with none logs nothing beyond debug - most sites will only
+     * ever carry one, and an unthemed site is a normal, if incomplete, state rather than an error.
+     */
+    private Optional<String> findThemeFragment(final ResourceResolver resolver, final String damRoot) {
+        if (damRoot == null) {
+            return Optional.empty();
+        }
+        final Resource root = resolver.getResource(damRoot);
+        if (root == null) {
+            return Optional.empty();
+        }
+        final String found = search(root, new int[] {0});
+        if (found == null) {
+            LOG.debug("No fragment under {} matches a configured theme model - no shipped branding", damRoot);
+            return Optional.empty();
+        }
+        LOG.info("Resolved theme Content Fragment {}", found);
+        return Optional.of(found);
+    }
+
+    private String search(final Resource folder, final int[] budget) {
+        for (final Resource child : folder.getChildren()) {
+            if (budget[0]++ >= DamFragmentSearch.MAX_NODES_SCANNED) {
+                return null;
+            }
+            final String model = DamFragmentSearch.modelOf(child);
+            if (model != null) {
+                if (themeModels.contains(model)) {
+                    return child.getPath();
+                }
+                continue; // a fragment of a foreign model has no theme children to descend into
+            }
+            if (DamFragmentSearch.isFolder(child) && child.hasChildren()) {
+                final String found = search(child, budget);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /** Every element name is already the target {@code branding} key. */
@@ -206,29 +268,5 @@ final class SiteBranding {
             cursor = nested;
         }
         cursor.put(segments[segments.length - 1], value);
-    }
-
-    private static Optional<String> readFragmentPath(final String site) {
-        final String path = "/edsMobileApp/sites/" + site + "/" + FILE;
-        try (InputStream in = SiteBranding.class.getResourceAsStream(path)) {
-            if (in == null) {
-                LOG.debug("{} not present - no shipped branding for {}", path, site);
-                return Optional.empty();
-            }
-            final Map<String, Object> obj = MAPPER.readValue(
-                    new String(in.readAllBytes(), StandardCharsets.UTF_8),
-                    new TypeReference<Map<String, Object>>() { });
-            final Object fragmentPath = obj.get(KEY_CONTENT_FRAGMENT_PATH);
-            if (!(fragmentPath instanceof String) || StringUtils.isBlank((String) fragmentPath)) {
-                LOG.warn("{} carries no non-blank '{}' - no shipped branding for {}",
-                        path, KEY_CONTENT_FRAGMENT_PATH, site);
-                return Optional.empty();
-            }
-            LOG.info("Site {} branding resolves to theme Content Fragment {}", site, fragmentPath);
-            return Optional.of((String) fragmentPath);
-        } catch (final IOException | RuntimeException e) {
-            LOG.error("{} could not be read - no shipped branding for {}", path, site, e);
-            return Optional.empty();
-        }
     }
 }
