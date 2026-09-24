@@ -17,6 +17,7 @@
     "submitButtonLabel": "Confirm purchase"
   },
   "flightDestinationsFragment": "/content/dam/wknd-fly/en/fragments/flight-details/flight-source-destination-dropdown",
+  "flightResultsDestinationScreens": { "france": "city", "uk": "shortName" },
   "screenList": {
     "textColor": "#1a1a1a",
     "color": "#1a1a1a"
