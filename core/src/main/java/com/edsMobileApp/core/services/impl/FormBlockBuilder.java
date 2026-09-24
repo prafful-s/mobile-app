@@ -275,7 +275,12 @@ final class FormBlockBuilder {
         // case a per-site 'forms' entry in defaults.json supplies the default downstream (e.g.
         // "home") - see PageJsonExporterImpl#applyFormSettings. Blank throughout means the client
         // stays put.
-        meta.put("link", first(authored, REDIRECT_KEYS_BY_FORM.getOrDefault(formName, NO_KEYS),
+        // formName is null for a form whose fields are authored rather than taken from a bundled
+        // schema, and REDIRECT_KEYS_BY_FORM is a Map.of, whose lookups throw on a null key instead
+        // of missing. Guard here rather than swapping the map: every other read of it is keyed on a
+        // name that exists, and a null key genuinely means "no form-specific redirect keys".
+        meta.put("link", first(authored,
+                formName == null ? NO_KEYS : REDIRECT_KEYS_BY_FORM.getOrDefault(formName, NO_KEYS),
                 StringUtils.EMPTY));
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_FORM);

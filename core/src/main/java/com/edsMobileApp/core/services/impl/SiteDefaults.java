@@ -103,20 +103,6 @@ final class SiteDefaults {
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
     /**
-     * Renders a site's linkless card blocks (the {@code renderLinklessCards} content cards) in a row
-     * rather than stacked: {@code "linklessCardsInRow": 3}. Set on the site, flips the enclosing
-     * panel's {@code layout} to {@code horizontal} so the cards sit side by side. Absent leaves the
-     * default vertical stack, so every other site is unchanged. See
-     * {@code PageJsonExporterImpl#applyLinklessCardsRow}.
-     */
-    /**
-     * The {@code cardType} to force on a site's linkless content cards (the {@code renderLinklessCards}
-     * cards): {@code "linklessCardType": "image-text-one-line"} lays each card out image-left with the
-     * title/text beside it, one per row. Absent leaves the authored {@code cardType} (stacked, image on
-     * top), so other sites are unchanged. See {@code PageJsonExporterImpl#applyLinklessCardFormat}.
-     */
-    static final String KEY_LINKLESS_CARD_TYPE = "linklessCardType";
-    /**
      * Overrides the fixed colors {@code ComponentTreeWalker#cardsBlockAsList} otherwise hardcodes
      * for a cards-block-to-screenList conversion (a near-white {@code textColor} meant to sit over
      * a photo, copied from the LUMA MOBILE reference's own dark-background screenList): {@code

@@ -33,6 +33,14 @@
         "icon-cards": "stacked",
         "*": "stacked"
       }, "default": "stacked" },
+    { "target": "cardType", "from": "mobilecardstyle",
+      "map": {
+        "one-line": "image-text-one-line",
+        "overlay": "overlay",
+        "below": "stacked",
+        "partial-overlay": "partial-overlay",
+        "*": "stacked"
+      } },
     { "target": "subtitle",
       "extract": { "from": "text", "select": "p:not(:has(a)), li", "as": "text", "all": true },
       "nullable": true },
@@ -43,7 +51,8 @@
   ],
   "styles": [
     { "target": "color", "from": "style",
-      "map": { "teaser-overlay": "#ffffff", "teaser-card": "#ffffff", "*": "" }, "nullable": true }
+      "map": { "teaser-overlay": "#ffffff", "teaser-card": "#ffffff", "*": "" }, "nullable": true },
+    { "target": "color", "from": "textcolor", "nullable": true }
   ]
 }
 
