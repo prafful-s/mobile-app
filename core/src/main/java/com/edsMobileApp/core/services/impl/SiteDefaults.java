@@ -94,28 +94,14 @@ final class SiteDefaults {
     static final String KEY_FORMS = "forms";
     /**
      * Path to the site's destination-dropdown Content Fragment, whose {@code destination_mapping}
-     * multifield supplies the country a {@code flightResults} block should filter by, keyed by
-     * screen key: {@code "flightDestinationsFragment": "/content/dam/.../flight-source-destination-
-     * dropdown"}. A destination screen's block authors no such field itself (unlike the web block,
-     * which reads it from the URL path), so this fragment is the only source; a screen key with no
-     * matching row leaves {@code flightResults} with no {@code destination}, unchanged from today.
-     * See {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
+     * multifield supplies the airport/city code a destination screen's {@code flightResults} block
+     * should be forced to, keyed by screen key: {@code "flightDestinationsFragment": "/content/dam/
+     * .../flight-source-destination-dropdown"}. A destination screen's block authors no such field
+     * itself (unlike the web block, which reads it from the URL path), so this fragment is the only
+     * source; a screen key with no matching row leaves {@code flightResults} untouched. See
+     * {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
-    /**
-     * Screens that should render their resolved destination directly on their {@code flightResults}
-     * block ({@code content.to}) instead of the {@code productList} conversion every other
-     * destination screen still gets, keyed by screen key and valued with which representation of
-     * the destination to use - {@code "city"} (the city name) or {@code "shortName"} (the
-     * destination row's airport/city code): {@code "flightResultsDestinationScreens": { "france":
-     * "city", "uk": "shortName" } }. Experimental - confirmed by inspecting the app's compiled
-     * bytecode that {@code flightResults} destructures {@code to}/{@code from} off its own content
-     * into {@code useFlightResults}'s {@code forcedTo}/{@code forcedFrom}, but not yet verified
-     * which representation (if either) the app actually matches products against; a screen not
-     * listed here keeps today's {@code productList} conversion. See
-     * {@code PageJsonExporterImpl#applyFlightDestination}.
-     */
-    static final String KEY_FLIGHT_RESULTS_DESTINATION_SCREENS = "flightResultsDestinationScreens";
     /**
      * Overrides the fixed colors {@code ComponentTreeWalker#cardsBlockAsList} otherwise hardcodes
      * for a cards-block-to-screenList conversion (a near-white {@code textColor} meant to sit over

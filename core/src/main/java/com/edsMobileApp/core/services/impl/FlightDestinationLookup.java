@@ -19,16 +19,14 @@ import org.apache.sling.api.resource.Resource;
  * {@link #ROW_PATTERN} parses it rather than a JSON reader. A screen key is matched against the
  * row's kebab-cased {@code city} first (covers city-named screens like {@code las-vegas}), then
  * its kebab-cased {@code country} (covers country-named screens like {@code poland}) - the two
- * screen-key conventions this site's destination screens actually use. Either way the row's
- * {@code city} is what {@link #cityForScreen} returns: flight products are tagged with their
- * destination city (see {@code ProductCatalog}), not country, so the filter value must match that.
- * A country with more than one city (Mexico's Cancún/Tulum) returns whichever row is found first -
- * a screen covering several cities under one filter isn't handled yet.</p>
+ * screen-key conventions this site's destination screens actually use. A country with more than
+ * one city (Mexico's Cancún/Tulum) returns whichever row is found first - a screen covering
+ * several cities under one filter isn't handled yet.</p>
  *
- * <p>{@link #forScreen} exposes the whole matched row ({@code code}/{@code city}/{@code country}),
- * not just the city - needed while the app's {@code flightResults} component's exact
- * {@code to} matching rule (city name? airport code? something else?) is still being verified; see
- * {@code PageJsonExporterImpl#applyFlightDestination}.</p>
+ * <p>{@link #forScreen} exposes the whole matched row: {@code code} is what
+ * {@code PageJsonExporterImpl#applyFlightDestination} forces {@code flightResults.content.to} to -
+ * confirmed against the running app that the airport/city code, not the city name, is what the
+ * component actually filters by.</p>
  */
 final class FlightDestinationLookup {
 
@@ -50,17 +48,6 @@ final class FlightDestinationLookup {
             this.city = city;
             this.country = country;
         }
-    }
-
-    /**
-     * @param fragment  the destination-dropdown Content Fragment's own resource, or {@code null}
-     * @param screenKey the exported screen key, e.g. {@code "las-vegas"} or {@code "poland"}
-     * @return the matching row's city, or {@code null} when the fragment, or a matching row, is
-     *         not found
-     */
-    static String cityForScreen(final Resource fragment, final String screenKey) {
-        final Destination destination = forScreen(fragment, screenKey);
-        return destination == null ? null : destination.city;
     }
 
     /**
