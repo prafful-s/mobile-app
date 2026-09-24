@@ -700,39 +700,23 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return CHECKOUT_FORM_DEFAULTS.get(key);
     }
 
-    /** {@code flightResultsDestinationScreens} value meaning {@code content.to} gets the city name. */
-    private static final String TO_REPRESENTATION_CITY = "city";
-    /** {@code flightResultsDestinationScreens} value meaning {@code content.to} gets the airport/city code. */
-    private static final String TO_REPRESENTATION_SHORT_NAME = "shortName";
-
     /**
      * Resolves this screen's destination - from the site's destination-dropdown Content Fragment at
      * {@code defaults.json}'s {@code flightDestinationsFragment} path, matched by this screen's key
-     * - and applies it to every {@code flightResults} block on the screen (a screen can carry more
-     * than one, e.g. one per content section). A screen key with no matching row, or a site with no
-     * fragment configured, leaves every {@code flightResults} block exactly as mapped today. See
-     * {@link FlightDestinationLookup}.
+     * - and sets it directly on every {@code flightResults} block on the screen (a screen can carry
+     * more than one, e.g. one per content section) as {@code content.to}, so the results render
+     * automatically with no {@code productList} conversion involved. A screen key with no matching
+     * row, or a site with no fragment configured, leaves every {@code flightResults} block exactly
+     * as mapped today. See {@link FlightDestinationLookup}.
      *
-     * <p>Two ways a screen can use the resolved destination, chosen per screen via
-     * {@code defaults.json}'s {@code flightResultsDestinationScreens}:</p>
-     * <ul>
-     *   <li><b>Listed</b> (opt-in, currently experimental): sets {@code content.to} directly on the
-     *       {@code flightResults} block - either the city name ({@code "city"}) or the row's
-     *       airport/city code ({@code "shortName"}), per that screen's configured value - which the
-     *       client's own renderer reads and forces the search to. Confirmed by inspecting the app's
-     *       compiled bytecode: the component destructures {@code to}/{@code from} straight off its
-     *       content into {@code useFlightResults}'s {@code forcedTo}/{@code forcedFrom}. Which of
-     *       the two representations the app actually matches on on is exactly what this is testing;
-     *       no conversion, no {@code productList} - the block stays a real {@code flightResults}.</li>
-     *   <li><b>Not listed</b> (today's default behaviour): rewrites the block into a
-     *       {@code productList} filtered to the city - the same shape the reference app uses for a
-     *       destination screen (a {@code flightResults} block there is never filterable; only the
-     *       generic flight-results screen uses one, driven by a {@code flightSearch} form's state).
-     *       A country with more than one city (Mexico's Cancún/Tulum) isn't fully handled yet -
-     *       whichever row is found first wins - so this remains the safe fallback until the
-     *       {@code to}-based approach is verified against the real app and rolled out more
-     *       broadly.</li>
-     * </ul>
+     * <p>{@code to} always gets the destination row's airport/city code (e.g. {@code "CDG"}), not
+     * the city name: confirmed against the app's compiled bytecode that the component destructures
+     * {@code to}/{@code from} straight off its content into {@code useFlightResults}'s
+     * {@code forcedTo}/{@code forcedFrom}, and confirmed empirically that the city name does not
+     * match (the France destination screen showed no results with {@code to: "Paris"}) while the
+     * code does. Matches the reference web app's own destination pages, which resolve the same
+     * airport code from the URL slug and pass it as {@code to}. A country with more than one city
+     * (Mexico's Cancún/Tulum) isn't fully handled yet - whichever row is found first wins.</p>
      */
     private void applyFlightDestination(final List<Map<String, Object>> content, final Page page,
                                         final String screenKey) {
@@ -750,40 +734,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         if (destination == null) {
             return;
         }
-        final String toRepresentation = toRepresentationFor(defaults, screenKey);
-        if (toRepresentation != null) {
-            final String to = TO_REPRESENTATION_SHORT_NAME.equals(toRepresentation)
-                    ? destination.code : destination.city;
-            for (final Map<String, Object> flightResults : flightResultsBlocks) {
-                final Object flightContent = flightResults.get(SchemaConstants.KEY_CONTENT);
-                if (flightContent instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    final Map<String, Object> flightContentMap = (Map<String, Object>) flightContent;
-                    flightContentMap.put("to", to);
-                }
-            }
-        } else {
-            for (final Map<String, Object> flightResults : flightResultsBlocks) {
-                asMeta(flightResults.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_COMPONENT, "list");
-                flightResults.put(SchemaConstants.KEY_CONTENT, destinationProductList(destination.city));
+        for (final Map<String, Object> flightResults : flightResultsBlocks) {
+            final Object flightContent = flightResults.get(SchemaConstants.KEY_CONTENT);
+            if (flightContent instanceof Map) {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> flightContentMap = (Map<String, Object>) flightContent;
+                flightContentMap.put("to", destination.code);
             }
         }
-    }
-
-    /**
-     * @return {@code screenKey}'s configured value in {@code defaults.json}'s
-     *         {@code flightResultsDestinationScreens} ({@code "city"} or {@code "shortName"}), or
-     *         {@code null} when the screen isn't listed there - meaning it keeps today's
-     *         {@code productList} conversion instead. Experimental: start with a couple of screens,
-     *         verify against the real app, then extend the map.
-     */
-    private static String toRepresentationFor(final Map<String, Object> defaults, final String screenKey) {
-        final Object configured = defaults.get(SiteDefaults.KEY_FLIGHT_RESULTS_DESTINATION_SCREENS);
-        if (!(configured instanceof Map)) {
-            return null;
-        }
-        final Object value = ((Map<?, ?>) configured).get(screenKey);
-        return value instanceof String ? (String) value : null;
     }
 
     /**
@@ -823,27 +781,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         if (value instanceof String && StringUtils.isNotBlank((String) value)) {
             meta.put(key, value);
         }
-    }
-
-    /**
-     * The {@code productList} content shape a destination screen's flight listing takes, filtered
-     * to {@code city}. Every field but {@code filter} is a fixed constant matching the reference
-     * app's own destination screens (e.g. its "france" screen filters "Paris" the same way).
-     */
-    private static Map<String, Object> destinationProductList(final String city) {
-        final Map<String, Object> content = new LinkedHashMap<>();
-        content.put("items", Collections.emptyList());
-        content.put("filter", city);
-        content.put("layout", "vertical/grid");
-        content.put("linkTo", "en");
-        content.put("listType", "productList");
-        content.put("itemsInRow", 1);
-        content.put("itemRenderer", "image-text-one-line");
-        content.put("filterProperty", "Category");
-        content.put("filterOnlyProductScreens", true);
-        content.put("searchParamDestinationPath", "search.flights.to");
-        content.put("searchParamSearchValueSelector", "to");
-        return content;
     }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */
