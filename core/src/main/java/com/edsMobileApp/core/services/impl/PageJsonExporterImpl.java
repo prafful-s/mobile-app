@@ -804,18 +804,24 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
+     * Sets {@code content.link} on every {@code listType: productList} to the site's
+     * {@code productDetailScreen} ({@code defaults.json}), so the client opens
+     * {@code <screen>?productId=<sku>} when an item is tapped - the same navigation the web uses.
+     * A list that already carries a non-blank {@code link} keeps it (authored override wins), and a
+     * site with no {@code productDetailScreen} configured is left untouched.
+     */
+    /**
      * Applies the site's per-screen form settings from {@code defaults.json}
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
      * {@code meta.link} (the screen opened after a successful submit), {@code navigateOnSubmit} -&gt;
      * {@code meta.navigateOnSubmit} (an alternate post-submit navigation target the client honours
      * for forms that use it, e.g. registration), {@code eventType} -&gt; {@code meta.eventType}
-     * (the analytics event the submit fires), and {@code toastMessage} -&gt;
-     * {@code meta.toastMessage} (the confirmation text shown after a successful submit) - needed
-     * because most authored form blocks carry no toast/success-message field at all, so
-     * {@link FormBlockBuilder} has nothing to read and emits blank. Each is applied only when the
-     * config carries a non-blank value; anything absent leaves the value {@link FormBlockBuilder}
-     * already emitted (blank {@code link}/{@code toastMessage}, no {@code navigateOnSubmit} key,
-     * authored-or-blank {@code eventType}).
+     * (the analytics event the submit fires), and {@code toastMessage} -&gt; {@code meta.toastMessage}
+     * (the confirmation text shown after a successful submit) - needed because most authored form
+     * blocks carry no toast/success-message field at all, so {@link FormBlockBuilder} has nothing to
+     * read and emits blank. Each is applied only when the config carries a non-blank value; anything
+     * absent leaves the value {@link FormBlockBuilder} already emitted (blank {@code link}/
+     * {@code toastMessage}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
      * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      *
      * <p>{@code heading} additionally inserts a {@code title} component immediately before the form
@@ -823,13 +829,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * it keys off the schema name, and a block whose fields are authored rather than taken from a
      * bundled schema has no schema name at all - so a site that wants a title above such a form has
      * nowhere else to say so.</p>
-     */
-    /**
-     * Sets {@code content.link} on every {@code listType: productList} to the site's
-     * {@code productDetailScreen} ({@code defaults.json}), so the client opens
-     * {@code <screen>?productId=<sku>} when an item is tapped - the same navigation the web uses.
-     * A list that already carries a non-blank {@code link} keeps it (authored override wins), and a
-     * site with no {@code productDetailScreen} configured is left untouched.
      */
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
