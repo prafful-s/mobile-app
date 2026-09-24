@@ -180,10 +180,18 @@ final class SiteBranding {
         return null;
     }
 
-    /** Every element name is already the target {@code branding} key. */
+    /**
+     * Every element name is already the target {@code branding} key. An unauthored field comes back
+     * from {@link ContentFragmentReader} as {@code null} or an empty string; skipped rather than
+     * emitted blank, so a site's branding only carries what its fragment actually sets - the same
+     * shape the static {@code branding.json} files this replaced always had.
+     */
     private static Map<String, Object> readFlat(final Map<String, String> elements) {
         final Map<String, Object> branding = new LinkedHashMap<>();
         for (final Map.Entry<String, String> element : elements.entrySet()) {
+            if (StringUtils.isBlank(element.getValue())) {
+                continue;
+            }
             branding.put(element.getKey(), coerceIfNumeric(element.getKey(), element.getValue()));
         }
         return branding;
@@ -200,14 +208,17 @@ final class SiteBranding {
     /**
      * The five dedicated logo fields, carried through as-is, plus every
      * {@code themePropertyKeys[i]}/{@code themePropertyValues[i]}/{@code themePropertyTypes[i]}
-     * triple, type-coerced and nested by splitting its key on {@code "."}.
+     * triple, type-coerced and nested by splitting its key on {@code "."}. A blank/unauthored logo
+     * field or property value is skipped rather than emitted blank - same reasoning as
+     * {@link #readFlat} - so a dotted key whose value is blank never creates an empty intermediate
+     * object either (nothing is placed under it at all).
      */
     private static Map<String, Object> readHybrid(final Resource fragment, final Map<String, String> elements) {
         final Map<String, Object> branding = new LinkedHashMap<>();
         for (final Map.Entry<String, String> element : elements.entrySet()) {
             final String name = element.getKey();
             if (EL_THEME_PROPERTY_KEYS.equals(name) || EL_THEME_PROPERTY_VALUES.equals(name)
-                    || EL_THEME_PROPERTY_TYPES.equals(name)) {
+                    || EL_THEME_PROPERTY_TYPES.equals(name) || StringUtils.isBlank(element.getValue())) {
                 continue;
             }
             branding.put(name, element.getValue());
@@ -218,6 +229,9 @@ final class SiteBranding {
         final List<String> types = ContentFragmentReader.readMultiValue(fragment, EL_THEME_PROPERTY_TYPES);
         final int rows = Math.min(keys.size(), Math.min(values.size(), types.size()));
         for (int i = 0; i < rows; i++) {
+            if (StringUtils.isBlank(keys.get(i)) || StringUtils.isBlank(values.get(i))) {
+                continue;
+            }
             putNested(branding, keys.get(i), coerce(values.get(i), types.get(i)));
         }
         return branding;
