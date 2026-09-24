@@ -814,13 +814,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Sets {@code content.link} on every {@code listType: productList} to the site's
-     * {@code productDetailScreen} ({@code defaults.json}), so the client opens
-     * {@code <screen>?productId=<sku>} when an item is tapped - the same navigation the web uses.
-     * A list that already carries a non-blank {@code link} keeps it (authored override wins), and a
-     * site with no {@code productDetailScreen} configured is left untouched.
-     */
-    /**
      * Applies the site's per-screen form settings from {@code defaults.json}
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
      * {@code meta.link} (the screen opened after a successful submit), {@code navigateOnSubmit} -&gt;
