@@ -19,7 +19,18 @@
     { "target": "listType", "from": "listType", "default": "productList" },
     { "target": "textColor", "from": "textColor", "default": "#8B8B8B" },
     { "target": "itemsInRow", "const": 1 },
-    { "target": "itemRenderer", "from": "itemRenderer", "default": "image-text-one-line" },
+    { "target": "itemRenderer", "first": ["mobilecardstyle", "itemRenderer"],
+      "map": {
+        "one-line": "image-text-one-line",
+        "overlay": "overlay",
+        "below": "stacked",
+        "partial-overlay": "partial-overlay",
+        "stacked": "stacked",
+        "image-text-one-line": "image-text-one-line",
+        "*": "image-text-one-line"
+      }, "default": "image-text-one-line" },
+    { "target": "imageResizeMode", "from": "mobileimagestyle",
+      "map": { "contain": "contain", "cover": "cover", "*": "cover" }, "default": "cover" },
     { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
     { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
     { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" }
