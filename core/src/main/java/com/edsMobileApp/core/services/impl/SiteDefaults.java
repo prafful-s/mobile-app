@@ -106,6 +106,55 @@ final class SiteDefaults {
      * unreadable regardless of what an individual card authored.
      */
     static final String KEY_SCREEN_LIST = "screenList";
+    /**
+     * Per-component style overrides, keyed {@code <screenKey>.<component>.<id>}:
+     *
+     * <pre>
+     * "componentStyles": {
+     *   "en.banner.65721cdd": { "color": "#333333" }
+     * }
+     * </pre>
+     *
+     * <p>The value is merged into that one component's {@code styles}, setting a key the mapping
+     * left out or replacing one it wrote. The mapping rules cannot express a per-instance decision -
+     * {@code hero} emits {@code styles.color} as a {@code const} of {@code #FFF}, and {@code card}
+     * emits a colour only for the {@code partial-overlay} variant - so a single banner over bright
+     * imagery, or a single full-overlay card over a dark photo, has no way to ask for a different
+     * colour. A site-wide setting would drag every banner or every card along with it; this moves
+     * only the component named.</p>
+     *
+     * <p>The id is the hex hash of the component's JCR path that the export already emits as
+     * {@code meta.id}, stable unless the component moves in the repository. All three segments must
+     * match, so a hash collision misses rather than restyling the wrong component; an {@code id_}
+     * prefix on the id is accepted. Absent leaves every component on its mapped styles.
+     * See {@code PageJsonExporterImpl#applyComponentStyles}.</p>
+     */
+    static final String KEY_COMPONENT_STYLES = "componentStyles";
+
+    /**
+     * Per-component {@code meta} overrides, keyed the same way as {@link #KEY_COMPONENT_STYLES}:
+     *
+     * <pre>
+     * "componentMeta": {
+     *   "wknd-club.panel.b1059ca7": { "layout": "horizontal", "wrapOverflowing": true }
+     * }
+     * </pre>
+     *
+     * <p>Where {@code componentStyles} reaches a component's {@code styles}, this reaches its
+     * {@code meta} - the half that carries layout rather than appearance. A panel's
+     * {@code layout} is what decides whether its children stack or sit side by side, and the
+     * mapping always emits {@code vertical}: the authored block carries nothing that says
+     * otherwise, so a row of feature cards cannot be expressed at all today.</p>
+     *
+     * <p>{@code id}, {@code component} and {@code order} are refused. Those three are the export's
+     * own bookkeeping - {@code order} is maintained to equal the component's index, and the other
+     * two are what every override and every client lookup keys on - so letting configuration
+     * rewrite them would break the contract rather than adjust it.</p>
+     *
+     * <p>Absent leaves every component's {@code meta} as the mapping emitted it. See
+     * {@code PageJsonExporterImpl#applyComponentMeta}.</p>
+     */
+    static final String KEY_COMPONENT_META = "componentMeta";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
