@@ -7,6 +7,7 @@
   "textColor": "#8B8B8B",
   "headingFont": "Proxima Nova",
   "primaryColor": "#1979C3",
+  "tertiaryColor": "",
   "buttonTextColor": "#FFFFFF",
   "panelDropShadow": "10px 5px 5px black",
   "topBarTextColor": "#1979C3",
