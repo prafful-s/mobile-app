@@ -36,7 +36,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
  *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true },
- *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown"
+ *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown",
+ *   "extractInlineLinks": true
  * }
  * </pre>
  *
