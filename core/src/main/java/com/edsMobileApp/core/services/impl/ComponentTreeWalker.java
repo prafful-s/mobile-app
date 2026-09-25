@@ -1253,11 +1253,6 @@ final class ComponentTreeWalker {
         return value instanceof String ? (String) value : null;
     }
 
-    /**
-     * Machinery rather than content: {@code cq:responsive} breakpoints, live-copy bookkeeping and
-     * the EdsMobileApp configuration node itself. Relevant mainly when a page keeps its components
-     * directly under {@code jcr:content} and the walk starts there.
-     */
     private static boolean isSystemNode(final Resource resource) {
         final String name = resource.getName();
         return name.startsWith("cq:")
@@ -1333,6 +1328,14 @@ final class ComponentTreeWalker {
                     resource.getPath(), resource.getResourceType());
         } catch (final RuntimeException e) {
             LOG.warn("Could not build a EdsMobileApp model for {} - skipping", resource.getPath(), e);
+        } catch (final LinkageError e) {
+            // Not a RuntimeException, so it used to escape this method, the walk, and the servlet's
+            // own handlers, answering the whole request with an HTML 500. Adapting a component from
+            // a bundle this one cannot see raises it, and one such component should cost itself
+            // rather than every screen on the site. Deliberately narrow: LinkageError only, so a
+            // genuinely fatal Error such as OutOfMemoryError still propagates.
+            LOG.error("Could not load the model class for {} ({}) - skipping this component",
+                    resource.getPath(), resource.getResourceType(), e);
         }
         return null;
     }
