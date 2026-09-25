@@ -1,4 +1,10 @@
 {
+  "checkoutForm": {
+    "link": "en",
+    "hideResetButton": true,
+    "toastMessage": "Thank you for booking!",
+    "submitButtonLabel": "Confirm purchase"
+  },
   "meta": {
     "template": "mobile-v2/generic-travel-v2",
     "vertical": "Travel",
@@ -10,12 +16,6 @@
     "name": "shopping-cart",
     "target": "cart"
   },
-  "checkoutForm": {
-    "link": "en",
-    "hideResetButton": true,
-    "toastMessage": "Thank you for booking!",
-    "submitButtonLabel": "Confirm purchase"
-  },
   "forms": {
     "wknd-club": {
       "toastMessage": "Thank you for joining WKND Fly Club. Check your email, new exciting travels are ahead of you!"
@@ -26,5 +26,11 @@
     "textColor": "#1a1a1a",
     "color": "#1a1a1a"
   },
-  "extractInlineLinks": true
+  "extractInlineLinks": true,
+  "componentMeta": {
+    "wknd-club.panel.b1059ca7": {
+      "layout": "horizontal",
+      "wrapOverflowing": true
+    }
+  }
 }
