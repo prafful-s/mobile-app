@@ -90,6 +90,24 @@ class CardMappingTest {
     }
 
     /**
+     * The secur-financial typo, authored as {@code #fffff} - five f's. Non-blank, so it used to win
+     * over the perfectly good colour the card's {@code style} derived, and the client rendered an
+     * unparseable value as dark text on a dark photo. The rule's {@code hexColor} type now drops it.
+     */
+    @Test
+    void aMalformedTextColorFallsBackToTheStyleDerivedColour() {
+        assertEquals("#ffffff",
+                styles(authored("style", "teaser-card", "textcolor", "#fffff")).get("color"));
+    }
+
+    @Test
+    void aValidTextColorStillWins() {
+        assertEquals("#1a1a1a",
+                styles(authored("style", "teaser-card", "textcolor", "#1a1a1a")).get("color"));
+        assertEquals("333", styles(authored("style", "teaser-card", "textcolor", "333")).get("color"));
+    }
+
+    /**
      * An earlier attempt resolved the colour with a single {@code first: ["textcolor", "style"]}
      * rule, which let an unrecognised {@code style} token through as if it were a colour. Two rules
      * on one target is what keeps the two sources' value spaces apart.

@@ -132,6 +132,29 @@ final class FieldRule {
      */
     private static final String TYPE_PRESENCE = "presence";
 
+    /**
+     * A colour, or nothing. An authored value that is not a hex colour resolves to {@code null}, so
+     * a {@code nullable} rule declaring it simply does not write and whatever an earlier rule on the
+     * same target produced stands.
+     *
+     * <p>Without this a typo wins: {@code #fffff} - five f's, seen authored on a secur-financial
+     * card - is non-blank, so it displaced the perfectly good colour the card's {@code style} had
+     * derived and the client, unable to parse it, rendered dark text on a dark photo. Failing to
+     * a sane default is visible as "the colour did not change"; failing to a bad value is not.</p>
+     */
+    private static final String TYPE_HEX_COLOR = "hexColor";
+
+    /** {@code #fff}, {@code #ffffff} or the same without the hash - what the authoring fields describe. */
+    private static final Pattern HEX_COLOR = Pattern.compile("^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$");
+
+    /**
+     * @return {@code value} unchanged when it is a hex colour, otherwise {@code null}. Returned
+     *         as authored rather than normalised, so nothing that works today changes shape.
+     */
+    static String asHexColor(final String value) {
+        return value != null && HEX_COLOR.matcher(value.trim()).matches() ? value : null;
+    }
+
     /** Matches a {@code {fieldName}} placeholder inside a {@code template} string. */
     private static final Pattern TEMPLATE_FIELD = Pattern.compile("\\{([^{}]+)\\}");
 
@@ -414,6 +437,8 @@ final class FieldRule {
                 return basename(text);
             case TYPE_CATEGORY_LABEL:
                 return categoryLabel(text);
+            case TYPE_HEX_COLOR:
+                return asHexColor(text);
             default:
                 return value;
         }

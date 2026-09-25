@@ -851,13 +851,46 @@ final class ComponentTreeWalker {
      *         {@code resource}'s site, or {@code fallback} when the site, the section, or this
      *         specific key is absent or blank - see {@link SiteDefaults#KEY_SCREEN_LIST}.
      */
-    private String screenListColor(final Resource resource, final String key, final String fallback) {
-        if (siteDefaults == null) {
-            return fallback;
+    /**
+     * A screenList presentation value, in precedence order: the block's own {@code mobilelist*}
+     * property, then the site's {@code screenList} entry in {@code defaults.json}, then the
+     * compiled-in default. Blank counts as unset at every level, so a property authored and later
+     * cleared falls back rather than emitting empty.
+     *
+     * <p>The block is the narrowest scope and wins - one row of tiles can be sized differently from
+     * another on the same page. The site level stays because a colour is usually a site-wide
+     * readability decision: it is what makes wknd-fly's and carvelo's lists legible on their light
+     * backgrounds.</p>
+     *
+     * <p>Every caller passes the value this method replaced as its {@code fallback}, so a block that
+     * authors nothing exports exactly what it did before this existed.</p>
+     */
+    private Object listValue(final Resource block, final String property,
+                             final String siteKey, final Object fallback) {
+        final Object authored = block.getValueMap().get(property);
+        if (isSet(authored)) {
+            return authored;
         }
-        final Object value = SiteDefaults.objectMap(
-                siteDefaults.forPath(resource.getPath()), SiteDefaults.KEY_SCREEN_LIST).get(key);
-        return value instanceof String && StringUtils.isNotBlank((String) value) ? (String) value : fallback;
+        if (siteDefaults != null && siteKey != null) {
+            final Object site = SiteDefaults.objectMap(
+                    siteDefaults.forPath(block.getPath()), SiteDefaults.KEY_SCREEN_LIST).get(siteKey);
+            if (isSet(site)) {
+                return site;
+            }
+        }
+        return fallback;
+    }
+
+    /** As {@link #listValue}, but an authored value that is not a hex colour is ignored rather than emitted. */
+    private Object listColor(final Resource block, final String property,
+                             final String siteKey, final String fallback) {
+        final Object value = listValue(block, property, siteKey, fallback);
+        final String hex = value instanceof String ? FieldRule.asHexColor((String) value) : null;
+        return hex != null ? hex : fallback;
+    }
+
+    private static boolean isSet(final Object value) {
+        return value != null && !(value instanceof String && StringUtils.isBlank((String) value));
     }
 
     /**
@@ -1009,25 +1042,26 @@ final class ComponentTreeWalker {
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
-        // the client has nothing to size a screenList overlay item against. textColor assumes that
-        // reference's dark background; a site whose screenList sits on a light one overrides it (and
-        // the section's own background color below) via defaults.json - see screenListColor.
+        // the client has nothing to size a screenList overlay item against. They remain compiled-in;
+        // itemsInRow, itemRenderer and the two colours are resolvable per block or per site - see
+        // listValue. The colour defaults assume the reference's dark background, which is why a site
+        // on a light one overrides them.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
         content.put("layout", "horizontal");
         content.put("listType", "screenList");
-        content.put("textColor", screenListColor(resource, "textColor", "#f4f3f3"));
+        content.put("textColor", listColor(resource, "mobilelisttextcolor", "textColor", "#f4f3f3"));
         content.put("imageWidth", 130);
         content.put("itemHeight", null);
         content.put("itemRadius", null);
-        content.put("itemsInRow", screenKeys.size());
-        content.put("itemRenderer", itemRenderer);
+        content.put("itemsInRow", listValue(resource, "mobilelistitemsinrow", "itemsInRow", screenKeys.size()));
+        content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
         content.put("filterProperty", "Category");
         content.put("imageResizeMode", "cover");
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
-        styles.put("color", screenListColor(resource, "color", "#ffffff"));
+        styles.put("color", listColor(resource, "mobilelistcolor", "color", "#ffffff"));
         styles.put("marginBottom", "16");
         styles.put("marginHorizontal", "8");
 
