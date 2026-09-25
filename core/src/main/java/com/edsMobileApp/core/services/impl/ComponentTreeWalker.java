@@ -875,6 +875,20 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * @return the site's {@code defaults.json} {@code screenList.<key>} override for
+     *         {@code resource}'s site, or {@code fallback} when the site, the section, or this
+     *         specific key is absent or blank - see {@link SiteDefaults#KEY_SCREEN_LIST}.
+     */
+    private String screenListColor(final Resource resource, final String key, final String fallback) {
+        if (siteDefaults == null) {
+            return fallback;
+        }
+        final Object value = SiteDefaults.objectMap(
+                siteDefaults.forPath(resource.getPath()), SiteDefaults.KEY_SCREEN_LIST).get(key);
+        return value instanceof String && StringUtils.isNotBlank((String) value) ? (String) value : fallback;
+    }
+
+    /**
      * @return {@code resource}'s children, when there are exactly three and every one of them
      *         resolves (by name, via {@link GenericComponent#getComponentName()}) to {@code card} -
      *         or {@code null} when the block does not have that shape
@@ -963,12 +977,14 @@ final class ComponentTreeWalker {
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
-        // the client has nothing to size a screenList overlay item against.
+        // the client has nothing to size a screenList overlay item against. textColor assumes that
+        // reference's dark background; a site whose screenList sits on a light one overrides it (and
+        // the section's own background color below) via defaults.json - see screenListColor.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
         content.put("layout", "horizontal");
         content.put("listType", "screenList");
-        content.put("textColor", "#f4f3f3");
+        content.put("textColor", screenListColor(resource, "textColor", "#f4f3f3"));
         content.put("imageWidth", 130);
         content.put("itemHeight", null);
         content.put("itemRadius", null);
@@ -979,7 +995,7 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
-        styles.put("color", "#ffffff");
+        styles.put("color", screenListColor(resource, "color", "#ffffff"));
         styles.put("marginBottom", "16");
         styles.put("marginHorizontal", "8");
 
