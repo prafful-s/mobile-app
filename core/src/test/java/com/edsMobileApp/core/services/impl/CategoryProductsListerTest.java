@@ -42,18 +42,40 @@ class CategoryProductsListerTest {
 
     /**
      * The rule is {@code skeleton: true}, so every declared target is emitted whether authored or
-     * not - there is no "write only when authored" in this rule file. imageResizeMode is therefore
-     * a new key on every lister, carrying the cover the client was already applying, and matching
-     * newArrival which has always emitted it. Nothing else moves.
+     * not - there is no "write only when authored" here. These three keys are therefore new on
+     * every lister, and the resize default is contain rather than the cover the client was applying
+     * on its own. That is a deliberate estate-wide change: a cropped product photo was never wanted,
+     * it was just what you got with no box defined. Any lister can go back with mobileimagestyle.
      */
     @Test
-    void anUnauthoredListerKeepsTodaysValuesAndGainsOnlyTheResizeMode() {
+    void anUnauthoredListerGetsTheNewContainDefaults() {
         final Map<String, Object> mapped = map(authored());
-        assertEquals("image-text-one-line", mapped.get("itemRenderer"), "today's default renderer");
-        assertEquals("cover", mapped.get("imageResizeMode"), "explicit, and what was already happening");
-        assertEquals("productList", mapped.get("listType"));
-        assertFalse(mapped.containsKey("imageWidth"), "sizing stays out - see the commit message");
-        assertFalse(mapped.containsKey("itemHeight"));
+        assertEquals("contain", mapped.get("imageResizeMode"));
+        assertEquals(150, mapped.get("imageWidth"));
+        assertEquals(150, mapped.get("itemHeight"));
+        assertEquals("image-text-one-line", mapped.get("itemRenderer"), "unchanged");
+        assertEquals("productList", mapped.get("listType"), "unchanged");
+    }
+
+    @Test
+    void aListerCanGoBackToCover() {
+        assertEquals("cover", map(authored("mobileimagestyle", "cover")).get("imageResizeMode"));
+    }
+
+    /** An authored number arrives from JCR as a Long, the compiled default is an Integer - both
+     *  serialise as JSON numbers, so compare the value rather than the box. */
+    @Test
+    void sizingIsAuthorable() {
+        final Map<String, Object> mapped = map(authored("mobileimagewidth", "120", "mobileitemheight", "90"));
+        assertEquals(120L, ((Number) mapped.get("imageWidth")).longValue());
+        assertEquals(90L, ((Number) mapped.get("itemHeight")).longValue());
+    }
+
+    /** The client-vocabulary names still work, as newArrival has always allowed. */
+    @Test
+    void theDirectKeyNamesAreAcceptedToo() {
+        assertEquals("cover", map(authored("imageResizeMode", "cover")).get("imageResizeMode"));
+        assertEquals(200L, ((Number) map(authored("imageWidth", "200")).get("imageWidth")).longValue());
     }
 
     @Test
@@ -63,8 +85,8 @@ class CategoryProductsListerTest {
     }
 
     @Test
-    void anUnknownImageStyleFallsBackToCoverRatherThanLeakingTheToken() {
-        assertEquals("cover", map(authored("mobileimagestyle", "squish")).get("imageResizeMode"));
+    void anUnknownImageStyleFallsBackToTheDefaultRatherThanLeakingTheToken() {
+        assertEquals("contain", map(authored("mobileimagestyle", "squish")).get("imageResizeMode"));
     }
 
     @Test

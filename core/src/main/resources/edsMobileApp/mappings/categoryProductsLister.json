@@ -29,8 +29,12 @@
         "image-text-one-line": "image-text-one-line",
         "*": "image-text-one-line"
       }, "default": "image-text-one-line" },
-    { "target": "imageResizeMode", "from": "mobileimagestyle",
-      "map": { "contain": "contain", "cover": "cover", "*": "cover" }, "default": "cover" },
+    { "target": "imageResizeMode", "first": ["mobileimagestyle", "imageResizeMode"],
+      "map": { "contain": "contain", "cover": "cover", "*": "contain" }, "default": "contain" },
+    { "target": "imageWidth", "first": ["mobileimagewidth", "imageWidth"],
+      "type": "number", "default": 150 },
+    { "target": "itemHeight", "first": ["mobileitemheight", "itemHeight"],
+      "type": "number", "default": 150 },
     { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
     { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
     { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" }
