@@ -13,7 +13,7 @@
     { "target": "variant", "from": "linkType",
       "map": { "cta-button": "contained", "primary-button": "contained",
                "secondary-button": "outlined", "tonal-button": "contained-tonal",
-               "text-button": "text" },
+               "text-button": "text", "cta-button-secondary": "contained", "cta-button-dark": "contained-tonal" },
       "default": "contained" },
     { "target": "alignment", "from": "alignment", "default": "center" },
     { "target": "customEvent", "from": "customEvent", "default": "" }

@@ -2,7 +2,8 @@
   "match": ["hero"],
   "component": "banner",
   "variants": [
-    { "when": { "field": "herolayout", "equals": "image-right" }, "useRule": "card" }
+    { "when": { "field": "herolayout", "equals": "image-right" }, "useRule": "card" },
+    { "when": { "field": "herolayout", "equals": "image-left" }, "useRule": "card" }
   ],
   "fields": [
     { "target": "image", "first": ["image", "fileReference", "imageRef"] },

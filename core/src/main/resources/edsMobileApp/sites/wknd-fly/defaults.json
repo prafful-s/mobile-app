@@ -16,5 +16,15 @@
     "toastMessage": "Thank you for booking!",
     "submitButtonLabel": "Confirm purchase"
   },
-  "flightDestinationsFragment": "/content/dam/wknd-fly/en/fragments/flight-details/flight-source-destination-dropdown"
+  "forms": {
+    "wknd-club": {
+      "toastMessage": "Thank you for joining WKND Fly Club. Check your email, new exciting travels are ahead of you!"
+    }
+  },
+  "flightDestinationsFragment": "/content/dam/wknd-fly/en/fragments/flight-details/flight-source-destination-dropdown",
+  "screenList": {
+    "textColor": "#1a1a1a",
+    "color": "#1a1a1a"
+  },
+  "extractInlineLinks": true
 }

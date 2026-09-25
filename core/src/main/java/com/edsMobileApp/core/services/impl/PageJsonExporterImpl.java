@@ -755,35 +755,45 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Rewrites every {@code flightResults} block on this screen (a screen can carry more than one,
-     * e.g. one per content section) into a {@code productList} block filtered to this screen's
-     * destination city - the same shape the reference app uses for a destination screen (a
-     * {@code flightResults} block there is never filterable; only the generic flight-results screen
-     * uses one, driven by a {@code flightSearch} form's state). The filter city comes from the
-     * site's destination-dropdown Content Fragment at {@code defaults.json}'s
-     * {@code flightDestinationsFragment} path, matched by this screen's key - e.g. the "mexico"
-     * screen resolves to "Cancún" (or whichever row matches first; a country with more than one
-     * city isn't fully handled yet). A screen key with no matching row leaves every
-     * {@code flightResults} block exactly as mapped today. See {@link FlightDestinationLookup}.
+     * Resolves this screen's destination - from the site's destination-dropdown Content Fragment at
+     * {@code defaults.json}'s {@code flightDestinationsFragment} path, matched by this screen's key
+     * - and sets it directly on every {@code flightResults} block on the screen (a screen can carry
+     * more than one, e.g. one per content section) as {@code content.to}, so the results render
+     * automatically with no {@code productList} conversion involved. A screen key with no matching
+     * row, or a site with no fragment configured, leaves every {@code flightResults} block exactly
+     * as mapped today. See {@link FlightDestinationLookup}.
+     *
+     * <p>{@code to} always gets the destination row's airport/city code (e.g. {@code "CDG"}), not
+     * the city name: confirmed against the app's compiled bytecode that the component destructures
+     * {@code to}/{@code from} straight off its content into {@code useFlightResults}'s
+     * {@code forcedTo}/{@code forcedFrom}, and confirmed empirically that the city name does not
+     * match (the France destination screen showed no results with {@code to: "Paris"}) while the
+     * code does. Matches the reference web app's own destination pages, which resolve the same
+     * airport code from the URL slug and pass it as {@code to}. A country with more than one city
+     * (Mexico's Cancún/Tulum) isn't fully handled yet - whichever row is found first wins.</p>
      */
-    @SuppressWarnings("unchecked")
     private void applyFlightDestination(final List<Map<String, Object>> content, final Page page,
                                         final String screenKey) {
         final List<Map<String, Object>> flightResultsBlocks = findComponents(content, "flightResults");
         if (flightResultsBlocks.isEmpty()) {
             return;
         }
-        final String fragmentPath = SiteDefaults.stringValue(
-                siteDefaults.forPage(page), SiteDefaults.KEY_FLIGHT_DESTINATIONS_FRAGMENT);
+        final Map<String, Object> defaults = siteDefaults.forPage(page);
+        final String fragmentPath = SiteDefaults.stringValue(defaults, SiteDefaults.KEY_FLIGHT_DESTINATIONS_FRAGMENT);
         if (StringUtils.isBlank(fragmentPath)) {
             return;
         }
         final Resource fragment = page.getContentResource().getResourceResolver().getResource(fragmentPath);
-        final String city = FlightDestinationLookup.cityForScreen(fragment, screenKey);
-        if (StringUtils.isNotBlank(city)) {
-            for (final Map<String, Object> flightResults : flightResultsBlocks) {
-                asMeta(flightResults.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_COMPONENT, "list");
-                flightResults.put(SchemaConstants.KEY_CONTENT, destinationProductList(city));
+        final FlightDestinationLookup.Destination destination = FlightDestinationLookup.forScreen(fragment, screenKey);
+        if (destination == null) {
+            return;
+        }
+        for (final Map<String, Object> flightResults : flightResultsBlocks) {
+            final Object flightContent = flightResults.get(SchemaConstants.KEY_CONTENT);
+            if (flightContent instanceof Map) {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> flightContentMap = (Map<String, Object>) flightContent;
+                flightContentMap.put("to", destination.code);
             }
         }
     }
@@ -793,10 +803,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
      * {@code meta.link} (the screen opened after a successful submit), {@code navigateOnSubmit} -&gt;
      * {@code meta.navigateOnSubmit} (an alternate post-submit navigation target the client honours
-     * for forms that use it, e.g. registration) and {@code eventType} -&gt; {@code meta.eventType}
-     * (the analytics event the submit fires). Each is applied only when the config carries a
-     * non-blank value; anything absent leaves the value {@link FormBlockBuilder} already emitted
-     * (blank {@code link}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
+     * for forms that use it, e.g. registration), {@code eventType} -&gt; {@code meta.eventType}
+     * (the analytics event the submit fires), and {@code toastMessage} -&gt; {@code meta.toastMessage}
+     * (the confirmation text shown after a successful submit) - needed because most authored form
+     * blocks carry no toast/success-message field at all, so {@link FormBlockBuilder} has nothing to
+     * read and emits blank. Each is applied only when the config carries a non-blank value; anything
+     * absent leaves the value {@link FormBlockBuilder} already emitted (blank {@code link}/
+     * {@code toastMessage}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
      * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
      */
     @SuppressWarnings("unchecked")
@@ -822,6 +835,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
+        putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
     }
 
     /** Overwrites {@code meta[key]} only when {@code value} is a non-blank string. */
@@ -830,27 +844,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         if (value instanceof String && StringUtils.isNotBlank((String) value)) {
             meta.put(key, value);
         }
-    }
-
-    /**
-     * The {@code productList} content shape a destination screen's flight listing takes, filtered
-     * to {@code city}. Every field but {@code filter} is a fixed constant matching the reference
-     * app's own destination screens (e.g. its "france" screen filters "Paris" the same way).
-     */
-    private static Map<String, Object> destinationProductList(final String city) {
-        final Map<String, Object> content = new LinkedHashMap<>();
-        content.put("items", Collections.emptyList());
-        content.put("filter", city);
-        content.put("layout", "vertical/grid");
-        content.put("linkTo", "flight-search");
-        content.put("listType", "productList");
-        content.put("itemsInRow", 1);
-        content.put("itemRenderer", "image-text-one-line");
-        content.put("filterProperty", "Category");
-        content.put("filterOnlyProductScreens", true);
-        content.put("searchParamDestinationPath", "search.flights.to");
-        content.put("searchParamSearchValueSelector", "to");
-        return content;
     }
 
     /** Depth-first search for the first component in {@code tree} whose meta.component matches. */

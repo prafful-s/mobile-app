@@ -36,7 +36,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "rightIcon":         { "icon": "...", "name": "...", "target": "..." },
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
  *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true },
- *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown"
+ *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown",
+ *   "screenList":        { "textColor": "...", "color": "..." },
+ *   "extractInlineLinks": true
  * }
  * </pre>
  *
@@ -75,25 +77,38 @@ final class SiteDefaults {
     /**
      * Per-screen form settings, keyed by screen key:
      * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>",
-     * "navigateOnSubmit": "<screen-key>", "eventType": "..." } }}.
+     * "navigateOnSubmit": "<screen-key>", "eventType": "...", "toastMessage": "..." } }}.
      * {@code redirectAfterSubmit} sets the screen the client opens after a successful submit
      * ({@code meta.link}); {@code navigateOnSubmit} sets an alternate post-submit navigation target
      * some forms honour ({@code meta.navigateOnSubmit}, e.g. registration); {@code eventType} sets
-     * the analytics event the submit fires ({@code meta.eventType}). Each is applied only when
+     * the analytics event the submit fires ({@code meta.eventType}); {@code toastMessage} sets the
+     * confirmation text shown after a successful submit ({@code meta.toastMessage}) - needed for a
+     * form block with no authored toast/success-message field of its own. Each is applied only when
      * present and non-blank; anything absent (setting, screen, section, or file) leaves the value
      * {@code FormBlockBuilder} already emitted. See {@code PageJsonExporterImpl#applyFormSettings}.
      */
     static final String KEY_FORMS = "forms";
     /**
      * Path to the site's destination-dropdown Content Fragment, whose {@code destination_mapping}
-     * multifield supplies the country a {@code flightResults} block should filter by, keyed by
-     * screen key: {@code "flightDestinationsFragment": "/content/dam/.../flight-source-destination-
-     * dropdown"}. A destination screen's block authors no such field itself (unlike the web block,
-     * which reads it from the URL path), so this fragment is the only source; a screen key with no
-     * matching row leaves {@code flightResults} with no {@code destination}, unchanged from today.
-     * See {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
+     * multifield supplies the airport/city code a destination screen's {@code flightResults} block
+     * should be forced to, keyed by screen key: {@code "flightDestinationsFragment": "/content/dam/
+     * .../flight-source-destination-dropdown"}. A destination screen's block authors no such field
+     * itself (unlike the web block, which reads it from the URL path), so this fragment is the only
+     * source; a screen key with no matching row leaves {@code flightResults} untouched. See
+     * {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
+    /**
+     * Overrides the fixed colors {@code ComponentTreeWalker#cardsBlockAsList} otherwise hardcodes
+     * for a cards-block-to-screenList conversion (a near-white {@code textColor} meant to sit over
+     * a photo, copied from the LUMA MOBILE reference's own dark-background screenList): {@code
+     * "screenList": { "textColor": "...", "color": "..." } }. {@code textColor} is the item label
+     * color, {@code color} the section's own background. Each is applied only when present and
+     * non-blank; a site that overrides neither keeps today's hardcoded values - needed by any site
+     * whose cards render on a light background, where light-on-light text would otherwise be
+     * unreadable regardless of what an individual card authored.
+     */
+    static final String KEY_SCREEN_LIST = "screenList";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 

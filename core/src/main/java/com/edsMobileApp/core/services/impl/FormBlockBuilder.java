@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,6 +52,11 @@ final class FormBlockBuilder {
 
     /** Authored property names per emitted setting, most specific first. */
     private static final String[] EVENT_TYPE_KEYS = {"mobilebuttoneventtype"};
+    /** Authored per-block custom style rows the block emits - see {@link #applyCheckboxWidth}. */
+    private static final String CUSTOM_MOBILE_STYLE_KEY = "custommobilestyle";
+    /** The one {@code custommobilestyle} row key this export currently understands - see
+     *  {@link #applyCheckboxWidth}. */
+    private static final String STYLE_KEY_WIDTH = "width";
     /**
      * The authored post-submit redirect field, per form that has one, mapped to the property its own
      * block model defines: create-account names it {@code redirectUrl}, join-us names it
@@ -265,6 +271,7 @@ final class FormBlockBuilder {
     Map<String, Object> build(final Resource resource, final String formName, final String id,
                               final int order, final Map<String, Object> authored) {
         final List<Map<String, Object>> fields = fields(resource, formName, authored);
+        applyCheckboxWidth(fields, authored);
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
@@ -483,6 +490,85 @@ final class FormBlockBuilder {
             }
         }
         return fallback;
+    }
+
+    /**
+     * Applies the block's authored {@code custommobilestyle} - a multifield of free-text
+     * {@code key:value} rows (e.g. {@code "width:250"}, {@code "padding:0"}) - as {@code
+     * styles.width} on every {@code checkboxGroup} field this form emits. The mapping has no way
+     * to express a per-instance width, and several checkboxGroup labels run long enough on a phone
+     * screen to need one (WKND Fly Club's consent, SecurFinancial's mortgage authorization and
+     * child-account consents, create-account's trial/marketing/privacy consents, checkout's email
+     * consent) - see the {@code custommobilestyle} field added to each of those blocks' own
+     * component models.
+     *
+     * <p>{@code custommobilestyle} is authored once per block, not per component, so today there is
+     * no way to say which of a form's several components a given row targets - only {@code width}
+     * is read here, and it is applied to every {@code checkboxGroup} field, because a checkboxGroup
+     * is the one component this form-building path currently needs a custom width for. Every other
+     * row key ({@code padding}, or anything else) is ignored for now rather than guessed at; how a
+     * block with more than one styleable component should target its rows is still open - Prafful
+     * to confirm before this reads more than {@code width}.</p>
+     *
+     * <p>A blank/unauthored value, or no {@code width} row, leaves every checkboxGroup exactly as
+     * built.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private static void applyCheckboxWidth(final List<Map<String, Object>> fields,
+                                           final Map<String, Object> authored) {
+        final Integer width = authoredCustomStyleInt(authored, STYLE_KEY_WIDTH);
+        if (width == null) {
+            return;
+        }
+        for (final Map<String, Object> field : fields) {
+            final Object meta = field.get(SchemaConstants.KEY_META);
+            if (!(meta instanceof Map) || !FormFieldFactory.CHECKBOX_GROUP.equals(
+                    ((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
+                continue;
+            }
+            final Map<String, Object> styles = new LinkedHashMap<>();
+            styles.put("width", width);
+            field.put(SchemaConstants.KEY_STYLES, styles);
+        }
+    }
+
+    /**
+     * @return the integer value of {@code custommobilestyle}'s {@code key:value} row named
+     *         {@code key} (the first one found, case-insensitive on the key), or {@code null} when
+     *         the field is absent, carries no such row, or that row's value isn't a number.
+     */
+    private static Integer authoredCustomStyleInt(final Map<String, Object> authored, final String key) {
+        final Object raw = authored.get(CUSTOM_MOBILE_STYLE_KEY);
+        final List<?> rows = raw instanceof List ? (List<?>) raw
+                : raw instanceof String[] ? Arrays.asList((String[]) raw) : null;
+        if (rows == null) {
+            return null;
+        }
+        for (final Object row : rows) {
+            if (!(row instanceof String)) {
+                continue;
+            }
+            final String[] parts = ((String) row).split(":", 2);
+            if (parts.length != 2 || !parts[0].trim().equalsIgnoreCase(key)) {
+                continue;
+            }
+            final Integer value = asInteger(parts[1].trim());
+            if (value == null) {
+                LOG.warn("custommobilestyle row '{}' is not a number - ignoring it", row);
+                return null;
+            }
+            return value;
+        }
+        return null;
+    }
+
+    /** @return {@code value} parsed as an integer, or {@code null} when it is not one. */
+    private static Integer asInteger(final String value) {
+        try {
+            return Integer.valueOf(value.trim());
+        } catch (final NumberFormatException e) {
+            return null;
+        }
     }
 
 }
