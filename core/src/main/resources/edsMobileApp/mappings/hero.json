@@ -10,7 +10,7 @@
     { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
     { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitle",
-      "extract": { "from": "text", "select": "p:not(:has(a))", "as": "text", "all": true },
+      "extract": { "from": "text", "select": "p:not(:has(a)), h3, h4, h5, h6", "as": "text", "all": true },
       "nullable": true },
     { "target": "buttonLabel",
       "extract": { "from": "text", "select": "a", "as": "text" }, "nullable": true },
