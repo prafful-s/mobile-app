@@ -8,5 +8,11 @@
     "icon": "shopping-cart",
     "name": "shopping-cart",
     "target": "cart"
+  },
+  "forms": {
+    "support": {
+      "heading": "Need More Help?",
+      "headingAlignment": "center"
+    }
   }
 }
