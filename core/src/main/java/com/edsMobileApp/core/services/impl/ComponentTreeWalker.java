@@ -833,6 +833,40 @@ final class ComponentTreeWalker {
      *         resolves (by name, via {@link GenericComponent#getComponentName()}) to {@code card} -
      *         or {@code null} when the block does not have that shape
      */
+    /**
+     * Whether a Cards block has opted in to becoming a {@code screenList} on whatever cards it has,
+     * via a {@code mobilecardaslist} boolean authored on the block itself.
+     *
+     * <p>Absent or false - the default, and every block today - leaves the conversion exactly as it
+     * was: exactly three cards, every one resolving to a screen, or no list. True relaxes both of
+     * those, which is the only way a block that is not a clean three-of-three can become a list.
+     * Opt-in rather than a change of rule because relaxing it globally would convert blocks that are
+     * content rather than navigation - halliby's five- and six-card category grids among them - and
+     * a screenList discards the cards' authored titles and copy in favour of the target screens'.</p>
+     *
+     * <p>Read straight off the block's {@link ValueMap}, the same way {@link #isCardsBlock} reads
+     * {@code filter} and {@code name}, so it works whether the property is authored through a block
+     * model or set on the node directly.</p>
+     */
+    private static boolean rendersCardsAsList(final Resource resource) {
+        return resource.getValueMap().get("mobilecardaslist", Boolean.FALSE);
+    }
+
+    /** Every {@code card}-modelled child, however many - the opted-in counterpart to {@link #cardItemsOf}. */
+    private List<Resource> allCardItemsOf(final Resource resource) {
+        final List<Resource> items = new ArrayList<>();
+        for (final Resource child : resource.getChildren()) {
+            if (isSystemNode(child)) {
+                continue;
+            }
+            if (!"card".equals(new GenericComponent(child, urlService).getComponentName())) {
+                return null;
+            }
+            items.add(child);
+        }
+        return items.isEmpty() ? null : items;
+    }
+
     private List<Resource> cardItemsOf(final Resource resource) {
         final List<Resource> items = new ArrayList<>();
         for (final Resource child : resource.getChildren()) {
@@ -871,10 +905,26 @@ final class ComponentTreeWalker {
      *         three-card group, the {@code card} rule is not loaded, or not every card resolves to a
      *         key in {@code knownScreenKeys}
      */
-    private Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
+    // package-private so CardsAsListTest can drive it directly.
+    Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
                                                   final Set<String> knownScreenKeys,
                                                   final Map<String, String> screenThumbnailOverrides) {
-        final List<Resource> items = cardItemsOf(resource);
+        return cardsBlockAsList(resource, order, knownScreenKeys, screenThumbnailOverrides,
+                rendersCardsAsList(resource));
+    }
+
+    /**
+     * @param relaxed when the block opts in via {@code mobilecardaslist}: take however many cards it
+     *                has rather than requiring exactly three, and skip a card whose link does not
+     *                resolve to a screen rather than abandoning the whole conversion. Still returns
+     *                {@code null} when that leaves nothing, so an opted-in block with no screen-
+     *                resolving card behaves exactly as it does today.
+     */
+    private Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
+                                                  final Set<String> knownScreenKeys,
+                                                  final Map<String, String> screenThumbnailOverrides,
+                                                  final boolean relaxed) {
+        final List<Resource> items = relaxed ? allCardItemsOf(resource) : cardItemsOf(resource);
         final ComponentMapping cardRule = items == null ? null : mappings.find("card");
         if (items == null || cardRule == null) {
             return null;
@@ -889,6 +939,11 @@ final class ComponentTreeWalker {
             final Object link = mapped.get("link");
             final String key = link instanceof String ? (String) link : null;
             if (StringUtils.isBlank(key) || !knownScreenKeys.contains(key)) {
+                if (relaxed) {
+                    // An empty placeholder, or a card linking somewhere the app has no screen for.
+                    // It contributes no list item; the cards that do resolve still make the list.
+                    continue;
+                }
                 return null;
             }
             screenKeys.add(key);
@@ -900,6 +955,11 @@ final class ComponentTreeWalker {
             if (cardType instanceof String && StringUtils.isNotBlank((String) cardType)) {
                 cardTypes.add((String) cardType);
             }
+        }
+        if (screenKeys.isEmpty()) {
+            // Only reachable when relaxed - the strict path returns null on the first card that
+            // does not resolve. Nothing to list, so leave the block to the normal walk.
+            return null;
         }
         // itemRenderer is list-wide (list.json has no per-item shape), so it can only reflect the
         // cards' cardType when every card in the group agreed on one; otherwise keep the LUMA
