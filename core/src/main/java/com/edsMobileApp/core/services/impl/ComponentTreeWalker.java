@@ -1439,6 +1439,9 @@ final class ComponentTreeWalker {
         if (vertical && "".equals(styles.get("justifyContent"))) {
             styles.put("justifyContent", "space-between");
         }
+        // custommobilestyle is the most specific, per-instance choice, so it overrides everything
+        // above it - the authored panel properties, style tokens and spacing defaults alike.
+        styles.putAll(CustomMobileStyle.asMap(props));
         return styles;
     }
 
