@@ -725,7 +725,7 @@ final class ComponentTreeWalker {
                 } else {
                     componentName = mapping.getComponent();
                     content = new LinkedHashMap<>(mapped);
-                    styles = mapping.applyStyles(ruleSource, sectionProps);
+                    styles = mergeCustomStyles(mapping.applyStyles(ruleSource, sectionProps), authored);
                     if (mapping.isSkeleton()) {
                         // Extras come from the component's own properties only - a referenced
                         // fragment's fields that no rule targeted stay internal, not leaked as extras.
@@ -785,6 +785,23 @@ final class ComponentTreeWalker {
                         screenThumbnailOverrides);
             }
         }
+    }
+
+    /**
+     * Layers a component's authored {@code custommobilestyle} rows (see {@link CustomMobileStyle})
+     * onto the styles its mapping rule already produced, an authored row overriding a same-named
+     * rule style since it is the more specific, per-instance choice. Returns {@code mapped}
+     * itself, unchanged, when nothing is authored.
+     */
+    private static Map<String, Object> mergeCustomStyles(final Map<String, Object> mapped,
+                                                          final Map<String, Object> authored) {
+        final Map<String, Object> custom = CustomMobileStyle.asMap(authored);
+        if (custom.isEmpty()) {
+            return mapped;
+        }
+        final Map<String, Object> merged = new LinkedHashMap<>(mapped);
+        merged.putAll(custom);
+        return merged;
     }
 
     /**
