@@ -399,18 +399,33 @@ final class ComponentTreeWalker {
         return leaf.isEmpty() ? null : leaf + suffix;
     }
 
-    /** A {@code text}-variant button carrying one extracted inline link, aligned left. */
+    /**
+     * A button carrying one extracted inline link, matching every field
+     * {@code edsMobileApp/mappings/button.json} would default it to for an authored button with no
+     * {@code linkType} set ({@code variant: "contained"}) - so a synthetically-extracted button is
+     * indistinguishable, field for field, from one the mapping produced. Only {@code label},
+     * {@code linkTo} and {@code alignment} (left, since this sits inline with a sentence rather
+     * than standing alone as a CTA) are set to anything but the mapping's own default.
+     */
     private static Map<String, Object> inlineLinkButton(final String label, final String linkTo) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(linkTo + ':' + label));
         meta.put(SchemaConstants.KEY_COMPONENT, "button");
         final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("icon", "");
         content.put("label", label);
+        content.put("eventType", "");
+        content.put("formId", "");
         content.put("linkTo", linkTo);
-        content.put("variant", "text");
+        content.put("message", "");
+        content.put("variant", "contained");
         content.put("alignment", "left");
+        content.put("customEvent", "");
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("marginTop", "");
         final Map<String, Object> button = new LinkedHashMap<>();
         button.put(SchemaConstants.KEY_META, meta);
+        button.put(SchemaConstants.KEY_STYLES, styles);
         button.put(SchemaConstants.KEY_CONTENT, content);
         return button;
     }
