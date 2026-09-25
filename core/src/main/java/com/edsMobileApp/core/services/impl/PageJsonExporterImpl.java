@@ -502,6 +502,13 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
+        // Per-component style overrides the site pins by id; no-op when it configures none. Last so
+        // it overrides anything the passes above wrote, and outside the branch because a targeted
+        // component can sit on any screen, cart and checkout included.
+        // meta first, then styles: a layout change can alter how a component is rendered, and the
+        // style override should be the last word on how it looks.
+        applyComponentMeta(content, page, key);
+        applyComponentStyles(content, page, key);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -861,6 +868,178 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
         }
         return null;
+    }
+
+    /** Export bookkeeping that configuration must not rewrite - see KEY_COMPONENT_META. */
+    private static final Set<String> PROTECTED_META_KEYS = Set.of(
+            SchemaConstants.KEY_ID, SchemaConstants.KEY_COMPONENT, SchemaConstants.KEY_ORDER);
+
+    /**
+     * Applies the per-component {@code meta} overrides a site pins under {@code componentMeta},
+     * keyed {@code <screenKey>.<component>.<id>} exactly as {@link #applyComponentStyles} is:
+     *
+     * <pre>
+     * "componentMeta": {
+     *   "wknd-club.panel.b1059ca7": { "layout": "horizontal" }
+     * }
+     * </pre>
+     *
+     * <p>A panel's {@code layout} is what makes its children stack or sit in a row, and the mapping
+     * always emits {@code vertical} - nothing authored on the block can say otherwise - so this is
+     * the only way to ask for a row of cards.</p>
+     *
+     * <p>{@code id}, {@code component} and {@code order} are refused and logged: they are the
+     * export's own bookkeeping, keyed on by every other override and by the client, and {@code order}
+     * is maintained to equal the component's index in its list.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void applyComponentMeta(final List<Map<String, Object>> content, final Page page,
+                                    final String screenKey) {
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_COMPONENT_META);
+        if (overrides.isEmpty()) {
+            return;
+        }
+        for (final Map.Entry<String, Object> override : overrides.entrySet()) {
+            if (!(override.getValue() instanceof Map)) {
+                continue;
+            }
+            final String[] parts = override.getKey().split("\\.");
+            if (parts.length != 3) {
+                LOG.warn("componentMeta key '{}' is not <screenKey>.<component>.<id> - ignoring it",
+                        override.getKey());
+                continue;
+            }
+            if (!parts[0].equals(screenKey)) {
+                continue;
+            }
+            final Map<String, Object> target = findById(content, parts[1],
+                    StringUtils.removeStart(parts[2], "id_"));
+            if (target == null) {
+                LOG.debug("componentMeta key '{}' matched no component on screen {}",
+                        override.getKey(), screenKey);
+                continue;
+            }
+            final Map<String, Object> meta = asMeta(target.get(SchemaConstants.KEY_META));
+            for (final Map.Entry<String, Object> field
+                    : ((Map<String, Object>) override.getValue()).entrySet()) {
+                if (PROTECTED_META_KEYS.contains(field.getKey())) {
+                    LOG.warn("componentMeta key '{}' tried to set meta.{} - refused",
+                            override.getKey(), field.getKey());
+                    continue;
+                }
+                meta.put(field.getKey(), field.getValue());
+            }
+        }
+    }
+
+    /**
+     * Applies the per-component style overrides a site pins in {@code defaults.json} under
+     * {@code componentStyles}, keyed {@code <screenKey>.<component>.<id>}:
+     *
+     * <pre>
+     * "componentStyles": {
+     *   "en.banner.65721cdd": { "color": "#333333" }
+     * }
+     * </pre>
+     *
+     * <p>The value is merged into that component's {@code styles}, so it can set a key the mapping
+     * left out or replace one it wrote. This exists because the mapping rules cannot express a
+     * per-instance decision: {@code hero} emits {@code styles.color} as a {@code const} of
+     * {@code #FFF}, and {@code card} emits a colour only for the {@code partial-overlay} variant, so
+     * one banner over bright imagery, or one full-overlay card over a dark photo, has no way to say
+     * so. A site-wide flag would move every banner or every card with it; this moves exactly the
+     * component named.</p>
+     *
+     * <p>The id is {@code Integer.toHexString(path.hashCode())} over the component's JCR path
+     * ({@link AbstractComponentModel#generateId}), so it is stable across exports and instances and
+     * changes only if the component moves in the repository. Because it is a hash it can in
+     * principle collide, which is why the screen key and component name are part of the key and are
+     * all required to match - a collision then misses rather than restyling the wrong component. An
+     * {@code id_} prefix on the last segment is accepted and ignored.</p>
+     *
+     * <p>A key that matches nothing is logged at debug and otherwise ignored: if the component moves
+     * and its id changes, the override stops applying and the component reverts to its mapped style,
+     * which is visible rather than silently wrong.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void applyComponentStyles(final List<Map<String, Object>> content, final Page page,
+                                      final String screenKey) {
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_COMPONENT_STYLES);
+        if (overrides.isEmpty()) {
+            return;
+        }
+        for (final Map.Entry<String, Object> override : overrides.entrySet()) {
+            if (!(override.getValue() instanceof Map)) {
+                continue;
+            }
+            final String[] parts = override.getKey().split("\\.");
+            if (parts.length != 3) {
+                LOG.warn("componentStyles key '{}' is not <screenKey>.<component>.<id> - ignoring it",
+                        override.getKey());
+                continue;
+            }
+            if (!parts[0].equals(screenKey)) {
+                continue;
+            }
+            final String wantedComponent = parts[1];
+            final String wantedId = StringUtils.removeStart(parts[2], "id_");
+            final Map<String, Object> target =
+                    findById(content, wantedComponent, wantedId);
+            if (target == null) {
+                LOG.debug("componentStyles key '{}' matched no component on screen {}",
+                        override.getKey(), screenKey);
+                continue;
+            }
+            mergeStyles(target, (Map<String, Object>) override.getValue());
+        }
+    }
+
+    /**
+     * @return the component on this screen whose {@code meta.component} and {@code meta.id} both
+     *         match, searched depth-first through nested {@code content} lists, or {@code null}.
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> findById(final List<Map<String, Object>> tree,
+                                                final String componentName, final String id) {
+        for (final Map<String, Object> component : tree) {
+            final Map<String, Object> meta = asMeta(component.get(SchemaConstants.KEY_META));
+            if (componentName.equals(meta.get(SchemaConstants.KEY_COMPONENT))
+                    && id.equals(meta.get(SchemaConstants.KEY_ID))) {
+                return component;
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                final Map<String, Object> found =
+                        findById((List<Map<String, Object>>) inner, componentName, id);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Merges {@code patch} into {@code component}'s {@code styles}. When the component has none, the
+     * map is rebuilt as meta, styles, content rather than having styles appended, so the key order
+     * matches every other component's.
+     */
+    @SuppressWarnings("unchecked")
+    private static void mergeStyles(final Map<String, Object> component,
+                                    final Map<String, Object> patch) {
+        final Object existing = component.get(SchemaConstants.KEY_STYLES);
+        if (existing instanceof Map) {
+            ((Map<String, Object>) existing).putAll(patch);
+            return;
+        }
+        final Map<String, Object> rebuilt = new LinkedHashMap<>();
+        rebuilt.put(SchemaConstants.KEY_META, component.get(SchemaConstants.KEY_META));
+        rebuilt.put(SchemaConstants.KEY_STYLES, new LinkedHashMap<>(patch));
+        rebuilt.put(SchemaConstants.KEY_CONTENT, component.get(SchemaConstants.KEY_CONTENT));
+        component.clear();
+        component.putAll(rebuilt);
     }
 
     /** Depth-first search for every component in {@code tree} whose meta.component matches. */
