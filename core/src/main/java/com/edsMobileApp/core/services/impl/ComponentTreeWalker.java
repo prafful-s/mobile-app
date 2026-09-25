@@ -533,14 +533,6 @@ final class ComponentTreeWalker {
             if (isSystemNode(child)) {
                 continue;
             }
-            // A card with neither image nor text is a placeholder, not content. Skipped here as
-            // well as in cardItemsOf, because otherwise it reaches the mapping, falls to the
-            // htmlText fallback with nothing to put in it, and is then "exported unmapped" -
-            // a component carrying only its styling defaults. See isEmptyCard.
-            if (isEmptyCard(child)) {
-                LOG.debug("Skipping card with no image or text at {}", child.getPath());
-                continue;
-            }
             final String resourceType = StringUtils.trimToEmpty(child.getResourceType());
             final boolean hasChildren = child.hasChildren();
 
@@ -857,44 +849,43 @@ final class ComponentTreeWalker {
      *         or {@code null} when the block does not have that shape
      */
     /**
-     * True when a card has nothing authored to show: no image and no text. Such a card is a
-     * placeholder an author left untouched rather than content - the web block renders nothing for
-     * it - so it must not count toward the three-card shape that gates the screenList conversion.
+     * Whether a Cards block has opted in to becoming a {@code screenList} on whatever cards it has,
+     * via a {@code mobilecardaslist} boolean authored on the block itself.
      *
-     * <p>Without this, two empty placeholders beside one authored card make the block look like a
-     * three-card group whose links are a live/dead mix, and the guard in {@link #collectComponents}
-     * drops the whole block, the authored card with it. wknd-fly's destinations screen lost its
-     * India card exactly that way.</p>
+     * <p>Absent or false - the default, and every block today - leaves the conversion exactly as it
+     * was: exactly three cards, every one resolving to a screen, or no list. True relaxes both of
+     * those, which is the only way a block that is not a clean three-of-three can become a list.
+     * Opt-in rather than a change of rule because relaxing it globally would convert blocks that are
+     * content rather than navigation - halliby's five- and six-card category grids among them - and
+     * a screenList discards the cards' authored titles and copy in favour of the target screens'.</p>
      *
-     * <p>A card with text but no image is <em>not</em> empty: that is content, and the card rule's
-     * own {@code requires}/{@code fallback} already exports it as {@code htmlText}. The image
-     * property names match the rule's {@code first: ["image", "fileReference", "imageRef"]}, so the
-     * two agree on what having an image means.</p>
+     * <p>Read straight off the block's {@link ValueMap}, the same way {@link #isCardsBlock} reads
+     * {@code filter} and {@code name}, so it works whether the property is authored through a block
+     * model or set on the node directly.</p>
      */
-    // package-private so EmptyCardTest can pin it directly; the class itself is package-private.
-    boolean isEmptyCard(final Resource item) {
-        final GenericComponent component = new GenericComponent(item, urlService);
-        // Gated on the component actually being a card: this runs against every child in
-        // collectComponents, and plenty of other components legitimately author neither an image
-        // nor text (a section, a button, a spacer).
-        if (!"card".equals(component.getComponentName())) {
-            return false;
-        }
-        final Map<String, Object> authored = component.getContent();
-        return isBlankValue(authored.get("image"))
-                && isBlankValue(authored.get("fileReference"))
-                && isBlankValue(authored.get("imageRef"))
-                && isBlankValue(authored.get("text"));
+    private static boolean rendersCardsAsList(final Resource resource) {
+        return resource.getValueMap().get("mobilecardaslist", Boolean.FALSE);
     }
 
-    private static boolean isBlankValue(final Object value) {
-        return value == null || (value instanceof String && StringUtils.isBlank((String) value));
-    }
-
-    List<Resource> cardItemsOf(final Resource resource) {
+    /** Every {@code card}-modelled child, however many - the opted-in counterpart to {@link #cardItemsOf}. */
+    private List<Resource> allCardItemsOf(final Resource resource) {
         final List<Resource> items = new ArrayList<>();
         for (final Resource child : resource.getChildren()) {
-            if (isSystemNode(child) || isEmptyCard(child)) {
+            if (isSystemNode(child)) {
+                continue;
+            }
+            if (!"card".equals(new GenericComponent(child, urlService).getComponentName())) {
+                return null;
+            }
+            items.add(child);
+        }
+        return items.isEmpty() ? null : items;
+    }
+
+    private List<Resource> cardItemsOf(final Resource resource) {
+        final List<Resource> items = new ArrayList<>();
+        for (final Resource child : resource.getChildren()) {
+            if (isSystemNode(child)) {
                 continue;
             }
             items.add(child);
@@ -929,10 +920,26 @@ final class ComponentTreeWalker {
      *         three-card group, the {@code card} rule is not loaded, or not every card resolves to a
      *         key in {@code knownScreenKeys}
      */
-    private Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
+    // package-private so CardsAsListTest can drive it directly.
+    Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
                                                   final Set<String> knownScreenKeys,
                                                   final Map<String, String> screenThumbnailOverrides) {
-        final List<Resource> items = cardItemsOf(resource);
+        return cardsBlockAsList(resource, order, knownScreenKeys, screenThumbnailOverrides,
+                rendersCardsAsList(resource));
+    }
+
+    /**
+     * @param relaxed when the block opts in via {@code mobilecardaslist}: take however many cards it
+     *                has rather than requiring exactly three, and skip a card whose link does not
+     *                resolve to a screen rather than abandoning the whole conversion. Still returns
+     *                {@code null} when that leaves nothing, so an opted-in block with no screen-
+     *                resolving card behaves exactly as it does today.
+     */
+    private Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
+                                                  final Set<String> knownScreenKeys,
+                                                  final Map<String, String> screenThumbnailOverrides,
+                                                  final boolean relaxed) {
+        final List<Resource> items = relaxed ? allCardItemsOf(resource) : cardItemsOf(resource);
         final ComponentMapping cardRule = items == null ? null : mappings.find("card");
         if (items == null || cardRule == null) {
             return null;
@@ -947,6 +954,11 @@ final class ComponentTreeWalker {
             final Object link = mapped.get("link");
             final String key = link instanceof String ? (String) link : null;
             if (StringUtils.isBlank(key) || !knownScreenKeys.contains(key)) {
+                if (relaxed) {
+                    // An empty placeholder, or a card linking somewhere the app has no screen for.
+                    // It contributes no list item; the cards that do resolve still make the list.
+                    continue;
+                }
                 return null;
             }
             screenKeys.add(key);
@@ -958,6 +970,11 @@ final class ComponentTreeWalker {
             if (cardType instanceof String && StringUtils.isNotBlank((String) cardType)) {
                 cardTypes.add((String) cardType);
             }
+        }
+        if (screenKeys.isEmpty()) {
+            // Only reachable when relaxed - the strict path returns null on the first card that
+            // does not resolve. Nothing to list, so leave the block to the normal walk.
+            return null;
         }
         // itemRenderer is list-wide (list.json has no per-item shape), so it can only reflect the
         // cards' cardType when every card in the group agreed on one; otherwise keep the LUMA
