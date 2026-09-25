@@ -518,6 +518,14 @@ final class ComponentTreeWalker {
             if (isSystemNode(child)) {
                 continue;
             }
+            // A card with neither image nor text is a placeholder, not content. Skipped here as
+            // well as in cardItemsOf, because otherwise it reaches the mapping, falls to the
+            // htmlText fallback with nothing to put in it, and is then "exported unmapped" -
+            // a component carrying only its styling defaults. See isEmptyCard.
+            if (isEmptyCard(child)) {
+                LOG.debug("Skipping card with no image or text at {}", child.getPath());
+                continue;
+            }
             final String resourceType = StringUtils.trimToEmpty(child.getResourceType());
             final boolean hasChildren = child.hasChildren();
 
@@ -833,10 +841,45 @@ final class ComponentTreeWalker {
      *         resolves (by name, via {@link GenericComponent#getComponentName()}) to {@code card} -
      *         or {@code null} when the block does not have that shape
      */
-    private List<Resource> cardItemsOf(final Resource resource) {
+    /**
+     * True when a card has nothing authored to show: no image and no text. Such a card is a
+     * placeholder an author left untouched rather than content - the web block renders nothing for
+     * it - so it must not count toward the three-card shape that gates the screenList conversion.
+     *
+     * <p>Without this, two empty placeholders beside one authored card make the block look like a
+     * three-card group whose links are a live/dead mix, and the guard in {@link #collectComponents}
+     * drops the whole block, the authored card with it. wknd-fly's destinations screen lost its
+     * India card exactly that way.</p>
+     *
+     * <p>A card with text but no image is <em>not</em> empty: that is content, and the card rule's
+     * own {@code requires}/{@code fallback} already exports it as {@code htmlText}. The image
+     * property names match the rule's {@code first: ["image", "fileReference", "imageRef"]}, so the
+     * two agree on what having an image means.</p>
+     */
+    // package-private so EmptyCardTest can pin it directly; the class itself is package-private.
+    boolean isEmptyCard(final Resource item) {
+        final GenericComponent component = new GenericComponent(item, urlService);
+        // Gated on the component actually being a card: this runs against every child in
+        // collectComponents, and plenty of other components legitimately author neither an image
+        // nor text (a section, a button, a spacer).
+        if (!"card".equals(component.getComponentName())) {
+            return false;
+        }
+        final Map<String, Object> authored = component.getContent();
+        return isBlankValue(authored.get("image"))
+                && isBlankValue(authored.get("fileReference"))
+                && isBlankValue(authored.get("imageRef"))
+                && isBlankValue(authored.get("text"));
+    }
+
+    private static boolean isBlankValue(final Object value) {
+        return value == null || (value instanceof String && StringUtils.isBlank((String) value));
+    }
+
+    List<Resource> cardItemsOf(final Resource resource) {
         final List<Resource> items = new ArrayList<>();
         for (final Resource child : resource.getChildren()) {
-            if (isSystemNode(child)) {
+            if (isSystemNode(child) || isEmptyCard(child)) {
                 continue;
             }
             items.add(child);
