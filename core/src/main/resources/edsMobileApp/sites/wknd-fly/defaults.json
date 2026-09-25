@@ -16,5 +16,6 @@
     "toastMessage": "Thank you for booking!",
     "submitButtonLabel": "Confirm purchase"
   },
-  "flightDestinationsFragment": "/content/dam/wknd-fly/en/fragments/flight-details/flight-source-destination-dropdown"
+  "flightDestinationsFragment": "/content/dam/wknd-fly/en/fragments/flight-details/flight-source-destination-dropdown",
+  "extractInlineLinks": true
 }
