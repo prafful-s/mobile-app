@@ -36,12 +36,6 @@ import com.day.cq.wcm.api.Page;
  */
 final class ProductCatalog {
 
-    /** Node visit budget per root, so a pathological DAM tree cannot stall the export. */
-    private static final int MAX_NODES_SCANNED = 20000;
-
-    /** Marks a rendered image asset - has jcr:content/renditions we must NOT walk into. */
-    private static final String DAM_ASSET = "dam:Asset";
-
     private final ProductMappings mappings;
 
     ProductCatalog(final ProductMappings mappings) {
@@ -77,10 +71,10 @@ final class ProductCatalog {
                          final String assetHost, final int[] budget, final String sitePath,
                          final Set<String> seenPaths) {
         for (final Resource child : folder.getChildren()) {
-            if (budget[0]++ >= MAX_NODES_SCANNED) {
+            if (budget[0]++ >= DamFragmentSearch.MAX_NODES_SCANNED) {
                 return;
             }
-            final String model = modelOf(child);
+            final String model = DamFragmentSearch.modelOf(child);
             final ComponentMapping mapping = mappings.findForSite(model, sitePath);
             if (mapping != null) {
                 // Two roots can overlap (see the class comment), so the same fragment path may be
@@ -106,28 +100,10 @@ final class ProductCatalog {
             // Plain DAM assets carry jcr:content/renditions with thousands of metadata sub-nodes
             // per asset. Recursing into them stalls the walk against MAX_NODES_SCANNED before we
             // ever reach a fragment folder, so we only descend into real folder nodes.
-            if (isFolder(child) && child.hasChildren()) {
+            if (DamFragmentSearch.isFolder(child) && child.hasChildren()) {
                 collect(child, sink, assetHost, budget, sitePath, seenPaths);
             }
         }
-    }
-
-    /** @return the fragment's {@code cq:model} path, or null when the resource is not a fragment. */
-    private String modelOf(final Resource resource) {
-        final Resource data = resource.getChild("jcr:content/data");
-        return data == null ? null : data.getValueMap().get("cq:model", String.class);
-    }
-
-    /**
-     * True when {@code resource} is a container the walker should recurse into. Anything but a
-     * plain {@code dam:Asset} node is walked (folders under any primary type, nt:unstructured mock
-     * nodes in tests, and so on). Assets are stopped at because their {@code jcr:content/renditions}
-     * subtree carries hundreds of metadata sub-nodes per file, which stalls the walk against the
-     * scan budget before it reaches any Content Fragment folder.
-     */
-    private static boolean isFolder(final Resource resource) {
-        final String primaryType = resource.getValueMap().get("jcr:primaryType", String.class);
-        return !DAM_ASSET.equals(primaryType);
     }
 
     private Map<String, Object> toProduct(final ComponentMapping mapping,

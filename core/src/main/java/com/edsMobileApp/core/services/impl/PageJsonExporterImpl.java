@@ -91,7 +91,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
                 new StyleResolver(config.styleTokens()), ComponentMappings.load());
-        this.siteBranding = SiteBranding.load();
+        this.siteBranding = SiteBranding.load(config.themeContentFragmentModels());
         this.siteProfileViewer = SiteProfileViewer.load();
         this.siteIntegrations = SiteIntegrations.load();
         this.siteDefaults = SiteDefaults.load();
