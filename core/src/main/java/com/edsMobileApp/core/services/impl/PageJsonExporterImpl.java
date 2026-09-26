@@ -502,6 +502,21 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
+        // Point every product-list item at the site's product-detail screen (client appends
+        // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
+        // Outside the branch on purpose: cart, review-order and checkout take their own paths above
+        // and so never reach applyFormSettings, but a site can configure a heading for any screen
+        // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
+        applyFormHeading(content, page, key);
+        // Per-component style overrides the site pins by id; no-op when it configures none. Last so
+        // it overrides anything the passes above wrote, and outside the branch because a targeted
+        // component can sit on any screen, cart and checkout included. This replaces the site-wide
+        // applyOverlayCardTextColor develop was calling here: that pass, and the whole-site setting
+        // behind it, are gone - the same fix is now expressed per component in componentStyles.
+        // meta first, then styles: a layout change can alter how a component is rendered, and the
+        // style override should be the last word on how it looks.
+        applyComponentMeta(content, page, key);
+        applyComponentStyles(content, page, key);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -803,11 +818,20 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * {@code forms.<screenKey>} onto the screen's form meta: {@code redirectAfterSubmit} -&gt;
      * {@code meta.link} (the screen opened after a successful submit), {@code navigateOnSubmit} -&gt;
      * {@code meta.navigateOnSubmit} (an alternate post-submit navigation target the client honours
-     * for forms that use it, e.g. registration) and {@code eventType} -&gt; {@code meta.eventType}
-     * (the analytics event the submit fires). Each is applied only when the config carries a
-     * non-blank value; anything absent leaves the value {@link FormBlockBuilder} already emitted
-     * (blank {@code link}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
+     * for forms that use it, e.g. registration), {@code eventType} -&gt; {@code meta.eventType}
+     * (the analytics event the submit fires), and {@code toastMessage} -&gt; {@code meta.toastMessage}
+     * (the confirmation text shown after a successful submit) - needed because most authored form
+     * blocks carry no toast/success-message field at all, so {@link FormBlockBuilder} has nothing to
+     * read and emits blank. Each is applied only when the config carries a non-blank value; anything
+     * absent leaves the value {@link FormBlockBuilder} already emitted (blank {@code link}/
+     * {@code toastMessage}, no {@code navigateOnSubmit} key, authored-or-blank {@code eventType}).
      * Checkout is handled by {@link #patchCheckoutFormMeta} instead, so it never reaches here.
+     *
+     * <p>{@code heading} additionally inserts a {@code title} component immediately before the form
+     * (see {@link #insertFormHeading}). {@link FormBlockBuilder#heading} cannot serve these forms:
+     * it keys off the schema name, and a block whose fields are authored rather than taken from a
+     * bundled schema has no schema name at all - so a site that wants a title above such a form has
+     * nowhere else to say so.</p>
      */
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
@@ -832,6 +856,128 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
+        putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
+    }
+
+    /**
+     * Applies {@code forms.<screenKey>.heading} to the screen's form, for every screen rather than
+     * only the ones {@link #applyFormSettings} handles - see the call site.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyFormHeading(final List<Map<String, Object>> content, final Page page,
+                                  final String screenKey) {
+        final Map<String, Object> form = findComponent(content, "form");
+        if (form == null) {
+            return;
+        }
+        final Object entry = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_FORMS).get(screenKey);
+        if (entry instanceof Map) {
+            insertFormHeading(content, form, (Map<String, Object>) entry, page, screenKey);
+        }
+    }
+
+    /**
+     * Inserts the configured {@code heading} as a {@code title} component directly before the form,
+     * in whichever list the form actually sits in - the form is usually nested inside a panel rather
+     * than at the top of {@code content[]}, and the heading has to end up beside it to render above
+     * it.
+     *
+     * <p>When the form already has a heading of its own, that title is rewritten in place rather
+     * than a second one inserted - so a site moving its {@code formHeadings} text into
+     * {@code forms.<screenKey>.heading} gets one heading, not two.</p>
+     *
+     * <p>{@code headingAlignment} sets the title's {@code textAlignment} and defaults to
+     * {@code left}, matching {@link FormBlockBuilder#heading}'s own titles so a site that asks for a
+     * heading without naming an alignment gets the same look as every other form heading.</p>
+     *
+     * <p>Siblings after the insertion point have their {@code order} shifted by one, keeping
+     * {@code order} equal to the component's index in its list as it is everywhere else.</p>
+     */
+    private void insertFormHeading(final List<Map<String, Object>> content,
+                                   final Map<String, Object> form,
+                                   final Map<String, Object> settings, final Page page,
+                                   final String screenKey) {
+        final Object configured = settings.get("heading");
+        if (!(configured instanceof String) || StringUtils.isBlank((String) configured)) {
+            return;
+        }
+        final List<Map<String, Object>> siblings = listContaining(content, form);
+        if (siblings == null) {
+            return;
+        }
+        final int at = siblings.indexOf(form);
+
+        final Object alignment = settings.get("headingAlignment");
+        final String textAlignment = alignment instanceof String
+                && StringUtils.isNotBlank((String) alignment) ? (String) alignment : "left";
+
+        // A form that already carries a heading has it sitting directly before it in this same list
+        // (ComponentTreeWalker adds FormBlockBuilder's heading, then the form). Overwrite that one
+        // rather than inserting a second title above it: the site is choosing this form's heading,
+        // not asking for two.
+        final Map<String, Object> existing = at > 0 ? siblings.get(at - 1) : null;
+        if (existing != null && SchemaConstants.COMPONENT_TITLE.equals(
+                asMeta(existing.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
+            final Object raw = existing.get(SchemaConstants.KEY_CONTENT);
+            if (raw instanceof Map) {
+                final Map<String, Object> existingContent = (Map<String, Object>) raw;
+                existingContent.put("text", configured);
+                existingContent.put("textAlignment", textAlignment);
+                return;
+            }
+        }
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        // Synthetic path, keyed on the screen, so the id is stable across exports the same way
+        // every other synthetic component's is.
+        meta.put(SchemaConstants.KEY_ID,
+                AbstractComponentModel.generateId(page.getPath() + "/" + screenKey + "/form-heading"));
+        meta.put(SchemaConstants.KEY_ORDER, at);
+        meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_TITLE);
+
+        final Map<String, Object> titleContent = new LinkedHashMap<>();
+        titleContent.put("size", "medium");
+        titleContent.put("text", configured);
+        titleContent.put("weight", "bold");
+        titleContent.put("textAlignment", textAlignment);
+
+        final Map<String, Object> title = new LinkedHashMap<>();
+        title.put(SchemaConstants.KEY_META, meta);
+        title.put(SchemaConstants.KEY_CONTENT, titleContent);
+
+        siblings.add(at, title);
+        for (int i = at + 1; i < siblings.size(); i++) {
+            final Map<String, Object> sibling = siblings.get(i);
+            final Map<String, Object> siblingMeta = asMeta(sibling.get(SchemaConstants.KEY_META));
+            if (siblingMeta.get(SchemaConstants.KEY_ORDER) instanceof Number) {
+                siblingMeta.put(SchemaConstants.KEY_ORDER, i);
+            }
+        }
+    }
+
+    /**
+     * @return the list {@code target} is a direct member of, searched depth-first through nested
+     *         {@code content} lists, or {@code null} when it is not in this tree. Identity, not
+     *         equality: two components with the same payload are still different components.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> listContaining(final List<Map<String, Object>> tree,
+                                                            final Map<String, Object> target) {
+        for (final Map<String, Object> component : tree) {
+            if (component == target) {
+                return tree;
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                final List<Map<String, Object>> found =
+                        listContaining((List<Map<String, Object>>) inner, target);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /** Overwrites {@code meta[key]} only when {@code value} is a non-blank string. */
@@ -861,6 +1007,178 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
         }
         return null;
+    }
+
+    /** Export bookkeeping that configuration must not rewrite - see KEY_COMPONENT_META. */
+    private static final Set<String> PROTECTED_META_KEYS = Set.of(
+            SchemaConstants.KEY_ID, SchemaConstants.KEY_COMPONENT, SchemaConstants.KEY_ORDER);
+
+    /**
+     * Applies the per-component {@code meta} overrides a site pins under {@code componentMeta},
+     * keyed {@code <screenKey>.<component>.<id>} exactly as {@link #applyComponentStyles} is:
+     *
+     * <pre>
+     * "componentMeta": {
+     *   "wknd-club.panel.b1059ca7": { "layout": "horizontal" }
+     * }
+     * </pre>
+     *
+     * <p>A panel's {@code layout} is what makes its children stack or sit in a row, and the mapping
+     * always emits {@code vertical} - nothing authored on the block can say otherwise - so this is
+     * the only way to ask for a row of cards.</p>
+     *
+     * <p>{@code id}, {@code component} and {@code order} are refused and logged: they are the
+     * export's own bookkeeping, keyed on by every other override and by the client, and {@code order}
+     * is maintained to equal the component's index in its list.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void applyComponentMeta(final List<Map<String, Object>> content, final Page page,
+                                    final String screenKey) {
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_COMPONENT_META);
+        if (overrides.isEmpty()) {
+            return;
+        }
+        for (final Map.Entry<String, Object> override : overrides.entrySet()) {
+            if (!(override.getValue() instanceof Map)) {
+                continue;
+            }
+            final String[] parts = override.getKey().split("\\.");
+            if (parts.length != 3) {
+                LOG.warn("componentMeta key '{}' is not <screenKey>.<component>.<id> - ignoring it",
+                        override.getKey());
+                continue;
+            }
+            if (!parts[0].equals(screenKey)) {
+                continue;
+            }
+            final Map<String, Object> target = findById(content, parts[1],
+                    StringUtils.removeStart(parts[2], "id_"));
+            if (target == null) {
+                LOG.debug("componentMeta key '{}' matched no component on screen {}",
+                        override.getKey(), screenKey);
+                continue;
+            }
+            final Map<String, Object> meta = asMeta(target.get(SchemaConstants.KEY_META));
+            for (final Map.Entry<String, Object> field
+                    : ((Map<String, Object>) override.getValue()).entrySet()) {
+                if (PROTECTED_META_KEYS.contains(field.getKey())) {
+                    LOG.warn("componentMeta key '{}' tried to set meta.{} - refused",
+                            override.getKey(), field.getKey());
+                    continue;
+                }
+                meta.put(field.getKey(), field.getValue());
+            }
+        }
+    }
+
+    /**
+     * Applies the per-component style overrides a site pins in {@code defaults.json} under
+     * {@code componentStyles}, keyed {@code <screenKey>.<component>.<id>}:
+     *
+     * <pre>
+     * "componentStyles": {
+     *   "en.banner.65721cdd": { "color": "#333333" }
+     * }
+     * </pre>
+     *
+     * <p>The value is merged into that component's {@code styles}, so it can set a key the mapping
+     * left out or replace one it wrote. This exists because the mapping rules cannot express a
+     * per-instance decision: {@code hero} emits {@code styles.color} as a {@code const} of
+     * {@code #FFF}, and {@code card} emits a colour only for the {@code partial-overlay} variant, so
+     * one banner over bright imagery, or one full-overlay card over a dark photo, has no way to say
+     * so. A site-wide flag would move every banner or every card with it; this moves exactly the
+     * component named.</p>
+     *
+     * <p>The id is {@code Integer.toHexString(path.hashCode())} over the component's JCR path
+     * ({@link AbstractComponentModel#generateId}), so it is stable across exports and instances and
+     * changes only if the component moves in the repository. Because it is a hash it can in
+     * principle collide, which is why the screen key and component name are part of the key and are
+     * all required to match - a collision then misses rather than restyling the wrong component. An
+     * {@code id_} prefix on the last segment is accepted and ignored.</p>
+     *
+     * <p>A key that matches nothing is logged at debug and otherwise ignored: if the component moves
+     * and its id changes, the override stops applying and the component reverts to its mapped style,
+     * which is visible rather than silently wrong.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void applyComponentStyles(final List<Map<String, Object>> content, final Page page,
+                                      final String screenKey) {
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+                siteDefaults.forPage(page), SiteDefaults.KEY_COMPONENT_STYLES);
+        if (overrides.isEmpty()) {
+            return;
+        }
+        for (final Map.Entry<String, Object> override : overrides.entrySet()) {
+            if (!(override.getValue() instanceof Map)) {
+                continue;
+            }
+            final String[] parts = override.getKey().split("\\.");
+            if (parts.length != 3) {
+                LOG.warn("componentStyles key '{}' is not <screenKey>.<component>.<id> - ignoring it",
+                        override.getKey());
+                continue;
+            }
+            if (!parts[0].equals(screenKey)) {
+                continue;
+            }
+            final String wantedComponent = parts[1];
+            final String wantedId = StringUtils.removeStart(parts[2], "id_");
+            final Map<String, Object> target =
+                    findById(content, wantedComponent, wantedId);
+            if (target == null) {
+                LOG.debug("componentStyles key '{}' matched no component on screen {}",
+                        override.getKey(), screenKey);
+                continue;
+            }
+            mergeStyles(target, (Map<String, Object>) override.getValue());
+        }
+    }
+
+    /**
+     * @return the component on this screen whose {@code meta.component} and {@code meta.id} both
+     *         match, searched depth-first through nested {@code content} lists, or {@code null}.
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> findById(final List<Map<String, Object>> tree,
+                                                final String componentName, final String id) {
+        for (final Map<String, Object> component : tree) {
+            final Map<String, Object> meta = asMeta(component.get(SchemaConstants.KEY_META));
+            if (componentName.equals(meta.get(SchemaConstants.KEY_COMPONENT))
+                    && id.equals(meta.get(SchemaConstants.KEY_ID))) {
+                return component;
+            }
+            final Object inner = component.get(SchemaConstants.KEY_CONTENT);
+            if (inner instanceof List) {
+                final Map<String, Object> found =
+                        findById((List<Map<String, Object>>) inner, componentName, id);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Merges {@code patch} into {@code component}'s {@code styles}. When the component has none, the
+     * map is rebuilt as meta, styles, content rather than having styles appended, so the key order
+     * matches every other component's.
+     */
+    @SuppressWarnings("unchecked")
+    private static void mergeStyles(final Map<String, Object> component,
+                                    final Map<String, Object> patch) {
+        final Object existing = component.get(SchemaConstants.KEY_STYLES);
+        if (existing instanceof Map) {
+            ((Map<String, Object>) existing).putAll(patch);
+            return;
+        }
+        final Map<String, Object> rebuilt = new LinkedHashMap<>();
+        rebuilt.put(SchemaConstants.KEY_META, component.get(SchemaConstants.KEY_META));
+        rebuilt.put(SchemaConstants.KEY_STYLES, new LinkedHashMap<>(patch));
+        rebuilt.put(SchemaConstants.KEY_CONTENT, component.get(SchemaConstants.KEY_CONTENT));
+        component.clear();
+        component.putAll(rebuilt);
     }
 
     /** Depth-first search for every component in {@code tree} whose meta.component matches. */

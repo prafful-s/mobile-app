@@ -15,10 +15,17 @@
   "forms": {
     "login":                { "redirectAfterSubmit": "home" },
     "registration":         { "redirectAfterSubmit": "home", "eventType": "mobile.registration" },
-    "schedule-appointment": { "redirectAfterSubmit": "home", "eventType": "testDrive.scheduled" },
-    "test-drive":           { "redirectAfterSubmit": "home", "eventType": "testDrive.scheduled" },
+    "schedule-appointment": { "redirectAfterSubmit": "home", "eventType": "testDrive.scheduled",
+                              "toastMessage": "Thank you! Your service appointment has been scheduled." },
+    "test-drive":           { "redirectAfterSubmit": "home", "eventType": "testDrive.scheduled",
+                              "toastMessage": "Thank you! Your test drive has been scheduled." },
     "request-a-quote":      { "redirectAfterSubmit": "home" },
     "car-loan":             { "redirectAfterSubmit": "carloan-application-submitted" },
     "build-your-own":       { "redirectAfterSubmit": "home" }
-  }
+  },
+  "screenList": {
+    "textColor": "#1a1a1a",
+    "color": "#1a1a1a"
+  },
+  "extractInlineLinks": true
 }
