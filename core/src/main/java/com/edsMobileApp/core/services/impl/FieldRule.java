@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -15,6 +17,10 @@ import org.apache.commons.lang3.StringUtils;
  * <p>Exactly one operator applies per field, checked in this order:</p>
  * <ul>
  *   <li>{@code const} - a fixed value, for target fields AEM has no equivalent of</li>
+ *   <li>{@code template} - a string with {@code {fieldName}} placeholders, each substituted with
+ *       that property's authored value - for a target field built from more than one authored
+ *       property (e.g. a flight's {@code "{flightFromFullName} ({flightFromShortName}) to
+ *       {flightToFullName} ({flightToShortName})"})</li>
  *   <li>{@code extract} - a CSS selector run over an authored rich-text property</li>
  *   <li>{@code first} - the first non-blank of several candidate properties, for sites that
  *       renamed a field over time</li>
@@ -126,6 +132,32 @@ final class FieldRule {
      */
     private static final String TYPE_PRESENCE = "presence";
 
+    /**
+     * A colour, or nothing. An authored value that is not a hex colour resolves to {@code null}, so
+     * a {@code nullable} rule declaring it simply does not write and whatever an earlier rule on the
+     * same target produced stands.
+     *
+     * <p>Without this a typo wins: {@code #fffff} - five f's, seen authored on a secur-financial
+     * card - is non-blank, so it displaced the perfectly good colour the card's {@code style} had
+     * derived and the client, unable to parse it, rendered dark text on a dark photo. Failing to
+     * a sane default is visible as "the colour did not change"; failing to a bad value is not.</p>
+     */
+    private static final String TYPE_HEX_COLOR = "hexColor";
+
+    /** {@code #fff}, {@code #ffffff} or the same without the hash - what the authoring fields describe. */
+    private static final Pattern HEX_COLOR = Pattern.compile("^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$");
+
+    /**
+     * @return {@code value} unchanged when it is a hex colour, otherwise {@code null}. Returned
+     *         as authored rather than normalised, so nothing that works today changes shape.
+     */
+    static String asHexColor(final String value) {
+        return value != null && HEX_COLOR.matcher(value.trim()).matches() ? value : null;
+    }
+
+    /** Matches a {@code {fieldName}} placeholder inside a {@code template} string. */
+    private static final Pattern TEMPLATE_FIELD = Pattern.compile("\\{([^{}]+)\\}");
+
     private final String target;
     private final String from;
     private final String parentFrom;
@@ -137,11 +169,12 @@ final class FieldRule {
     private final boolean nullable;
     private final Map<String, Object> valueMap;
     private final String prefix;
+    private final String template;
 
     private FieldRule(final String target, final String from, final String parentFrom,
                       final List<String> first, final Object constant, final Extract extract,
                       final Object defaultValue, final String type, final boolean nullable,
-                      final Map<String, Object> valueMap, final String prefix) {
+                      final Map<String, Object> valueMap, final String prefix, final String template) {
         this.target = target;
         this.from = from;
         this.parentFrom = parentFrom;
@@ -153,6 +186,7 @@ final class FieldRule {
         this.nullable = nullable;
         this.valueMap = valueMap;
         this.prefix = prefix;
+        this.template = template;
     }
 
     /**
@@ -174,7 +208,8 @@ final class FieldRule {
                 string(definition.get("type")),
                 Boolean.TRUE.equals(definition.get("nullable")),
                 stringMap(definition.get("map")),
-                string(definition.get("prefix")));
+                string(definition.get("prefix")),
+                string(definition.get("template")));
     }
 
     String getTarget() {
@@ -199,6 +234,26 @@ final class FieldRule {
             return null;
         }
         return withPrefix(coerce(translate(resolve(source, parentSource))));
+    }
+
+    /**
+     * Substitutes every {@code {fieldName}} placeholder in {@link #template} with that property's
+     * authored value off {@code source} (blank/missing becomes an empty string), e.g.
+     * {@code "{flightFromFullName} ({flightFromShortName}) to {flightToFullName}
+     * ({flightToShortName})"} becomes {@code "Chicago (ORD) to Paris (CDG)"}.
+     */
+    private String applyTemplate(final Map<String, Object> source) {
+        final StringBuilder result = new StringBuilder();
+        final Matcher matcher = TEMPLATE_FIELD.matcher(template);
+        int lastEnd = 0;
+        while (matcher.find()) {
+            result.append(template, lastEnd, matcher.start());
+            final Object value = source.get(matcher.group(1));
+            result.append(value == null ? "" : String.valueOf(value));
+            lastEnd = matcher.end();
+        }
+        result.append(template, lastEnd, template.length());
+        return result.toString();
     }
 
     /**
@@ -280,6 +335,9 @@ final class FieldRule {
      * consumes anything from the component's own authored properties.
      */
     List<String> consumedProperties() {
+        if (template != null) {
+            return templateFields();
+        }
         if (extract != null) {
             final String source = extract.sourceProperty();
             return source == null ? Collections.emptyList() : List.of(source);
@@ -293,6 +351,16 @@ final class FieldRule {
         return Collections.emptyList();
     }
 
+    /** The property names named by {@code {fieldName}} placeholders in {@link #template}. */
+    private List<String> templateFields() {
+        final List<String> fields = new ArrayList<>();
+        final Matcher matcher = TEMPLATE_FIELD.matcher(template);
+        while (matcher.find()) {
+            fields.add(matcher.group(1));
+        }
+        return fields;
+    }
+
     /**
      * An authored property ({@code first}/{@code from}) is tried before {@code extract} - an author
      * who filled in a dedicated field (a content-path picker, say) meant that value; a rich-text
@@ -303,6 +371,9 @@ final class FieldRule {
     private Object resolve(final Map<String, Object> source, final Map<String, Object> parentSource) {
         if (parentFrom != null) {
             return blankToNull(parentSource.get(parentFrom));
+        }
+        if (template != null) {
+            return blankToNull(applyTemplate(source));
         }
         if (!first.isEmpty()) {
             for (final String candidate : first) {
@@ -366,6 +437,8 @@ final class FieldRule {
                 return basename(text);
             case TYPE_CATEGORY_LABEL:
                 return categoryLabel(text);
+            case TYPE_HEX_COLOR:
+                return asHexColor(text);
             default:
                 return value;
         }

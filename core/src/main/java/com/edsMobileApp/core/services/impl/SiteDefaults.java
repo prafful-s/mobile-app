@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
  *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true },
  *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown",
+ *   "screenList":        { "textColor": "...", "color": "..." },
  *   "extractInlineLinks": true
  * }
  * </pre>
@@ -76,25 +77,92 @@ final class SiteDefaults {
     /**
      * Per-screen form settings, keyed by screen key:
      * {@code "forms": { "<screen-key>": { "redirectAfterSubmit": "<screen-key>",
-     * "navigateOnSubmit": "<screen-key>", "eventType": "..." } }}.
+     * "navigateOnSubmit": "<screen-key>", "eventType": "...", "toastMessage": "...",
+     * "heading": "...", "headingAlignment": "..." } }}.
      * {@code redirectAfterSubmit} sets the screen the client opens after a successful submit
      * ({@code meta.link}); {@code navigateOnSubmit} sets an alternate post-submit navigation target
      * some forms honour ({@code meta.navigateOnSubmit}, e.g. registration); {@code eventType} sets
-     * the analytics event the submit fires ({@code meta.eventType}). Each is applied only when
-     * present and non-blank; anything absent (setting, screen, section, or file) leaves the value
-     * {@code FormBlockBuilder} already emitted. See {@code PageJsonExporterImpl#applyFormSettings}.
+     * the analytics event the submit fires ({@code meta.eventType}); {@code toastMessage} sets the
+     * confirmation text shown after a successful submit ({@code meta.toastMessage}) - needed for a
+     * form block with no authored toast/success-message field of its own; {@code heading} (and
+     * optionally {@code headingAlignment}) inserts a title directly above the form (see
+     * {@code PageJsonExporterImpl#insertFormHeading}) for a form block with no heading field of its
+     * own. Each is applied only when present and non-blank; anything absent (setting, screen,
+     * section, or file) leaves the value {@code FormBlockBuilder} already emitted. See
+     * {@code PageJsonExporterImpl#applyFormSettings}.
      */
     static final String KEY_FORMS = "forms";
     /**
      * Path to the site's destination-dropdown Content Fragment, whose {@code destination_mapping}
-     * multifield supplies the country a {@code flightResults} block should filter by, keyed by
-     * screen key: {@code "flightDestinationsFragment": "/content/dam/.../flight-source-destination-
-     * dropdown"}. A destination screen's block authors no such field itself (unlike the web block,
-     * which reads it from the URL path), so this fragment is the only source; a screen key with no
-     * matching row leaves {@code flightResults} with no {@code destination}, unchanged from today.
-     * See {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
+     * multifield supplies the airport/city code a destination screen's {@code flightResults} block
+     * should be forced to, keyed by screen key: {@code "flightDestinationsFragment": "/content/dam/
+     * .../flight-source-destination-dropdown"}. A destination screen's block authors no such field
+     * itself (unlike the web block, which reads it from the URL path), so this fragment is the only
+     * source; a screen key with no matching row leaves {@code flightResults} untouched. See
+     * {@code PageJsonExporterImpl#applyFlightDestination} and {@link FlightDestinationLookup}.
      */
     static final String KEY_FLIGHT_DESTINATIONS_FRAGMENT = "flightDestinationsFragment";
+    /**
+     * Overrides the fixed colors {@code ComponentTreeWalker#cardsBlockAsList} otherwise hardcodes
+     * for a cards-block-to-screenList conversion (a near-white {@code textColor} meant to sit over
+     * a photo, copied from the LUMA MOBILE reference's own dark-background screenList): {@code
+     * "screenList": { "textColor": "...", "color": "..." } }. {@code textColor} is the item label
+     * color, {@code color} the section's own background. Each is applied only when present and
+     * non-blank; a site that overrides neither keeps today's hardcoded values - needed by any site
+     * whose cards render on a light background, where light-on-light text would otherwise be
+     * unreadable regardless of what an individual card authored.
+     */
+    static final String KEY_SCREEN_LIST = "screenList";
+
+    /**
+     * Per-component style overrides, keyed {@code <screenKey>.<component>.<id>}:
+     *
+     * <pre>
+     * "componentStyles": {
+     *   "en.banner.65721cdd": { "color": "#333333" }
+     * }
+     * </pre>
+     *
+     * <p>The value is merged into that one component's {@code styles}, setting a key the mapping
+     * left out or replacing one it wrote. The mapping rules cannot express a per-instance decision -
+     * {@code hero} emits {@code styles.color} as a {@code const} of {@code #FFF}, and {@code card}
+     * emits a colour only for the {@code partial-overlay} variant - so a single banner over bright
+     * imagery, or a single full-overlay card over a dark photo, has no way to ask for a different
+     * colour. A site-wide setting would drag every banner or every card along with it; this moves
+     * only the component named.</p>
+     *
+     * <p>The id is the hex hash of the component's JCR path that the export already emits as
+     * {@code meta.id}, stable unless the component moves in the repository. All three segments must
+     * match, so a hash collision misses rather than restyling the wrong component; an {@code id_}
+     * prefix on the id is accepted. Absent leaves every component on its mapped styles.
+     * See {@code PageJsonExporterImpl#applyComponentStyles}.</p>
+     */
+    static final String KEY_COMPONENT_STYLES = "componentStyles";
+
+    /**
+     * Per-component {@code meta} overrides, keyed the same way as {@link #KEY_COMPONENT_STYLES}:
+     *
+     * <pre>
+     * "componentMeta": {
+     *   "wknd-club.panel.b1059ca7": { "layout": "horizontal", "wrapOverflowing": true }
+     * }
+     * </pre>
+     *
+     * <p>Where {@code componentStyles} reaches a component's {@code styles}, this reaches its
+     * {@code meta} - the half that carries layout rather than appearance. A panel's
+     * {@code layout} is what decides whether its children stack or sit side by side, and the
+     * mapping always emits {@code vertical}: the authored block carries nothing that says
+     * otherwise, so a row of feature cards cannot be expressed at all today.</p>
+     *
+     * <p>{@code id}, {@code component} and {@code order} are refused. Those three are the export's
+     * own bookkeeping - {@code order} is maintained to equal the component's index, and the other
+     * two are what every override and every client lookup keys on - so letting configuration
+     * rewrite them would break the contract rather than adjust it.</p>
+     *
+     * <p>Absent leaves every component's {@code meta} as the mapping emitted it. See
+     * {@code PageJsonExporterImpl#applyComponentMeta}.</p>
+     */
+    static final String KEY_COMPONENT_META = "componentMeta";
 
     private final Map<String, Optional<Map<String, Object>>> bySite = new ConcurrentHashMap<>();
 
