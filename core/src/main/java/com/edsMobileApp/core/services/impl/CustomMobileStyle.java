@@ -20,7 +20,7 @@ import java.util.Map;
  */
 final class CustomMobileStyle {
 
-    private static final String FIELD_NAME = "custommobilestyle";
+    static final String FIELD_NAME = "custommobilestyle";
 
     private CustomMobileStyle() {
     }
