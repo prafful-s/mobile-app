@@ -1145,13 +1145,16 @@ final class ComponentTreeWalker {
         // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
         // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
         // Specific tab), falling back to the older mobilelist*-prefixed properties and then the site
-        // level exactly as itemRenderer and the two colours already did. The colour defaults assume
-        // the reference's dark background, which is why a site on a light one overrides them.
+        // level exactly as itemRenderer and the two colours already did. A colour is emitted only when
+        // authored on the block or set at site level - there is no compiled-in colour default.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
         content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
         content.put("listType", "screenList");
-        content.put("textColor", listColor(resource, "mobilelisttextcolor", "textColor", "#f4f3f3"));
+        final Object textColor = listColor(resource, "mobilelisttextcolor", "textColor", null);
+        if (textColor != null) {
+            content.put("textColor", textColor);
+        }
         content.put("imageWidth", 130);
         content.put("itemHeight", null);
         content.put("itemRadius", null);
@@ -1164,7 +1167,10 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
-        styles.put("color", listColor(resource, "mobilelistcolor", "color", "#ffffff"));
+        final Object sectionColor = listColor(resource, "mobilelistcolor", "color", null);
+        if (sectionColor != null) {
+            styles.put("color", sectionColor);
+        }
         styles.put("marginBottom", "16");
         styles.put("marginHorizontal", "8");
 

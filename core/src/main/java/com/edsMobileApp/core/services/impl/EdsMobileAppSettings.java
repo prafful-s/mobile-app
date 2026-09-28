@@ -61,8 +61,7 @@ final class EdsMobileAppSettings {
         this.excludedPageNames = stringArray(values, "excludedPageNames", new String[] {
                 "nav", "footer", "placeholders", "language-masters", "redirects"});
         this.includeHomeScreen = boolValue(values, "includeHomeScreen", true);
-        this.styleTokens = stringArray(values, "styleTokens",
-                new String[] {"bg-default=backgroundColor:#F5F8FA"});
+        this.styleTokens = stringArray(values, "styleTokens", new String[0]);
         this.overrideEnabled = boolValue(values, "overrideEnabled", true);
         this.overridePropertyName = StringUtils.defaultIfBlank(
                 stringValue(values, "overridePropertyName"), "cbJson");

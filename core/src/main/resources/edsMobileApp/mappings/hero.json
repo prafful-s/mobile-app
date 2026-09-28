@@ -33,7 +33,6 @@
       "map": { "true": 0.5, "false": 0 }, "default": 0.5 }
   ],
   "styles": [
-    { "target": "gap", "const": 8 },
-    { "target": "color", "const": "#FFF" }
+    { "target": "gap", "const": 8 }
   ]
 }

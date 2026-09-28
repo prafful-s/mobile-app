@@ -82,22 +82,20 @@ class CardMappingTest {
     }
 
     @Test
-    void unauthoredTextColorLeavesTheStyleDerivedColour() {
-        assertEquals("#ffffff", styles(authored("style", "teaser-card")).get("color"));
-        assertEquals("#ffffff", styles(authored("style", "teaser-overlay")).get("color"));
-        // every other style maps to "", which is blank, which the nullable rule resolves to null
+    void unauthoredTextColorEmitsNoColour() {
+        assertNull(styles(authored("style", "teaser-card")).get("color"));
+        assertNull(styles(authored("style", "teaser-overlay")).get("color"));
         assertNull(styles(authored("style", "image-top")).get("color"));
     }
 
     /**
      * The secur-financial typo, authored as {@code #fffff} - five f's. Non-blank, so it used to win
-     * over the perfectly good colour the card's {@code style} derived, and the client rendered an
-     * unparseable value as dark text on a dark photo. The rule's {@code hexColor} type now drops it.
+     * and the client rendered an unparseable value. The rule's {@code hexColor} type drops it, and
+     * with no style-derived fallback the colour is simply omitted.
      */
     @Test
-    void aMalformedTextColorFallsBackToTheStyleDerivedColour() {
-        assertEquals("#ffffff",
-                styles(authored("style", "teaser-card", "textcolor", "#fffff")).get("color"));
+    void aMalformedTextColorIsDropped() {
+        assertNull(styles(authored("style", "teaser-card", "textcolor", "#fffff")).get("color"));
     }
 
     @Test

@@ -50,8 +50,6 @@
     { "target": "subtitleFontWeight", "const": "regular" }
   ],
   "styles": [
-    { "target": "color", "from": "style",
-      "map": { "teaser-overlay": "#ffffff", "teaser-card": "#ffffff", "*": "" }, "nullable": true },
     { "target": "color", "from": "textcolor", "type": "hexColor", "nullable": true }
   ]
 }
