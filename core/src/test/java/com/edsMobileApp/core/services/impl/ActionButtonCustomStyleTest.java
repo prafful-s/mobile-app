@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -72,11 +73,20 @@ class ActionButtonCustomStyleTest {
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> stylesOf(final List<Map<String, Object>> components, final String component) {
+        return (Map<String, Object>) entryFor(components, component).getOrDefault(SchemaConstants.KEY_STYLES, Map.of());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> contentOf(final List<Map<String, Object>> components, final String component) {
+        return (Map<String, Object>) entryFor(components, component).get(SchemaConstants.KEY_CONTENT);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> entryFor(final List<Map<String, Object>> components, final String component) {
         for (final Map<String, Object> entry : components) {
             final Map<String, Object> meta = (Map<String, Object>) entry.get(SchemaConstants.KEY_META);
             if (component.equals(meta.get(SchemaConstants.KEY_COMPONENT))) {
-                final Object styles = entry.get(SchemaConstants.KEY_STYLES);
-                return styles instanceof Map ? (Map<String, Object>) styles : Map.of();
+                return entry;
             }
         }
         throw new AssertionError("no '" + component + "' component in " + components);
@@ -99,5 +109,31 @@ class ActionButtonCustomStyleTest {
 
         assertEquals(20L, stylesOf(components, "button").get("marginTop"),
                 "the block's own custommobilestyle must merge onto the exported button's styles");
+    }
+
+    /**
+     * actionButton.json is a {@code skeleton} rule, so anything left in the authored content that
+     * no field targeted gets carried through as an "extra" (see appendUnconsumedExtras) -
+     * custommobilestyle is consumed separately, into styles, not by any of the rule's own fields,
+     * so without an explicit exclusion it looks unconsumed and leaks a raw duplicate into content
+     * too.
+     */
+    @Test
+    void customMobileStyleDoesNotLeakIntoASkeletonRulesContent() {
+        final Page page = context.create().page("/content/s/en/p");
+        context.create().resource(page.getPath() + "/jcr:content/root");
+        context.create().resource(page.getPath() + "/jcr:content/root/cta",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "action-button",
+                "link", "/content/s/en/somewhere",
+                "label", "Book now",
+                "style", "cta-button",
+                "custommobilestyle", new String[] {"alignment:center"});
+
+        final List<Map<String, Object>> components =
+                walkerWithMockedModelFactory().componentsOf(page, "https://assets.example.com", true, false);
+
+        assertFalse(contentOf(components, "button").containsKey("custommobilestyle"),
+                "custommobilestyle already reached styles - content must not carry a raw duplicate");
     }
 }

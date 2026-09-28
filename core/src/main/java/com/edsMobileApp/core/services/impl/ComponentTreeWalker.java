@@ -541,7 +541,10 @@ final class ComponentTreeWalker {
         }
         for (final Map.Entry<String, Object> entry : authored.entrySet()) {
             final String key = entry.getKey();
-            if (consumed.contains(key) || target.containsKey(key)) {
+            // custommobilestyle is always consumed separately, into styles (see
+            // mergeCustomStyles) - never by a rule's own fields, so it would otherwise look
+            // unconsumed here and leak a raw duplicate of what styles already carries.
+            if (consumed.contains(key) || target.containsKey(key) || CustomMobileStyle.FIELD_NAME.equals(key)) {
                 continue;
             }
             target.put(key, entry.getValue());
