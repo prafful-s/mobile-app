@@ -13,9 +13,10 @@
   "fields": [
     { "target": "items", "from": "_items", "default": [] },
     { "target": "filter", "from": "_categories", "type": "categoryRootRegex", "default": "" },
-    { "target": "layout", "from": "layout",
-      "map": { "horizontal": "horizontal", "vertical": "vertical/grid" },
+    { "target": "layout", "first": ["mobilelayout", "layout"],
+      "map": { "horizontal": "horizontal", "vertical": "vertical/grid", "vertical/grid": "vertical/grid" },
       "default": "vertical/grid" },
+    { "target": "sort", "first": ["mobilesort", "sort"], "default": "none" },
     { "target": "listType", "from": "listType", "default": "productList" },
     { "target": "textColor", "from": "textColor", "default": "#8B8B8B" },
     { "target": "itemsInRow", "const": 1 },
