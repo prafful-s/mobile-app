@@ -932,9 +932,22 @@ final class ComponentTreeWalker {
      */
     private Object listValue(final Resource block, final String property,
                              final String siteKey, final Object fallback) {
-        final Object authored = block.getValueMap().get(property);
-        if (isSet(authored)) {
-            return authored;
+        return listValue(block, new String[] {property}, siteKey, fallback);
+    }
+
+    /**
+     * As {@link #listValue(Resource, String, String, Object)}, but checking each of
+     * {@code properties} in order - the block's real EDS field name first, then any older alias
+     * that predates it - before falling to the site level and the compiled-in default.
+     */
+    private Object listValue(final Resource block, final String[] properties,
+                             final String siteKey, final Object fallback) {
+        final ValueMap props = block.getValueMap();
+        for (final String property : properties) {
+            final Object authored = props.get(property);
+            if (isSet(authored)) {
+                return authored;
+            }
         }
         if (siteDefaults != null && siteKey != null) {
             final Object site = SiteDefaults.objectMap(
@@ -1108,19 +1121,24 @@ final class ComponentTreeWalker {
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
         // the client has nothing to size a screenList overlay item against. They remain compiled-in;
-        // itemsInRow, itemRenderer and the two colours are resolvable per block or per site - see
-        // listValue. The colour defaults assume the reference's dark background, which is why a site
-        // on a light one overrides them.
+        // layout, itemsInRow, sort, itemRenderer and the two colours are resolvable per block or per
+        // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
+        // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
+        // Specific tab), falling back to the older mobilelist*-prefixed properties and then the site
+        // level exactly as itemRenderer and the two colours already did. The colour defaults assume
+        // the reference's dark background, which is why a site on a light one overrides them.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
-        content.put("layout", "horizontal");
+        content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
         content.put("listType", "screenList");
         content.put("textColor", listColor(resource, "mobilelisttextcolor", "textColor", "#f4f3f3"));
         content.put("imageWidth", 130);
         content.put("itemHeight", null);
         content.put("itemRadius", null);
-        content.put("itemsInRow", listValue(resource, "mobilelistitemsinrow", "itemsInRow", screenKeys.size()));
+        content.put("itemsInRow", listValue(resource,
+                new String[] {"mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", screenKeys.size()));
         content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
+        content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
         content.put("imageResizeMode", "cover");
 
@@ -1132,7 +1150,12 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> list = new LinkedHashMap<>();
         list.put(SchemaConstants.KEY_META, meta);
-        list.put(SchemaConstants.KEY_STYLES, styles);
+        // The block's own custommobilestyle - authored on the Cards block itself, not on any one
+        // card - is the most specific, per-instance choice, same as everywhere else this field is
+        // read (see mergeCustomStyles), so it overrides the computed styles above rather than the
+        // other way around.
+        list.put(SchemaConstants.KEY_STYLES,
+                mergeCustomStyles(styles, new GenericComponent(resource, urlService).getContent()));
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
     }

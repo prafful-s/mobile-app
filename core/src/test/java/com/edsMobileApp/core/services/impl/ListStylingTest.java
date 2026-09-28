@@ -88,6 +88,8 @@ class ListStylingTest {
         assertEquals("stacked", content(list).get("itemRenderer"), "defaults to the cards' agreed cardType");
         assertEquals("#f4f3f3", content(list).get("textColor"));
         assertEquals("#ffffff", styles(list).get("color"));
+        assertEquals("horizontal", content(list).get("layout"));
+        assertEquals("none", content(list).get("sort"));
     }
 
     // ---------- itemsInRow ----------
@@ -101,6 +103,49 @@ class ListStylingTest {
     void itemsInRowIsEmittedAsANumberNotAString() {
         final Object value = content(convert(trio("num", "mobilelistitemsinrow", 3L))).get("itemsInRow");
         assertEquals(Long.class, value.getClass(), "JCR gives a Long; it must stay a number in the JSON");
+    }
+
+    /**
+     * mobileitemsinrow is the field Universal Editor's Mobile Specific tab actually authors (see
+     * blocks/cards/_cards.json); mobilelistitemsinrow predates it and was never wired to any EDS
+     * field. The real field must win when, implausibly, both are set.
+     */
+    @Test
+    void theRealFieldTakesPrecedenceOverTheOlderAlias() {
+        assertEquals(5L, content(convert(
+                trio("bothset", "mobileitemsinrow", 5L, "mobilelistitemsinrow", 3L))).get("itemsInRow"));
+    }
+
+    @Test
+    void theBlockCanSetItemsInRowViaTheRealField() {
+        assertEquals(4L, content(convert(trio("realfield", "mobileitemsinrow", 4L))).get("itemsInRow"));
+    }
+
+    // ---------- layout ----------
+
+    @Test
+    void theBlockCanSetLayout() {
+        assertEquals("vertical/grid",
+                content(convert(trio("layout", "mobilelayout", "vertical/grid"))).get("layout"));
+    }
+
+    // ---------- sort ----------
+
+    @Test
+    void theBlockCanSetSort() {
+        assertEquals("alphabetical",
+                content(convert(trio("sort", "mobilesort", "alphabetical"))).get("sort"));
+    }
+
+    // ---------- custommobilestyle (block-level) ----------
+
+    @Test
+    void theBlocksOwnCustomMobileStyleOverridesTheComputedStyles() {
+        final Map<String, Object> list = convert(trio("customstyle",
+                "custommobilestyle", new String[] {"marginBottom:24", "gap:20"}));
+        assertEquals(24L, styles(list).get("marginBottom"));
+        assertEquals(20L, styles(list).get("gap"));
+        assertEquals("8", styles(list).get("marginHorizontal"), "an untouched style stays exactly as computed");
     }
 
     // ---------- itemRenderer ----------
