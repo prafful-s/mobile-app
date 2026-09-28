@@ -207,5 +207,55 @@ class CardsAsListTest {
                 "SKUs from any category are all kept");
         assertEquals(".*", content(list).get("filter"), "open filter never drops a category");
     }
+
+    // ---------- image width / item height from the Mobile Specific tab ----------
+
+    private Resource trio(final String name, final Object... blockProps) {
+        final Object[] props = new Object[blockProps.length + 2];
+        props[0] = "filter";
+        props[1] = "cards";
+        System.arraycopy(blockProps, 0, props, 2, blockProps.length);
+        final Resource block = context.create().resource("/content/s/en/p/jcr:content/root/" + name, props);
+        card(block.getPath() + "/a", "mexico");
+        card(block.getPath() + "/b", "poland");
+        card(block.getPath() + "/c", "united-kingdom");
+        return block;
+    }
+
+    private static final Set<String> TRIO_SCREENS = new HashSet<>(Arrays.asList("mexico", "poland", "united-kingdom"));
+
+    @Test
+    void aScreenListKeepsItsSizeDefaultsWhenNothingIsAuthored() {
+        final Map<String, Object> list = convert(trio("plain"), TRIO_SCREENS);
+        assertEquals(130, content(list).get("imageWidth"));
+        assertNull(content(list).get("itemHeight"));
+    }
+
+    @Test
+    void aScreenListReadsImageWidthAndItemHeightFromTheBlock() {
+        final Map<String, Object> list = convert(
+                trio("sized", "mobileimagewidth", 120L, "mobileitemheight", "90"), TRIO_SCREENS);
+        assertEquals(120L, content(list).get("imageWidth"));
+        assertEquals(90L, content(list).get("itemHeight"), "a text value is emitted as a number");
+    }
+
+    @Test
+    void aNonNumericSizeFallsBackToTheDefault() {
+        final Map<String, Object> list = convert(trio("junk", "mobileimagewidth", "wide"), TRIO_SCREENS);
+        assertEquals(130, content(list).get("imageWidth"));
+    }
+
+    @Test
+    void aProductListReadsImageWidthAndItemHeightFromTheBlock() {
+        final Resource block = context.create().resource("/content/s/en/p/jcr:content/root/sizedprods",
+                "filter", "cards", "mobileimagewidth", 110L, "mobileitemheight", 140L);
+        productCard(block.getPath() + "/a", "WJ08");
+        productCard(block.getPath() + "/b", "MS01");
+        productCard(block.getPath() + "/c", "LT02");
+
+        final Map<String, Object> list = walker.cardsBlockAsProductList(block, 0);
+        assertEquals(110L, content(list).get("imageWidth"));
+        assertEquals(140L, content(list).get("itemHeight"));
+    }
 }
 

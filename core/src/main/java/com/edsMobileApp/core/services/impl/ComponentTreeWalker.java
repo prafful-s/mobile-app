@@ -949,6 +949,23 @@ final class ComponentTreeWalker {
         return fallback;
     }
 
+    /**
+     * As {@link #listValue}, but emitted as a number: an authored text value is parsed, and one that
+     * is not a whole number is ignored in favour of {@code fallback} rather than sent as a string.
+     */
+    private Object listNumber(final Resource block, final String property,
+                              final String siteKey, final Integer fallback) {
+        final Object value = listValue(block, property, siteKey, fallback);
+        if (value instanceof Number || value == null) {
+            return value;
+        }
+        try {
+            return Long.valueOf(String.valueOf(value).trim());
+        } catch (final NumberFormatException notANumber) {
+            return fallback;
+        }
+    }
+
     /** As {@link #listValue}, but an authored value that is not a hex colour is ignored rather than emitted. */
     private Object listColor(final Resource block, final String property,
                              final String siteKey, final String fallback) {
@@ -1110,8 +1127,9 @@ final class ComponentTreeWalker {
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
-        // the client has nothing to size a screenList overlay item against. They remain compiled-in;
-        // layout, itemsInRow, sort, itemRenderer and the two colours are resolvable per block or per
+        // the client has nothing to size a screenList overlay item against. itemRadius and
+        // imageResizeMode remain compiled-in; imageWidth/itemHeight read the block's
+        // mobileimagewidth/mobileitemheight (see listNumber); layout, itemsInRow, sort, itemRenderer and the two colours are resolvable per block or per
         // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
         // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
         // Specific tab), falling back to the older mobilelist*-prefixed properties and then the site
@@ -1125,8 +1143,8 @@ final class ComponentTreeWalker {
         if (textColor != null) {
             content.put("textColor", textColor);
         }
-        content.put("imageWidth", 130);
-        content.put("itemHeight", null);
+        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
+        content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemRadius", null);
         content.put("itemsInRow", listValue(resource,
                 new String[] {"mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", screenKeys.size()));
@@ -1210,8 +1228,8 @@ final class ComponentTreeWalker {
         if (textColor != null) {
             content.put("textColor", textColor);
         }
-        content.put("imageWidth", 130);
-        content.put("itemHeight", null);
+        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
+        content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemsInRow", listValue(resource,
                 new String[] {"mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", 3));
         content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", "stacked"));
