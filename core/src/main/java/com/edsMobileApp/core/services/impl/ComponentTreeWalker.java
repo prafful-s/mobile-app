@@ -945,7 +945,7 @@ final class ComponentTreeWalker {
      */
     /**
      * Whether a Cards block has opted in to becoming a {@code screenList} on whatever cards it has,
-     * via a {@code mobilecardaslist} boolean authored on the block itself.
+     * via a {@code mobilerenderaslist} boolean authored on the block itself.
      *
      * <p>Absent or false - the default, and every block today - leaves the conversion exactly as it
      * was: exactly three cards, every one resolving to a screen, or no list. True relaxes both of
@@ -959,7 +959,7 @@ final class ComponentTreeWalker {
      * model or set on the node directly.</p>
      */
     private static boolean rendersCardsAsList(final Resource resource) {
-        return resource.getValueMap().get("mobilecardaslist", Boolean.FALSE);
+        return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
     }
 
     /** Every {@code card}-modelled child, however many - the opted-in counterpart to {@link #cardItemsOf}. */
@@ -1024,7 +1024,7 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * @param relaxed when the block opts in via {@code mobilecardaslist}: take however many cards it
+     * @param relaxed when the block opts in via {@code mobilerenderaslist}: take however many cards it
      *                has rather than requiring exactly three, and skip a card whose link does not
      *                resolve to a screen rather than abandoning the whole conversion. Still returns
      *                {@code null} when that leaves nothing, so an opted-in block with no screen-
