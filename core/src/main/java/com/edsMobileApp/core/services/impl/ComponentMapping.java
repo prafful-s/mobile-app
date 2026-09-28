@@ -374,6 +374,15 @@ final class ComponentMapping {
      * Every CRX property this rule reads from, across every field. Used by the walker to
      * filter extras passthrough - a property this rule consumed must not reappear as an extra.
      */
+    /** The authored property names the content fields read - styles, refs and ignoreExtras excluded. */
+    Set<String> fieldProperties() {
+        final Set<String> read = new LinkedHashSet<>();
+        for (final FieldRule field : fields) {
+            read.addAll(field.consumedProperties());
+        }
+        return read;
+    }
+
     Set<String> consumedProperties() {
         final Set<String> consumed = new LinkedHashSet<>();
         for (final FieldRule field : fields) {
