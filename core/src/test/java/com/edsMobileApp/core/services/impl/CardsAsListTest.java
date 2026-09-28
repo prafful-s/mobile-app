@@ -20,7 +20,7 @@ import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
  * A Cards block becomes a {@code screenList} only when it is exactly three cards that every one
- * resolve to an app screen. {@code mobilecardaslist} on the block relaxes both halves of that, so a
+ * resolve to an app screen. {@code mobilerenderaslist} on the block relaxes both halves of that, so a
  * block can be a list on whatever cards it has - wknd-fly's destinations block, one authored India
  * card beside two untouched placeholders, is the case it was added for.
  *
@@ -67,7 +67,7 @@ class CardsAsListTest {
     private Resource indiaBlock(final boolean optIn) {
         final Resource block = optIn
                 ? context.create().resource("/content/s/en/d/jcr:content/root/india",
-                        "filter", "cards", "mobilecardaslist", true)
+                        "filter", "cards", "mobilerenderaslist", true)
                 : context.create().resource("/content/s/en/d/jcr:content/root/india", "filter", "cards");
         card(block.getPath() + "/item", "india");
         placeholder(block.getPath() + "/item_810748578");
@@ -114,7 +114,7 @@ class CardsAsListTest {
     @Test
     void withThePropertyTheCountNoLongerMatters() {
         final Resource block = context.create().resource(
-                "/content/s/en/p/jcr:content/root/six", "filter", "cards", "mobilecardaslist", true);
+                "/content/s/en/p/jcr:content/root/six", "filter", "cards", "mobilerenderaslist", true);
         for (final String leaf : new String[] {"a", "b", "c", "d", "e", "f"}) {
             card(block.getPath() + "/" + leaf, leaf);
         }
@@ -127,7 +127,7 @@ class CardsAsListTest {
     @Test
     void withThePropertyButNoResolvingCardThereIsStillNoList() {
         final Resource block = context.create().resource(
-                "/content/s/en/p/jcr:content/root/none", "filter", "cards", "mobilecardaslist", true);
+                "/content/s/en/p/jcr:content/root/none", "filter", "cards", "mobilerenderaslist", true);
         card(block.getPath() + "/a", "somewhere-else");
         placeholder(block.getPath() + "/b");
         assertNull(convert(block, screens("india")));
@@ -136,7 +136,7 @@ class CardsAsListTest {
     @Test
     void thePropertySetToFalseIsTheSameAsAbsent() {
         final Resource block = context.create().resource(
-                "/content/s/en/d/jcr:content/root/off", "filter", "cards", "mobilecardaslist", false);
+                "/content/s/en/d/jcr:content/root/off", "filter", "cards", "mobilerenderaslist", false);
         card(block.getPath() + "/item", "india");
         placeholder(block.getPath() + "/item_2");
         placeholder(block.getPath() + "/item_3");

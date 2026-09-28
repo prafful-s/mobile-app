@@ -49,7 +49,7 @@ class ListStylingTest {
                 "style", style);
     }
 
-    /** Three cards that all resolve - the shape that converts without needing mobilecardaslist. */
+    /** Three cards that all resolve - the shape that converts without needing mobilerenderaslist. */
     private Resource trio(final String name, final Object... blockProps) {
         final Object[] props = new Object[blockProps.length + 2];
         props[0] = "filter";
