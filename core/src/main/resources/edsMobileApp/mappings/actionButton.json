@@ -4,7 +4,7 @@
   "skeleton": true,
   "fields": [
     { "target": "label", "from": "label", "default": "" },
-    { "target": "eventType", "default": "" },
+    { "target": "eventType", "from": "mobilebuttoneventtype", "default": "" },
     { "target": "linkTo", "from": "link", "type": "path", "default": "" },
     { "target": "message", "default": "" },
     {
@@ -12,14 +12,13 @@
       "from": "style",
       "map": {
         "default-button": "contained",
-        "default-button-secondary": "contained",
+        "default-button-secondary": "contained-tonal",
+        "default-button-dark": "contained-tonal",
         "default-button-link": "text",
-        "cta-button": "contained",
-        "cta-link": "text",
         "button": "contained"
       },
       "default": "contained"
     },
-    { "target": "alignment", "from": "alignment", "default": "stretch" }
+    { "target": "alignment", "from": "mobilealignment", "default": "stretch" }
   ]
 }

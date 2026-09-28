@@ -96,31 +96,5 @@
       "preFill": true,
       "alignment": "left"
     }
-  },
-  {
-    "component": "formSubmitButton",
-    "events": " --- ",
-    "formId": "",
-    "content": {
-      "link": "Home",
-      "label": "SUBMIT",
-      "events": "customEvent",
-      "formId": "coffee-quiz",
-      "message": "",
-      "alignItems": "center",
-      "customEvent": "quiz.complete"
-    },
-    "webhookUrl": "",
-    "customEvent": "custom"
-  },
-  {
-    "component": "divider",
-    "content": {
-      "size": "M",
-      "length": "M",
-      "showLine": false,
-      "alignment": "center",
-      "orientation": "vertical"
-    }
   }
 ]
