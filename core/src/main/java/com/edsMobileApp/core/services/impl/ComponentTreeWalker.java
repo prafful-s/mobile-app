@@ -654,11 +654,9 @@ final class ComponentTreeWalker {
                     }
                 }
                 // Every card has a real link (not the "#" a missing one defaults to), and none of
-                // them resolve to an app screen - e.g. they link out to some other site's page
-                // entirely (a product link resolves via its "product" base - see baseScreenKey -
-                // so it is handled above instead, never reaching this branch). Fall through to the
-                // normal per-child walk below and export each card as its own component, using
-                // whatever its own rule resolves.
+                // them resolve to an app screen - e.g. they link out to a product page instead. Fall
+                // through to the normal per-child walk below and export each card as its own
+                // component, using whatever its own rule resolves.
             }
 
             // A quiz block (e.g. Frescopa's coffee-quiz-frescopa) authors only its own behaviour
@@ -825,15 +823,11 @@ final class ComponentTreeWalker {
 
     /**
      * @return true only when every one of {@code resource}'s three cards carries a real link (not
-     *         the {@code "#"} a missing one resolves to) and none of them resolves to a known screen
-     *         - e.g. every card links out to some other site's page entirely, rather than an app
-     *         screen. A card linking to {@code product?productId=...} counts as resolved here (its
-     *         {@code product} base is a known screen - see {@link #baseScreenKey}) and so is handled
-     *         by {@link #cardsBlockAsList} instead, never reaching this method's "unresolved" case.
-     *         False for a decorative group with no links at all (nothing to fall through to), and
-     *         false for a genuine mix of screen-resolving and non-resolving cards (the
-     *         {@code isCardsBlockEligibleForList} call site keeps dropping both of those, as it
-     *         always has).
+     *         the {@code "#"} a missing one resolves to) and none of them is a known screen key -
+     *         the shape a product-linking {@code Cards} group takes. False for a decorative group
+     *         with no links at all (nothing to fall through to), and false for a genuine mix of
+     *         screen-resolving and non-resolving cards (the {@code isCardsBlockEligibleForList} call
+     *         site keeps dropping both of those, as it always has).
      */
     private boolean hasUnresolvedRealCardLink(final Resource resource, final Set<String> knownScreenKeys) {
         final List<Resource> items = cardItemsOf(resource);
@@ -850,7 +844,7 @@ final class ComponentTreeWalker {
                 continue;
             }
             final String value = (String) link;
-            if (knownScreenKeys.contains(baseScreenKey(value))) {
+            if (knownScreenKeys.contains(value)) {
                 return false;
             }
             if (!"#".equals(value)) {
@@ -858,20 +852,6 @@ final class ComponentTreeWalker {
             }
         }
         return anyRealLink;
-    }
-
-    /**
-     * The screen-key portion of a card's resolved {@code link} - everything before its first
-     * {@code ?} or {@code #}, or {@code key} itself when it carries neither. A product-linking
-     * card's link ({@code product?productId=...}) resolves to the {@code product} screen this way,
-     * letting it join a {@code screenList} alongside cards that link to a screen directly; the query
-     * string is never stripped from the emitted item itself (see {@link #cardsBlockAsList}), only
-     * from the value tested against {@code knownScreenKeys}, so the client still navigates to that
-     * exact product rather than a bare {@code product} screen.
-     */
-    private static String baseScreenKey(final String key) {
-        final int cut = StringUtils.indexOfAny(key, '?', '#');
-        return cut >= 0 ? key.substring(0, cut) : key;
     }
 
     /**
@@ -1081,7 +1061,7 @@ final class ComponentTreeWalker {
                     cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
             final Object link = mapped.get("link");
             final String key = link instanceof String ? (String) link : null;
-            if (StringUtils.isBlank(key) || !knownScreenKeys.contains(baseScreenKey(key))) {
+            if (StringUtils.isBlank(key) || !knownScreenKeys.contains(key)) {
                 if (relaxed) {
                     // An empty placeholder, or a card linking somewhere the app has no screen for.
                     // It contributes no list item; the cards that do resolve still make the list.
