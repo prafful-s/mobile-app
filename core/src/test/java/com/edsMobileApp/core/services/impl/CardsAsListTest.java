@@ -142,4 +142,70 @@ class CardsAsListTest {
         placeholder(block.getPath() + "/item_3");
         assertNull(convert(block, screens("india")));
     }
+
+    // ---------- productList: a Cards block of product-linking cards ----------
+
+    private Resource productCard(final String path, final String sku) {
+        return context.create().resource(path, "model", "card",
+                "image", "/content/dam/s/" + sku + ".jpg",
+                "text", "<h2>" + sku + "</h2>",
+                "link", "/content/s/en/product?productId=" + sku);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> content(final Map<String, Object> list) {
+        return (Map<String, Object>) list.get("content");
+    }
+
+    @Test
+    void threeProductLinkingCardsBecomeAProductList() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/prods", "filter", "cards");
+        productCard(block.getPath() + "/a", "WJ08");
+        productCard(block.getPath() + "/b", "MS01");
+        productCard(block.getPath() + "/c", "LT02");
+
+        final Map<String, Object> list = walker.cardsBlockAsProductList(block, 0);
+        assertNotNull(list, "three product-linking cards must convert");
+        assertEquals(List.of("WJ08", "MS01", "LT02"), content(list).get("items"));
+        assertEquals("productList", content(list).get("listType"));
+        assertEquals(".*", content(list).get("filter"), "open filter - every SKU shows");
+        assertEquals(3, content(list).get("itemsInRow"), "defaults to three across");
+    }
+
+    @Test
+    void twoProductLinkingCardsAreNotAProductList() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/pair", "filter", "cards");
+        productCard(block.getPath() + "/a", "WJ08");
+        productCard(block.getPath() + "/b", "MS01");
+        assertNull(walker.cardsBlockAsProductList(block, 0), "two is not more than two");
+    }
+
+    @Test
+    void aCardWithoutAProductLinkLeavesTheBlockToTheNormalWalk() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/mixed", "filter", "cards");
+        productCard(block.getPath() + "/a", "WJ08");
+        productCard(block.getPath() + "/b", "MS01");
+        card(block.getPath() + "/c", "some-screen");
+        assertNull(walker.cardsBlockAsProductList(block, 0),
+                "one card opens no product, so the whole block is not a product list");
+    }
+
+    @Test
+    void everySkuShowsUnderAnOpenFilterRegardlessOfCategory() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/cat", "filter", "cards");
+        productCard(block.getPath() + "/a", "MP01");
+        productCard(block.getPath() + "/b", "WSH06");
+        productCard(block.getPath() + "/c", "24-MG01");
+
+        final Map<String, Object> list = walker.cardsBlockAsProductList(block, 0);
+        assertNotNull(list);
+        assertEquals(List.of("MP01", "WSH06", "24-MG01"), content(list).get("items"),
+                "SKUs from any category are all kept");
+        assertEquals(".*", content(list).get("filter"), "open filter never drops a category");
+    }
 }
+

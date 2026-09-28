@@ -640,6 +640,13 @@ final class ComponentTreeWalker {
                     sink.add(list);
                     continue;
                 }
+                // Three or more cards that all open a product (link carries ?productId=<sku>) collapse
+                // into one productList, the same shape category-products-lister builds from a folder.
+                final Map<String, Object> productList = cardsBlockAsProductList(child, sink.size());
+                if (productList != null) {
+                    sink.add(productList);
+                    continue;
+                }
                 if (isCardsBlockEligibleForList(child)
                         && !hasUnresolvedRealCardLink(child, knownScreenKeys)) {
                     // Either no card carries a link at all (a decorative icon strip - Luma's
@@ -1184,6 +1191,107 @@ final class ComponentTreeWalker {
                 mergeCustomStyles(styles, new GenericComponent(resource, urlService).getContent()));
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
+    }
+
+    /**
+     * Converts a Cards block of three or more product-linking cards into one {@code list} of
+     * {@code listType: productList}, the same collapse {@code category-products-lister} makes from a
+     * folder walk - {@code items} the products' SKUs.
+     *
+     * <p>A card carries its product in the {@code ?productId=<sku>} its resolved {@code link} ends
+     * with (a product page link, not an app-screen key - those become a {@code screenList} above).
+     * The SKU is read back off that link, using the same {@code card} rule the per-card export uses
+     * so this stays in step with link resolution. {@code filter} is left open ({@code .*}) rather
+     * than derived from a category: the cards can span categories and every SKU must show.</p>
+     *
+     * @return the {@code list} component, or {@code null} when the block is not three-plus cards,
+     *         the {@code card} rule is not loaded, or any card's link carries no product SKU - in
+     *         which case the block is left to its normal per-card walk
+     */
+    // package-private so CardsAsListTest can drive it directly.
+    Map<String, Object> cardsBlockAsProductList(final Resource resource, final int order) {
+        final List<Resource> items = allCardItemsOf(resource);
+        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
+        if (items == null || cardRule == null || items.size() <= 2) {
+            return null;
+        }
+        final List<String> skus = new ArrayList<>(items.size());
+        for (final Resource item : items) {
+            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
+            final Map<String, Object> mapped =
+                    cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
+            final String sku = productIdOf(mapped.get("link"));
+            if (sku == null) {
+                // A card that does not open a product - this is not a product list. Leave the whole
+                // block to the normal per-card walk rather than emit a list missing an item.
+                return null;
+            }
+            skus.add(sku);
+        }
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "list");
+
+        // Presentation mirrors the screenList conversion (see cardsBlockAsList) - layout, itemsInRow,
+        // sort, itemRenderer and the colours are resolvable per block or per site, everything else is
+        // the compiled-in shape a productList item needs.
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("items", skus);
+        // Open filter: the cards can span categories, so every SKU shows regardless of category.
+        content.put("filter", ".*");
+        content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
+        content.put("listType", "productList");
+        final Object textColor = listColor(resource, "mobilelisttextcolor", "textColor", null);
+        if (textColor != null) {
+            content.put("textColor", textColor);
+        }
+        content.put("imageWidth", 130);
+        content.put("itemHeight", null);
+        content.put("itemsInRow", listValue(resource,
+                new String[] {"mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", 3));
+        content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", "stacked"));
+        content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
+        content.put("filterProperty", "Category");
+        content.put("imageResizeMode", "cover");
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("gap", 12);
+        final Object sectionColor = listColor(resource, "mobilelistcolor", "color", null);
+        if (sectionColor != null) {
+            styles.put("color", sectionColor);
+        }
+        styles.put("marginBottom", "16");
+        styles.put("marginHorizontal", "8");
+
+        final Map<String, Object> list = new LinkedHashMap<>();
+        list.put(SchemaConstants.KEY_META, meta);
+        list.put(SchemaConstants.KEY_STYLES,
+                mergeCustomStyles(styles, new GenericComponent(resource, urlService).getContent()));
+        list.put(SchemaConstants.KEY_CONTENT, content);
+        return list;
+    }
+
+    /**
+     * The {@code productId} query parameter of a resolved card link ({@code product?productId=SKU}),
+     * or {@code null} when the link carries none - the link does not open a product.
+     */
+    private static String productIdOf(final Object link) {
+        if (!(link instanceof String)) {
+            return null;
+        }
+        final int query = ((String) link).indexOf('?');
+        if (query < 0) {
+            return null;
+        }
+        for (final String pair : ((String) link).substring(query + 1).split("&")) {
+            final int eq = pair.indexOf('=');
+            if (eq > 0 && "productId".equals(pair.substring(0, eq))) {
+                return StringUtils.trimToNull(pair.substring(eq + 1));
+            }
+        }
+        return null;
     }
 
     /**

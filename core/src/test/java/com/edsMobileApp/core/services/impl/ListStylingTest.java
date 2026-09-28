@@ -86,8 +86,8 @@ class ListStylingTest {
         final Map<String, Object> list = convert(trio("plain"));
         assertEquals(3, content(list).get("itemsInRow"), "defaults to the number of items");
         assertEquals("stacked", content(list).get("itemRenderer"), "defaults to the cards' agreed cardType");
-        assertEquals("#f4f3f3", content(list).get("textColor"));
-        assertEquals("#ffffff", styles(list).get("color"));
+        assertNull(content(list).get("textColor"), "no colour is emitted unless authored");
+        assertNull(styles(list).get("color"), "no colour is emitted unless authored");
         assertEquals("horizontal", content(list).get("layout"));
         assertEquals("none", content(list).get("sort"));
     }
@@ -179,15 +179,13 @@ class ListStylingTest {
     }
 
     /**
-     * The secur-financial typo: five f's. Non-blank, so without the guard it wins over a perfectly
-     * good default and the client renders an unparseable colour.
+     * The secur-financial typo: five f's. Non-blank, so without the guard it would win and the client
+     * would render an unparseable colour; instead the colour is omitted entirely.
      */
     @Test
     void aMalformedHexIsIgnoredRatherThanEmitted() {
-        assertEquals("#f4f3f3",
-                content(convert(trio("typo", "mobilelisttextcolor", "#fffff"))).get("textColor"));
-        assertEquals("#ffffff",
-                styles(convert(trio("typo2", "mobilelistcolor", "not-a-colour"))).get("color"));
+        assertNull(content(convert(trio("typo", "mobilelisttextcolor", "#fffff"))).get("textColor"));
+        assertNull(styles(convert(trio("typo2", "mobilelistcolor", "not-a-colour"))).get("color"));
     }
 
     // ---------- the shared validator ----------
