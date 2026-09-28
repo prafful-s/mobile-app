@@ -142,4 +142,26 @@ class CardsAsListTest {
         placeholder(block.getPath() + "/item_3");
         assertNull(convert(block, screens("india")));
     }
+
+    /**
+     * Frescopa's "Top sellers" shape - three cards each linking a specific product, not a screen
+     * directly. Every link's base ({@code product}, before its {@code ?productId=...}) is a known
+     * screen, so the strict three-of-three path converts it without needing mobilerenderaslist - and
+     * the query string survives verbatim in the emitted item, since the client needs the exact
+     * product, not just the product screen.
+     */
+    @Test
+    void aProductLinkResolvesByItsBaseScreenAndKeepsItsQueryString() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/topSellers", "filter", "cards");
+        card(block.getPath() + "/a", "product?productId=aaa111");
+        card(block.getPath() + "/b", "product?productId=bbb222");
+        card(block.getPath() + "/c", "product?productId=ccc333");
+
+        final Map<String, Object> list = convert(block, screens("product"));
+        assertNotNull(list, "every card resolves via its product base screen, even without the property");
+        assertEquals(
+                List.of("product?productId=aaa111", "product?productId=bbb222", "product?productId=ccc333"),
+                items(list));
+    }
 }
