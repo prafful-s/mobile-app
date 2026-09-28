@@ -12,6 +12,7 @@
       "from": "style",
       "map": {
         "default-button": "contained",
+        "default-button-secondary": "contained",
         "default-button-link": "text",
         "cta-button": "contained",
         "cta-link": "text",
