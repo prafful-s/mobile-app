@@ -105,4 +105,27 @@ class CategoryProductsListerTest {
         assertEquals("stacked", map(authored("itemRenderer", "stacked")).get("itemRenderer"));
     }
 
+    /** The lister's own Item variant dropdown - every option passes through, single image included. */
+    @Test
+    void mobileItemRendererSetsTheRenderer() {
+        assertEquals("image-text-one-line",
+                map(authored("mobileitemrenderer", "image-text-one-line")).get("itemRenderer"));
+        assertEquals("overlay", map(authored("mobileitemrenderer", "overlay")).get("itemRenderer"));
+        assertEquals("stacked", map(authored("mobileitemrenderer", "stacked")).get("itemRenderer"));
+        assertEquals("image", map(authored("mobileitemrenderer", "image")).get("itemRenderer"));
+    }
+
+    @Test
+    void mobileItemRendererWinsOverMobileCardStyle() {
+        assertEquals("image",
+                map(authored("mobileitemrenderer", "image", "mobilecardstyle", "below")).get("itemRenderer"));
+    }
+
+    @Test
+    void layoutAndSortComeFromTheMobileTab() {
+        final Map<String, Object> mapped = map(authored("mobilelayout", "vertical/grid", "mobilesort", "alphabetical"));
+        assertEquals("vertical/grid", mapped.get("layout"));
+        assertEquals("alphabetical", mapped.get("sort"));
+    }
+
 }
