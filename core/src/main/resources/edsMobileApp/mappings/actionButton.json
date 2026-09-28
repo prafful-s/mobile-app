@@ -20,6 +20,6 @@
       },
       "default": "contained"
     },
-    { "target": "alignment", "default": "stretch" }
+    { "target": "alignment", "from": "alignment", "default": "stretch" }
   ]
 }
