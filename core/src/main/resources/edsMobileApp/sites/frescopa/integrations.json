@@ -1,16 +1,38 @@
 {
   "aep": {
-    "imsOrg": {
-      "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
-      "name": "Adobe Demo System Shared",
-      "tenantID": "demosystem4",
-      "acstenant": null,
-      "__typename": "IMSOrg"
-    },
-    "sandbox": "public-frescopa"
+   "id": 11807,
+   "imsOrg": {
+    "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+    "name": "Adobe Demo System Shared",
+    "tenantID": "demosystem4",
+    "__typename": "IMSOrg",
+    "targetClientCode": "demosystem4"
+   },
+   "sandbox": "public-frescopa",
+   "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+   "__typename": "AEP",
+   "sandboxName": "public-frescopa"
+  },
+  "imsOrg": {
+   "id": "0E061E2D61F93F260A495FD6@AdobeOrg",
+   "name": "Adobe Demo System Shared",
+   "tenantID": "demosystem4",
+   "__typename": "IMSOrg",
+   "targetClientCode": "demosystem4"
   },
   "launch": {
-    "appId": "59610d662d36/eb9ca7682c60/launch-8c0c4cf20108-development",
-    "propertyName": "trehan - Frescopa (mobile)"
+   "id": 9377,
+   "type": "mobile",
+   "aepID": 11807,
+   "appID": "59610d662d36/eb9ca7682c60/launch-8c0c4cf20108-development",
+   "appId": "59610d662d36/eb9ca7682c60/launch-8c0c4cf20108-development",
+   "imsOrgID": "0E061E2D61F93F260A495FD6@AdobeOrg",
+   "companyId": "CO248bee8aabe04648b1421ee94f8e416b",
+   "createdAt": 1653032471301,
+   "__typename": "Launch",
+   "propertyID": "PR4311912ac639434384d6fe801d286ee1",
+   "sandboxName": "public-frescopa",
+   "propertyName": "Frescopa (DO NOT DELETE) (mobile)",
+   "primarySolution": "AEP"
   }
-}
+ }
