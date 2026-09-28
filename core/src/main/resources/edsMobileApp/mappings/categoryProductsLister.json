@@ -20,7 +20,7 @@
     { "target": "listType", "from": "listType", "default": "productList" },
     { "target": "textColor", "from": "textColor", "default": "#8B8B8B" },
     { "target": "itemsInRow", "const": 1 },
-    { "target": "itemRenderer", "first": ["mobilecardstyle", "itemRenderer"],
+    { "target": "itemRenderer", "first": ["mobileitemrenderer", "mobilecardstyle", "itemRenderer"],
       "map": {
         "one-line": "image-text-one-line",
         "overlay": "overlay",
@@ -28,6 +28,7 @@
         "partial-overlay": "partial-overlay",
         "stacked": "stacked",
         "image-text-one-line": "image-text-one-line",
+        "image": "image",
         "*": "image-text-one-line"
       }, "default": "image-text-one-line" },
     { "target": "imageResizeMode", "first": ["mobileimagestyle", "imageResizeMode"],
