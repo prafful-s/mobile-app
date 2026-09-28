@@ -926,6 +926,23 @@ final class ComponentTreeWalker {
         return fallback;
     }
 
+    /**
+     * As {@link #listValue}, but emitted as a number: an authored text value is parsed, and one that
+     * is not a whole number is ignored in favour of {@code fallback} rather than sent as a string.
+     */
+    private Object listNumber(final Resource block, final String property,
+                              final String siteKey, final Integer fallback) {
+        final Object value = listValue(block, property, siteKey, fallback);
+        if (value instanceof Number || value == null) {
+            return value;
+        }
+        try {
+            return Long.valueOf(String.valueOf(value).trim());
+        } catch (final NumberFormatException notANumber) {
+            return fallback;
+        }
+    }
+
     /** As {@link #listValue}, but an authored value that is not a hex colour is ignored rather than emitted. */
     private Object listColor(final Resource block, final String property,
                              final String siteKey, final String fallback) {
@@ -1087,7 +1104,9 @@ final class ComponentTreeWalker {
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
-        // the client has nothing to size a screenList overlay item against. They remain compiled-in;
+        // the client has nothing to size a screenList overlay item against. itemRadius and
+        // imageResizeMode remain compiled-in; imageWidth/itemHeight read the block's
+        // mobileimagewidth/mobileitemheight (see listNumber);
         // itemsInRow, itemRenderer and the two colours are resolvable per block or per site - see
         // listValue. The colour defaults assume the reference's dark background, which is why a site
         // on a light one overrides them.
@@ -1096,8 +1115,8 @@ final class ComponentTreeWalker {
         content.put("layout", "horizontal");
         content.put("listType", "screenList");
         content.put("textColor", listColor(resource, "mobilelisttextcolor", "textColor", "#f4f3f3"));
-        content.put("imageWidth", 130);
-        content.put("itemHeight", null);
+        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
+        content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemRadius", null);
         content.put("itemsInRow", listValue(resource, "mobilelistitemsinrow", "itemsInRow", screenKeys.size()));
         content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
