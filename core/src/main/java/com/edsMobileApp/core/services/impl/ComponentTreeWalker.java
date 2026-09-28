@@ -723,13 +723,8 @@ final class ComponentTreeWalker {
             }
             final ComponentMapping mapping = base == null ? null : base.effectiveFor(authored);
             if (mapping != null) {
-                // A custommobilestyle row naming a field the rule reads (a lister's imageWidth:120)
-                // sets that field; every other row stays a style, merged below.
-                final Map<String, Object> fieldOverrides =
-                        customFieldOverrides(CustomMobileStyle.asMap(authored), mapping.fieldProperties());
-                final Map<String, Object> ruleSource = withOverrides(
-                        withContentFragmentFolderRef(mapping, withContentFragmentRef(mapping, authored, child), child),
-                        fieldOverrides);
+                final Map<String, Object> ruleSource =
+                        withContentFragmentFolderRef(mapping, withContentFragmentRef(mapping, authored, child), child);
                 final Map<String, Object> mapped = mapping.apply(ruleSource, sectionProps);
                 if (mapped.isEmpty()) {
                     // The rule matched a component with none of its source fields authored. An empty
@@ -740,8 +735,7 @@ final class ComponentTreeWalker {
                 } else {
                     componentName = mapping.getComponent();
                     content = new LinkedHashMap<>(mapped);
-                    styles = mergeCustomStyles(mapping.applyStyles(ruleSource, sectionProps), authored,
-                            fieldOverrides.keySet());
+                    styles = mergeCustomStyles(mapping.applyStyles(ruleSource, sectionProps), authored);
                     if (mapping.isSkeleton()) {
                         // Extras come from the component's own properties only - a referenced
                         // fragment's fields that no rule targeted stay internal, not leaked as extras.
@@ -811,43 +805,12 @@ final class ComponentTreeWalker {
      */
     private static Map<String, Object> mergeCustomStyles(final Map<String, Object> mapped,
                                                           final Map<String, Object> authored) {
-        return mergeCustomStyles(mapped, authored, Collections.emptySet());
-    }
-
-    /** As above, skipping the rows already spent on content fields (see customFieldOverrides). */
-    private static Map<String, Object> mergeCustomStyles(final Map<String, Object> mapped,
-                                                          final Map<String, Object> authored,
-                                                          final Set<String> usedAsFields) {
-        final Map<String, Object> custom = new LinkedHashMap<>(CustomMobileStyle.asMap(authored));
-        custom.keySet().removeAll(usedAsFields);
+        final Map<String, Object> custom = CustomMobileStyle.asMap(authored);
         if (custom.isEmpty()) {
             return mapped;
         }
         final Map<String, Object> merged = new LinkedHashMap<>(mapped);
         merged.putAll(custom);
-        return merged;
-    }
-
-    /** The custommobilestyle rows whose key is a property one of the rule's fields reads. */
-    static Map<String, Object> customFieldOverrides(final Map<String, Object> custom,
-                                                    final Set<String> fieldProperties) {
-        final Map<String, Object> overrides = new LinkedHashMap<>();
-        for (final Map.Entry<String, Object> row : custom.entrySet()) {
-            if (fieldProperties.contains(row.getKey())) {
-                overrides.put(row.getKey(), row.getValue());
-            }
-        }
-        return overrides;
-    }
-
-    /** {@code source} with {@code overrides} laid on top; {@code source} itself when there are none. */
-    private static Map<String, Object> withOverrides(final Map<String, Object> source,
-                                                     final Map<String, Object> overrides) {
-        if (overrides.isEmpty()) {
-            return source;
-        }
-        final Map<String, Object> merged = new LinkedHashMap<>(source);
-        merged.putAll(overrides);
         return merged;
     }
 
