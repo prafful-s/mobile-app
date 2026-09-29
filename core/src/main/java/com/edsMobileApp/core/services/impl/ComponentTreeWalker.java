@@ -1131,10 +1131,10 @@ final class ComponentTreeWalker {
         meta.put(SchemaConstants.KEY_COMPONENT, "list");
 
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
-        // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
+        // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResize size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
         // the client has nothing to size a screenList overlay item against. itemRadius and
-        // imageResizeMode remain compiled-in; imageWidth/itemHeight read the block's
+        // imageResize remain compiled-in; imageWidth/itemHeight read the block's
         // mobileimagewidth/mobileitemheight (see listNumber); layout, itemsInRow, sort, itemRenderer and the two colours are resolvable per block or per
         // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
         // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
@@ -1157,7 +1157,7 @@ final class ComponentTreeWalker {
         content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResizeMode", "cover");
+        content.put("imageResize", "cover");
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1242,7 +1242,7 @@ final class ComponentTreeWalker {
         content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", "stacked"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResizeMode", "cover");
+        content.put("imageResize", "cover");
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
