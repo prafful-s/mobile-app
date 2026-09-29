@@ -133,6 +133,57 @@ class CardsAsListTest {
         assertNull(convert(block, screens("india")));
     }
 
+    private Resource cardWithResize(final String path, final String leaf, final String resize) {
+        return context.create().resource(path, "model", "card",
+                "image", "/content/dam/s/" + leaf + ".jpg",
+                "text", "<h2>" + leaf + "</h2>",
+                "link", "/content/s/en/" + leaf,
+                "mobileimagestyle", resize);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object listImageResize(final Map<String, Object> list) {
+        return ((Map<String, Object>) list.get("content")).get("imageResize");
+    }
+
+    @Test
+    void theListsImageResizeFollowsTheCardsWhenTheyAgree() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/contain", "filter", "cards");
+        cardWithResize(block.getPath() + "/a", "mexico", "contain");
+        cardWithResize(block.getPath() + "/b", "poland", "contain");
+        cardWithResize(block.getPath() + "/c", "united-kingdom", "contain");
+
+        assertEquals("contain",
+                listImageResize(convert(block, screens("mexico", "poland", "united-kingdom"))));
+    }
+
+    @Test
+    void theListsImageResizeIsCoverWhenTheCardsDisagree() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/mixed", "filter", "cards");
+        cardWithResize(block.getPath() + "/a", "mexico", "contain");
+        cardWithResize(block.getPath() + "/b", "poland", "contain");
+        cardWithResize(block.getPath() + "/c", "united-kingdom", "cover");
+
+        assertEquals("cover",
+                listImageResize(convert(block, screens("mexico", "poland", "united-kingdom"))));
+    }
+
+    @Test
+    void aProductListsImageResizeFollowsTheCardsToo() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/prodresize", "filter", "cards");
+        for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
+            context.create().resource(block.getPath() + "/" + sku, "model", "card",
+                    "image", "/content/dam/s/" + sku + ".jpg",
+                    "text", "<h2>" + sku + "</h2>",
+                    "link", "/content/s/en/product?productId=" + sku,
+                    "mobileimagestyle", "contain");
+        }
+        assertEquals("contain", listImageResize(walker.cardsBlockAsProductList(block, 0)));
+    }
+
     /** Frescopa's "Shop all products": three cards open the same "coffee" screen. */
     @Test
     void cardsOpeningTheSameScreenAreListedOnce() {

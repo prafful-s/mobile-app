@@ -1082,6 +1082,7 @@ final class ComponentTreeWalker {
         final List<String> screenKeys = new ArrayList<>(items.size());
         final Map<String, String> thumbnails = new LinkedHashMap<>();
         final Set<String> cardTypes = new LinkedHashSet<>();
+        final Set<String> imageResizes = new LinkedHashSet<>();
         for (final Resource item : items) {
             final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
             final Map<String, Object> mapped =
@@ -1111,6 +1112,10 @@ final class ComponentTreeWalker {
             if (cardType instanceof String && StringUtils.isNotBlank((String) cardType)) {
                 cardTypes.add((String) cardType);
             }
+            final Object imageResize = mapped.get("imageResize");
+            if (imageResize instanceof String && StringUtils.isNotBlank((String) imageResize)) {
+                imageResizes.add((String) imageResize);
+            }
         }
         if (screenKeys.isEmpty()) {
             // Only reachable when relaxed - the strict path returns null on the first card that
@@ -1121,6 +1126,8 @@ final class ComponentTreeWalker {
         // cards' cardType when every card in the group agreed on one; otherwise keep the LUMA
         // MOBILE reference's "overlay" default.
         final String itemRenderer = cardTypes.size() == 1 ? cardTypes.iterator().next() : "overlay";
+        // Likewise imageResize is list-wide: the cards' own value when they all agree, else "cover".
+        final String imageResize = imageResizes.size() == 1 ? imageResizes.iterator().next() : "cover";
         if (screenThumbnailOverrides != null) {
             screenThumbnailOverrides.putAll(thumbnails);
         }
@@ -1134,7 +1141,7 @@ final class ComponentTreeWalker {
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResize size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
         // the client has nothing to size a screenList overlay item against. itemRadius and
-        // imageResize remain compiled-in; imageWidth/itemHeight read the block's
+        // remain compiled-in, imageResize follows the cards; imageWidth/itemHeight read the block's
         // mobileimagewidth/mobileitemheight (see listNumber); layout, itemsInRow, sort, itemRenderer and the two colours are resolvable per block or per
         // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
         // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
@@ -1157,7 +1164,7 @@ final class ComponentTreeWalker {
         content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", "cover");
+        content.put("imageResize", imageResize);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1204,6 +1211,7 @@ final class ComponentTreeWalker {
             return null;
         }
         final List<String> skus = new ArrayList<>(items.size());
+        final Set<String> imageResizes = new LinkedHashSet<>();
         for (final Resource item : items) {
             final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
             final Map<String, Object> mapped =
@@ -1215,7 +1223,12 @@ final class ComponentTreeWalker {
                 return null;
             }
             skus.add(sku);
+            final Object cardResize = mapped.get("imageResize");
+            if (cardResize instanceof String && StringUtils.isNotBlank((String) cardResize)) {
+                imageResizes.add((String) cardResize);
+            }
         }
+        final String imageResize = imageResizes.size() == 1 ? imageResizes.iterator().next() : "cover";
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
@@ -1242,7 +1255,7 @@ final class ComponentTreeWalker {
         content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", "stacked"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", "cover");
+        content.put("imageResize", imageResize);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
