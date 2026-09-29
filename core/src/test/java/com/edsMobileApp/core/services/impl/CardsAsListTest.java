@@ -169,7 +169,7 @@ class CardsAsListTest {
         assertNotNull(list, "three product-linking cards must convert");
         assertEquals(List.of("WJ08", "MS01", "LT02"), content(list).get("items"));
         assertEquals("productList", content(list).get("listType"));
-        assertEquals(".*", content(list).get("filter"), "open filter - every SKU shows");
+        assertNull(content(list).get("filter"), "no filter - the list is driven by the explicit SKUs");
         assertEquals(3, content(list).get("itemsInRow"), "defaults to three across");
     }
 
@@ -194,7 +194,7 @@ class CardsAsListTest {
     }
 
     @Test
-    void everySkuShowsUnderAnOpenFilterRegardlessOfCategory() {
+    void onlyTheCardsOwnSkusAreListedRegardlessOfCategory() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/cat", "filter", "cards");
         productCard(block.getPath() + "/a", "MP01");
@@ -204,8 +204,8 @@ class CardsAsListTest {
         final Map<String, Object> list = walker.cardsBlockAsProductList(block, 0);
         assertNotNull(list);
         assertEquals(List.of("MP01", "WSH06", "24-MG01"), content(list).get("items"),
-                "SKUs from any category are all kept");
-        assertEquals(".*", content(list).get("filter"), "open filter never drops a category");
+                "only the SKUs harvested from these cards are listed");
+        assertNull(content(list).get("filter"), "no filter - the client must not broaden to the catalog");
     }
 }
 
