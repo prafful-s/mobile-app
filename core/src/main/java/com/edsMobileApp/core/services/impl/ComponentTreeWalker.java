@@ -1096,6 +1096,12 @@ final class ComponentTreeWalker {
                 }
                 return null;
             }
+            if (screenKeys.contains(key)) {
+                // Several cards can open the same screen (Frescopa's Bagged Coffee / Coffee Pods /
+                // Bundles all open "coffee"); a list item is a screen, so it is listed once - the
+                // first card wins, including its thumbnail and card type.
+                continue;
+            }
             screenKeys.add(key);
             final Object image = mapped.get("image");
             if (image instanceof String && StringUtils.isNotBlank((String) image)) {

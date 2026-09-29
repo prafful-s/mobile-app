@@ -133,6 +133,22 @@ class CardsAsListTest {
         assertNull(convert(block, screens("india")));
     }
 
+    /** Frescopa's "Shop all products": three cards open the same "coffee" screen. */
+    @Test
+    void cardsOpeningTheSameScreenAreListedOnce() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/dupes", "filter", "cards", "mobilerenderaslist", true);
+        card(block.getPath() + "/a", "machines");
+        card(block.getPath() + "/b", "coffee");
+        card(block.getPath() + "/c", "coffee");
+        card(block.getPath() + "/d", "coffee");
+        card(block.getPath() + "/e", "accessories");
+
+        final Map<String, Object> list = convert(block, screens("machines", "coffee", "accessories"));
+        assertNotNull(list);
+        assertEquals(List.of("machines", "coffee", "accessories"), items(list));
+    }
+
     @Test
     void thePropertySetToFalseIsTheSameAsAbsent() {
         final Resource block = context.create().resource(

@@ -61,17 +61,17 @@ class CardMappingTest {
     }
 
     @Test
-    void unauthoredMobileCardStyleLeavesWebStyleUntouched() {
-        assertEquals("overlay", map(authored("style", "teaser-card")).get("cardType"));
-        assertEquals("partial-overlay", map(authored("style", "teaser-overlay")).get("cardType"));
-        assertEquals("image-text-one-line", map(authored("style", "image-left")).get("cardType"));
-        assertEquals("stacked", map(authored("style", "image-top")).get("cardType"));
+    void cardTypeIsReadFromMobileCardStyleOnly() {
+        // The web "style" no longer derives a cardType; unauthored means the "stacked" default.
+        assertEquals("stacked", map(authored("style", "teaser-card")).get("cardType"));
+        assertEquals("stacked", map(authored("style", "teaser-overlay")).get("cardType"));
+        assertEquals("stacked", map(authored("style", "image-left")).get("cardType"));
         assertEquals("stacked", map(authored()).get("cardType"));
     }
 
     @Test
-    void blankMobileCardStyleIsTreatedAsUnauthored() {
-        assertEquals("overlay",
+    void blankMobileCardStyleFallsBackToStacked() {
+        assertEquals("stacked",
                 map(authored("style", "teaser-card", "mobilecardstyle", "")).get("cardType"));
     }
 
