@@ -417,9 +417,15 @@ final class FieldRule {
             return toCategoryRoot(value);
         }
         if (TYPE_CATEGORY_ROOT_REGEX.equals(type)) {
-            final Object root = toCategoryRoot(value);
-            final String text = root == null ? "" : String.valueOf(root);
-            return text.isEmpty() ? "" : text + ".*";
+            // Every root present, not just the majority: the client lists the catalog products the
+            // filter matches (it does not read items), so a folder of Hybrid, Fuel and Electric cars
+            // needs all three or it shows a third of them.
+            // ponytail: roots are plain words (title-cased tag segments), so they are not regex-escaped.
+            final List<String> roots = new ArrayList<>(categoryRootVotes(value).keySet());
+            if (roots.isEmpty()) {
+                return "";
+            }
+            return roots.size() == 1 ? roots.get(0) + ".*" : "(" + String.join("|", roots) + ").*";
         }
         final String text = String.valueOf(value);
         switch (type) {
@@ -511,6 +517,19 @@ final class FieldRule {
 
     /** See {@link #TYPE_CATEGORY_ROOT}. */
     private static Object toCategoryRoot(final Object value) {
+        String winner = "";
+        int best = 0;
+        for (final Map.Entry<String, Integer> vote : categoryRootVotes(value).entrySet()) {
+            if (vote.getValue() > best) {
+                best = vote.getValue();
+                winner = vote.getKey();
+            }
+        }
+        return winner;
+    }
+
+    /** Each item's category root with how many items voted for it, in first-seen order. */
+    private static Map<String, Integer> categoryRootVotes(final Object value) {
         final Iterable<?> items;
         if (value instanceof Iterable) {
             items = (Iterable<?>) value;
@@ -532,15 +551,7 @@ final class FieldRule {
                 votes.merge(root, 1, Integer::sum);
             }
         }
-        String winner = "";
-        int best = 0;
-        for (final Map.Entry<String, Integer> vote : votes.entrySet()) {
-            if (vote.getValue() > best) {
-                best = vote.getValue();
-                winner = vote.getKey();
-            }
-        }
-        return winner;
+        return votes;
     }
 
     /**
