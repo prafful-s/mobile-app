@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -119,6 +120,17 @@ class CategoryProductsListerTest {
     void mobileItemRendererWinsOverMobileCardStyle() {
         assertEquals("image",
                 map(authored("mobileitemrenderer", "image", "mobilecardstyle", "below")).get("itemRenderer"));
+    }
+
+    /** A filter makes the client ignore items and return the catalog's matches instead - 3 of 9 for a mixed folder. */
+    @Test
+    void noFilterIsEmittedSoTheClientShowsEveryItem() {
+        final Map<String, Object> source = authored("mobilelayout", "horizontal");
+        source.put("_items", List.of("h1", "f1", "e1"));
+        source.put("_categories", List.of("carvelo:hybrid", "carvelo:fuel", "carvelo:electric"));
+        final Map<String, Object> mapped = map(source);
+        assertEquals(List.of("h1", "f1", "e1"), mapped.get("items"));
+        assertFalse(mapped.containsKey("filter"));
     }
 
     @Test
