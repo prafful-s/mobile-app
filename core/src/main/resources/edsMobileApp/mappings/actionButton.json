@@ -7,18 +7,7 @@
     { "target": "eventType", "from": "mobilebuttoneventtype", "default": "" },
     { "target": "linkTo", "from": "link", "type": "path", "default": "" },
     { "target": "message", "default": "" },
-    {
-      "target": "variant",
-      "from": "style",
-      "map": {
-        "default-button": "contained",
-        "default-button-secondary": "contained-tonal",
-        "default-button-dark": "contained-tonal",
-        "default-button-link": "text",
-        "button": "contained"
-      },
-      "default": "contained"
-    },
+    { "target": "variant", "from": "mobilebuttonvariant", "default": "contained" },
     { "target": "alignment", "from": "mobilealignment", "default": "stretch" }
   ]
 }
