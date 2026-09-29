@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
@@ -51,7 +52,7 @@ class CategoryProductsListerTest {
     @Test
     void anUnauthoredListerGetsTheNewContainDefaults() {
         final Map<String, Object> mapped = map(authored());
-        assertEquals("contain", mapped.get("imageResizeMode"));
+        assertEquals("contain", mapped.get("imageResize"));
         assertEquals(150, mapped.get("imageWidth"));
         assertEquals(150, mapped.get("itemHeight"));
         assertEquals("image-text-one-line", mapped.get("itemRenderer"), "unchanged");
@@ -60,7 +61,7 @@ class CategoryProductsListerTest {
 
     @Test
     void aListerCanGoBackToCover() {
-        assertEquals("cover", map(authored("mobileimagestyle", "cover")).get("imageResizeMode"));
+        assertEquals("cover", map(authored("mobileimagestyle", "cover")).get("imageResize"));
     }
 
     /** An authored number arrives from JCR as a Long, the compiled default is an Integer - both
@@ -75,19 +76,19 @@ class CategoryProductsListerTest {
     /** The client-vocabulary names still work, as newArrival has always allowed. */
     @Test
     void theDirectKeyNamesAreAcceptedToo() {
-        assertEquals("cover", map(authored("imageResizeMode", "cover")).get("imageResizeMode"));
+        assertEquals("cover", map(authored("imageResizeMode", "cover")).get("imageResize"));
         assertEquals(200L, ((Number) map(authored("imageWidth", "200")).get("imageWidth")).longValue());
     }
 
     @Test
     void mobileImageStyleSetsTheResizeMode() {
-        assertEquals("contain", map(authored("mobileimagestyle", "contain")).get("imageResizeMode"));
-        assertEquals("cover", map(authored("mobileimagestyle", "cover")).get("imageResizeMode"));
+        assertEquals("contain", map(authored("mobileimagestyle", "contain")).get("imageResize"));
+        assertEquals("cover", map(authored("mobileimagestyle", "cover")).get("imageResize"));
     }
 
     @Test
     void anUnknownImageStyleFallsBackToTheDefaultRatherThanLeakingTheToken() {
-        assertEquals("contain", map(authored("mobileimagestyle", "squish")).get("imageResizeMode"));
+        assertEquals("contain", map(authored("mobileimagestyle", "squish")).get("imageResize"));
     }
 
     @Test
@@ -141,6 +142,20 @@ class CategoryProductsListerTest {
     @Test
     void aSingleCategoryFolderKeepsItsPlainFilter() {
         assertEquals("Electric.*", withCategories("carvelo:electric", "carvelo:electric", "carvelo:electric").get("filter"));
+    }
+
+    @Test
+    void itemsInRowComesFromTheMobileTab() {
+        assertEquals(3L, ((Number) map(authored("mobileitemsinrow", "3")).get("itemsInRow")).longValue());
+        assertEquals(1, map(authored("mobilelayout", "horizontal")).get("itemsInRow"), "unauthored stays 1");
+    }
+
+    /** The client's list option is imageResize; imageResizeMode was never read. */
+    @Test
+    void theResizeModeIsEmittedAsImageResize() {
+        final Map<String, Object> mapped = map(authored("mobileimagestyle", "contain"));
+        assertEquals("contain", mapped.get("imageResize"));
+        assertFalse(mapped.containsKey("imageResizeMode"));
     }
 
     /** An authored Category filter overrides the folder's own categories. */
