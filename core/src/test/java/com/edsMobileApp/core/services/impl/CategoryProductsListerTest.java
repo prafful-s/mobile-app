@@ -1,7 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.List;
@@ -122,15 +122,31 @@ class CategoryProductsListerTest {
                 map(authored("mobileitemrenderer", "image", "mobilecardstyle", "below")).get("itemRenderer"));
     }
 
-    /** A filter makes the client ignore items and return the catalog's matches instead - 3 of 9 for a mixed folder. */
-    @Test
-    void noFilterIsEmittedSoTheClientShowsEveryItem() {
+    private Map<String, Object> withCategories(final String... tags) {
         final Map<String, Object> source = authored("mobilelayout", "horizontal");
-        source.put("_items", List.of("h1", "f1", "e1"));
-        source.put("_categories", List.of("carvelo:hybrid", "carvelo:fuel", "carvelo:electric"));
-        final Map<String, Object> mapped = map(source);
-        assertEquals(List.of("h1", "f1", "e1"), mapped.get("items"));
-        assertFalse(mapped.containsKey("filter"));
+        source.put("_categories", List.of(tags));
+        return map(source);
+    }
+
+    /**
+     * The client lists the catalog products the filter matches - it does not read items - so the
+     * filter must cover every category in the folder: a majority vote showed 3 of a 3/3/3 folder.
+     */
+    @Test
+    void aMixedFolderFiltersOnEveryCategoryInIt() {
+        assertEquals("(Hybrid|Fuel|Electric).*", withCategories(
+                "carvelo:hybrid", "carvelo:hybrid", "carvelo:fuel", "carvelo:electric", "carvelo:fuel").get("filter"));
+    }
+
+    @Test
+    void aSingleCategoryFolderKeepsItsPlainFilter() {
+        assertEquals("Electric.*", withCategories("carvelo:electric", "carvelo:electric", "carvelo:electric").get("filter"));
+    }
+
+    /** No filter means the whole catalog, so it is never dropped when categories exist. */
+    @Test
+    void theFilterIsAlwaysEmitted() {
+        assertTrue(withCategories("carvelo:accessories").containsKey("filter"));
     }
 
     @Test
