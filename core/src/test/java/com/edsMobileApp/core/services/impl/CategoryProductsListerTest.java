@@ -143,6 +143,28 @@ class CategoryProductsListerTest {
         assertEquals("Electric.*", withCategories("carvelo:electric", "carvelo:electric", "carvelo:electric").get("filter"));
     }
 
+    /** An authored Category filter overrides the folder's own categories. */
+    @Test
+    void anAuthoredCategoryFilterWins() {
+        final Map<String, Object> source = authored("mobilecategoryfilter", "Hybrid, fuel");
+        source.put("_categories", List.of("carvelo:electric"));
+        assertEquals("(Hybrid|Fuel).*", map(source).get("filter"));
+    }
+
+    @Test
+    void aSingleAuthoredCategoryGivesAPlainFilter() {
+        final Map<String, Object> source = authored("mobilecategoryfilter", "Electric");
+        source.put("_categories", List.of("carvelo:hybrid", "carvelo:fuel"));
+        assertEquals("Electric.*", map(source).get("filter"));
+    }
+
+    @Test
+    void aBlankCategoryFilterFallsBackToTheFolder() {
+        final Map<String, Object> source = authored("mobilecategoryfilter", "  ");
+        source.put("_categories", List.of("carvelo:electric"));
+        assertEquals("Electric.*", map(source).get("filter"));
+    }
+
     /** No filter means the whole catalog, so it is never dropped when categories exist. */
     @Test
     void theFilterIsAlwaysEmitted() {
