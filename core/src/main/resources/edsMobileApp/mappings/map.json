@@ -11,6 +11,6 @@
   ],
   "styles": [
     { "target": "color", "from": "color" },
-    { "target": "locationColor", "from": "locationColor", "default": "green" }
+    { "target": "locationColor", "from": "locationColor" }
   ]
 }

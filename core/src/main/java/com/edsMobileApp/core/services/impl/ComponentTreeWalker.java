@@ -1182,8 +1182,9 @@ final class ComponentTreeWalker {
      * <p>A card carries its product in the {@code ?productId=<sku>} its resolved {@code link} ends
      * with (a product page link, not an app-screen key - those become a {@code screenList} above).
      * The SKU is read back off that link, using the same {@code card} rule the per-card export uses
-     * so this stays in step with link resolution. {@code filter} is left open ({@code .*}) rather
-     * than derived from a category: the cards can span categories and every SKU must show.</p>
+     * so this stays in step with link resolution. No {@code filter} is emitted: the list is driven
+     * purely by these SKUs, since a category or {@code .*} filter would make the client ignore them
+     * and return the whole catalog.</p>
      *
      * @return the {@code list} component, or {@code null} when the block is not three-plus cards,
      *         the {@code card} rule is not loaded, or any card's link carries no product SKU - in
@@ -1220,8 +1221,8 @@ final class ComponentTreeWalker {
         // the compiled-in shape a productList item needs.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", skus);
-        // Open filter: the cards can span categories, so every SKU shows regardless of category.
-        content.put("filter", ".*");
+        // No filter: the list is driven purely by these explicit SKUs. A category or ".*" filter
+        // would make the client return the whole catalog and ignore items.
         content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
         content.put("listType", "productList");
         final Object textColor = listColor(resource, "mobilelisttextcolor", "textColor", null);

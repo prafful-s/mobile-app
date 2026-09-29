@@ -3,7 +3,7 @@
   "navPageNames": ["nav"],
   "excludedPageNames": ["nav", "footer", "placeholders", "language-masters", "redirects"],
   "includeHomeScreen": true,
-  "styleTokens": ["bg-default=backgroundColor:#F5F8FA"],
+  "styleTokens": [],
   "overrideEnabled": true,
   "overridePropertyName": "cbJson",
   "themeContentFragmentModels": [
