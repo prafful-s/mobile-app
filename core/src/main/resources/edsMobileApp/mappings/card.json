@@ -21,14 +21,7 @@
         "*": "cover"
       }, "default": "cover" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
-    { "target": "cardType", "from": "mobilecardstyle",
-      "map": {
-        "one-line": "image-text-one-line",
-        "overlay": "overlay",
-        "below": "stacked",
-        "partial-overlay": "partial-overlay",
-        "*": "stacked"
-      }, "default": "stacked" },
+    { "target": "cardType", "from": "mobilecardstyle", "default": "stacked" },
     { "target": "subtitle",
       "extract": { "from": "text", "select": "p:not(:has(a)), li", "as": "text", "all": true },
       "nullable": true },
