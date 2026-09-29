@@ -245,6 +245,8 @@ class CardsAsListTest {
         final Map<String, Object> list = convert(trio("plain"), TRIO_SCREENS);
         assertEquals(130, content(list).get("imageWidth"));
         assertNull(content(list).get("itemHeight"));
+        assertEquals("cover", content(list).get("imageResize"), "the client's key is imageResize");
+        assertNull(content(list).get("imageResizeMode"));
     }
 
     @Test
