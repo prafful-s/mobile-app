@@ -49,13 +49,14 @@ class CardMappingTest {
     }
 
     @Test
-    void mobileCardStyleWinsOverWebStyle() {
+    void mobileCardStyleIsPassedThroughAsTheCardType() {
+        // The EDS options are the app's own card types, so no translation happens here.
         assertEquals("image-text-one-line",
-                map(authored("style", "teaser-card", "mobilecardstyle", "one-line")).get("cardType"));
+                map(authored("style", "teaser-card", "mobilecardstyle", "image-text-one-line")).get("cardType"));
         assertEquals("overlay",
                 map(authored("style", "image-top", "mobilecardstyle", "overlay")).get("cardType"));
         assertEquals("stacked",
-                map(authored("style", "teaser-card", "mobilecardstyle", "below")).get("cardType"));
+                map(authored("style", "teaser-card", "mobilecardstyle", "stacked")).get("cardType"));
         assertEquals("partial-overlay",
                 map(authored("style", "", "mobilecardstyle", "partial-overlay")).get("cardType"));
     }
