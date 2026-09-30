@@ -1146,7 +1146,10 @@ final class ComponentTreeWalker {
         // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
         // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
         // Specific tab), falling back to the older mobilelist*-prefixed properties and then the site
-        // level exactly as itemRenderer and the two colours already did. A colour is emitted only when
+        // level exactly as itemRenderer and the two colours already did. itemRenderer, itemsInRow
+        // and imageResize read the block's own mobileItemRenderer/mobileItemsInRow/mobileImageResize
+        // first (the app's list options, authored as such on the cards model), falling back to the
+        // older spellings and to what the cards themselves imply. A colour is emitted only when
         // authored on the block or set at site level - there is no compiled-in colour default.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
@@ -1160,11 +1163,12 @@ final class ComponentTreeWalker {
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemRadius", null);
         content.put("itemsInRow", listValue(resource,
-                new String[] {"mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", screenKeys.size()));
-        content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
+                new String[] {"mobileItemsInRow", "mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", screenKeys.size()));
+        content.put("itemRenderer", listValue(resource,
+                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", itemRenderer));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", imageResize);
+        content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1251,11 +1255,12 @@ final class ComponentTreeWalker {
         content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemsInRow", listValue(resource,
-                new String[] {"mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", 3));
-        content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", "stacked"));
+                new String[] {"mobileItemsInRow", "mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", 3));
+        content.put("itemRenderer", listValue(resource,
+                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", "stacked"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", imageResize);
+        content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);

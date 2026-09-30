@@ -184,6 +184,57 @@ class CardsAsListTest {
         assertEquals("contain", listImageResize(walker.cardsBlockAsProductList(block, 0)));
     }
 
+    /**
+     * The cards model authors the app's own list options as mobileItemRenderer / mobileItemsInRow /
+     * mobileImageResize; they win over anything the cards imply.
+     */
+    @Test
+    void theBlocksOwnListOptionsWinOverWhatTheCardsImply() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/opts", "filter", "cards",
+                "mobileItemRenderer", "image", "mobileItemsInRow", 4L, "mobileImageResize", "contain");
+        cardWithResize(block.getPath() + "/a", "mexico", "cover");
+        cardWithResize(block.getPath() + "/b", "poland", "cover");
+        cardWithResize(block.getPath() + "/c", "united-kingdom", "cover");
+
+        final Map<String, Object> content =
+                content(convert(block, screens("mexico", "poland", "united-kingdom")));
+        assertEquals("image", content.get("itemRenderer"));
+        assertEquals(4L, content.get("itemsInRow"));
+        assertEquals("contain", content.get("imageResize"));
+    }
+
+    @Test
+    void mobileItemsInRowBeatsTheLowercaseSpelling() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/both", "filter", "cards",
+                "mobileItemsInRow", 5L, "mobileitemsinrow", 2L);
+        card(block.getPath() + "/a", "mexico");
+        card(block.getPath() + "/b", "poland");
+        card(block.getPath() + "/c", "united-kingdom");
+
+        assertEquals(5L, content(convert(block, screens("mexico", "poland", "united-kingdom")))
+                .get("itemsInRow"));
+    }
+
+    @Test
+    void aProductListReadsTheBlocksOwnListOptionsToo() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/prodopts", "filter", "cards",
+                "mobileItemRenderer", "overlay", "mobileItemsInRow", 2L, "mobileImageResize", "cover");
+        for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
+            context.create().resource(block.getPath() + "/" + sku, "model", "card",
+                    "image", "/content/dam/s/" + sku + ".jpg",
+                    "text", "<h2>" + sku + "</h2>",
+                    "link", "/content/s/en/product?productId=" + sku,
+                    "mobileimagestyle", "contain");
+        }
+        final Map<String, Object> content = content(walker.cardsBlockAsProductList(block, 0));
+        assertEquals("overlay", content.get("itemRenderer"));
+        assertEquals(2L, content.get("itemsInRow"));
+        assertEquals("cover", content.get("imageResize"));
+    }
+
     /** Frescopa's "Shop all products": three cards open the same "coffee" screen. */
     @Test
     void cardsOpeningTheSameScreenAreListedOnce() {
