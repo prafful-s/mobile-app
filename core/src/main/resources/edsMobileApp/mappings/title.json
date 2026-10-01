@@ -2,7 +2,9 @@
   "match": ["title"],
   "component": "title",
   "fields": [
-    { "target": "size", "from": "mobilesize", "default": "medium" },
+    { "target": "size", "first": ["mobilesize", "titleType"],
+      "map": { "h1": "large", "h2": "large", "h3": "medium", "h4": "small", "h5": "small", "h6": "small" },
+      "default": "medium" },
     { "target": "text", "from": "title", "default": "" },
     { "target": "weight", "from": "mobileweight", "default": "bold" },
     { "target": "textAlignment", "from": "mobiletextalignment", "default": "left" }

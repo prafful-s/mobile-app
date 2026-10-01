@@ -9,9 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * A title's size, weight and textAlignment each come from exactly one property - its Mobile
- * Specific field (mobilesize, mobileweight, mobiletextalignment) - or a default: medium, bold,
- * left. The web titleType, weight and textAlignment properties are not read.
+ * A title's weight and textAlignment each come from one property - mobileweight,
+ * mobiletextalignment - or a default (bold, left). size comes from mobilesize, or, when that is
+ * left on Default, from the Basic tab's Title Type (h1/h2 large, h3 medium, h4-h6 small).
  */
 class TitleMappingTest {
 
@@ -34,7 +34,7 @@ class TitleMappingTest {
     @Test
     void unauthoredMobileFieldsGiveTheDefaults() {
         final Map<String, Object> mapped = map("titleType", "h2", "weight", "light", "textAlignment", "right");
-        assertEquals("medium", mapped.get("size"), "titleType is not read");
+        assertEquals("large", mapped.get("size"), "size follows the Basic tab's Title Type");
         assertEquals("bold", mapped.get("weight"));
         assertEquals("left", mapped.get("textAlignment"));
     }
@@ -59,7 +59,7 @@ class TitleMappingTest {
     @Test
     void anEmptyMobileValueFallsBack() {
         final Map<String, Object> mapped = map("titleType", "h4", "mobilesize", "", "mobileweight", "");
-        assertEquals("medium", mapped.get("size"));
+        assertEquals("small", mapped.get("size"));
         assertEquals("bold", mapped.get("weight"));
     }
 }
