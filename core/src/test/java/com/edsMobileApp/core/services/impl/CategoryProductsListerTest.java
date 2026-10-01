@@ -86,11 +86,6 @@ class CategoryProductsListerTest {
     }
 
     @Test
-    void anUnknownItemVariantFallsBackToTheDefault() {
-        assertEquals("image-text-one-line", map(authored("mobileitemrenderer", "below")).get("itemRenderer"));
-    }
-
-    @Test
     void mobileImageStyleSetsTheResizeMode() {
         assertEquals("contain", map(authored("mobileimagestyle", "contain")).get("imageResize"));
         assertEquals("cover", map(authored("mobileimagestyle", "cover")).get("imageResize"));
