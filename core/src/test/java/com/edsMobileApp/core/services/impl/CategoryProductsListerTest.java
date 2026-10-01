@@ -158,24 +158,10 @@ class CategoryProductsListerTest {
         assertFalse(mapped.containsKey("imageResizeMode"));
     }
 
-    /** An authored Category filter overrides the folder's own categories. */
+    /** The filter always comes from the folder's categories; a leftover mobilecategoryfilter is ignored. */
     @Test
-    void anAuthoredCategoryFilterWins() {
+    void theFilterComesOnlyFromTheFolder() {
         final Map<String, Object> source = authored("mobilecategoryfilter", "Hybrid, fuel");
-        source.put("_categories", List.of("carvelo:electric"));
-        assertEquals("(Hybrid|Fuel).*", map(source).get("filter"));
-    }
-
-    @Test
-    void aSingleAuthoredCategoryGivesAPlainFilter() {
-        final Map<String, Object> source = authored("mobilecategoryfilter", "Electric");
-        source.put("_categories", List.of("carvelo:hybrid", "carvelo:fuel"));
-        assertEquals("Electric.*", map(source).get("filter"));
-    }
-
-    @Test
-    void aBlankCategoryFilterFallsBackToTheFolder() {
-        final Map<String, Object> source = authored("mobilecategoryfilter", "  ");
         source.put("_categories", List.of("carvelo:electric"));
         assertEquals("Electric.*", map(source).get("filter"));
     }

@@ -12,7 +12,7 @@
   },
   "fields": [
     { "target": "items", "from": "_items", "default": [] },
-    { "target": "filter", "first": ["mobilecategoryfilter", "_categories"], "type": "categoryRootRegex", "default": "" },
+    { "target": "filter", "from": "_categories", "type": "categoryRootRegex", "default": "" },
     { "target": "layout", "first": ["mobilelayout", "layout"],
       "map": { "horizontal": "horizontal", "vertical": "vertical/grid", "vertical/grid": "vertical/grid" },
       "default": "vertical/grid" },
