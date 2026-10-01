@@ -4,21 +4,10 @@
   "skeleton": true,
   "fields": [
     { "target": "label", "from": "label", "default": "" },
-    { "target": "eventType", "default": "" },
+    { "target": "eventType", "from": "mobilebuttoneventtype", "default": "" },
     { "target": "linkTo", "from": "link", "type": "path", "default": "" },
     { "target": "message", "default": "" },
-    {
-      "target": "variant",
-      "from": "style",
-      "map": {
-        "default-button": "contained",
-        "default-button-link": "text",
-        "cta-button": "contained",
-        "cta-link": "text",
-        "button": "contained"
-      },
-      "default": "contained"
-    },
-    { "target": "alignment", "default": "stretch" }
+    { "target": "variant", "from": "mobilebuttonvariant", "default": "contained" },
+    { "target": "alignment", "from": "mobilealignment", "default": "stretch" }
   ]
 }

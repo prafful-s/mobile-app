@@ -541,7 +541,10 @@ final class ComponentTreeWalker {
         }
         for (final Map.Entry<String, Object> entry : authored.entrySet()) {
             final String key = entry.getKey();
-            if (consumed.contains(key) || target.containsKey(key)) {
+            // custommobilestyle is always consumed separately, into styles (see
+            // mergeCustomStyles) - never by a rule's own fields, so it would otherwise look
+            // unconsumed here and leak a raw duplicate of what styles already carries.
+            if (consumed.contains(key) || target.containsKey(key) || CustomMobileStyle.FIELD_NAME.equals(key)) {
                 continue;
             }
             target.put(key, entry.getValue());
@@ -912,9 +915,22 @@ final class ComponentTreeWalker {
      */
     private Object listValue(final Resource block, final String property,
                              final String siteKey, final Object fallback) {
-        final Object authored = block.getValueMap().get(property);
-        if (isSet(authored)) {
-            return authored;
+        return listValue(block, new String[] {property}, siteKey, fallback);
+    }
+
+    /**
+     * As {@link #listValue(Resource, String, String, Object)}, but checking each of
+     * {@code properties} in order - the block's real EDS field name first, then any older alias
+     * that predates it - before falling to the site level and the compiled-in default.
+     */
+    private Object listValue(final Resource block, final String[] properties,
+                             final String siteKey, final Object fallback) {
+        final ValueMap props = block.getValueMap();
+        for (final String property : properties) {
+            final Object authored = props.get(property);
+            if (isSet(authored)) {
+                return authored;
+            }
         }
         if (siteDefaults != null && siteKey != null) {
             final Object site = SiteDefaults.objectMap(
@@ -945,7 +961,7 @@ final class ComponentTreeWalker {
      */
     /**
      * Whether a Cards block has opted in to becoming a {@code screenList} on whatever cards it has,
-     * via a {@code mobilecardaslist} boolean authored on the block itself.
+     * via a {@code mobilerenderaslist} boolean authored on the block itself.
      *
      * <p>Absent or false - the default, and every block today - leaves the conversion exactly as it
      * was: exactly three cards, every one resolving to a screen, or no list. True relaxes both of
@@ -959,7 +975,7 @@ final class ComponentTreeWalker {
      * model or set on the node directly.</p>
      */
     private static boolean rendersCardsAsList(final Resource resource) {
-        return resource.getValueMap().get("mobilecardaslist", Boolean.FALSE);
+        return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
     }
 
     /** Every {@code card}-modelled child, however many - the opted-in counterpart to {@link #cardItemsOf}. */
@@ -1024,7 +1040,7 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * @param relaxed when the block opts in via {@code mobilecardaslist}: take however many cards it
+     * @param relaxed when the block opts in via {@code mobilerenderaslist}: take however many cards it
      *                has rather than requiring exactly three, and skip a card whose link does not
      *                resolve to a screen rather than abandoning the whole conversion. Still returns
      *                {@code null} when that leaves nothing, so an opted-in block with no screen-
@@ -1042,6 +1058,7 @@ final class ComponentTreeWalker {
         final List<String> screenKeys = new ArrayList<>(items.size());
         final Map<String, String> thumbnails = new LinkedHashMap<>();
         final Set<String> cardTypes = new LinkedHashSet<>();
+        final Set<String> imageResizes = new LinkedHashSet<>();
         for (final Resource item : items) {
             final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
             final Map<String, Object> mapped =
@@ -1056,6 +1073,12 @@ final class ComponentTreeWalker {
                 }
                 return null;
             }
+            if (screenKeys.contains(key)) {
+                // Several cards can open the same screen (Frescopa's Bagged Coffee / Coffee Pods /
+                // Bundles all open "coffee"); a list item is a screen, so it is listed once - the
+                // first card wins, including its thumbnail and card type.
+                continue;
+            }
             screenKeys.add(key);
             final Object image = mapped.get("image");
             if (image instanceof String && StringUtils.isNotBlank((String) image)) {
@@ -1064,6 +1087,10 @@ final class ComponentTreeWalker {
             final Object cardType = mapped.get("cardType");
             if (cardType instanceof String && StringUtils.isNotBlank((String) cardType)) {
                 cardTypes.add((String) cardType);
+            }
+            final Object imageResize = mapped.get("imageResize");
+            if (imageResize instanceof String && StringUtils.isNotBlank((String) imageResize)) {
+                imageResizes.add((String) imageResize);
             }
         }
         if (screenKeys.isEmpty()) {
@@ -1075,6 +1102,8 @@ final class ComponentTreeWalker {
         // cards' cardType when every card in the group agreed on one; otherwise keep the LUMA
         // MOBILE reference's "overlay" default.
         final String itemRenderer = cardTypes.size() == 1 ? cardTypes.iterator().next() : "overlay";
+        // Likewise imageResize is list-wide: the cards' own value when they all agree, else "cover".
+        final String imageResize = imageResizes.size() == 1 ? imageResizes.iterator().next() : "cover";
         if (screenThumbnailOverrides != null) {
             screenThumbnailOverrides.putAll(thumbnails);
         }
@@ -1088,21 +1117,30 @@ final class ComponentTreeWalker {
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
         // the client has nothing to size a screenList overlay item against. They remain compiled-in;
-        // itemsInRow, itemRenderer and the two colours are resolvable per block or per site - see
-        // listValue. The colour defaults assume the reference's dark background, which is why a site
-        // on a light one overrides them.
+        // layout, itemsInRow, sort, itemRenderer and the two colours are resolvable per block or per
+        // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
+        // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
+        // Specific tab), falling back to the older mobilelist*-prefixed properties and then the site
+        // level exactly as itemRenderer and the two colours already did. itemRenderer, itemsInRow
+        // and imageResize read the block's own mobileItemRenderer/mobileItemsInRow/mobileImageResize
+        // first (the app's list options, authored as such on the cards model), falling back to the
+        // older spellings and to what the cards themselves imply. The colour defaults assume
+        // the reference's dark background, which is why a site on a light one overrides them.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
-        content.put("layout", "horizontal");
+        content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
         content.put("listType", "screenList");
         content.put("textColor", listColor(resource, "mobilelisttextcolor", "textColor", "#f4f3f3"));
         content.put("imageWidth", 130);
         content.put("itemHeight", null);
         content.put("itemRadius", null);
-        content.put("itemsInRow", listValue(resource, "mobilelistitemsinrow", "itemsInRow", screenKeys.size()));
-        content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
+        content.put("itemsInRow", listValue(resource,
+                new String[] {"mobileItemsInRow", "mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", screenKeys.size()));
+        content.put("itemRenderer", listValue(resource,
+                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", itemRenderer));
+        content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResizeMode", "cover");
+        content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1112,7 +1150,12 @@ final class ComponentTreeWalker {
 
         final Map<String, Object> list = new LinkedHashMap<>();
         list.put(SchemaConstants.KEY_META, meta);
-        list.put(SchemaConstants.KEY_STYLES, styles);
+        // The block's own custommobilestyle - authored on the Cards block itself, not on any one
+        // card - is the most specific, per-instance choice, same as everywhere else this field is
+        // read (see mergeCustomStyles), so it overrides the computed styles above rather than the
+        // other way around.
+        list.put(SchemaConstants.KEY_STYLES,
+                mergeCustomStyles(styles, new GenericComponent(resource, urlService).getContent()));
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
     }
