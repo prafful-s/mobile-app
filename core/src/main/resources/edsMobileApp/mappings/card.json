@@ -5,15 +5,15 @@
   "fallback": {
     "component": "htmlText",
     "fields": [
-      { "target": "text", "first": ["text", "richText", "jcr:text"] }
+      { "target": "text", "from": "text" }
     ]
   },
   "fields": [
     { "target": "link",
-      "first": ["link"],
+      "from": "link",
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "default": "#" },
-    { "target": "image", "first": ["image", "fileReference", "imageRef"] },
+    { "target": "image", "from": "image" },
     { "target": "imageResize", "from": "mobileimagestyle",
       "map": {
         "": "cover",

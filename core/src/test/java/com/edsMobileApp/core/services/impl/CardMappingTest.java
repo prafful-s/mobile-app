@@ -61,6 +61,28 @@ class CardMappingTest {
                 map(authored("style", "", "mobilecardstyle", "partial-overlay")).get("cardType"));
     }
 
+    /** One field per value: the card's image is its model's image field only. */
+    @Test
+    void theImageComesOnlyFromTheImageField() {
+        final Map<String, Object> raw = new HashMap<>();
+        raw.put("fileReference", "/content/dam/old.jpg");
+        raw.put("imageRef", "/content/dam/older.jpg");
+        raw.put("text", "<h2>Title</h2>");
+        assertEquals("htmlText", card.effectiveFor(raw).getComponent(),
+                "with no image field the card falls back to htmlText; other image names are not read");
+    }
+
+    /** The htmlText fallback reads the card's text field only. */
+    @Test
+    void theFallbackTextComesOnlyFromTheTextField() {
+        final Map<String, Object> raw = new HashMap<>();
+        raw.put("richText", "<p>old</p>");
+        raw.put("jcr:text", "<p>older</p>");
+        assertNull(card.effectiveFor(raw).apply(raw, Map.of()).get("text"));
+        raw.put("text", "<p>Body</p>");
+        assertEquals("<p>Body</p>", card.effectiveFor(raw).apply(raw, Map.of()).get("text"));
+    }
+
     @Test
     void cardTypeIsReadFromMobileCardStyleOnly() {
         // The web "style" no longer derives a cardType; unauthored means the "overlay" default.
