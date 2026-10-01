@@ -85,7 +85,7 @@ class ListStylingTest {
     void anUnauthoredBlockEmitsExactlyTodaysValues() {
         final Map<String, Object> list = convert(trio("plain"));
         assertEquals(3, content(list).get("itemsInRow"), "defaults to the number of items");
-        assertEquals("stacked", content(list).get("itemRenderer"), "defaults to the cards' agreed cardType");
+        assertEquals("overlay", content(list).get("itemRenderer"), "defaults to the cards' agreed cardType");
         assertNull(content(list).get("textColor"), "no colour is emitted unless authored");
         assertNull(styles(list).get("color"), "no colour is emitted unless authored");
         assertEquals("horizontal", content(list).get("layout"));
@@ -152,13 +152,13 @@ class ListStylingTest {
 
     @Test
     void theBlockCanOverrideItemRenderer() {
-        assertEquals("overlay",
-                content(convert(trio("renderer", "mobilelistitemrenderer", "overlay"))).get("itemRenderer"));
+        assertEquals("stacked",
+                content(convert(trio("renderer", "mobilelistitemrenderer", "stacked"))).get("itemRenderer"));
     }
 
     @Test
     void aBlankRendererFallsBackToTheDerivedValue() {
-        assertEquals("stacked",
+        assertEquals("overlay",
                 content(convert(trio("blankrenderer", "mobilelistitemrenderer", ""))).get("itemRenderer"));
     }
 
