@@ -205,16 +205,16 @@ class CardsAsListTest {
     }
 
     @Test
-    void mobileItemsInRowBeatsTheLowercaseSpelling() {
+    void theLowercaseItemsInRowSpellingIsIgnored() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/both", "filter", "cards",
-                "mobileItemsInRow", 5L, "mobileitemsinrow", 2L);
+                "mobileitemsinrow", 2L, "mobilelistitemsinrow", 4L);
         card(block.getPath() + "/a", "mexico");
         card(block.getPath() + "/b", "poland");
         card(block.getPath() + "/c", "united-kingdom");
 
-        assertEquals(5L, content(convert(block, screens("mexico", "poland", "united-kingdom")))
-                .get("itemsInRow"));
+        assertEquals(3, content(convert(block, screens("mexico", "poland", "united-kingdom")))
+                .get("itemsInRow"), "only mobileItemsInRow is read; unset falls back to the number of items");
     }
 
     @Test
@@ -264,7 +264,7 @@ class CardsAsListTest {
     @Test
     void aProductListFallsBackToStackedForAnUnknownRenderer() {
         final Resource block = context.create().resource(
-                "/content/s/en/p/jcr:content/root/prodbad", "filter", "cards", "mobilelistitemrenderer", "bogus");
+                "/content/s/en/p/jcr:content/root/prodbad", "filter", "cards", "mobileItemRenderer", "bogus");
         for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
             context.create().resource(block.getPath() + "/" + sku, "model", "card",
                     "image", "/content/dam/s/" + sku + ".jpg",

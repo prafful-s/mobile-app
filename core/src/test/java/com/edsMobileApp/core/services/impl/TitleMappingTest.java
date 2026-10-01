@@ -9,8 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * A title's Mobile Specific fields (mobilesize, mobileweight, mobiletextalignment) win when
- * authored; left empty, the title exports exactly as before - size from titleType, bold, left.
+ * A title's weight and textAlignment each come from one property - mobileweight,
+ * mobiletextalignment - or a default (bold, left). size comes from mobilesize, or, when that is
+ * left on Default, from the Basic tab's Title Type (h1/h2 large, h3 medium, h4-h6 small).
  */
 class TitleMappingTest {
 
@@ -31,9 +32,9 @@ class TitleMappingTest {
     }
 
     @Test
-    void unauthoredMobileFieldsKeepTheExistingOutput() {
-        final Map<String, Object> mapped = map("titleType", "h2");
-        assertEquals("large", mapped.get("size"));
+    void unauthoredMobileFieldsGiveTheDefaults() {
+        final Map<String, Object> mapped = map("titleType", "h2", "weight", "light", "textAlignment", "right");
+        assertEquals("large", mapped.get("size"), "size follows the Basic tab's Title Type");
         assertEquals("bold", mapped.get("weight"));
         assertEquals("left", mapped.get("textAlignment"));
     }
@@ -42,7 +43,7 @@ class TitleMappingTest {
     void mobileFieldsWinWhenAuthored() {
         final Map<String, Object> mapped = map("titleType", "h2",
                 "mobilesize", "xsmall", "mobileweight", "light", "mobiletextalignment", "center");
-        assertEquals("xsmall", mapped.get("size"), "mobile size passes through, not through the h1-h6 map");
+        assertEquals("xsmall", mapped.get("size"));
         assertEquals("light", mapped.get("weight"));
         assertEquals("center", mapped.get("textAlignment"));
     }
