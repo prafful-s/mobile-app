@@ -96,29 +96,24 @@ class ListStylingTest {
 
     @Test
     void theBlockCanPinItemsInRow() {
-        assertEquals(3L, content(convert(trio("pinned", "mobilelistitemsinrow", 3L))).get("itemsInRow"));
+        assertEquals(3L, content(convert(trio("pinned", "mobileItemsInRow", 3L))).get("itemsInRow"));
     }
 
     @Test
     void itemsInRowIsEmittedAsANumberNotAString() {
-        final Object value = content(convert(trio("num", "mobilelistitemsinrow", 3L))).get("itemsInRow");
+        final Object value = content(convert(trio("num", "mobileItemsInRow", 3L))).get("itemsInRow");
         assertEquals(Long.class, value.getClass(), "JCR gives a Long; it must stay a number in the JSON");
     }
 
     /**
-     * mobileitemsinrow is the field Universal Editor's Mobile Specific tab actually authors (see
-     * blocks/cards/_cards.json); mobilelistitemsinrow predates it and was never wired to any EDS
-     * field. The real field must win when, implausibly, both are set.
+     * mobileItemsInRow is the Cards model's one Items in row field (blocks/cards/_cards.json); the
+     * older spellings are not read - one field maps one value.
      */
     @Test
-    void theRealFieldTakesPrecedenceOverTheOlderAlias() {
-        assertEquals(5L, content(convert(
-                trio("bothset", "mobileitemsinrow", 5L, "mobilelistitemsinrow", 3L))).get("itemsInRow"));
-    }
-
-    @Test
-    void theBlockCanSetItemsInRowViaTheRealField() {
-        assertEquals(4L, content(convert(trio("realfield", "mobileitemsinrow", 4L))).get("itemsInRow"));
+    void olderItemsInRowSpellingsAreIgnored() {
+        assertEquals(3, content(convert(
+                trio("oldnames", "mobileitemsinrow", 5L, "mobilelistitemsinrow", 4L))).get("itemsInRow"),
+                "falls back to the number of items");
     }
 
     // ---------- layout ----------
@@ -153,13 +148,13 @@ class ListStylingTest {
     @Test
     void theBlockCanOverrideItemRenderer() {
         assertEquals("stacked",
-                content(convert(trio("renderer", "mobilelistitemrenderer", "stacked"))).get("itemRenderer"));
+                content(convert(trio("renderer", "mobileItemRenderer", "stacked"))).get("itemRenderer"));
     }
 
     @Test
     void aBlankRendererFallsBackToTheDerivedValue() {
         assertEquals("overlay",
-                content(convert(trio("blankrenderer", "mobilelistitemrenderer", ""))).get("itemRenderer"));
+                content(convert(trio("blankrenderer", "mobileItemRenderer", ""))).get("itemRenderer"));
     }
 
     // ---------- colours ----------

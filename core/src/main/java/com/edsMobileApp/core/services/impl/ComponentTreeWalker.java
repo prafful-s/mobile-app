@@ -907,8 +907,8 @@ final class ComponentTreeWalker {
      *         specific key is absent or blank - see {@link SiteDefaults#KEY_SCREEN_LIST}.
      */
     /**
-     * A screenList presentation value, in precedence order: the block's own {@code mobilelist*}
-     * property, then the site's {@code screenList} entry in {@code defaults.json}, then the
+     * A screenList presentation value, in precedence order: the block's own Mobile Specific
+     * property (one field per value), then the site's {@code screenList} entry in {@code defaults.json}, then the
      * compiled-in default. Blank counts as unset at every level, so a property authored and later
      * cleared falls back rather than emitting empty.
      *
@@ -922,22 +922,9 @@ final class ComponentTreeWalker {
      */
     private Object listValue(final Resource block, final String property,
                              final String siteKey, final Object fallback) {
-        return listValue(block, new String[] {property}, siteKey, fallback);
-    }
-
-    /**
-     * As {@link #listValue(Resource, String, String, Object)}, but checking each of
-     * {@code properties} in order - the block's real EDS field name first, then any older alias
-     * that predates it - before falling to the site level and the compiled-in default.
-     */
-    private Object listValue(final Resource block, final String[] properties,
-                             final String siteKey, final Object fallback) {
-        final ValueMap props = block.getValueMap();
-        for (final String property : properties) {
-            final Object authored = props.get(property);
-            if (isSet(authored)) {
-                return authored;
-            }
+        final Object authored = block.getValueMap().get(property);
+        if (isSet(authored)) {
+            return authored;
         }
         if (siteDefaults != null && siteKey != null) {
             final Object site = SiteDefaults.objectMap(
@@ -1152,17 +1139,13 @@ final class ComponentTreeWalker {
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResize size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
-        // the client has nothing to size a screenList overlay item against. itemRadius and
-        // remain compiled-in, imageResize follows the cards; imageWidth/itemHeight read the block's
-        // mobileimagewidth/mobileitemheight (see listNumber); layout, itemsInRow, sort, itemRenderer and the two colours are resolvable per block or per
-        // site - see listValue. layout/itemsInRow/sort read the Cards block's own mobilelayout/
-        // mobileitemsinrow/mobilesort fields first (the ones authored via Universal Editor's Mobile
-        // Specific tab), falling back to the older mobilelist*-prefixed properties and then the site
-        // level exactly as itemRenderer and the two colours already did. itemRenderer, itemsInRow
-        // and imageResize read the block's own mobileItemRenderer/mobileItemsInRow/mobileImageResize
-        // first (the app's list options, authored as such on the cards model), falling back to the
-        // older spellings and to what the cards themselves imply. A colour is emitted only when
-        // authored on the block or set at site level - there is no compiled-in colour default.
+        // the client has nothing to size a screenList overlay item against. itemRadius remains
+        // compiled-in. Every other value reads exactly one property off the Cards block - its
+        // Mobile Specific field (mobilelayout, mobilesort, mobileItemsInRow, mobileItemRenderer,
+        // mobileImageResize; mobileimagewidth/mobileitemheight via listNumber) - then the site's
+        // defaults.json screenList entry, then the default here (imageResize and itemRenderer
+        // default to what the cards themselves imply). A colour is emitted only when authored on
+        // the block or set at site level - there is no compiled-in colour default.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
         content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
@@ -1174,11 +1157,9 @@ final class ComponentTreeWalker {
         content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemRadius", null);
-        content.put("itemsInRow", listValue(resource,
-                new String[] {"mobileItemsInRow", "mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", screenKeys.size()));
-        content.put("itemRenderer", knownItemRenderer(listValue(resource,
-                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", itemRenderer),
-                "overlay"));
+        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", screenKeys.size()));
+        content.put("itemRenderer", knownItemRenderer(
+                listValue(resource, "mobileItemRenderer", "itemRenderer", itemRenderer), "overlay"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
@@ -1267,11 +1248,9 @@ final class ComponentTreeWalker {
         }
         content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
-        content.put("itemsInRow", listValue(resource,
-                new String[] {"mobileItemsInRow", "mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", 3));
-        content.put("itemRenderer", knownItemRenderer(listValue(resource,
-                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", "stacked"),
-                "stacked"));
+        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", 3));
+        content.put("itemRenderer", knownItemRenderer(
+                listValue(resource, "mobileItemRenderer", "itemRenderer", "stacked"), "stacked"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
