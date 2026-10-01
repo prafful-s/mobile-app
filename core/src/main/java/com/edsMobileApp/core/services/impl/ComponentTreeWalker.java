@@ -1134,7 +1134,7 @@ final class ComponentTreeWalker {
             // does not resolve. Nothing to list, so leave the block to the normal walk.
             return null;
         }
-        // itemRenderer is list-wide (list.json has no per-item shape), so it can only reflect the
+        // itemRenderer is list-wide (the app's list has no per-item shape), so it can only reflect the
         // cards' cardType when every card in the group agreed on one; otherwise keep the LUMA
         // MOBILE reference's "overlay" default.
         final String itemRenderer = cardTypes.size() == 1 ? cardTypes.iterator().next() : "overlay";
