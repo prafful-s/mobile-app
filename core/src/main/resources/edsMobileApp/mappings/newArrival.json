@@ -21,10 +21,10 @@
     { "target": "textColor", "from": "textColor", "default": "#BBB" },
     { "target": "imageWidth", "from": "imageWidth", "type": "number", "default": 120 },
     { "target": "itemHeight", "from": "itemHeight", "type": "number", "default": 120 },
-    { "target": "itemsInRow", "first": ["mobileitemsinrow", "itemsInRow"], "type": "number", "default": 1 },
+    { "target": "itemsInRow", "from": "itemsInRow", "type": "number", "default": 1 },
     { "target": "itemRenderer", "from": "itemRenderer", "default": "stacked" },
     { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
-    { "target": "imageResize", "first": ["mobileimagestyle", "imageResize", "imageResizeMode"], "default": "cover" },
+    { "target": "imageResizeMode", "from": "imageResizeMode", "default": "cover" },
     { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
     { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" }
   ],
