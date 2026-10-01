@@ -9,8 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * A title's Mobile Specific fields (mobilesize, mobileweight, mobiletextalignment) win when
- * authored; left empty, the title exports exactly as before - size from titleType, bold, left.
+ * A title's size, weight and textAlignment each come from exactly one property - its Mobile
+ * Specific field (mobilesize, mobileweight, mobiletextalignment) - or a default: medium, bold,
+ * left. The web titleType, weight and textAlignment properties are not read.
  */
 class TitleMappingTest {
 
@@ -31,9 +32,9 @@ class TitleMappingTest {
     }
 
     @Test
-    void unauthoredMobileFieldsKeepTheExistingOutput() {
-        final Map<String, Object> mapped = map("titleType", "h2");
-        assertEquals("large", mapped.get("size"));
+    void unauthoredMobileFieldsGiveTheDefaults() {
+        final Map<String, Object> mapped = map("titleType", "h2", "weight", "light", "textAlignment", "right");
+        assertEquals("medium", mapped.get("size"), "titleType is not read");
         assertEquals("bold", mapped.get("weight"));
         assertEquals("left", mapped.get("textAlignment"));
     }
@@ -42,7 +43,7 @@ class TitleMappingTest {
     void mobileFieldsWinWhenAuthored() {
         final Map<String, Object> mapped = map("titleType", "h2",
                 "mobilesize", "xsmall", "mobileweight", "light", "mobiletextalignment", "center");
-        assertEquals("xsmall", mapped.get("size"), "mobile size passes through, not through the h1-h6 map");
+        assertEquals("xsmall", mapped.get("size"));
         assertEquals("light", mapped.get("weight"));
         assertEquals("center", mapped.get("textAlignment"));
     }
@@ -58,7 +59,7 @@ class TitleMappingTest {
     @Test
     void anEmptyMobileValueFallsBack() {
         final Map<String, Object> mapped = map("titleType", "h4", "mobilesize", "", "mobileweight", "");
-        assertEquals("small", mapped.get("size"));
+        assertEquals("medium", mapped.get("size"));
         assertEquals("bold", mapped.get("weight"));
     }
 }
