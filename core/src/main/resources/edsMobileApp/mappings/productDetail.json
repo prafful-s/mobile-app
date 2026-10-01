@@ -4,6 +4,7 @@
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
-    { "target": "product", "type": "null" }
+    { "target": "product", "type": "null" },
+    { "target": "imageResize", "from": "mobileimageresize", "default": "contain" }
   ]
 }
