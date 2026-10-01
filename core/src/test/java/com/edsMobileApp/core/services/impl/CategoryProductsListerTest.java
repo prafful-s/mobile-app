@@ -12,14 +12,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * A {@code category-products-lister} emitted no image-fit or sizing key at all, so a product list's
- * car photos were cropped with nothing an author could say about it - carvelo's Models screen. It
- * now reads the same {@code mobilecardstyle} / {@code mobileimagestyle} vocabulary the card block
- * already uses, plus two sizing fields.
- *
- * <p>All four write only when authored. The block emitted no {@code imageResizeMode},
- * {@code imageWidth} or {@code itemHeight} before, and an unauthored block must still emit none -
- * adding a key the client did not previously receive is a behaviour change, not a config option.</p>
+ * A {@code category-products-lister} becomes a {@code list} driven only by its Mobile Specific
+ * fields - {@code mobilelayout}, {@code mobilesort}, {@code mobileitemsinrow},
+ * {@code mobileitemrenderer}, {@code mobileimagestyle}, {@code mobileimagewidth} and
+ * {@code mobileitemheight} - with the {@code filter} built from the categories in its folder.
+ * Raw or legacy property names are not read.
  */
 class CategoryProductsListerTest {
 
@@ -73,11 +70,24 @@ class CategoryProductsListerTest {
         assertEquals(90L, ((Number) mapped.get("itemHeight")).longValue());
     }
 
-    /** The client-vocabulary names still work, as newArrival has always allowed. */
+    /** Only the Mobile Specific fields drive the list; raw/legacy property names are ignored. */
     @Test
-    void theDirectKeyNamesAreAcceptedToo() {
-        assertEquals("cover", map(authored("imageResizeMode", "cover")).get("imageResize"));
-        assertEquals(200L, ((Number) map(authored("imageWidth", "200")).get("imageWidth")).longValue());
+    void onlyTheMobileSpecificFieldsAreRead() {
+        final Map<String, Object> mapped = map(authored("layout", "horizontal", "sort", "alphabetical",
+                "itemsInRow", "4", "itemRenderer", "stacked", "mobilecardstyle", "below",
+                "imageResizeMode", "cover", "imageResize", "cover", "imageWidth", "200", "itemHeight", "90"));
+        assertEquals("vertical/grid", mapped.get("layout"));
+        assertEquals("none", mapped.get("sort"));
+        assertEquals(1, mapped.get("itemsInRow"));
+        assertEquals("image-text-one-line", mapped.get("itemRenderer"));
+        assertEquals("contain", mapped.get("imageResize"));
+        assertEquals(150, mapped.get("imageWidth"));
+        assertEquals(150, mapped.get("itemHeight"));
+    }
+
+    @Test
+    void anUnknownItemVariantFallsBackToTheDefault() {
+        assertEquals("image-text-one-line", map(authored("mobileitemrenderer", "below")).get("itemRenderer"));
     }
 
     @Test
@@ -91,22 +101,6 @@ class CategoryProductsListerTest {
         assertEquals("contain", map(authored("mobileimagestyle", "squish")).get("imageResize"));
     }
 
-    @Test
-    void mobileCardStyleOverridesTheRenderer() {
-        assertEquals("stacked", map(authored("mobilecardstyle", "below")).get("itemRenderer"));
-        assertEquals("overlay", map(authored("mobilecardstyle", "overlay")).get("itemRenderer"));
-        assertEquals("partial-overlay",
-                map(authored("mobilecardstyle", "partial-overlay")).get("itemRenderer"));
-        assertEquals("image-text-one-line",
-                map(authored("mobilecardstyle", "one-line")).get("itemRenderer"));
-    }
-
-    /** The block's own itemRenderer still wins when no mobile value is authored. */
-    @Test
-    void anAuthoredItemRendererSurvivesWithoutMobileCardStyle() {
-        assertEquals("stacked", map(authored("itemRenderer", "stacked")).get("itemRenderer"));
-    }
-
     /** The lister's own Item variant dropdown - every option passes through, single image included. */
     @Test
     void mobileItemRendererSetsTheRenderer() {
@@ -115,12 +109,6 @@ class CategoryProductsListerTest {
         assertEquals("overlay", map(authored("mobileitemrenderer", "overlay")).get("itemRenderer"));
         assertEquals("stacked", map(authored("mobileitemrenderer", "stacked")).get("itemRenderer"));
         assertEquals("image", map(authored("mobileitemrenderer", "image")).get("itemRenderer"));
-    }
-
-    @Test
-    void mobileItemRendererWinsOverMobileCardStyle() {
-        assertEquals("image",
-                map(authored("mobileitemrenderer", "image", "mobilecardstyle", "below")).get("itemRenderer"));
     }
 
     private Map<String, Object> withCategories(final String... tags) {
