@@ -6,7 +6,7 @@
     { "when": { "field": "herolayout", "equals": "image-left" }, "useRule": "card" }
   ],
   "fields": [
-    { "target": "image", "first": ["image", "fileReference", "imageRef"] },
+    { "target": "image", "from": "image" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
     { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitle",
