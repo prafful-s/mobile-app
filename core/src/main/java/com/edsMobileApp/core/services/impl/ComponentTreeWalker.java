@@ -974,6 +974,18 @@ final class ComponentTreeWalker {
         return hex != null ? hex : fallback;
     }
 
+    /**
+     * The renderers the app's Card component draws. It compares the value against exactly these and
+     * renders nothing for any other (a stale {@code below}, say), which blanks the whole list - so
+     * anything else falls back to {@code fallback} rather than being passed to the client.
+     */
+    private static final Set<String> ITEM_RENDERERS =
+            Set.of("stacked", "overlay", "partial-overlay", "image-text-one-line", "image");
+
+    private static Object knownItemRenderer(final Object value, final String fallback) {
+        return value instanceof String && ITEM_RENDERERS.contains(value) ? value : fallback;
+    }
+
     private static boolean isSet(final Object value) {
         return value != null && !(value instanceof String && StringUtils.isBlank((String) value));
     }
@@ -1164,8 +1176,9 @@ final class ComponentTreeWalker {
         content.put("itemRadius", null);
         content.put("itemsInRow", listValue(resource,
                 new String[] {"mobileItemsInRow", "mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", screenKeys.size()));
-        content.put("itemRenderer", listValue(resource,
-                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", itemRenderer));
+        content.put("itemRenderer", knownItemRenderer(listValue(resource,
+                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", itemRenderer),
+                "overlay"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
@@ -1256,8 +1269,9 @@ final class ComponentTreeWalker {
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemsInRow", listValue(resource,
                 new String[] {"mobileItemsInRow", "mobileitemsinrow", "mobilelistitemsinrow"}, "itemsInRow", 3));
-        content.put("itemRenderer", listValue(resource,
-                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", "stacked"));
+        content.put("itemRenderer", knownItemRenderer(listValue(resource,
+                new String[] {"mobileItemRenderer", "mobilelistitemrenderer"}, "itemRenderer", "stacked"),
+                "stacked"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));

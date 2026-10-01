@@ -70,6 +70,19 @@ class CardMappingTest {
         assertEquals("stacked", map(authored()).get("cardType"));
     }
 
+    /** Cards saved before the options became the app's own card types still carry the old values. */
+    @Test
+    void legacyMobileCardStyleValuesAreTranslated() {
+        assertEquals("stacked", map(authored("mobilecardstyle", "below")).get("cardType"));
+        assertEquals("image-text-one-line", map(authored("mobilecardstyle", "one-line")).get("cardType"));
+        // values the app already knows pass through untouched
+        assertEquals("overlay", map(authored("mobilecardstyle", "overlay")).get("cardType"));
+        assertEquals("partial-overlay", map(authored("mobilecardstyle", "partial-overlay")).get("cardType"));
+        assertEquals("image-text-one-line",
+                map(authored("mobilecardstyle", "image-text-one-line")).get("cardType"));
+        assertEquals("stacked", map(authored("mobilecardstyle", "stacked")).get("cardType"));
+    }
+
     @Test
     void blankMobileCardStyleFallsBackToStacked() {
         assertEquals("stacked",

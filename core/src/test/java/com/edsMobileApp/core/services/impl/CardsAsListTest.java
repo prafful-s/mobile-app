@@ -235,6 +235,45 @@ class CardsAsListTest {
         assertEquals("cover", content.get("imageResize"));
     }
 
+    /** The client's Card draws nothing for a renderer it does not know, which blanks the whole list. */
+    @Test
+    void anUnknownItemRendererNeverReachesTheClient() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/badrenderer", "filter", "cards", "mobileItemRenderer", "below");
+        card(block.getPath() + "/a", "mexico");
+        card(block.getPath() + "/b", "poland");
+        card(block.getPath() + "/c", "united-kingdom");
+
+        assertEquals("overlay",
+                content(convert(block, screens("mexico", "poland", "united-kingdom"))).get("itemRenderer"));
+    }
+
+    @Test
+    void aKnownItemRendererPassesThrough() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/goodrenderer", "filter", "cards",
+                "mobileItemRenderer", "image-text-one-line");
+        card(block.getPath() + "/a", "mexico");
+        card(block.getPath() + "/b", "poland");
+        card(block.getPath() + "/c", "united-kingdom");
+
+        assertEquals("image-text-one-line",
+                content(convert(block, screens("mexico", "poland", "united-kingdom"))).get("itemRenderer"));
+    }
+
+    @Test
+    void aProductListFallsBackToStackedForAnUnknownRenderer() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/prodbad", "filter", "cards", "mobilelistitemrenderer", "bogus");
+        for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
+            context.create().resource(block.getPath() + "/" + sku, "model", "card",
+                    "image", "/content/dam/s/" + sku + ".jpg",
+                    "text", "<h2>" + sku + "</h2>",
+                    "link", "/content/s/en/product?productId=" + sku);
+        }
+        assertEquals("stacked", content(walker.cardsBlockAsProductList(block, 0)).get("itemRenderer"));
+    }
+
     /** Frescopa's "Shop all products": three cards open the same "coffee" screen. */
     @Test
     void cardsOpeningTheSameScreenAreListedOnce() {
