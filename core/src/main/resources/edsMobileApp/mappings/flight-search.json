@@ -15,7 +15,7 @@
     { "target": "prefill", "const": true },
     { "target": "toLabel", "const": "To" },
     { "target": "fromPath", "const": "flight.from" },
-    { "target": "eventType", "from": "mobilebuttoneventtype", "default": "flight.search" },
+    { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "fromLabel", "const": "From" },
     { "target": "dateToPath", "const": "flight.date" },
     { "target": "toDefaultValue", "const": "" },

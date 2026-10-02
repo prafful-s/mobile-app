@@ -5,7 +5,7 @@
   "ignoreExtras": ["*"],
   "fields": [
     { "target": "link", "const": "checkout" },
-    { "target": "eventType", "from": "mobilebuttoneventtype", "default": "flight.select" },
+    { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "noResultsLabel", "const": "We're sorry. We didn't find any flights matching your criteria." },
     { "target": "emptyOptionLabel", "const": "Not available" },
     { "target": "flightSearchFormId", "const": "flightSearch" }
