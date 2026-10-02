@@ -17,7 +17,7 @@
     { "target": "horizontalAlignment", "from": "horizontalAlignment", "default": "center" }
   ],
   "styles": [
-    { "target": "color", "from": "color", "default": "#FFF" },
+    { "target": "color", "from": "color" },
     { "target": "height", "from": "height", "type": "number", "default": 200 },
     { "target": "borderRadius", "from": "borderRadius", "default": "0" }
   ]

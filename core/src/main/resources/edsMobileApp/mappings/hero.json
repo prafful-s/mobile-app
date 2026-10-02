@@ -6,7 +6,7 @@
     { "when": { "field": "herolayout", "equals": "image-left" }, "useRule": "card" }
   ],
   "fields": [
-    { "target": "image", "first": ["image", "fileReference", "imageRef"] },
+    { "target": "image", "from": "image" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
     { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitle",
@@ -17,13 +17,14 @@
     { "target": "buttonVariant", "from": "ctastyle",
       "map": { "button": "contained", "button-secondary": "contained-tonal", "link": "text", "*": "contained" },
       "default": "contained" },
-    { "target": "imageResize", "const": "cover" },
+    { "target": "imageResize", "from": "mobileimageresize", "default": "cover" },
     { "target": "linkTo",
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "nullable": true },
     { "target": "showButton",
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "type": "presence", "default": false },
+    { "target": "showButton", "from": "mobileshowbutton", "type": "boolean" },
     { "target": "horizontalAlignment", "from": "herolayout",
       "map": { "image-left": "right", "image-background-text-right": "right", "*": "left" },
       "default": "left" },
@@ -33,7 +34,6 @@
       "map": { "true": 0.5, "false": 0 }, "default": 0.5 }
   ],
   "styles": [
-    { "target": "gap", "const": 8 },
-    { "target": "color", "const": "#FFF" }
+    { "target": "gap", "const": 8 }
   ]
 }

@@ -315,68 +315,6 @@ final class ComponentTreeWalker {
         return meta instanceof Map && "htmlText".equals(((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT));
     }
 
-    /**
-     * Matches an htmlText block's {@code <a href="...">} authored as a full URL into a non-asset
-     * {@code /content/...} page - e.g. a "Book Trip" CTA typed against one specific AEM
-     * environment's publish host, rather than a repository-relative path. Never matched by
-     * {@link ContentPaths}'s own rewrite, which only recognises a bare {@code /content/...} href,
-     * so a link authored this way passes through completely broken otherwise. Captures the quote
-     * character and the repository path; the scheme and host are consumed by the match but dropped
-     * from the replacement entirely - a {@code /content/dam/...} link (a downloadable asset, not a
-     * screen) is left alone by the {@code (?!dam/)} exclusion.
-     */
-    private static final Pattern HTML_TEXT_ABSOLUTE_LINK = Pattern.compile(
-            "\\bhref\\s*=\\s*([\"'])https?://[^/\"']+(/content/(?!dam/)[^\"']*)\\1");
-
-    /**
-     * Rewrites every {@code <a href="...">} inside an htmlText block's {@code text} field matching
-     * {@link #HTML_TEXT_ABSOLUTE_LINK} to the in-app screen key that link names - the same key a
-     * curated {@code link}/{@code linkTo} field resolves to (see
-     * {@code ComponentMapping#screenTarget}). A field with nothing to rewrite, or a match whose
-     * leaf can't be derived (already bare), is left exactly as authored.
-     */
-    private static void rewriteHtmlTextLinks(final Map<String, Object> payload) {
-        final Object value = payload.get("text");
-        if (!(value instanceof String)) {
-            return;
-        }
-        final String text = (String) value;
-        if (text.indexOf('<') < 0 || !text.contains("href") || !text.contains(ContentPaths.CONTENT_PREFIX)) {
-            return;
-        }
-        final Matcher matcher = HTML_TEXT_ABSOLUTE_LINK.matcher(text);
-        final StringBuffer rewritten = new StringBuffer(text.length());
-        while (matcher.find()) {
-            final String screenKey = screenKeyOf(matcher.group(2));
-            final String replacement = screenKey == null
-                    ? matcher.group(0)
-                    : "href=" + matcher.group(1) + screenKey + matcher.group(1);
-            matcher.appendReplacement(rewritten, Matcher.quoteReplacement(replacement));
-        }
-        matcher.appendTail(rewritten);
-        payload.put("text", rewritten.toString());
-    }
-
-    /**
-     * The in-app screen key a {@code /content/...} page path names - its last path segment, with a
-     * trailing {@code .html} dropped - plus whatever query string or fragment it carried.
-     *
-     * @return the screen key (with any {@code ?}/{@code #} suffix appended), or {@code null} when
-     *         {@code path} has no segment to name one
-     */
-    private static String screenKeyOf(final String path) {
-        final String trimmed = path.trim();
-        final int cut = StringUtils.indexOfAny(trimmed, '?', '#');
-        final String suffix = cut >= 0 ? trimmed.substring(cut) : "";
-        final String withoutSuffix = StringUtils.stripEnd(cut >= 0 ? trimmed.substring(0, cut) : trimmed, "/");
-        if (withoutSuffix.indexOf('/') < 0) {
-            return null;
-        }
-        final String leaf =
-                StringUtils.removeEndIgnoreCase(StringUtils.substringAfterLast(withoutSuffix, "/"), ".html");
-        return leaf.isEmpty() ? null : leaf + suffix;
-    }
-
     /** Matches one {@code <a href="...">label</a>} - label captured raw, inner markup and all. */
     private static final Pattern INLINE_LINK = Pattern.compile(
             "<a\\s+[^>]*href\\s*=\\s*([\"'])([^\"']*)\\1[^>]*>(.*?)</a>",
@@ -442,6 +380,68 @@ final class ComponentTreeWalker {
         }
         final String leaf = screenKeyOf(href);
         return leaf != null ? leaf : href;
+    }
+
+    /**
+     * Matches an htmlText block's {@code <a href="...">} authored as a full URL into a non-asset
+     * {@code /content/...} page - e.g. a "Book Trip" CTA typed against one specific AEM
+     * environment's publish host, rather than a repository-relative path. Never matched by
+     * {@link ContentPaths}'s own rewrite, which only recognises a bare {@code /content/...} href,
+     * so a link authored this way passes through completely broken otherwise. Captures the quote
+     * character and the repository path; the scheme and host are consumed by the match but dropped
+     * from the replacement entirely - a {@code /content/dam/...} link (a downloadable asset, not a
+     * screen) is left alone by the {@code (?!dam/)} exclusion.
+     */
+    private static final Pattern HTML_TEXT_ABSOLUTE_LINK = Pattern.compile(
+            "\\bhref\\s*=\\s*([\"'])https?://[^/\"']+(/content/(?!dam/)[^\"']*)\\1");
+
+    /**
+     * Rewrites every {@code <a href="...">} inside an htmlText block's {@code text} field matching
+     * {@link #HTML_TEXT_ABSOLUTE_LINK} to the in-app screen key that link names - the same key a
+     * curated {@code link}/{@code linkTo} field resolves to (see
+     * {@code ComponentMapping#screenTarget}). A field with nothing to rewrite, or a match whose
+     * leaf can't be derived (already bare), is left exactly as authored.
+     */
+    private static void rewriteHtmlTextLinks(final Map<String, Object> payload) {
+        final Object value = payload.get("text");
+        if (!(value instanceof String)) {
+            return;
+        }
+        final String text = (String) value;
+        if (text.indexOf('<') < 0 || !text.contains("href") || !text.contains(ContentPaths.CONTENT_PREFIX)) {
+            return;
+        }
+        final Matcher matcher = HTML_TEXT_ABSOLUTE_LINK.matcher(text);
+        final StringBuffer rewritten = new StringBuffer(text.length());
+        while (matcher.find()) {
+            final String screenKey = screenKeyOf(matcher.group(2));
+            final String replacement = screenKey == null
+                    ? matcher.group(0)
+                    : "href=" + matcher.group(1) + screenKey + matcher.group(1);
+            matcher.appendReplacement(rewritten, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(rewritten);
+        payload.put("text", rewritten.toString());
+    }
+
+    /**
+     * The screen key a {@code /content/...} page path names - its last path segment, with a
+     * trailing {@code .html} dropped - plus whatever query string or fragment it carried.
+     *
+     * @return the screen key (with any {@code ?}/{@code #} suffix appended), or {@code null} when
+     *         {@code path} has no segment to name one
+     */
+    private static String screenKeyOf(final String path) {
+        final String trimmed = path.trim();
+        final int cut = StringUtils.indexOfAny(trimmed, '?', '#');
+        final String suffix = cut >= 0 ? trimmed.substring(cut) : "";
+        final String withoutSuffix = StringUtils.stripEnd(cut >= 0 ? trimmed.substring(0, cut) : trimmed, "/");
+        if (withoutSuffix.indexOf('/') < 0) {
+            return null;
+        }
+        final String leaf =
+                StringUtils.removeEndIgnoreCase(StringUtils.substringAfterLast(withoutSuffix, "/"), ".html");
+        return leaf.isEmpty() ? null : leaf + suffix;
     }
 
     /**
@@ -541,7 +541,10 @@ final class ComponentTreeWalker {
         }
         for (final Map.Entry<String, Object> entry : authored.entrySet()) {
             final String key = entry.getKey();
-            if (consumed.contains(key) || target.containsKey(key)) {
+            // custommobilestyle is always consumed separately, into styles (see
+            // mergeCustomStyles) - never by a rule's own fields, so it would otherwise look
+            // unconsumed here and leak a raw duplicate of what styles already carries.
+            if (consumed.contains(key) || target.containsKey(key) || CustomMobileStyle.FIELD_NAME.equals(key)) {
                 continue;
             }
             target.put(key, entry.getValue());
@@ -635,6 +638,13 @@ final class ComponentTreeWalker {
                         screenThumbnailOverrides);
                 if (list != null) {
                     sink.add(list);
+                    continue;
+                }
+                // Three or more cards that all open a product (link carries ?productId=<sku>) collapse
+                // into one productList, the same shape category-products-lister builds from a folder.
+                final Map<String, Object> productList = cardsBlockAsProductList(child, sink.size());
+                if (productList != null) {
+                    sink.add(productList);
                     continue;
                 }
                 if (isCardsBlockEligibleForList(child)
@@ -897,8 +907,8 @@ final class ComponentTreeWalker {
      *         specific key is absent or blank - see {@link SiteDefaults#KEY_SCREEN_LIST}.
      */
     /**
-     * A screenList presentation value, in precedence order: the block's own {@code mobilelist*}
-     * property, then the site's {@code screenList} entry in {@code defaults.json}, then the
+     * A screenList presentation value, in precedence order: the block's own Mobile Specific
+     * property (one field per value), then the site's {@code screenList} entry in {@code defaults.json}, then the
      * compiled-in default. Blank counts as unset at every level, so a property authored and later
      * cleared falls back rather than emitting empty.
      *
@@ -926,12 +936,41 @@ final class ComponentTreeWalker {
         return fallback;
     }
 
+    /**
+     * As {@link #listValue}, but emitted as a number: an authored text value is parsed, and one that
+     * is not a whole number is ignored in favour of {@code fallback} rather than sent as a string.
+     */
+    private Object listNumber(final Resource block, final String property,
+                              final String siteKey, final Integer fallback) {
+        final Object value = listValue(block, property, siteKey, fallback);
+        if (value instanceof Number || value == null) {
+            return value;
+        }
+        try {
+            return Long.valueOf(String.valueOf(value).trim());
+        } catch (final NumberFormatException notANumber) {
+            return fallback;
+        }
+    }
+
     /** As {@link #listValue}, but an authored value that is not a hex colour is ignored rather than emitted. */
     private Object listColor(final Resource block, final String property,
                              final String siteKey, final String fallback) {
         final Object value = listValue(block, property, siteKey, fallback);
         final String hex = value instanceof String ? FieldRule.asHexColor((String) value) : null;
         return hex != null ? hex : fallback;
+    }
+
+    /**
+     * The renderers the app's Card component draws. It compares the value against exactly these and
+     * renders nothing for any other (a stale {@code below}, say), which blanks the whole list - so
+     * anything else falls back to {@code fallback} rather than being passed to the client.
+     */
+    private static final Set<String> ITEM_RENDERERS =
+            Set.of("stacked", "overlay", "partial-overlay", "image-text-one-line", "image");
+
+    private static Object knownItemRenderer(final Object value, final String fallback) {
+        return value instanceof String && ITEM_RENDERERS.contains(value) ? value : fallback;
     }
 
     private static boolean isSet(final Object value) {
@@ -945,7 +984,7 @@ final class ComponentTreeWalker {
      */
     /**
      * Whether a Cards block has opted in to becoming a {@code screenList} on whatever cards it has,
-     * via a {@code mobilecardaslist} boolean authored on the block itself.
+     * via a {@code mobilerenderaslist} boolean authored on the block itself.
      *
      * <p>Absent or false - the default, and every block today - leaves the conversion exactly as it
      * was: exactly three cards, every one resolving to a screen, or no list. True relaxes both of
@@ -959,7 +998,7 @@ final class ComponentTreeWalker {
      * model or set on the node directly.</p>
      */
     private static boolean rendersCardsAsList(final Resource resource) {
-        return resource.getValueMap().get("mobilecardaslist", Boolean.FALSE);
+        return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
     }
 
     /** Every {@code card}-modelled child, however many - the opted-in counterpart to {@link #cardItemsOf}. */
@@ -1024,7 +1063,7 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * @param relaxed when the block opts in via {@code mobilecardaslist}: take however many cards it
+     * @param relaxed when the block opts in via {@code mobilerenderaslist}: take however many cards it
      *                has rather than requiring exactly three, and skip a card whose link does not
      *                resolve to a screen rather than abandoning the whole conversion. Still returns
      *                {@code null} when that leaves nothing, so an opted-in block with no screen-
@@ -1042,6 +1081,7 @@ final class ComponentTreeWalker {
         final List<String> screenKeys = new ArrayList<>(items.size());
         final Map<String, String> thumbnails = new LinkedHashMap<>();
         final Set<String> cardTypes = new LinkedHashSet<>();
+        final Set<String> imageResizes = new LinkedHashSet<>();
         for (final Resource item : items) {
             final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
             final Map<String, Object> mapped =
@@ -1056,6 +1096,12 @@ final class ComponentTreeWalker {
                 }
                 return null;
             }
+            if (screenKeys.contains(key)) {
+                // Several cards can open the same screen (Frescopa's Bagged Coffee / Coffee Pods /
+                // Bundles all open "coffee"); a list item is a screen, so it is listed once - the
+                // first card wins, including its thumbnail and card type.
+                continue;
+            }
             screenKeys.add(key);
             final Object image = mapped.get("image");
             if (image instanceof String && StringUtils.isNotBlank((String) image)) {
@@ -1065,16 +1111,22 @@ final class ComponentTreeWalker {
             if (cardType instanceof String && StringUtils.isNotBlank((String) cardType)) {
                 cardTypes.add((String) cardType);
             }
+            final Object imageResize = mapped.get("imageResize");
+            if (imageResize instanceof String && StringUtils.isNotBlank((String) imageResize)) {
+                imageResizes.add((String) imageResize);
+            }
         }
         if (screenKeys.isEmpty()) {
             // Only reachable when relaxed - the strict path returns null on the first card that
             // does not resolve. Nothing to list, so leave the block to the normal walk.
             return null;
         }
-        // itemRenderer is list-wide (list.json has no per-item shape), so it can only reflect the
+        // itemRenderer is list-wide (the app's list has no per-item shape), so it can only reflect the
         // cards' cardType when every card in the group agreed on one; otherwise keep the LUMA
         // MOBILE reference's "overlay" default.
         final String itemRenderer = cardTypes.size() == 1 ? cardTypes.iterator().next() : "overlay";
+        // Likewise imageResize is list-wide: the cards' own value when they all agree, else "cover".
+        final String imageResize = imageResizes.size() == 1 ? imageResizes.iterator().next() : "cover";
         if (screenThumbnailOverrides != null) {
             screenThumbnailOverrides.putAll(thumbnails);
         }
@@ -1085,36 +1137,160 @@ final class ComponentTreeWalker {
         meta.put(SchemaConstants.KEY_COMPONENT, "list");
 
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
-        // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResizeMode size and crop
+        // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResize size and crop
         // each card's image so three sit side by side instead of stacking full-width; without them
-        // the client has nothing to size a screenList overlay item against. They remain compiled-in;
-        // itemsInRow, itemRenderer and the two colours are resolvable per block or per site - see
-        // listValue. The colour defaults assume the reference's dark background, which is why a site
-        // on a light one overrides them.
+        // the client has nothing to size a screenList overlay item against. itemRadius remains
+        // compiled-in. Every other value reads exactly one property off the Cards block - its
+        // Mobile Specific field (mobilelayout, mobilesort, mobileItemsInRow, mobileItemRenderer,
+        // mobileImageResize; mobileimagewidth/mobileitemheight via listNumber) - then the site's
+        // defaults.json screenList entry, then the default here (imageResize and itemRenderer
+        // default to what the cards themselves imply). A colour is emitted only when authored on
+        // the block or set at site level - there is no compiled-in colour default.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
-        content.put("layout", "horizontal");
+        content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
         content.put("listType", "screenList");
-        content.put("textColor", listColor(resource, "mobilelisttextcolor", "textColor", "#f4f3f3"));
-        content.put("imageWidth", 130);
-        content.put("itemHeight", null);
+        final Object textColor = listColor(resource, "mobilelisttextcolor", "textColor", null);
+        if (textColor != null) {
+            content.put("textColor", textColor);
+        }
+        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
+        content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemRadius", null);
-        content.put("itemsInRow", listValue(resource, "mobilelistitemsinrow", "itemsInRow", screenKeys.size()));
-        content.put("itemRenderer", listValue(resource, "mobilelistitemrenderer", "itemRenderer", itemRenderer));
+        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", screenKeys.size()));
+        content.put("itemRenderer", knownItemRenderer(
+                listValue(resource, "mobileItemRenderer", "itemRenderer", itemRenderer), "overlay"));
+        content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResizeMode", "cover");
+        content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
-        styles.put("color", listColor(resource, "mobilelistcolor", "color", "#ffffff"));
+        final Object sectionColor = listColor(resource, "mobilelistcolor", "color", null);
+        if (sectionColor != null) {
+            styles.put("color", sectionColor);
+        }
         styles.put("marginBottom", "16");
         styles.put("marginHorizontal", "8");
 
         final Map<String, Object> list = new LinkedHashMap<>();
         list.put(SchemaConstants.KEY_META, meta);
-        list.put(SchemaConstants.KEY_STYLES, styles);
+        // The block's own custommobilestyle - authored on the Cards block itself, not on any one
+        // card - is the most specific, per-instance choice, same as everywhere else this field is
+        // read (see mergeCustomStyles), so it overrides the computed styles above rather than the
+        // other way around.
+        list.put(SchemaConstants.KEY_STYLES,
+                mergeCustomStyles(styles, new GenericComponent(resource, urlService).getContent()));
         list.put(SchemaConstants.KEY_CONTENT, content);
         return list;
+    }
+
+    /**
+     * Converts a Cards block of three or more product-linking cards into one {@code list} of
+     * {@code listType: productList}, the same collapse {@code category-products-lister} makes from a
+     * folder walk - {@code items} the products' SKUs.
+     *
+     * <p>A card carries its product in the {@code ?productId=<sku>} its resolved {@code link} ends
+     * with (a product page link, not an app-screen key - those become a {@code screenList} above).
+     * The SKU is read back off that link, using the same {@code card} rule the per-card export uses
+     * so this stays in step with link resolution. No {@code filter} is emitted: the list is driven
+     * purely by these SKUs, since a category or {@code .*} filter would make the client ignore them
+     * and return the whole catalog.</p>
+     *
+     * @return the {@code list} component, or {@code null} when the block is not three-plus cards,
+     *         the {@code card} rule is not loaded, or any card's link carries no product SKU - in
+     *         which case the block is left to its normal per-card walk
+     */
+    // package-private so CardsAsListTest can drive it directly.
+    Map<String, Object> cardsBlockAsProductList(final Resource resource, final int order) {
+        final List<Resource> items = allCardItemsOf(resource);
+        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
+        if (items == null || cardRule == null || items.size() <= 2) {
+            return null;
+        }
+        final List<String> skus = new ArrayList<>(items.size());
+        final Set<String> imageResizes = new LinkedHashSet<>();
+        for (final Resource item : items) {
+            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
+            final Map<String, Object> mapped =
+                    cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
+            final String sku = productIdOf(mapped.get("link"));
+            if (sku == null) {
+                // A card that does not open a product - this is not a product list. Leave the whole
+                // block to the normal per-card walk rather than emit a list missing an item.
+                return null;
+            }
+            skus.add(sku);
+            final Object cardResize = mapped.get("imageResize");
+            if (cardResize instanceof String && StringUtils.isNotBlank((String) cardResize)) {
+                imageResizes.add((String) cardResize);
+            }
+        }
+        final String imageResize = imageResizes.size() == 1 ? imageResizes.iterator().next() : "cover";
+
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "list");
+
+        // Presentation mirrors the screenList conversion (see cardsBlockAsList) - layout, itemsInRow,
+        // sort, itemRenderer and the colours are resolvable per block or per site, everything else is
+        // the compiled-in shape a productList item needs.
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("items", skus);
+        // No filter: the list is driven purely by these explicit SKUs. A category or ".*" filter
+        // would make the client return the whole catalog and ignore items.
+        content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
+        content.put("listType", "productList");
+        final Object textColor = listColor(resource, "mobilelisttextcolor", "textColor", null);
+        if (textColor != null) {
+            content.put("textColor", textColor);
+        }
+        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
+        content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
+        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", 3));
+        content.put("itemRenderer", knownItemRenderer(
+                listValue(resource, "mobileItemRenderer", "itemRenderer", "stacked"), "stacked"));
+        content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
+        content.put("filterProperty", "Category");
+        content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
+
+        final Map<String, Object> styles = new LinkedHashMap<>();
+        styles.put("gap", 12);
+        final Object sectionColor = listColor(resource, "mobilelistcolor", "color", null);
+        if (sectionColor != null) {
+            styles.put("color", sectionColor);
+        }
+        styles.put("marginBottom", "16");
+        styles.put("marginHorizontal", "8");
+
+        final Map<String, Object> list = new LinkedHashMap<>();
+        list.put(SchemaConstants.KEY_META, meta);
+        list.put(SchemaConstants.KEY_STYLES,
+                mergeCustomStyles(styles, new GenericComponent(resource, urlService).getContent()));
+        list.put(SchemaConstants.KEY_CONTENT, content);
+        return list;
+    }
+
+    /**
+     * The {@code productId} query parameter of a resolved card link ({@code product?productId=SKU}),
+     * or {@code null} when the link carries none - the link does not open a product.
+     */
+    private static String productIdOf(final Object link) {
+        if (!(link instanceof String)) {
+            return null;
+        }
+        final int query = ((String) link).indexOf('?');
+        if (query < 0) {
+            return null;
+        }
+        for (final String pair : ((String) link).substring(query + 1).split("&")) {
+            final int eq = pair.indexOf('=');
+            if (eq > 0 && "productId".equals(pair.substring(0, eq))) {
+                return StringUtils.trimToNull(pair.substring(eq + 1));
+            }
+        }
+        return null;
     }
 
     /**
@@ -1454,8 +1630,16 @@ final class ComponentTreeWalker {
      */
     private static final String[] PANEL_STYLE_KEYS = {
         "gap", "margin", "padding", "alignItems", "justifyContent",
-        "borderRadius", "backgroundColor", "height", "marginTop",
+        "borderRadius", "backgroundColor", "height", "marginTop", "backgroundImage",
     };
+
+    /**
+     * Style keys whose authored source property is not the same name as the style key itself.
+     * {@code backgroundImage} reads the section's {@code image} property - the same field an EDS
+     * author already uses for a section background image - rather than a property literally named
+     * {@code backgroundImage}, which nothing authors.
+     */
+    private static final Map<String, String> PANEL_STYLE_SOURCE_OVERRIDES = Map.of("backgroundImage", "image");
 
     /** The panel style contract, as a set - a style token may only contribute one of these keys;
      * screen positioning keys such as {@code left}/{@code top} belong to editor.position, not here. */
@@ -1478,7 +1662,8 @@ final class ComponentTreeWalker {
         final Map<String, Object> styles = new LinkedHashMap<>();
         final ValueMap props = resource.getValueMap();
         for (final String key : PANEL_STYLE_KEYS) {
-            final Object value = props.get(key);
+            final String sourceKey = PANEL_STYLE_SOURCE_OVERRIDES.getOrDefault(key, key);
+            final Object value = props.get(sourceKey);
             styles.put(key, value == null ? "" : value);
         }
         // The style resolver adds anything the panel picked up from its section's style tokens

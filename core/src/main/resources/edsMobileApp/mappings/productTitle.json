@@ -8,6 +8,6 @@
     { "target": "textAlignment", "from": "textAlignment", "default": "left" }
   ],
   "styles": [
-    { "target": "color", "from": "color", "default": "#FFF" }
+    { "target": "color", "from": "color" }
   ]
 }

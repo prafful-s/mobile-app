@@ -10,7 +10,7 @@
     { "target": "buttonVariant", "from": "buttonVariant", "default": "contained" }
   ],
   "styles": [
-    { "target": "color", "from": "color", "default": "blue" },
-    { "target": "locationColor", "from": "locationColor", "default": "green" }
+    { "target": "color", "from": "color" },
+    { "target": "locationColor", "from": "locationColor" }
   ]
 }

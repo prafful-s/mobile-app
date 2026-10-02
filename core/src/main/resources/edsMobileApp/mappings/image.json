@@ -2,9 +2,10 @@
   "match": ["image", "picture"],
   "component": "image",
   "fields": [
-    { "target": "image", "first": ["image", "fileReference", "src", "imageRef"] },
+    { "target": "image", "from": "image" },
     { "target": "link", "from": "link", "nullable": true },
-    { "target": "fullWidth", "from": "fullWidth", "type": "boolean", "default": true }
+    { "target": "fullWidth", "from": "fullWidth", "type": "boolean", "default": true },
+    { "target": "imageResize", "from": "mobileimageresize", "default": "cover" }
   ],
   "styles": [
     { "target": "width", "from": "width", "nullable": true },

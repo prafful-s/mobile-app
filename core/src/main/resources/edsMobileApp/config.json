@@ -3,7 +3,11 @@
   "navPageNames": ["nav"],
   "excludedPageNames": ["nav", "footer", "placeholders", "language-masters", "redirects"],
   "includeHomeScreen": true,
-  "styleTokens": ["bg-default=backgroundColor:#F5F8FA"],
+  "styleTokens": [],
   "overrideEnabled": true,
-  "overridePropertyName": "cbJson"
+  "overridePropertyName": "cbJson",
+  "themeContentFragmentModels": [
+    "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme",
+    "/conf/secur-financial/settings/dam/cfm/models/secur-financial-brandtheme"
+  ]
 }

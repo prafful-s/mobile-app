@@ -21,8 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * <p>These knobs ({@code maxDepth}, {@code navPageNames},
  * {@code excludedPageNames}, {@code includeHomeScreen}, {@code styleTokens},
- * {@code overrideEnabled}, {@code overridePropertyName}) are legitimately global - one servlet
- * exports every site, so
+ * {@code overrideEnabled}, {@code overridePropertyName}, {@code themeContentFragmentModels}) are
+ * legitimately global - one servlet exports every site, so
  * unlike branding/integrations/profileViewer there is no per-site variant to keep separate.
  * Trading OSGi's web-console tunability for a single file was a deliberate choice: it keeps every
  * exporter setting in one place instead of split across OSGi config and per-site JSON.</p>
@@ -52,6 +52,7 @@ final class EdsMobileAppSettings {
     private final String[] styleTokens;
     private final boolean overrideEnabled;
     private final String overridePropertyName;
+    private final String[] themeContentFragmentModels;
 
     private EdsMobileAppSettings(final Map<String, Object> values) {
         this.maxDepth = intValue(values, "maxDepth", 3);
@@ -60,11 +61,11 @@ final class EdsMobileAppSettings {
         this.excludedPageNames = stringArray(values, "excludedPageNames", new String[] {
                 "nav", "footer", "placeholders", "language-masters", "redirects"});
         this.includeHomeScreen = boolValue(values, "includeHomeScreen", true);
-        this.styleTokens = stringArray(values, "styleTokens",
-                new String[] {"bg-default=backgroundColor:#F5F8FA"});
+        this.styleTokens = stringArray(values, "styleTokens", new String[0]);
         this.overrideEnabled = boolValue(values, "overrideEnabled", true);
         this.overridePropertyName = StringUtils.defaultIfBlank(
                 stringValue(values, "overridePropertyName"), "cbJson");
+        this.themeContentFragmentModels = stringArray(values, "themeContentFragmentModels", new String[0]);
     }
 
     static EdsMobileAppSettings load() {
@@ -109,6 +110,15 @@ final class EdsMobileAppSettings {
 
     String overridePropertyName() {
         return overridePropertyName;
+    }
+
+    /**
+     * @return the {@code cq:model} path(s) that mark a Content Fragment as a site's theme -
+     *         {@link SiteBranding} resolves a site's branding to the first fragment under its DAM
+     *         root whose model matches one of these, rather than a path named per site
+     */
+    String[] themeContentFragmentModels() {
+        return themeContentFragmentModels.clone();
     }
 
     private static Map<String, Object> read() {
