@@ -34,7 +34,7 @@ class SingleFieldMappingTest {
     void flightSearchEventTypeIsTheMobileField() {
         assertEquals("mobile.search", map("flight-search", "mobilebuttoneventtype", "mobile.search",
                 "buttoneventtype", "web.search").get("eventType"));
-        assertEquals("flight.search", map("flight-search", "buttoneventtype", "web.search").get("eventType"),
+        assertEquals("", map("flight-search", "buttoneventtype", "web.search").get("eventType"),
                 "the web event type is not read");
     }
 
@@ -42,7 +42,7 @@ class SingleFieldMappingTest {
     void flightsEventTypeIsTheMobileField() {
         assertEquals("mobile.select", map("flights", "mobilebuttoneventtype", "mobile.select",
                 "buttoneventtype", "web.select").get("eventType"));
-        assertEquals("flight.select", map("flights", "buttoneventtype", "web.select").get("eventType"),
+        assertEquals("", map("flights", "buttoneventtype", "web.select").get("eventType"),
                 "the web event type is not read");
     }
 
@@ -50,13 +50,26 @@ class SingleFieldMappingTest {
     @Test
     void aFlightsBlockWithNoMobileEventStillBecomesFlightResults() {
         final Map<String, Object> mapped = map("flights", "flightlistcontentfragment", "/content/dam/f");
-        assertEquals("flight.select", mapped.get("eventType"));
+        assertEquals("", mapped.get("eventType"));
         assertEquals("checkout", mapped.get("link"));
         assertNull(mapped.get("flightlistcontentfragment"), "the block's own properties do not leak");
     }
 
-    @Test
-    void aHerosImageIsItsImageField() {
+        @Test
+        void mobileEventTypesHaveNoFallbackAction() {
+        for (String rule : new String[] {"button", "action-button", "flight-search", "flights"}) {
+            assertEquals("mobile.action", map(rule, "mobilebuttoneventtype", "mobile.action",
+                "buttoneventtype", "web.action").get("eventType"), rule);
+            assertEquals("", map(rule).get("eventType"), rule + " with no authored event");
+            assertEquals("", map(rule, "mobilebuttoneventtype", "",
+                "buttoneventtype", "web.action").get("eventType"), rule + " with a blank mobile event");
+            assertEquals("", map(rule, "mobilebuttoneventtype", "   ",
+                "buttoneventtype", "web.action").get("eventType"), rule + " with a whitespace mobile event");
+        }
+        }
+
+        @Test
+        void aHerosImageIsItsImageField() {
         assertEquals("/content/dam/hero.jpg", map("hero", "image", "/content/dam/hero.jpg",
                 "fileReference", "/content/dam/old.jpg", "text", "<h1>Hi</h1>").get("image"));
         assertNull(map("hero", "fileReference", "/content/dam/old.jpg", "imageRef", "/content/dam/older.jpg",
