@@ -6,7 +6,6 @@
   "checkoutForm": {
     "link": "review-order",
     "formId": "checkoutForm",
-    "eventType": "commerce.checkouts",
     "webhookUrl": "",
     "toastMessage": "",
     "submitButtonLabel": "Checkout"
