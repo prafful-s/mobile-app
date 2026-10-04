@@ -1,0 +1,12 @@
+{
+  "match": ["inbox"],
+  "component": "inbox",
+  "fields": [
+    { "target": "surface", "from": "surface" }
+  ],
+  "styles": [
+    { "target": "borderColor", "from": "borderColor" },
+    { "target": "borderRadius", "from": "borderRadius", "type": "number", "default": 9 },
+    { "target": "backgroundColor", "from": "backgroundColor" }
+  ]
+}

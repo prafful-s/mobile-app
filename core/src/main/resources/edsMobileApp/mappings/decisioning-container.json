@@ -1,0 +1,21 @@
+{
+  "match": ["decisioning-container"],
+  "component": "offer",
+  "variants": [
+    { "when": { "field": "mobileDecisioningType", "equals": "offer" }, "useRule": "decisioning-offer" }
+  ],
+  "fields": [
+    { "target": "linkTo", "from": "mobileLinkTo", "type": "path" },
+    { "target": "opacity", "from": "mobileOverlayOpacity", "type": "number", "default": 0.34 },
+    { "target": "surface", "from": "mobileSurface" },
+    { "target": "showTitle", "from": "mobileShowTitle", "type": "boolean", "default": false },
+    { "target": "showButton", "from": "mobileShowButton", "type": "boolean", "default": false },
+    { "target": "showDebugMessage", "from": "mobileShowDebugMessage", "type": "boolean", "default": false },
+    { "target": "titleVariant", "from": "mobileTitleSize", "map": { "large": "titleLarge", "medium": "titleMedium", "small": "titleSmall", "*": "titleLarge" }, "default": "titleLarge" },
+    { "target": "subtitleVariant", "from": "mobileSubtitleSize", "map": { "large": "titleLarge", "medium": "titleMedium", "small": "titleSmall", "*": "titleMedium" }, "default": "titleMedium" },
+    { "target": "fallbackImage", "from": "mobileFallbackImage" },
+    { "target": "contentAlignment", "from": "mobileContentAlignment", "default": "center" },
+    { "target": "verticalAlignment", "from": "mobileVerticalAlignment", "default": "bottom" },
+    { "target": "horizontalAlignment", "from": "mobileHorizontalAlignment", "default": "center" }
+  ]
+}

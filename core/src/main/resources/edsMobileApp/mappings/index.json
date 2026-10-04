@@ -14,5 +14,9 @@
   "actionButton",
   "divider",
   "flight-search",
-  "flights"
+  "flights",
+  "contentCards",
+  "inbox",
+  "decisioning-container",
+  "decisioning-offer"
 ]
