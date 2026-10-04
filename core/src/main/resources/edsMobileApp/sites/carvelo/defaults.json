@@ -4,7 +4,7 @@
     "template": "mobile-v2/automotive-v3",
     "vertical": "Automotive",
     "thumbnail": "https://demo-system-next.s3.eu-north-1.amazonaws.com/argon/upload/dev/carvelo-mobile/thumbnail",
-    "useCart": false
+    "useCart": true
   },
   "rightIcon": {
     "icon": "shopping-cart",
