@@ -5,10 +5,5 @@
     "vertical": "FSI",
     "useCart": false
   },
-  "extractInlineLinks": true,
-  "componentStyles": {
-    "en.banner.65721cdd": {
-      "color": "#333333"
-    }
-  }
+  "extractInlineLinks": true
 }

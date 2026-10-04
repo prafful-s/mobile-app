@@ -23,9 +23,5 @@
     "car-loan":             { "redirectAfterSubmit": "carloan-application-submitted" },
     "build-your-own":       { "redirectAfterSubmit": "home" }
   },
-  "screenList": {
-    "textColor": "#1a1a1a",
-    "color": "#1a1a1a"
-  },
   "extractInlineLinks": true
 }
