@@ -64,7 +64,7 @@ class ListStylingTest {
 
     private Map<String, Object> convert(final Resource block) {
         final Map<String, Object> list =
-                walker.cardsBlockAsList(block, 0, screens("mexico", "poland", "united-kingdom"), null);
+                walker.cardsBlockAsList(block, 0, screens("mexico", "poland", "united-kingdom"));
         assertNotNull(list, "fixture must convert to a list");
         return list;
     }
@@ -85,7 +85,7 @@ class ListStylingTest {
     void anUnauthoredBlockEmitsExactlyTodaysValues() {
         final Map<String, Object> list = convert(trio("plain"));
         assertEquals(1, content(list).get("itemsInRow"), "defaults to a single column");
-        assertEquals("overlay", content(list).get("itemRenderer"), "defaults to the cards' agreed cardType");
+        assertEquals("overlay", content(list).get("itemRenderer"), "defaults to the compiled-in overlay");
         assertNull(content(list).get("textColor"), "no colour is emitted unless authored");
         assertNull(styles(list).get("color"), "no colour is emitted unless authored");
         assertEquals("horizontal", content(list).get("layout"));

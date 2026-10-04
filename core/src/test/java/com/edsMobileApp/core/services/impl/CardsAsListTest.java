@@ -45,7 +45,7 @@ class CardsAsListTest {
     }
 
     private Map<String, Object> convert(final Resource block, final Set<String> knownScreens) {
-        return walker.cardsBlockAsList(block, 0, knownScreens, null);
+        return walker.cardsBlockAsList(block, 0, knownScreens);
     }
 
     @SuppressWarnings("unchecked")
@@ -161,31 +161,20 @@ class CardsAsListTest {
     }
 
     @Test
-    void theListsImageResizeFollowsTheCardsWhenTheyAgree() {
+    void theListsImageResizeIgnoresTheCardsAndDefaultsToCover() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/contain", "filter", "cards");
         cardWithResize(block.getPath() + "/a", "mexico", "contain");
         cardWithResize(block.getPath() + "/b", "poland", "contain");
         cardWithResize(block.getPath() + "/c", "united-kingdom", "contain");
 
-        assertEquals("contain",
-                listImageResize(convert(block, screens("mexico", "poland", "united-kingdom"))));
-    }
-
-    @Test
-    void theListsImageResizeIsCoverWhenTheCardsDisagree() {
-        final Resource block = context.create().resource(
-                "/content/s/en/p/jcr:content/root/mixed", "filter", "cards");
-        cardWithResize(block.getPath() + "/a", "mexico", "contain");
-        cardWithResize(block.getPath() + "/b", "poland", "contain");
-        cardWithResize(block.getPath() + "/c", "united-kingdom", "cover");
-
         assertEquals("cover",
-                listImageResize(convert(block, screens("mexico", "poland", "united-kingdom"))));
+                listImageResize(convert(block, screens("mexico", "poland", "united-kingdom"))),
+                "the list's imageResize is block-level/static only - the cards no longer drive it");
     }
 
     @Test
-    void aProductListsImageResizeFollowsTheCardsToo() {
+    void aProductListsImageResizeIgnoresTheCardsAndDefaultsToCover() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/prodresize", "filter", "cards");
         for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
@@ -195,7 +184,7 @@ class CardsAsListTest {
                     "link", "/content/s/en/product?productId=" + sku,
                     "mobileimagestyle", "contain");
         }
-        assertEquals("contain", listImageResize(walker.cardsBlockAsProductList(block, 0)));
+        assertEquals("cover", listImageResize(walker.cardsBlockAsProductList(block, 0)));
     }
 
     /**
