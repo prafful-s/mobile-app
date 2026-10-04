@@ -256,28 +256,17 @@ final class ComponentMapping {
 
         /**
          * One (fields, injectAs, keepBlank) tuple - the folder-ref applies each in turn per fragment.
-         *
-         * <p>An optional {@code matchField}/{@code matchAgainst} pair narrows the collect to only
-         * those fragments whose {@code matchField} value appears in the authored list at
-         * {@code matchAgainst}. Used by {@code new-arrival}, where the block hardcodes a SKU list
-         * and the collect should read categories off just those SKUs' fragments, not every fragment
-         * in the folder tree.</p>
          */
         static final class Collect {
 
             private final List<String> fields;
             private final String injectAs;
             private final boolean keepBlank;
-            private final String matchField;
-            private final String matchAgainst;
 
-            private Collect(final List<String> fields, final String injectAs, final boolean keepBlank,
-                            final String matchField, final String matchAgainst) {
+            private Collect(final List<String> fields, final String injectAs, final boolean keepBlank) {
                 this.fields = fields;
                 this.injectAs = injectAs;
                 this.keepBlank = keepBlank;
-                this.matchField = matchField;
-                this.matchAgainst = matchAgainst;
             }
 
             static Collect of(final Object definition) {
@@ -300,15 +289,12 @@ final class ComponentMapping {
                     return null;
                 }
                 return new Collect(Collections.unmodifiableList(fields), injectAs,
-                        Boolean.TRUE.equals(map.get("keepBlank")),
-                        trimmed(map.get("matchField")), trimmed(map.get("matchAgainst")));
+                        Boolean.TRUE.equals(map.get("keepBlank")));
             }
 
             List<String> getFields() { return fields; }
             String getInjectAs() { return injectAs; }
             boolean keepBlank() { return keepBlank; }
-            String getMatchField() { return matchField; }
-            String getMatchAgainst() { return matchAgainst; }
         }
     }
 

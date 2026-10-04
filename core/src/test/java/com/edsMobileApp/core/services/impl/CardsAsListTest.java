@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -248,10 +249,46 @@ class CardsAsListTest {
         assertEquals("cover", content.get("imageResize"));
     }
 
+    @Test
+    void anAuthoredLimitCapsAScreenList() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/limited", "filter", "cards", "limit", 5L);
+        card(block.getPath() + "/a", "mexico");
+        card(block.getPath() + "/b", "poland");
+        card(block.getPath() + "/c", "united-kingdom");
+
+        assertEquals(5L, content(convert(block, screens("mexico", "poland", "united-kingdom")))
+                .get("limit"));
+    }
+
+    @Test
+    void anUnauthoredOrZeroLimitIsOmitted() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/nolimit", "filter", "cards", "limit", 0L);
+        card(block.getPath() + "/a", "mexico");
+        card(block.getPath() + "/b", "poland");
+        card(block.getPath() + "/c", "united-kingdom");
+
+        assertFalse(content(convert(block, screens("mexico", "poland", "united-kingdom")))
+                .containsKey("limit"), "0 means show all, so no limit is emitted");
+    }
+
+    @Test
+    void anAuthoredLimitCapsAProductList() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/prodlimit", "filter", "cards", "limit", "2");
+        for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
+            context.create().resource(block.getPath() + "/" + sku, "model", "card",
+                    "image", "/content/dam/s/" + sku + ".jpg",
+                    "text", "<h2>" + sku + "</h2>",
+                    "link", "/content/s/en/product?productId=" + sku);
+        }
+        assertEquals(2L, content(walker.cardsBlockAsProductList(block, 0)).get("limit"));
+    }
+
     /** The client's Card draws nothing for a renderer it does not know, which blanks the whole list. */
     @Test
-    void anUnknownItemRendererNeverReachesTheClient() {
-        final Resource block = context.create().resource(
+    void anUnknownItemRendererNeverReachesTheClient() {        final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/badrenderer", "filter", "cards", "mobileitemrenderer", "below");
         card(block.getPath() + "/a", "mexico");
         card(block.getPath() + "/b", "poland");

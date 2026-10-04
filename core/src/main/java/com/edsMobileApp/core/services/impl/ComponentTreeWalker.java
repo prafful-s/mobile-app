@@ -953,6 +953,15 @@ final class ComponentTreeWalker {
         }
     }
 
+    /** Emits the block's authored {@code limit} (0 = show all, so omitted) the same way the
+     * {@code category-products-lister} mapping does, so every list caps items through one field. */
+    private void putAuthoredLimit(final Resource block, final Map<String, Object> content) {
+        final Object limit = listNumber(block, "limit", null, null);
+        if (limit instanceof Number && ((Number) limit).longValue() > 0) {
+            content.put("limit", limit);
+        }
+    }
+
     /** As {@link #listValue}, but an authored value that is not a hex colour is ignored rather than emitted. */
     private Object listColor(final Resource block, final String property,
                              final String siteKey, final String fallback) {
@@ -1148,6 +1157,7 @@ final class ComponentTreeWalker {
         // the block or set at site level - there is no compiled-in colour default.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", screenKeys);
+        putAuthoredLimit(resource, content);
         content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
         content.put("listType", "screenList");
         final Object textColor = listColor(resource, "mobilelisttextcolor", "textColor", null);
@@ -1241,6 +1251,7 @@ final class ComponentTreeWalker {
         // the compiled-in shape a productList item needs.
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("items", skus);
+        putAuthoredLimit(resource, content);
         // No filter: the list is driven purely by these explicit SKUs. A category or ".*" filter
         // would make the client return the whole catalog and ignore items.
         content.put("layout", listValue(resource, "mobilelayout", "layout", "horizontal"));
@@ -1442,7 +1453,7 @@ final class ComponentTreeWalker {
         for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
             collected.put(c.getInjectAs(), new ArrayList<>());
         }
-        collectFragments(folder, ref, authored, collected, 0);
+        collectFragments(folder, ref, collected, 0);
         boolean anyPopulated = false;
         for (final List<String> values : collected.values()) {
             if (!values.isEmpty()) {
@@ -1473,7 +1484,6 @@ final class ComponentTreeWalker {
 
     private void collectFragments(final Resource folder,
                                   final ComponentMapping.ContentFragmentFolderRef ref,
-                                  final Map<String, Object> authored,
                                   final Map<String, List<String>> sink,
                                   final int depth) {
         for (final Resource child : folder.getChildren()) {
@@ -1483,14 +1493,11 @@ final class ComponentTreeWalker {
                 // jcr:content/renditions subtree carries hundreds of metadata sub-nodes per file
                 // and stalls the walk against a page-load budget without ever finding a fragment.
                 if (depth < FRAGMENT_FOLDER_MAX_DEPTH && isFolderContainer(child) && child.hasChildren()) {
-                    collectFragments(child, ref, authored, sink, depth + 1);
+                    collectFragments(child, ref, sink, depth + 1);
                 }
                 continue;
             }
             for (final ComponentMapping.ContentFragmentFolderRef.Collect c : ref.getCollects()) {
-                if (!matchesFilter(c, elements, authored)) {
-                    continue;
-                }
                 String value = null;
                 for (final String field : c.getFields()) {
                     final String candidate = elements.get(field);
@@ -1517,43 +1524,6 @@ final class ComponentTreeWalker {
      */
     private static boolean isFolderContainer(final Resource child) {
         return !DAM_ASSET.equals(child.getValueMap().get("jcr:primaryType", String.class));
-    }
-
-    /**
-     * True when the collect applies to this fragment. Without match constraints, always true. With
-     * them, the CF's {@code matchField} value must appear in the authored list at
-     * {@code matchAgainst} - the block hardcoded a set of SKUs and only their fragments count.
-     */
-    private static boolean matchesFilter(final ComponentMapping.ContentFragmentFolderRef.Collect c,
-                                          final Map<String, String> elements,
-                                          final Map<String, Object> authored) {
-        final String matchField = c.getMatchField();
-        final String matchAgainst = c.getMatchAgainst();
-        if (matchField == null || matchAgainst == null) {
-            return true;
-        }
-        final String value = elements.get(matchField);
-        if (StringUtils.isBlank(value)) {
-            return false;
-        }
-        final Object allowed = authored.get(matchAgainst);
-        if (allowed instanceof Object[]) {
-            for (final Object item : (Object[]) allowed) {
-                if (item != null && value.equals(String.valueOf(item))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        if (allowed instanceof Iterable) {
-            for (final Object item : (Iterable<?>) allowed) {
-                if (item != null && value.equals(String.valueOf(item))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return allowed != null && value.equals(String.valueOf(allowed));
     }
 
     /** Strips scheme+host off an absolute http(s) URL, keeping only path. Idempotent on paths. */
