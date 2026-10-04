@@ -18,6 +18,17 @@ class MobileFieldMappingTest {
 
     private final ComponentMappings mappings = ComponentMappings.load();
 
+    @Test
+    void cartReadsTheAuthoredLowercaseVisibilityFlags() {
+        final Map<String, Object> content = mappings.find("cart").apply(Map.of(
+                "showdiscount", false,
+                "showpromocode", false,
+                "showshippingcharge", false), Map.of());
+        assertEquals(false, content.get("showDiscount"));
+        assertEquals(false, content.get("showPromoCode"));
+        assertEquals(false, content.get("showShippingCharge"));
+    }
+
     private static Map<String, Object> authored(final Object... keyValue) {
         final Map<String, Object> out = new HashMap<>();
         for (int i = 0; i < keyValue.length; i += 2) {

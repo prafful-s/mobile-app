@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -79,7 +80,7 @@ final class ComponentTreeWalker {
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
-    /** Kept for this walker's own per-site lookups (see {@link #rendersLinklessCards}) and forwarded to
+    /** Kept for this walker's own per-site lookups and forwarded to
      * the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
     void setSiteDefaults(final SiteDefaults siteDefaults) {
         this.siteDefaults = siteDefaults;
@@ -632,45 +633,21 @@ final class ComponentTreeWalker {
             final boolean speaksTargetVocabulary = model instanceof AbstractComponentModel;
             final Map<String, Object> authored = model.getContent();
 
-            // A block explicitly authored as a 3-card Cards group is intercepted before anything
-            // else - including before the "nothing of its own to say" check below, since a Cards
-            // block can carry its own authored property (e.g. modelFields="[classes]") and still be
-            // a pure wrapper around its items. Checked unconditionally so a block like this is never
-            // exported unmapped-with-children just because it happens to have a stray property.
             if (hasChildren && hierarchical && isCardsBlock(child)) {
-                final Map<String, Object> list = cardsBlockAsList(child, sink.size(), knownScreenKeys,
-                        screenThumbnailOverrides);
-                if (list != null) {
-                    sink.add(list);
-                    continue;
-                }
-                // Three or more cards that all open a product (link carries ?productId=<sku>) collapse
-                // into one productList, the same shape category-products-lister builds from a folder.
-                final Map<String, Object> productList = cardsBlockAsProductList(child, sink.size());
-                if (productList != null) {
-                    sink.add(productList);
-                    continue;
-                }
-                if (isCardsBlockEligibleForList(child)
-                        && !hasUnresolvedRealCardLink(child, knownScreenKeys)) {
-                    // Either no card carries a link at all (a decorative icon strip - Luma's
-                    // "feature-support" cards), or at least one resolves to a real screen and at
-                    // least one doesn't (a genuine mix) - either way the whole block is dropped
-                    // rather than falling through to individual cards, so a client never sees a mix
-                    // of live and dead cards, or a set of cards with nowhere to go.
-                    //
-                    // Exception: a site may opt in (renderLinklessCards in its defaults.json) to keep
-                    // linkless cards that are real content, not decoration - e.g. carvelo's
-                    // icon+heading+body "feature" cards. That only relaxes the all-links-dead case; a
-                    // genuine live/dead mix is still dropped, so the no-mixed-cards guarantee holds.
-                    if (!(rendersLinklessCards(child) && allCardLinksDead(child))) {
-                        continue;
+                Map<String, Object> list = null;
+                if (rendersCardsAsList(child)) {
+                    list = cardsBlockAsList(child, sink.size(), knownScreenKeys, screenThumbnailOverrides);
+                    if (list == null) {
+                        list = cardsBlockAsProductList(child, sink.size());
                     }
                 }
-                // Every card has a real link (not the "#" a missing one defaults to), and none of
-                // them resolve to an app screen - e.g. they link out to a product page instead. Fall
-                // through to the normal per-child walk below and export each card as its own
-                // component, using whatever its own rule resolves.
+                if (list != null) {
+                    sink.add(list);
+                } else {
+                    collectComponents(child, sink, depth + 1, hierarchical, ancestorSection, knownScreenKeys,
+                            screenThumbnailOverrides);
+                }
+                continue;
             }
 
             // A quiz block (e.g. Frescopa's coffee-quiz-frescopa) authors only its own behaviour
@@ -830,81 +807,6 @@ final class ComponentTreeWalker {
                 || "cards".equalsIgnoreCase(props.get(SchemaConstants.PN_NAME, StringUtils.EMPTY));
     }
 
-    /** {@code isCardsBlock} plus exactly three {@code card}-modelled item children. */
-    private boolean isCardsBlockEligibleForList(final Resource resource) {
-        return cardItemsOf(resource) != null;
-    }
-
-    /**
-     * @return true only when every one of {@code resource}'s three cards carries a real link (not
-     *         the {@code "#"} a missing one resolves to) and none of them is a known screen key -
-     *         the shape a product-linking {@code Cards} group takes. False for a decorative group
-     *         with no links at all (nothing to fall through to), and false for a genuine mix of
-     *         screen-resolving and non-resolving cards (the {@code isCardsBlockEligibleForList} call
-     *         site keeps dropping both of those, as it always has).
-     */
-    private boolean hasUnresolvedRealCardLink(final Resource resource, final Set<String> knownScreenKeys) {
-        final List<Resource> items = cardItemsOf(resource);
-        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
-        if (items == null || cardRule == null) {
-            return false;
-        }
-        boolean anyRealLink = false;
-        for (final Resource item : items) {
-            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
-            final Map<String, Object> mapped = cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
-            final Object link = mapped.get("link");
-            if (!(link instanceof String)) {
-                continue;
-            }
-            final String value = (String) link;
-            if (knownScreenKeys.contains(value)) {
-                return false;
-            }
-            if (!"#".equals(value)) {
-                anyRealLink = true;
-            }
-        }
-        return anyRealLink;
-    }
-
-    /**
-     * @return true when every one of {@code resource}'s cards resolves to the {@code "#"} placeholder
-     *         a missing link defaults to - i.e. no card carries any link at all. This is the pure
-     *         "linkless content cards" shape (carvelo's icon+heading+body feature cards); a block
-     *         with even one real link is not all-dead, so a genuine live/dead mix stays droppable.
-     */
-    private boolean allCardLinksDead(final Resource resource) {
-        final List<Resource> items = cardItemsOf(resource);
-        final ComponentMapping cardRule = items == null ? null : mappings.find("card");
-        if (items == null || cardRule == null) {
-            return false;
-        }
-        for (final Resource item : items) {
-            final Map<String, Object> authored = new GenericComponent(item, urlService).getContent();
-            final Map<String, Object> mapped = cardRule.effectiveFor(authored).apply(authored, Collections.emptyMap());
-            final Object link = mapped.get("link");
-            final String value = link instanceof String ? (String) link : "#";
-            if (!"#".equals(value)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * @return true when the site owning {@code resource} opts in to keeping linkless cards via
-     *         {@code renderLinklessCards} in its {@code defaults.json}. Absent (the default) means the
-     *         historical behaviour is unchanged - linkless card blocks are dropped.
-     */
-    private boolean rendersLinklessCards(final Resource resource) {
-        if (siteDefaults == null) {
-            return false;
-        }
-        final Object flag = siteDefaults.forPath(resource.getPath()).get("renderLinklessCards");
-        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
-    }
-
     /**
      * @return the site's {@code defaults.json} {@code screenList.<key>} override for
      *         {@code resource}'s site, or {@code fallback} when the site, the section, or this
@@ -926,7 +828,10 @@ final class ComponentTreeWalker {
      */
     private Object listValue(final Resource block, final String property,
                              final String siteKey, final Object fallback) {
-        final Object authored = block.getValueMap().get(property);
+        Object authored = block.getValueMap().get(property);
+        if (!isSet(authored)) {
+            authored = block.getValueMap().get(property.toLowerCase(Locale.ROOT));
+        }
         if (isSet(authored)) {
             return authored;
         }
@@ -991,20 +896,12 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * @return {@code resource}'s children, when there are exactly three and every one of them
-     *         resolves (by name, via {@link GenericComponent#getComponentName()}) to {@code card} -
-     *         or {@code null} when the block does not have that shape
-     */
-    /**
      * Whether a Cards block has opted in to becoming a {@code screenList} on whatever cards it has,
      * via a {@code mobilerenderaslist} boolean authored on the block itself.
      *
-     * <p>Absent or false - the default, and every block today - leaves the conversion exactly as it
-     * was: exactly three cards, every one resolving to a screen, or no list. True relaxes both of
-     * those, which is the only way a block that is not a clean three-of-three can become a list.
-     * Opt-in rather than a change of rule because relaxing it globally would convert blocks that are
-     * content rather than navigation - halliby's five- and six-card category grids among them - and
-     * a screenList discards the cards' authored titles and copy in favour of the target screens'.</p>
+    * <p>Absent or false exports individual cards without entering list-specific logic.
+    * True enables list conversion and skips cards whose links do not resolve to a screen.
+    * A screenList uses the target screens' titles and copy rather than the cards' authored copy.</p>
      *
      * <p>Read straight off the block's {@link ValueMap}, the same way {@link #isCardsBlock} reads
      * {@code filter} and {@code name}, so it works whether the property is authored through a block
@@ -1014,7 +911,7 @@ final class ComponentTreeWalker {
         return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
     }
 
-    /** Every {@code card}-modelled child, however many - the opted-in counterpart to {@link #cardItemsOf}. */
+    /** Every {@code card}-modelled child, regardless of count. */
     private List<Resource> allCardItemsOf(final Resource resource) {
         final List<Resource> items = new ArrayList<>();
         for (final Resource child : resource.getChildren()) {
@@ -1029,37 +926,14 @@ final class ComponentTreeWalker {
         return items.isEmpty() ? null : items;
     }
 
-    private List<Resource> cardItemsOf(final Resource resource) {
-        final List<Resource> items = new ArrayList<>();
-        for (final Resource child : resource.getChildren()) {
-            if (isSystemNode(child)) {
-                continue;
-            }
-            items.add(child);
-        }
-        if (items.size() != 3) {
-            return null;
-        }
-        for (final Resource item : items) {
-            final String name = new GenericComponent(item, urlService).getComponentName();
-            if (!"card".equals(name)) {
-                return null;
-            }
-        }
-        return items;
-    }
-
     /**
-     * Converts a three-card {@code Cards} block into a single {@code list} component of
-     * {@code listType: screenList}, one item per card - but only when every card's link resolves to
-     * a real screen. Reuses the {@code card} rule's own {@code link} field (which already reduces an
+      * Converts cards with known screen links into a {@code screenList}, skipping unresolved links.
+      * Reuses the {@code card} rule's own {@code link} field (which already reduces an
      * authored {@code <a href="/content/.../beginners-luck">} down to the leaf screen key
      * {@code beginners-luck} - see {@link ComponentMapping#apply}) rather than re-implementing href
      * extraction, so this stays in step with however the card rule resolves a link.
      *
-     * @return the {@code list} component, or {@code null} when {@code resource} is not a
-     *         three-card group, the {@code card} rule is not loaded, or not every card resolves to a
-     *         key in {@code knownScreenKeys}
+      * @return the {@code list} component, or {@code null} when no card resolves to a known screen
      */
     // package-private so CardsAsListTest can drive it directly.
     Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
@@ -1067,25 +941,10 @@ final class ComponentTreeWalker {
         return cardsBlockAsList(resource, order, knownScreenKeys, null);
         }
 
-        Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
+    Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
                               final Set<String> knownScreenKeys,
                               final Map<String, String> screenThumbnailOverrides) {
-        return cardsBlockAsList(resource, order, knownScreenKeys, screenThumbnailOverrides,
-            rendersCardsAsList(resource));
-    }
-
-    /**
-     * @param relaxed when the block opts in via {@code mobilerenderaslist}: take however many cards it
-     *                has rather than requiring exactly three, and skip a card whose link does not
-     *                resolve to a screen rather than abandoning the whole conversion. Still returns
-     *                {@code null} when that leaves nothing, so an opted-in block with no screen-
-     *                resolving card behaves exactly as it does today.
-     */
-    private Map<String, Object> cardsBlockAsList(final Resource resource, final int order,
-                                                  final Set<String> knownScreenKeys,
-                                                  final Map<String, String> screenThumbnailOverrides,
-                                                  final boolean relaxed) {
-        final List<Resource> items = relaxed ? allCardItemsOf(resource) : cardItemsOf(resource);
+        final List<Resource> items = allCardItemsOf(resource);
         final ComponentMapping cardRule = items == null ? null : mappings.find("card");
         if (items == null || cardRule == null) {
             return null;
@@ -1099,12 +958,7 @@ final class ComponentTreeWalker {
             final Object link = mapped.get("link");
             final String key = link instanceof String ? (String) link : null;
             if (StringUtils.isBlank(key) || !knownScreenKeys.contains(key)) {
-                if (relaxed) {
-                    // An empty placeholder, or a card linking somewhere the app has no screen for.
-                    // It contributes no list item; the cards that do resolve still make the list.
-                    continue;
-                }
-                return null;
+                continue;
             }
             if (screenKeys.contains(key)) {
                 // Several cards can open the same screen (Frescopa's Bagged Coffee / Coffee Pods /
@@ -1118,8 +972,6 @@ final class ComponentTreeWalker {
             }
         }
         if (screenKeys.isEmpty()) {
-            // Only reachable when relaxed - the strict path returns null on the first card that
-            // does not resolve. Nothing to list, so leave the block to the normal walk.
             return null;
         }
         if (screenThumbnailOverrides != null) {
@@ -1136,8 +988,8 @@ final class ComponentTreeWalker {
         // each card's image for the list's overlay items; without them
         // the client has nothing to size a screenList overlay item against. itemRadius remains
         // compiled-in. Every other value reads exactly one property off the Cards block - its
-        // Mobile Specific field (mobilelayout, mobilesort, mobileitemsinrow, mobileitemrenderer,
-        // mobileimageresize; mobileimagewidth/mobileitemheight via listNumber) - then the site's
+        // Mobile Specific field (mobilelayout, mobilesort, mobileItemsInRow, mobileItemRenderer,
+        // mobileImageResize; mobileimagewidth/mobileitemheight via listNumber) - then the site's
         // defaults.json screenList entry, then the compiled-in default here. A colour is emitted
         // only when authored on the block or set at site level - there is no compiled-in colour default.
         final Map<String, Object> content = new LinkedHashMap<>();
@@ -1152,12 +1004,12 @@ final class ComponentTreeWalker {
         content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 120));
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemRadius", null);
-        content.put("itemsInRow", listValue(resource, "mobileitemsinrow", "itemsInRow", 1));
+        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", 1));
         content.put("itemRenderer", knownItemRenderer(
-                listValue(resource, "mobileitemrenderer", "itemRenderer", "overlay"), "overlay"));
+            listValue(resource, "mobileItemRenderer", "itemRenderer", "overlay"), "overlay"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", listValue(resource, "mobileimageresize", null, "cover"));
+        content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
         content.put("titleFontWeight", "regular");
         content.put("subtitleFontWeight", "light");
@@ -1184,7 +1036,7 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * Converts a Cards block of three or more product-linking cards into one {@code list} of
+    * Converts a Cards block of product-linking cards into one {@code list} of
      * {@code listType: productList}, the same collapse {@code category-products-lister} makes from a
      * folder walk - {@code items} the products' SKUs.
      *
@@ -1195,7 +1047,7 @@ final class ComponentTreeWalker {
      * purely by these SKUs, since a category or {@code .*} filter would make the client ignore them
      * and return the whole catalog.</p>
      *
-     * @return the {@code list} component, or {@code null} when the block is not three-plus cards,
+    * @return the {@code list} component, or {@code null} when the block has no cards,
      *         the {@code card} rule is not loaded, or any card's link carries no product SKU - in
      *         which case the block is left to its normal per-card walk
      */
@@ -1203,7 +1055,7 @@ final class ComponentTreeWalker {
     Map<String, Object> cardsBlockAsProductList(final Resource resource, final int order) {
         final List<Resource> items = allCardItemsOf(resource);
         final ComponentMapping cardRule = items == null ? null : mappings.find("card");
-        if (items == null || cardRule == null || items.size() <= 2) {
+        if (items == null || cardRule == null) {
             return null;
         }
         final List<String> skus = new ArrayList<>(items.size());
@@ -1241,12 +1093,12 @@ final class ComponentTreeWalker {
         }
         content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 120));
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
-        content.put("itemsInRow", listValue(resource, "mobileitemsinrow", "itemsInRow", 1));
+        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", 1));
         content.put("itemRenderer", knownItemRenderer(
-                listValue(resource, "mobileitemrenderer", "itemRenderer", "stacked"), "stacked"));
+            listValue(resource, "mobileItemRenderer", "itemRenderer", "stacked"), "stacked"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", listValue(resource, "mobileimageresize", null, "cover"));
+        content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
         content.put("titleFontWeight", "regular");
         content.put("subtitleFontWeight", "light");

@@ -12,21 +12,25 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.models.factory.ModelFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+
+import com.day.cq.wcm.api.Page;
+import com.edsMobileApp.core.schema.SchemaConstants;
+import com.edsMobileApp.core.services.FormSchemaService;
 
 import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
- * A Cards block becomes a {@code screenList} only when it is exactly three cards that every one
- * resolve to an app screen. {@code mobilerenderaslist} on the block relaxes both halves of that, so a
- * block can be a list on whatever cards it has - wknd-fly's destinations block, one authored India
- * card beside two untouched placeholders, is the case it was added for.
+ * Page export only enters Cards list logic when {@code mobilerenderaslist} is true.
+ * Otherwise, each card exports individually, including product and linkless cards.
  *
- * <p>The tests that matter most here are the ones asserting a block <em>without</em> the property
- * behaves exactly as it does today, since that is every block currently in the estate.</p>
+ * <p>Direct builder tests also exercise list fields and link resolution independently of the
+ * page-export toggle gate.</p>
  */
 @ExtendWith(AemContextExtension.class)
 class CardsAsListTest {
@@ -46,6 +50,88 @@ class CardsAsListTest {
 
     private Map<String, Object> convert(final Resource block, final Set<String> knownScreens) {
         return walker.cardsBlockAsList(block, 0, knownScreens);
+    }
+
+    private List<Map<String, Object>> exportCards(final Boolean optIn, final boolean products,
+                                                 final boolean linkless) {
+        final Page page = context.create().page("/content/s/en/export-" + optIn);
+        context.create().resource(page.getPath() + "/jcr:content/root");
+        final String blockPath = page.getPath() + "/jcr:content/root/cards";
+        if (optIn == null) {
+            context.create().resource(blockPath, "filter", "cards",
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                    "mobileItemRenderer", "overlay");
+        } else {
+            context.create().resource(blockPath, "filter", "cards", "mobilerenderaslist", optIn,
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                    "mobileItemRenderer", "overlay");
+        }
+        for (final String key : List.of("mexico", "poland", "united-kingdom", "india")) {
+            if (linkless) {
+                context.create().resource(blockPath + "/" + key, "model", "card",
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
+                        "image", "/content/dam/s/" + key + ".jpg", "text", "<h2>" + key + "</h2>");
+            } else if (products) {
+                productCard(blockPath + "/" + key, key);
+            } else {
+                card(blockPath + "/" + key, key);
+            }
+        }
+        final FormSchemaService schemas = Mockito.mock(FormSchemaService.class);
+        Mockito.when(schemas.getSchema(Mockito.anyString())).thenReturn(List.of());
+        final ComponentTreeWalker exporter = new ComponentTreeWalker(Mockito.mock(ModelFactory.class),
+                new UrlServiceImpl(), schemas, new StyleResolver(new String[0]), ComponentMappings.load());
+        return exporter.componentsOf(page, null, true, false,
+                screens("mexico", "poland", "united-kingdom", "india"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String component(final Map<String, Object> entry) {
+        return (String) ((Map<String, Object>) entry.get("meta")).get("component");
+    }
+
+    @Test
+    void screenCardsExportIndividuallyUnlessTheToggleIsTrue() {
+        for (final Boolean optIn : new Boolean[] {null, false}) {
+            final List<Map<String, Object>> entries = exportCards(optIn, false, false);
+            assertEquals(4, entries.size());
+            assertEquals(List.of("card", "card", "card", "card"),
+                    entries.stream().map(CardsAsListTest::component).collect(java.util.stream.Collectors.toList()));
+        }
+    }
+
+    @Test
+    void productCardsExportIndividuallyUnlessTheToggleIsTrue() {
+        for (final Boolean optIn : new Boolean[] {null, false}) {
+            final List<Map<String, Object>> entries = exportCards(optIn, true, false);
+            assertEquals(4, entries.size());
+            assertEquals(List.of("card", "card", "card", "card"),
+                    entries.stream().map(CardsAsListTest::component).collect(java.util.stream.Collectors.toList()));
+        }
+    }
+
+    @Test
+    void linklessCardsFallBackToIndividualExport() {
+        for (final Boolean optIn : new Boolean[] {null, false}) {
+            assertEquals(4, exportCards(optIn, false, true).size());
+        }
+        assertEquals(4, exportCards(true, false, true).size());
+    }
+
+    @Test
+    void theToggleEnablesScreenListExport() {
+        final List<Map<String, Object>> entries = exportCards(true, false, false);
+        assertEquals(1, entries.size());
+        assertEquals("list", component(entries.get(0)));
+        assertEquals("screenList", content(entries.get(0)).get("listType"));
+    }
+
+    @Test
+    void theToggleEnablesProductListExport() {
+        final List<Map<String, Object>> entries = exportCards(true, true, false);
+        assertEquals(1, entries.size());
+        assertEquals("list", component(entries.get(0)));
+        assertEquals("productList", content(entries.get(0)).get("listType"));
     }
 
     @Test
@@ -74,6 +160,7 @@ class CardsAsListTest {
 
     private Resource card(final String path, final String leaf) {
         return context.create().resource(path, "model", "card",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
                 "image", "/content/dam/s/" + leaf + ".jpg",
                 "text", "<h2>" + leaf + "</h2>",
                 "link", "/content/s/en/" + leaf);
@@ -93,12 +180,6 @@ class CardsAsListTest {
         placeholder(block.getPath() + "/item_810748578");
         placeholder(block.getPath() + "/item_1991735907");
         return block;
-    }
-
-    @Test
-    void withoutThePropertyTheIndiaBlockIsStillNotAList() {
-        assertNull(convert(indiaBlock(false), screens("india")),
-                "three children, two of which do not resolve - today's behaviour is no list");
     }
 
     @Test
@@ -122,7 +203,7 @@ class CardsAsListTest {
     }
 
     @Test
-    void aGenuineThreeOfThreeIsStillAListWithoutTheProperty() {
+    void screenListBuilderConvertsThreeScreenLinkedCards() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/trio", "filter", "cards");
         card(block.getPath() + "/a", "mexico");
@@ -135,13 +216,13 @@ class CardsAsListTest {
     }
 
     @Test
-    void withoutThePropertyAFourCardBlockIsNeverAList() {
+    void screenListBuilderConvertsFourScreenLinkedCards() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/four", "filter", "cards");
         for (final String leaf : new String[] {"a", "b", "c", "d"}) {
             card(block.getPath() + "/" + leaf, leaf);
         }
-        assertNull(convert(block, screens("a", "b", "c", "d")), "exactly three, or no list");
+        assertEquals(List.of("a", "b", "c", "d"), items(convert(block, screens("a", "b", "c", "d"))));
     }
 
     @Test
@@ -207,14 +288,15 @@ class CardsAsListTest {
     }
 
     /**
-     * The cards model authors the app's own list options as mobileitemrenderer / mobileitemsinrow /
-     * mobileimageresize; they win over anything the cards imply.
+    * The cards model authors the app's own list options as mobileItemRenderer / mobileItemsInRow /
+    * mobileImageResize; they win over anything the cards imply and legacy lowercase properties.
      */
     @Test
     void theBlocksOwnListOptionsWinOverWhatTheCardsImply() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/opts", "filter", "cards",
-                "mobileitemrenderer", "image", "mobileitemsinrow", 4L, "mobileimageresize", "contain");
+            "mobileItemRenderer", "image", "mobileItemsInRow", 4L, "mobileImageResize", "contain",
+            "mobileitemrenderer", "stacked", "mobileitemsinrow", 1L, "mobileimageresize", "cover");
         cardWithResize(block.getPath() + "/a", "mexico", "cover");
         cardWithResize(block.getPath() + "/b", "poland", "cover");
         cardWithResize(block.getPath() + "/c", "united-kingdom", "cover");
@@ -243,7 +325,8 @@ class CardsAsListTest {
     void aProductListReadsTheBlocksOwnListOptionsToo() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/prodopts", "filter", "cards",
-                "mobileitemrenderer", "overlay", "mobileitemsinrow", 2L, "mobileimageresize", "cover");
+            "mobileItemRenderer", "overlay", "mobileItemsInRow", 2L, "mobileImageResize", "contain",
+            "mobileitemrenderer", "stacked", "mobileitemsinrow", 1L, "mobileimageresize", "cover");
         for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
             context.create().resource(block.getPath() + "/" + sku, "model", "card",
                     "image", "/content/dam/s/" + sku + ".jpg",
@@ -254,7 +337,7 @@ class CardsAsListTest {
         final Map<String, Object> content = content(walker.cardsBlockAsProductList(block, 0));
         assertEquals("overlay", content.get("itemRenderer"));
         assertEquals(2L, content.get("itemsInRow"));
-        assertEquals("cover", content.get("imageResize"));
+        assertEquals("contain", content.get("imageResize"));
     }
 
     @Test
@@ -348,20 +431,11 @@ class CardsAsListTest {
         assertEquals(List.of("machines", "coffee", "accessories"), items(list));
     }
 
-    @Test
-    void thePropertySetToFalseIsTheSameAsAbsent() {
-        final Resource block = context.create().resource(
-                "/content/s/en/d/jcr:content/root/off", "filter", "cards", "mobilerenderaslist", false);
-        card(block.getPath() + "/item", "india");
-        placeholder(block.getPath() + "/item_2");
-        placeholder(block.getPath() + "/item_3");
-        assertNull(convert(block, screens("india")));
-    }
-
     // ---------- productList: a Cards block of product-linking cards ----------
 
     private Resource productCard(final String path, final String sku) {
         return context.create().resource(path, "model", "card",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
                 "image", "/content/dam/s/" + sku + ".jpg",
                 "text", "<h2>" + sku + "</h2>",
                 "link", "/content/s/en/product?productId=" + sku);
@@ -389,12 +463,12 @@ class CardsAsListTest {
     }
 
     @Test
-    void twoProductLinkingCardsAreNotAProductList() {
+    void twoProductLinkingCardsCanBuildAProductList() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/pair", "filter", "cards");
         productCard(block.getPath() + "/a", "WJ08");
         productCard(block.getPath() + "/b", "MS01");
-        assertNull(walker.cardsBlockAsProductList(block, 0), "two is not more than two");
+        assertEquals(List.of("WJ08", "MS01"), items(walker.cardsBlockAsProductList(block, 0)));
     }
 
     @Test

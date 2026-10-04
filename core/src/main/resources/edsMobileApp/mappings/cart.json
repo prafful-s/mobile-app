@@ -13,9 +13,9 @@
     { "target": "emptyCartMessage", "from": "emptyCartMessage", "default": "Your cart is empty" },
     { "target": "promoMessage", "from": "promoMessage", "default": "Promo code applied" },
     { "target": "promoErrorMessage", "from": "promoErrorMessage", "default": "Invalid promo code" },
-    { "target": "showDiscount", "from": "showDiscount", "type": "boolean", "default": true },
-    { "target": "showPromoCode", "from": "showPromoCode", "type": "boolean", "default": true },
-    { "target": "showShippingCharge", "from": "showShippingCharge", "type": "boolean", "default": true },
+    { "target": "showDiscount", "from": "showdiscount", "type": "boolean", "default": true },
+    { "target": "showPromoCode", "from": "showpromocode", "type": "boolean", "default": true },
+    { "target": "showShippingCharge", "from": "showshippingcharge", "type": "boolean", "default": true },
     { "target": "configureDiscountCodes", "from": "configureDiscountCodes", "type": "boolean", "default": false },
     { "target": "discountCodes", "from": "discountCodes", "default": [] }
   ]

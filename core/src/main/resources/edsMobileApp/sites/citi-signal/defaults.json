@@ -9,7 +9,6 @@
     "name": "shopping-cart",
     "target": "cart"
   },
-  "renderLinklessCards": true,
   "forms": {
     "support": {
       "heading": "Need More Help?",
