@@ -586,6 +586,19 @@ final class ComponentTreeWalker {
                 continue;
             }
 
+            // A columns block's column is a layout cell, not a leaf: emit it as its own panel so its
+            // basic elements (text, image, ...) stay grouped per column, with the column's own
+            // itemAlignment driving the panel layout. The block/item resource type is shared by every
+            // block's items, so a column is told apart by its model rather than its resource type.
+            if (isColumnItem(child)) {
+                if (hierarchical) {
+                    emitPanel(child, sink, depth, resourceType, ancestorSection, knownScreenKeys);
+                } else {
+                    collectComponents(child, sink, depth + 1, false, ancestorSection, knownScreenKeys);
+                }
+                continue;
+            }
+
             // A registered model wins so curated components keep their exact shape; everything
             // else is projected generically, which is what lets the API serve an arbitrary site.
             EdsMobileAppComponent model = adaptStrictly(child);
@@ -1499,7 +1512,7 @@ final class ComponentTreeWalker {
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
         meta.put(SchemaConstants.KEY_ORDER, sink.size());
-        meta.put(SchemaConstants.KEY_LAYOUT, layoutOf(resourceType));
+        meta.put(SchemaConstants.KEY_LAYOUT, panelLayout(resource, resourceType));
         meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
         // Reference contract carries showBorder/itemsFillWidth/wrapOverflowing on every panel
         // meta. AEM has no equivalent property, so emit the target's own defaults rather than omit
@@ -1514,8 +1527,70 @@ final class ComponentTreeWalker {
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
         entry.put(SchemaConstants.KEY_STYLES, panelStyles(resource, vertical));
-        entry.put(SchemaConstants.KEY_CONTENT, children);
+        entry.put(SchemaConstants.KEY_CONTENT,
+                isColumnItem(resource) ? groupColumnImages(children, resource) : children);
         sink.add(entry);
+    }
+
+    /**
+     * Within a column, two or more images collapse into one leading horizontal sub-panel - each a
+     * fixed 120px wide - so they sit side by side whatever order they were authored in; every other
+     * element keeps its own full-width row, in authored order, below them.
+     */
+    private List<Map<String, Object>> groupColumnImages(final List<Map<String, Object>> children,
+                                                        final Resource resource) {
+        final List<Map<String, Object>> images = new ArrayList<>();
+        final List<Map<String, Object>> rest = new ArrayList<>();
+        for (final Map<String, Object> child : children) {
+            (isImage(child) ? images : rest).add(child);
+        }
+        if (images.size() < 2) {
+            return children;
+        }
+        for (int i = 0; i < images.size(); i++) {
+            asMeta(images.get(i).get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, i);
+            columnImageStyles(images.get(i)).put("width", "120");
+        }
+        final List<Map<String, Object>> ordered = new ArrayList<>(rest.size() + 1);
+        ordered.add(imageRow(images, resource));
+        ordered.addAll(rest);
+        for (int i = 0; i < ordered.size(); i++) {
+            asMeta(ordered.get(i).get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, i);
+        }
+        return ordered;
+    }
+
+    private static Map<String, Object> imageRow(final List<Map<String, Object>> images, final Resource resource) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath() + "/images"));
+        meta.put(SchemaConstants.KEY_ORDER, 0);
+        meta.put(SchemaConstants.KEY_LAYOUT, "horizontal");
+        meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
+        meta.put("showBorder", Boolean.FALSE);
+        // The images are a fixed width, not stretched, and wrap once the row runs out of room.
+        meta.put("itemsFillWidth", Boolean.FALSE);
+        meta.put("wrapOverflowing", Boolean.TRUE);
+        final Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put(SchemaConstants.KEY_META, meta);
+        entry.put(SchemaConstants.KEY_STYLES, new LinkedHashMap<>());
+        entry.put(SchemaConstants.KEY_CONTENT, images);
+        return entry;
+    }
+
+    private static boolean isImage(final Map<String, Object> entry) {
+        return SchemaConstants.COMPONENT_IMAGE.equals(
+                asMeta(entry.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> columnImageStyles(final Map<String, Object> entry) {
+        final Object styles = entry.get(SchemaConstants.KEY_STYLES);
+        if (styles instanceof Map) {
+            return (Map<String, Object>) styles;
+        }
+        final Map<String, Object> created = new LinkedHashMap<>();
+        entry.put(SchemaConstants.KEY_STYLES, created);
+        return created;
     }
 
     private static boolean isBanner(final Map<String, Object> entry) {
@@ -1612,6 +1687,24 @@ final class ComponentTreeWalker {
         return SchemaConstants.RT_FRANKLIN_COLUMNS.equals(resourceType)
                 || StringUtils.endsWith(resourceType, "/columns")
                 ? "horizontal" : "vertical";
+    }
+
+    /**
+     * A column's own itemAlignment decides whether its contents stack or sit side by side; every
+     * other panel takes its layout from the container's resource type.
+     */
+    private static String panelLayout(final Resource resource, final String resourceType) {
+        if (isColumnItem(resource)) {
+            return "horizontal".equals(resource.getValueMap().get("itemAlignment", String.class))
+                    ? "horizontal" : "vertical";
+        }
+        return layoutOf(resourceType);
+    }
+
+    /** A columns block's column: the block/item resource type shared by every block, told apart by its model. */
+    private static boolean isColumnItem(final Resource resource) {
+        return SchemaConstants.RT_FRANKLIN_BLOCK_ITEM.equals(StringUtils.trimToEmpty(resource.getResourceType()))
+                && "column".equals(resource.getValueMap().get("model", String.class));
     }
 
     /**
