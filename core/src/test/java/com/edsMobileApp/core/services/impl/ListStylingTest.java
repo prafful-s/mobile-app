@@ -84,7 +84,7 @@ class ListStylingTest {
     @Test
     void anUnauthoredBlockEmitsExactlyTodaysValues() {
         final Map<String, Object> list = convert(trio("plain"));
-        assertEquals(3, content(list).get("itemsInRow"), "defaults to the number of items");
+        assertEquals(1, content(list).get("itemsInRow"), "defaults to a single column");
         assertEquals("overlay", content(list).get("itemRenderer"), "defaults to the cards' agreed cardType");
         assertNull(content(list).get("textColor"), "no colour is emitted unless authored");
         assertNull(styles(list).get("color"), "no colour is emitted unless authored");
@@ -96,24 +96,24 @@ class ListStylingTest {
 
     @Test
     void theBlockCanPinItemsInRow() {
-        assertEquals(3L, content(convert(trio("pinned", "mobileItemsInRow", 3L))).get("itemsInRow"));
+        assertEquals(3L, content(convert(trio("pinned", "mobileitemsinrow", 3L))).get("itemsInRow"));
     }
 
     @Test
     void itemsInRowIsEmittedAsANumberNotAString() {
-        final Object value = content(convert(trio("num", "mobileItemsInRow", 3L))).get("itemsInRow");
+        final Object value = content(convert(trio("num", "mobileitemsinrow", 3L))).get("itemsInRow");
         assertEquals(Long.class, value.getClass(), "JCR gives a Long; it must stay a number in the JSON");
     }
 
     /**
-     * mobileItemsInRow is the Cards model's one Items in row field (blocks/cards/_cards.json); the
-     * older spellings are not read - one field maps one value.
+     * mobileitemsinrow is the Cards model's one Items in row field (blocks/cards/_cards.json, stored
+     * lower-cased); the older mobilelistitemsinrow spelling is not read - one field maps one value.
      */
     @Test
-    void olderItemsInRowSpellingsAreIgnored() {
-        assertEquals(3, content(convert(
+    void theItemsInRowFieldBindsAndOlderSpellingsAreIgnored() {
+        assertEquals(5L, content(convert(
                 trio("oldnames", "mobileitemsinrow", 5L, "mobilelistitemsinrow", 4L))).get("itemsInRow"),
-                "falls back to the number of items");
+                "mobileitemsinrow binds; mobilelistitemsinrow is ignored");
     }
 
     // ---------- layout ----------
@@ -148,13 +148,13 @@ class ListStylingTest {
     @Test
     void theBlockCanOverrideItemRenderer() {
         assertEquals("stacked",
-                content(convert(trio("renderer", "mobileItemRenderer", "stacked"))).get("itemRenderer"));
+                content(convert(trio("renderer", "mobileitemrenderer", "stacked"))).get("itemRenderer"));
     }
 
     @Test
     void aBlankRendererFallsBackToTheDerivedValue() {
         assertEquals("overlay",
-                content(convert(trio("blankrenderer", "mobileItemRenderer", ""))).get("itemRenderer"));
+                content(convert(trio("blankrenderer", "mobileitemrenderer", ""))).get("itemRenderer"));
     }
 
     // ---------- colours ----------

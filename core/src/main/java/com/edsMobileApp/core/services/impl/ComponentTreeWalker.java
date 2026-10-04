@@ -1138,11 +1138,11 @@ final class ComponentTreeWalker {
 
         // Field values match the LUMA MOBILE reference's own 3-card screenList (home screen,
         // "OUR BEST BLOG STORIES") - imageWidth/itemHeight/itemRadius/imageResize size and crop
-        // each card's image so three sit side by side instead of stacking full-width; without them
+        // each card's image for the list's overlay items; without them
         // the client has nothing to size a screenList overlay item against. itemRadius remains
         // compiled-in. Every other value reads exactly one property off the Cards block - its
-        // Mobile Specific field (mobilelayout, mobilesort, mobileItemsInRow, mobileItemRenderer,
-        // mobileImageResize; mobileimagewidth/mobileitemheight via listNumber) - then the site's
+        // Mobile Specific field (mobilelayout, mobilesort, mobileitemsinrow, mobileitemrenderer,
+        // mobileimageresize; mobileimagewidth/mobileitemheight via listNumber) - then the site's
         // defaults.json screenList entry, then the default here (imageResize and itemRenderer
         // default to what the cards themselves imply). A colour is emitted only when authored on
         // the block or set at site level - there is no compiled-in colour default.
@@ -1154,15 +1154,18 @@ final class ComponentTreeWalker {
         if (textColor != null) {
             content.put("textColor", textColor);
         }
-        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
+        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 120));
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
         content.put("itemRadius", null);
-        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", screenKeys.size()));
+        content.put("itemsInRow", listValue(resource, "mobileitemsinrow", "itemsInRow", 1));
         content.put("itemRenderer", knownItemRenderer(
-                listValue(resource, "mobileItemRenderer", "itemRenderer", itemRenderer), "overlay"));
+                listValue(resource, "mobileitemrenderer", "itemRenderer", itemRenderer), "overlay"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
+        content.put("imageResize", listValue(resource, "mobileimageresize", null, imageResize));
+        content.put("filterOnlyProductScreens", false);
+        content.put("titleFontWeight", "regular");
+        content.put("subtitleFontWeight", "light");
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1246,14 +1249,17 @@ final class ComponentTreeWalker {
         if (textColor != null) {
             content.put("textColor", textColor);
         }
-        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 130));
+        content.put("imageWidth", listNumber(resource, "mobileimagewidth", "imageWidth", 120));
         content.put("itemHeight", listNumber(resource, "mobileitemheight", "itemHeight", null));
-        content.put("itemsInRow", listValue(resource, "mobileItemsInRow", "itemsInRow", 3));
+        content.put("itemsInRow", listValue(resource, "mobileitemsinrow", "itemsInRow", 1));
         content.put("itemRenderer", knownItemRenderer(
-                listValue(resource, "mobileItemRenderer", "itemRenderer", "stacked"), "stacked"));
+                listValue(resource, "mobileitemrenderer", "itemRenderer", "stacked"), "stacked"));
         content.put("sort", listValue(resource, "mobilesort", "sort", "none"));
         content.put("filterProperty", "Category");
-        content.put("imageResize", listValue(resource, "mobileImageResize", null, imageResize));
+        content.put("imageResize", listValue(resource, "mobileimageresize", null, imageResize));
+        content.put("filterOnlyProductScreens", false);
+        content.put("titleFontWeight", "regular");
+        content.put("subtitleFontWeight", "light");
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);

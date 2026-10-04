@@ -89,6 +89,19 @@ class CardsAsListTest {
     }
 
     @Test
+    void anOptedInListCarriesTheSharedListDefaults() {
+        final Map<String, Object> content = content(convert(indiaBlock(true), screens("india")));
+        assertEquals("horizontal", content.get("layout"));
+        assertEquals("none", content.get("sort"));
+        assertEquals("Category", content.get("filterProperty"));
+        assertEquals(false, content.get("filterOnlyProductScreens"));
+        assertEquals("regular", content.get("titleFontWeight"));
+        assertEquals("light", content.get("subtitleFontWeight"));
+        assertEquals(120, content.get("imageWidth"));
+        assertEquals(1, content.get("itemsInRow"));
+    }
+
+    @Test
     void aGenuineThreeOfThreeIsStillAListWithoutTheProperty() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/trio", "filter", "cards");
@@ -185,14 +198,14 @@ class CardsAsListTest {
     }
 
     /**
-     * The cards model authors the app's own list options as mobileItemRenderer / mobileItemsInRow /
-     * mobileImageResize; they win over anything the cards imply.
+     * The cards model authors the app's own list options as mobileitemrenderer / mobileitemsinrow /
+     * mobileimageresize; they win over anything the cards imply.
      */
     @Test
     void theBlocksOwnListOptionsWinOverWhatTheCardsImply() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/opts", "filter", "cards",
-                "mobileItemRenderer", "image", "mobileItemsInRow", 4L, "mobileImageResize", "contain");
+                "mobileitemrenderer", "image", "mobileitemsinrow", 4L, "mobileimageresize", "contain");
         cardWithResize(block.getPath() + "/a", "mexico", "cover");
         cardWithResize(block.getPath() + "/b", "poland", "cover");
         cardWithResize(block.getPath() + "/c", "united-kingdom", "cover");
@@ -205,7 +218,7 @@ class CardsAsListTest {
     }
 
     @Test
-    void theLowercaseItemsInRowSpellingIsIgnored() {
+    void theBlocksItemsInRowBindsAndTheOldSpellingIsIgnored() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/both", "filter", "cards",
                 "mobileitemsinrow", 2L, "mobilelistitemsinrow", 4L);
@@ -213,15 +226,15 @@ class CardsAsListTest {
         card(block.getPath() + "/b", "poland");
         card(block.getPath() + "/c", "united-kingdom");
 
-        assertEquals(3, content(convert(block, screens("mexico", "poland", "united-kingdom")))
-                .get("itemsInRow"), "only mobileItemsInRow is read; unset falls back to the number of items");
+        assertEquals(2L, content(convert(block, screens("mexico", "poland", "united-kingdom")))
+                .get("itemsInRow"), "mobileitemsinrow is read; the older mobilelistitemsinrow is not");
     }
 
     @Test
     void aProductListReadsTheBlocksOwnListOptionsToo() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/prodopts", "filter", "cards",
-                "mobileItemRenderer", "overlay", "mobileItemsInRow", 2L, "mobileImageResize", "cover");
+                "mobileitemrenderer", "overlay", "mobileitemsinrow", 2L, "mobileimageresize", "cover");
         for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
             context.create().resource(block.getPath() + "/" + sku, "model", "card",
                     "image", "/content/dam/s/" + sku + ".jpg",
@@ -239,7 +252,7 @@ class CardsAsListTest {
     @Test
     void anUnknownItemRendererNeverReachesTheClient() {
         final Resource block = context.create().resource(
-                "/content/s/en/p/jcr:content/root/badrenderer", "filter", "cards", "mobileItemRenderer", "below");
+                "/content/s/en/p/jcr:content/root/badrenderer", "filter", "cards", "mobileitemrenderer", "below");
         card(block.getPath() + "/a", "mexico");
         card(block.getPath() + "/b", "poland");
         card(block.getPath() + "/c", "united-kingdom");
@@ -252,7 +265,7 @@ class CardsAsListTest {
     void aKnownItemRendererPassesThrough() {
         final Resource block = context.create().resource(
                 "/content/s/en/p/jcr:content/root/goodrenderer", "filter", "cards",
-                "mobileItemRenderer", "image-text-one-line");
+                "mobileitemrenderer", "image-text-one-line");
         card(block.getPath() + "/a", "mexico");
         card(block.getPath() + "/b", "poland");
         card(block.getPath() + "/c", "united-kingdom");
@@ -264,7 +277,7 @@ class CardsAsListTest {
     @Test
     void aProductListFallsBackToStackedForAnUnknownRenderer() {
         final Resource block = context.create().resource(
-                "/content/s/en/p/jcr:content/root/prodbad", "filter", "cards", "mobileItemRenderer", "bogus");
+                "/content/s/en/p/jcr:content/root/prodbad", "filter", "cards", "mobileitemrenderer", "bogus");
         for (final String sku : new String[] {"WJ08", "MS01", "LT02"}) {
             context.create().resource(block.getPath() + "/" + sku, "model", "card",
                     "image", "/content/dam/s/" + sku + ".jpg",
@@ -327,7 +340,7 @@ class CardsAsListTest {
         assertEquals(List.of("WJ08", "MS01", "LT02"), content(list).get("items"));
         assertEquals("productList", content(list).get("listType"));
         assertNull(content(list).get("filter"), "no filter - the list is driven by the explicit SKUs");
-        assertEquals(3, content(list).get("itemsInRow"), "defaults to three across");
+        assertEquals(1, content(list).get("itemsInRow"), "defaults to a single column");
     }
 
     @Test
@@ -384,7 +397,7 @@ class CardsAsListTest {
     @Test
     void aScreenListKeepsItsSizeDefaultsWhenNothingIsAuthored() {
         final Map<String, Object> list = convert(trio("plain"), TRIO_SCREENS);
-        assertEquals(130, content(list).get("imageWidth"));
+        assertEquals(120, content(list).get("imageWidth"));
         assertNull(content(list).get("itemHeight"));
         assertEquals("cover", content(list).get("imageResize"), "the client's key is imageResize");
         assertNull(content(list).get("imageResizeMode"));
@@ -401,7 +414,7 @@ class CardsAsListTest {
     @Test
     void aNonNumericSizeFallsBackToTheDefault() {
         final Map<String, Object> list = convert(trio("junk", "mobileimagewidth", "wide"), TRIO_SCREENS);
-        assertEquals(130, content(list).get("imageWidth"));
+        assertEquals(120, content(list).get("imageWidth"));
     }
 
     @Test

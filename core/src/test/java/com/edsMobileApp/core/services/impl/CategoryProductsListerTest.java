@@ -41,24 +41,38 @@ class CategoryProductsListerTest {
 
     /**
      * The rule is {@code skeleton: true}, so every declared target is emitted whether authored or
-     * not - there is no "write only when authored" here. These three keys are therefore new on
-     * every lister, and the resize default is contain rather than the cover the client was applying
-     * on its own. That is a deliberate estate-wide change: a cropped product photo was never wanted,
-     * it was just what you got with no box defined. Any lister can go back with mobileimagestyle.
+     * not - there is no "write only when authored" here. A list serves with the client's standard
+     * defaults: a cover-cropped image in a horizontal row of overlay items.
      */
     @Test
-    void anUnauthoredListerGetsTheNewContainDefaults() {
+    void anUnauthoredListerGetsTheListDefaults() {
         final Map<String, Object> mapped = map(authored());
-        assertEquals("contain", mapped.get("imageResize"));
-        assertEquals(150, mapped.get("imageWidth"));
+        assertEquals("horizontal", mapped.get("layout"));
+        assertEquals("cover", mapped.get("imageResize"));
+        assertEquals(120, mapped.get("imageWidth"));
         assertEquals(150, mapped.get("itemHeight"));
-        assertEquals("image-text-one-line", mapped.get("itemRenderer"), "unchanged");
+        assertEquals("overlay", mapped.get("itemRenderer"));
         assertEquals("productList", mapped.get("listType"), "unchanged");
     }
 
     @Test
-    void aListerCanGoBackToCover() {
-        assertEquals("cover", map(authored("mobileimagestyle", "cover")).get("imageResize"));
+    void aListerCanGoBackToContain() {
+        assertEquals("contain", map(authored("mobileimagestyle", "contain")).get("imageResize"));
+    }
+
+    @Test
+    void authoredNumberMapsToNumericLimit() {
+        for (final Object number : List.of(12L, "12")) {
+            final Map<String, Object> mapped = map(Map.of("number", number));
+            assertEquals(12L, ((Number) mapped.get("limit")).longValue());
+            assertFalse(mapped.containsKey("number"));
+        }
+    }
+
+    @Test
+    void filterOnlyProductScreensDefaultsOffAndIsAuthorable() {
+        assertEquals(false, map(authored()).get("filterOnlyProductScreens"));
+        assertEquals(true, map(authored("filterOnlyProductScreens", "true")).get("filterOnlyProductScreens"));
     }
 
     /** An authored number arrives from JCR as a Long, the compiled default is an Integer - both
@@ -76,12 +90,12 @@ class CategoryProductsListerTest {
         final Map<String, Object> mapped = map(authored("layout", "horizontal", "sort", "alphabetical",
                 "itemsInRow", "4", "itemRenderer", "stacked", "mobilecardstyle", "below",
                 "imageResizeMode", "cover", "imageResize", "cover", "imageWidth", "200", "itemHeight", "90"));
-        assertEquals("vertical/grid", mapped.get("layout"));
+        assertEquals("horizontal", mapped.get("layout"));
         assertEquals("none", mapped.get("sort"));
         assertEquals(1, mapped.get("itemsInRow"));
-        assertEquals("image-text-one-line", mapped.get("itemRenderer"));
-        assertEquals("contain", mapped.get("imageResize"));
-        assertEquals(150, mapped.get("imageWidth"));
+        assertEquals("overlay", mapped.get("itemRenderer"));
+        assertEquals("cover", mapped.get("imageResize"));
+        assertEquals(120, mapped.get("imageWidth"));
         assertEquals(150, mapped.get("itemHeight"));
     }
 
@@ -93,7 +107,7 @@ class CategoryProductsListerTest {
 
     @Test
     void anUnknownImageStyleFallsBackToTheDefaultRatherThanLeakingTheToken() {
-        assertEquals("contain", map(authored("mobileimagestyle", "squish")).get("imageResize"));
+        assertEquals("cover", map(authored("mobileimagestyle", "squish")).get("imageResize"));
     }
 
     /** The lister's own Item variant dropdown - every option passes through, single image included. */
