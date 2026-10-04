@@ -166,6 +166,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
         final Resource extras = childResource(envelopeSource, SchemaConstants.NN_EXTRAS);
 
+        final Map<String, String> screenThumbnailOverrides = new LinkedHashMap<>();
         final Map<String, Object> app = new LinkedHashMap<>();
         app.put(SchemaConstants.KEY_META,
                 buildMeta(envelopeSource, homeRoot, appId, rootProps, navigation));
@@ -174,7 +175,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
         final Map<String, Object> screens = buildScreens(screenList, homeRoot, assetHost, opts, menu,
-                screenPresets, knownScreenKeys);
+            screenPresets, knownScreenKeys, screenThumbnailOverrides);
+        applyScreenThumbnailOverrides(screens, screenThumbnailOverrides, assetHost);
         // Only added when no AEM page already exports under this key, so a site that has authored
         // its own user-details page keeps that content untouched.
         screens.putIfAbsent(SCREEN_USER_DETAILS, buildUserDetailsScreen(homeRoot));
@@ -314,7 +316,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                                             final String assetHost, final ExportOptions options,
                                             final List<String> menu,
                                             final Map<String, String> screenPresets,
-                                            final Set<String> knownScreenKeys) {
+                                            final Set<String> knownScreenKeys,
+                                            final Map<String, String> screenThumbnailOverrides) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         for (final Page page : pages) {
             final String key = screenKey(page);
@@ -326,9 +329,26 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                         + "overwriting it. Give one of the pages a distinct node name.", key, page.getPath());
             }
             screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu,
-                    screenPresets.getOrDefault(key, StringUtils.EMPTY), knownScreenKeys));
+                    screenPresets.getOrDefault(key, StringUtils.EMPTY), knownScreenKeys,
+                    screenThumbnailOverrides));
         }
         return screens;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyScreenThumbnailOverrides(final Map<String, Object> screens,
+                                               final Map<String, String> overrides,
+                                               final String assetHost) {
+        for (final Map.Entry<String, String> override : overrides.entrySet()) {
+            final Object screen = screens.get(override.getKey());
+            if (!(screen instanceof Map)) {
+                continue;
+            }
+            final Object meta = ((Map<String, Object>) screen).get(SchemaConstants.KEY_META);
+            if (meta instanceof Map) {
+                ((Map<String, Object>) meta).put("thumbnail", prefixAsset(override.getValue(), assetHost));
+            }
+        }
     }
 
     /**
@@ -438,7 +458,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
 
     private Map<String, Object> buildScreen(final Page page, final Page root, final String assetHost,
                                            final ExportOptions options, final List<String> menu,
-                                           final String rolePreset, final Set<String> knownScreenKeys) {
+                                           final String rolePreset, final Set<String> knownScreenKeys,
+                                           final Map<String, String> screenThumbnailOverrides) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
         final String key = screenKey(page);
@@ -449,9 +470,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // search) from screens.content[]. Nav-page walk above deliberately does not exclude - it
         // needs 'search' visible so meta.rightIcon can pick it up.
         List<Map<String, Object>> content = walker.componentsOf(page, assetHost, true, true,
-                knownScreenKeys);
-        // A screenList item shows the target screen's thumbnail; AEM has no source for it today, so
-        // it is emitted blank, same as every other unset meta field, to keep the screen shape fixed.
+            knownScreenKeys, screenThumbnailOverrides);
         meta.put("thumbnail", StringUtils.EMPTY);
         if ("cart".equals(key)) {
             addCartActionsPanel(content, page);

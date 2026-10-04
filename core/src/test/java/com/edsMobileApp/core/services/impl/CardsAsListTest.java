@@ -48,6 +48,25 @@ class CardsAsListTest {
         return walker.cardsBlockAsList(block, 0, knownScreens);
     }
 
+    @Test
+    void screenThumbnailsComeFromTheCardsImages() {
+        final Resource block = context.create().resource(
+                "/content/s/en/p/jcr:content/root/cards", "filter", "cards");
+        card(block.getPath() + "/a", "mexico");
+        card(block.getPath() + "/b", "poland");
+        card(block.getPath() + "/c", "united-kingdom");
+        final Map<String, String> thumbnails = new java.util.LinkedHashMap<>();
+
+        assertNotNull(walker.cardsBlockAsList(block, 0,
+                screens("mexico", "poland", "united-kingdom"), thumbnails));
+
+        assertEquals(3, thumbnails.size());
+        final UrlServiceImpl urls = new UrlServiceImpl();
+        assertEquals(urls.externalize("/content/dam/s/mexico.jpg"), thumbnails.get("mexico"));
+        assertEquals(urls.externalize("/content/dam/s/poland.jpg"), thumbnails.get("poland"));
+        assertEquals(urls.externalize("/content/dam/s/united-kingdom.jpg"), thumbnails.get("united-kingdom"));
+    }
+
     @SuppressWarnings("unchecked")
     private static List<String> items(final Map<String, Object> list) {
         return (List<String>) ((Map<String, Object>) list.get("content")).get("items");
