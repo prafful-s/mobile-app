@@ -91,11 +91,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // Rules ship inside the bundle, so they are read once here rather than per request.
         this.walker = new ComponentTreeWalker(modelFactory, urlService, formSchemaService,
                 new StyleResolver(config.styleTokens()), ComponentMappings.load());
-        this.siteBranding = SiteBranding.load(config.themeContentFragmentModels());
+        // Loaded once and shared: branding searches the same site-to-DAM scope the catalogue
+        // declares, so a site whose DAM folder is not named after its content root stays reachable.
+        final ProductMappings productMappings = ProductMappings.load();
+        this.siteBranding = SiteBranding.load(config.themeContentFragmentModels(), productMappings);
         this.siteProfileViewer = SiteProfileViewer.load();
         this.siteIntegrations = SiteIntegrations.load();
         this.siteDefaults = SiteDefaults.load();
-        this.productCatalog = new ProductCatalog(ProductMappings.load());
+        this.productCatalog = new ProductCatalog(productMappings);
         this.walker.setSiteDefaults(this.siteDefaults);
     }
 

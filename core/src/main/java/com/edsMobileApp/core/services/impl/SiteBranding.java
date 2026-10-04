@@ -1,5 +1,6 @@
 package com.edsMobileApp.core.services.impl;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -64,6 +65,10 @@ final class SiteBranding {
     private static final String CONTENT_ROOT = "/content/";
     private static final String DAM_ROOT = "/content/dam/";
 
+    /** Conventional subfolder a site keeps its theme fragment in, checked first so the common case
+     * resolves in a handful of nodes instead of walking the whole fragments scope. */
+    private static final String BRAND_THEMES = "brand-themes";
+
     private static final String EL_THEME_PROPERTY_KEYS = "themePropertyKeys";
     private static final String EL_THEME_PROPERTY_VALUES = "themePropertyValues";
     private static final String EL_THEME_PROPERTY_TYPES = "themePropertyTypes";
@@ -75,14 +80,22 @@ final class SiteBranding {
     private static final Set<String> NUMERIC_FIELDS = Set.of("roundness", "panelBorderRadius", "buttonBorderRadius");
 
     private final Set<String> themeModels;
+    private final ProductMappings productMappings;
     private final Map<String, Optional<String>> fragmentPathBySite = new ConcurrentHashMap<>();
 
-    private SiteBranding(final Set<String> themeModels) {
+    private SiteBranding(final Set<String> themeModels, final ProductMappings productMappings) {
         this.themeModels = themeModels;
+        this.productMappings = productMappings;
     }
 
-    /** @param themeModels the {@code cq:model} path(s) that mark a fragment as a site's theme */
-    static SiteBranding load(final String[] themeModels) {
+    /**
+     * @param themeModels    the {@code cq:model} path(s) that mark a fragment as a site's theme
+     * @param productMappings the already-loaded product rules, reused so branding searches the same
+     *                        site-to-DAM {@code scope} the catalogue does - a site whose DAM folder
+     *                        is not named after its content root (e.g. {@code /content/luma-site} ->
+     *                        {@code /content/dam/luma3}) is only reachable through that mapping
+     */
+    static SiteBranding load(final String[] themeModels, final ProductMappings productMappings) {
         final Set<String> models = new LinkedHashSet<>();
         if (themeModels != null) {
             for (final String model : themeModels) {
@@ -91,7 +104,7 @@ final class SiteBranding {
                 }
             }
         }
-        return new SiteBranding(models);
+        return new SiteBranding(models, productMappings == null ? ProductMappings.EMPTY : productMappings);
     }
 
     /**
@@ -110,11 +123,14 @@ final class SiteBranding {
         final String site = StringUtils.substringAfterLast(siteRoot, "/");
         final ResourceResolver resolver = page.getContentResource().getResourceResolver();
         final String fragmentPath = fragmentPathBySite
-                .computeIfAbsent(site, s -> findThemeFragment(resolver, damRoot(siteRoot, s)))
+                .computeIfAbsent(site, s -> findThemeFragment(resolver, searchRoots(siteRoot, s)))
                 .orElse(null);
         if (fragmentPath == null) {
+            LOG.info("No theme Content Fragment resolved for site {} (page {}) - no shipped branding",
+                    site, page.getPath());
             return null;
         }
+        LOG.info("Using theme Content Fragment {} for site {} (page {})", fragmentPath, site, page.getPath());
         final Resource fragment = resolver.getResource(fragmentPath);
         if (fragment == null) {
             LOG.warn("Theme Content Fragment {} (site {}) no longer resolves - no shipped branding",
@@ -126,41 +142,68 @@ final class SiteBranding {
             LOG.warn("{} (site {}) is not a Content Fragment - no shipped branding", fragmentPath, site);
             return null;
         }
-        return elements.containsKey(EL_THEME_PROPERTY_KEYS)
-                ? readHybrid(fragment, elements)
-                : readFlat(elements);
-    }
-
-    /** {@code /content/dam/<site>}, mirroring {@code ProductMappings}'s own site-to-DAM-root rule. */
-    private static String damRoot(final String siteRoot, final String site) {
-        return siteRoot.startsWith(CONTENT_ROOT) ? DAM_ROOT + site : null;
+        final boolean hybrid = elements.containsKey(EL_THEME_PROPERTY_KEYS);
+        final Map<String, Object> branding = hybrid ? readHybrid(fragment, elements) : readFlat(elements);
+        LOG.info("Built branding for site {} from {}: {} CF element(s) read, {} field(s) emitted ({}); keys={}",
+                site, fragmentPath, elements.size(), branding.size(), hybrid ? "hybrid" : "flat",
+                branding.keySet());
+        return branding;
     }
 
     /**
-     * Depth-first search for the first fragment under {@code damRoot} whose {@code cq:model} is one
-     * of {@link #themeModels}. A site with none logs nothing beyond debug - most sites will only
-     * ever carry one, and an unthemed site is a normal, if incomplete, state rather than an error.
+     * The DAM subtree(s) to search for this site's theme fragment: the product rules' declared
+     * {@code scope} for the site (e.g. {@code /content/dam/luma3/en/fragments}), falling back to
+     * {@code /content/dam/<site>} only when no rule claims the site. Reusing the catalogue's mapping
+     * is what lets branding find a site whose DAM folder is not named after its content root, and it
+     * narrows the walk to the fragments subtree so a large asset library cannot exhaust the node
+     * budget before the theme is reached.
      */
-    private Optional<String> findThemeFragment(final ResourceResolver resolver, final String damRoot) {
-        if (damRoot == null) {
-            return Optional.empty();
+    private Collection<String> searchRoots(final String siteRoot, final String site) {
+        final Set<String> scopes = new LinkedHashSet<>(productMappings.rootsForSite(siteRoot));
+        if (scopes.isEmpty() && siteRoot.startsWith(CONTENT_ROOT)) {
+            scopes.add(DAM_ROOT + site);
         }
-        final Resource root = resolver.getResource(damRoot);
-        if (root == null) {
-            return Optional.empty();
+        // Try the conventional brand-themes subfolder first, then the whole scope as a fallback for
+        // sites that place the theme elsewhere under it.
+        final Set<String> roots = new LinkedHashSet<>();
+        for (final String scope : scopes) {
+            roots.add(scope + "/" + BRAND_THEMES);
+            roots.add(scope);
         }
-        final String found = search(root, new int[] {0});
-        if (found == null) {
-            LOG.debug("No fragment under {} matches a configured theme model - no shipped branding", damRoot);
-            return Optional.empty();
+        return roots;
+    }
+
+    /**
+     * Depth-first search for the first fragment under any of {@code damRoots} whose {@code cq:model}
+     * is one of {@link #themeModels}. A site with none logs nothing beyond debug - most sites will
+     * only ever carry one, and an unthemed site is a normal, if incomplete, state rather than an error.
+     */
+    private Optional<String> findThemeFragment(final ResourceResolver resolver, final Collection<String> damRoots) {
+        LOG.info("Searching for theme Content Fragment ({}) under {}", themeModels, damRoots);
+        for (final String damRoot : damRoots) {
+            final Resource root = resolver.getResource(damRoot);
+            if (root == null) {
+                LOG.info("Theme search root {} does not resolve - skipping", damRoot);
+                continue;
+            }
+            final String found = search(root, new int[] {0});
+            if (found != null) {
+                LOG.info("Resolved theme Content Fragment {}", found);
+                return Optional.of(found);
+            }
         }
-        LOG.info("Resolved theme Content Fragment {}", found);
-        return Optional.of(found);
+        LOG.info("No fragment under {} matches a configured theme model - no shipped branding", damRoots);
+        return Optional.empty();
     }
 
     private String search(final Resource folder, final int[] budget) {
         for (final Resource child : folder.getChildren()) {
             if (budget[0]++ >= DamFragmentSearch.MAX_NODES_SCANNED) {
+                if (budget[0] == DamFragmentSearch.MAX_NODES_SCANNED + 1) {
+                    LOG.warn("Theme search hit the {}-node scan budget at {} - the fragment may exist "
+                            + "beyond it and been missed; narrow the search scope",
+                            DamFragmentSearch.MAX_NODES_SCANNED, folder.getPath());
+                }
                 return null;
             }
             final String model = DamFragmentSearch.modelOf(child);
