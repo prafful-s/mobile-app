@@ -230,6 +230,7 @@ final class EnvelopeMeta {
         final String mboxName = props.get("adobeTargetMboxMobile", String.class);
         if (StringUtils.isNotBlank(mboxName)) {
             meta.put("mboxName", mboxName);
+            meta.put("parsonalizationMethod", "target");
         }
 
         meta.put("template", screenTemplate(props));
