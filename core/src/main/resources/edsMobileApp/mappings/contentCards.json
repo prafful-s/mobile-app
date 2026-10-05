@@ -2,11 +2,11 @@
   "match": ["content-card"],
   "component": "contentCards",
   "fields": [
-    { "target": "surface", "from": "surface" }
+    { "target": "surface", "from": "mobileSurface" }
   ],
   "styles": [
-    { "target": "borderColor", "from": "borderColor" },
-    { "target": "borderRadius", "from": "borderRadius", "type": "number", "default": 9 },
-    { "target": "backgroundColor", "from": "backgroundColor" }
+    { "target": "borderColor", "from": "mobileBorderColor" },
+    { "target": "borderRadius", "from": "mobileBorderRadius", "type": "number", "default": 9 },
+    { "target": "backgroundColor", "from": "mobileBackgroundColor" }
   ]
 }
