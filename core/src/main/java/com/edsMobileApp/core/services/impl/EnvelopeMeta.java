@@ -188,8 +188,9 @@ final class EnvelopeMeta {
      * string properties emit as {@code ""}; {@code navigationOrder} is {@code null} for screens
      * off the menu, since {@code 0} would falsely claim the first slot.</p>
      *
-     * <p>Field order: icon, iconInactive, name, event, title, preset, template, customEvent,
-     * eventType, isRootScreen, navigationOrder, includeInNavigation.</p>
+     * <p>Field order: icon, iconInactive, name, event, title, preset, mboxName, template,
+     * customEvent, eventType, isRootScreen, navigationOrder, includeInNavigation. {@code mboxName}
+     * is emitted only when the page authors an Adobe Target mbox.</p>
      *
      * @param page       the screen
      * @param root       the site root, used to decide whether this screen is the root one
@@ -223,6 +224,13 @@ final class EnvelopeMeta {
                 props.get("preset", String.class),
                 rolePreset,
                 DEFAULT_SCREEN_PRESET));
+
+        // mboxName: the page's authored Adobe Target mbox, emitted only when set so screens without
+        // targeting stay free of the key. Positioned after preset to match the reference order.
+        final String mboxName = props.get("adobeTargetMboxMobile", String.class);
+        if (StringUtils.isNotBlank(mboxName)) {
+            meta.put("mboxName", mboxName);
+        }
 
         meta.put("template", screenTemplate(props));
 
