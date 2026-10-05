@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.models.factory.ModelFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,10 +40,10 @@ class ColumnPanelTest {
         final ModelFactory modelFactory = Mockito.mock(ModelFactory.class);
         Mockito.when(modelFactory.getModelFromResource(Mockito.any()))
                 .thenAnswer(invocation -> new GenericComponent(invocation.getArgument(0), urlService));
-        final FormSchemaService noSchemas = new FormSchemaService() {
+        final FormSchemaService schemas = new FormSchemaService() {
             @Override
             public List<Map<String, Object>> getSchema(final String formName) {
-                return List.of();
+                return "sign-in".equals(formName) ? List.of(Map.of("name", "email")) : List.of();
             }
 
             @Override
@@ -55,7 +56,7 @@ class ColumnPanelTest {
                 return Set.of();
             }
         };
-        walker = new ComponentTreeWalker(modelFactory, urlService, noSchemas,
+        walker = new ComponentTreeWalker(modelFactory, urlService, schemas,
                 new StyleResolver(new String[0]), ComponentMappings.load());
     }
 
@@ -86,6 +87,65 @@ class ColumnPanelTest {
                 "model", "image",
                 "image", "/content/dam/s/right.jpg");
         return page;
+    }
+
+    private Page sectionVisibilityPage(final Object... visibility) {
+        final Page page = context.create().page("/content/s/en/p");
+        final String root = page.getPath() + "/jcr:content/root";
+        context.create().resource(root);
+        context.create().resource(root + "/restricted", "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        context.resourceResolver().getResource(root + "/restricted")
+                .adaptTo(ModifiableValueMap.class)
+                .putAll(visibility.length == 0 ? Map.of() : Map.of((String) visibility[0], visibility[1]));
+        context.create().resource(root + "/restricted/nested",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        context.create().resource(root + "/restricted/nested/text",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>Restricted</p>");
+        context.create().resource(root + "/visible", "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        context.create().resource(root + "/visible/text",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>Visible</p>");
+        return page;
+    }
+
+    @Test
+    void mobileHiddenSectionsAndAllDescendantsAreSkipped() {
+        final Page page = sectionVisibilityPage("hide-in-mobile", true);
+        for (final boolean hierarchical : List.of(false, true)) {
+            final List<Map<String, Object>> components = walker.componentsOf(page, "", hierarchical, false);
+            assertEquals(1, components.size());
+            final Map<String, Object> text = hierarchical ? content(components.get(0)).get(0) : components.get(0);
+            assertEquals(hierarchical ? "htmlText" : "text", meta(text).get(SchemaConstants.KEY_COMPONENT));
+            assertEquals("<p>Visible</p>", ((Map<?, ?>) text.get(SchemaConstants.KEY_CONTENT)).get("text"));
+        }
+    }
+
+    @Test
+    void visibleAndDesktopOnlySectionsRemainInMobileOutput() {
+        final Page page = sectionVisibilityPage("hide-in-mobile", false);
+        assertEquals(2, walker.componentsOf(page, "", true, false).size());
+        final ModifiableValueMap properties = context.resourceResolver()
+                .getResource(page.getPath() + "/jcr:content/root/restricted")
+                .adaptTo(ModifiableValueMap.class);
+        properties.remove("hide-in-mobile");
+        assertEquals(2, walker.componentsOf(page, "", true, false).size());
+        properties.put("hide-in-desktop", true);
+        assertEquals(2, walker.componentsOf(page, "", true, false).size());
+        properties.put("hide-in-mobile", "true");
+        assertEquals(1, walker.componentsOf(page, "", true, false).size());
+    }
+
+    @Test
+    void mobileHiddenSectionsDoNotContributeFormSchemas() {
+        final Page page = sectionVisibilityPage("hide-in-mobile", true);
+        context.create().resource(page.getPath() + "/jcr:content/root/restricted/form",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "sign-in");
+        assertEquals(Set.of(), walker.formSchemasOn(page));
+        context.resourceResolver().getResource(page.getPath() + "/jcr:content/root/restricted")
+                .adaptTo(ModifiableValueMap.class).put("hide-in-mobile", false);
+        assertEquals(Set.of("sign-in"), walker.formSchemasOn(page));
     }
 
     @SuppressWarnings("unchecked")

@@ -188,7 +188,8 @@ final class ComponentTreeWalker {
             return;
         }
         for (final Resource child : parent.getChildren()) {
-            if (isSystemNode(child)) {
+            if (isSystemNode(child) || (isSectionType(child.getResourceType())
+                    && Boolean.TRUE.equals(child.getValueMap().get("hide-in-mobile", Boolean.class)))) {
                 continue;
             }
             EdsMobileAppComponent model = adaptStrictly(child);
@@ -572,6 +573,10 @@ final class ComponentTreeWalker {
                 continue;
             }
             final String resourceType = StringUtils.trimToEmpty(child.getResourceType());
+            if (isSectionType(resourceType)
+                    && Boolean.TRUE.equals(child.getValueMap().get("hide-in-mobile", Boolean.class))) {
+                continue;
+            }
             final boolean hasChildren = child.hasChildren();
 
             // An untyped node with no children is an empty layout cell - a column an author left
