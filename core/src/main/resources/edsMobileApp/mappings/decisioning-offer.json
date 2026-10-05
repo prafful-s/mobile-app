@@ -2,15 +2,17 @@
   "match": ["decisioning-offer"],
   "component": "offerRenderer",
   "fields": [
+    { "target": "nickname", "from": "mobileNickname" },
     { "target": "decisionScope", "from": "mobileDecisionScope" },
     { "target": "linkTo", "from": "mobileLinkTo", "type": "path" },
-    { "target": "opacity", "from": "mobileOverlayOpacity", "type": "number", "default": 0.34 },
+    { "target": "opacity", "from": "mobileOverlayOpacity", "type": "number" },
     { "target": "showTitle", "from": "mobileShowTitle", "type": "boolean", "default": false },
     { "target": "showButton", "from": "mobileShowButton", "type": "boolean", "default": false },
     { "target": "showDebugMessage", "from": "mobileShowDebugMessage", "type": "boolean", "default": false },
     { "target": "titleVariant", "from": "mobileTitleSize", "map": { "large": "titleLarge", "medium": "titleMedium", "small": "titleSmall", "*": "titleLarge" }, "default": "titleLarge" },
     { "target": "subtitleVariant", "from": "mobileSubtitleSize", "map": { "large": "titleLarge", "medium": "titleMedium", "small": "titleSmall", "*": "titleMedium" }, "default": "titleMedium" },
     { "target": "fallbackImage", "from": "mobileFallbackImage" },
+    { "target": "imageResize", "from": "mobileImageResize", "default": "cover" },
     { "target": "contentAlignment", "from": "mobileContentAlignment", "default": "center" },
     { "target": "verticalAlignment", "from": "mobileVerticalAlignment", "default": "bottom" },
     { "target": "horizontalAlignment", "from": "mobileHorizontalAlignment", "default": "center" }

@@ -58,6 +58,31 @@ class MobileFieldMappingTest {
     }
 
     @Test
+    void decisioningMapsSharedFieldsAndVariantSpecificTargets() {
+        for (final String type : List.of("experience", "offer")) {
+            final boolean offer = "offer".equals(type);
+            final String sourceField = offer ? "mobileDecisionScope" : "mobileSurface";
+            final String targetField = offer ? "decisionScope" : "surface";
+            final Map<String, Object> source = authored(
+                    "mobileDecisioningType", type,
+                    sourceField, "luma-campaign",
+                    "mobileNickname", "Campaign");
+            final ComponentMapping base = mappings.find("decisioning-container");
+            final String variant = base.variantRuleFor(source);
+            final ComponentMapping rule = variant == null ? base : mappings.find(variant);
+            final Map<String, Object> content = rule.apply(source, Map.of());
+            assertEquals("luma-campaign", content.get(targetField));
+            assertEquals(false, content.containsKey(offer ? "surface" : "decisionScope"));
+            assertEquals("Campaign", content.get("nickname"));
+            assertEquals("cover", content.get("imageResize"));
+            for (final String resize : List.of("contain", "cover")) {
+                source.put("mobileImageResize", resize);
+                assertEquals(resize, rule.apply(source, Map.of()).get("imageResize"));
+            }
+        }
+    }
+
+    @Test
     void inboxAndContentCardsSurviveReducedExport() throws Exception {
         for (final String name : List.of("inbox", "content-card")) {
             final Map<String, Object> source = authored(
