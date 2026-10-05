@@ -2,7 +2,9 @@ package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,73 @@ class MobileFieldMappingTest {
     private static final String LINKED_TEXT = "<h1>Title</h1><p>Body</p><p><a href=\"/content/s/en/trip\">Book</a></p>";
 
     private final ComponentMappings mappings = ComponentMappings.load();
+
+    @Test
+    void experienceDecisioningSurvivesReducedExport() throws Exception {
+        final Map<String, Object> source = authored(
+                "mobileDecisioningType", "experience",
+                "mobileSurface", "luma.home.campaignArea1",
+                "mobileFallbackImage", "https://example.com/offer.png",
+                "mobileContentAlignment", "left",
+                "mobileVerticalAlignment", "bottom",
+                "mobileShowTitle", false,
+                "mobileShowButton", false,
+                "mobileShowDebugMessage", false);
+        final ComponentMapping rule = mappings.find("decisioning-container").effectiveFor(source);
+        final Map<String, Object> content = rule.apply(source, Map.of());
+        assertEquals("offer", rule.getComponent());
+        assertEquals("luma.home.campaignArea1", content.get("surface"));
+        assertEquals("https://example.com/offer.png", content.get("fallbackImage"));
+        assertEquals("left", content.get("contentAlignment"));
+        assertEquals("bottom", content.get("verticalAlignment"));
+        assertEquals(false, content.get("showTitle"));
+        assertEquals(false, content.get("showButton"));
+        assertEquals(false, content.get("showDebugMessage"));
+        assertSurvivesReducedExport(rule, content);
+    }
+
+    @Test
+    void offerDecisioningSurvivesReducedExport() throws Exception {
+        final Map<String, Object> source = authored(
+                "mobileDecisioningType", "offer", "mobileDecisionScope", "luma-offer");
+        final String variant = mappings.find("decisioning-container").variantRuleFor(source);
+        assertEquals("decisioning-offer", variant);
+        final ComponentMapping rule = mappings.find(variant).effectiveFor(source);
+        final Map<String, Object> content = rule.apply(source, Map.of());
+        assertEquals("offerRenderer", rule.getComponent());
+        assertEquals("luma-offer", content.get("decisionScope"));
+        assertSurvivesReducedExport(rule, content);
+    }
+
+    @Test
+    void inboxAndContentCardsSurviveReducedExport() throws Exception {
+        for (final String name : List.of("inbox", "content-card")) {
+            final Map<String, Object> source = authored(
+                    "mobileSurface", "luma.home.campaignArea1",
+                    "mobileBorderColor", "#000000",
+                    "mobileBorderRadius", 12,
+                    "mobileBackgroundColor", "#ffffff");
+            final ComponentMapping rule = mappings.find(name);
+            assertEquals("inbox".equals(name) ? "inbox" : "contentCards", rule.getComponent());
+            final Map<String, Object> content = rule.apply(source, Map.of());
+            assertEquals("luma.home.campaignArea1", content.get("surface"));
+            final Map<String, Object> styles = rule.applyStyles(source, Map.of());
+            assertEquals("#000000", styles.get("borderColor"));
+            assertEquals(12, ((Number) styles.get("borderRadius")).intValue());
+            assertEquals("#ffffff", styles.get("backgroundColor"));
+            assertEquals(9, ((Number) rule.applyStyles(Map.of(), Map.of()).get("borderRadius")).intValue());
+            assertSurvivesReducedExport(rule, content);
+        }
+    }
+
+    private static void assertSurvivesReducedExport(final ComponentMapping rule,
+            final Map<String, Object> content) throws Exception {
+        final List<Map<String, Object>> components = List.of(Map.of(
+                "meta", Map.of("component", rule.getComponent()), "content", content));
+        final Method filter = PageJsonExporterImpl.class.getDeclaredMethod("keepEnabledComponents", List.class);
+        filter.setAccessible(true);
+        assertEquals(components, filter.invoke(null, components));
+    }
 
     @Test
     void cartReadsTheAuthoredLowercaseVisibilityFlags() {
