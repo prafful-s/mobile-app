@@ -1,7 +1,7 @@
 {
   "maxDepth": 3,
-  "navPageNames": ["nav"],
-  "excludedPageNames": ["nav", "footer", "placeholders", "language-masters", "redirects"],
+  "navPageNames": ["mobile-nav", "nav"],
+  "excludedPageNames": ["mobile-nav", "nav", "footer", "placeholders", "language-masters", "redirects"],
   "includeHomeScreen": true,
   "styleTokens": [],
   "overrideEnabled": true,

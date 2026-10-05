@@ -57,9 +57,9 @@ final class EdsMobileAppSettings {
     private EdsMobileAppSettings(final Map<String, Object> values) {
         this.maxDepth = intValue(values, "maxDepth", 3);
         this.navPageNames = stringArray(values, "navPageNames",
-                new String[] {"nav"});
+            new String[] {"mobile-nav", "nav"});
         this.excludedPageNames = stringArray(values, "excludedPageNames", new String[] {
-                "nav", "footer", "placeholders", "language-masters", "redirects"});
+            "mobile-nav", "nav", "footer", "placeholders", "language-masters", "redirects"});
         this.includeHomeScreen = boolValue(values, "includeHomeScreen", true);
         this.styleTokens = stringArray(values, "styleTokens", new String[0]);
         this.overrideEnabled = boolValue(values, "overrideEnabled", true);
