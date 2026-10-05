@@ -2,15 +2,14 @@
   "match": ["map"],
   "component": "map",
   "skeleton": true,
+  "ignoreExtras": ["*"],
   "fields": [
-    { "comment": "mapCoordinates intentionally omitted - needs child-row aggregation the mapping engine does not have yet. See the design spec.",
-      "target": "text", "from": "text" },
-    { "target": "buttonLabel", "from": "buttonLabel" },
-    { "target": "showInModal", "from": "showInModal", "type": "boolean", "default": false },
-    { "target": "buttonVariant", "from": "buttonVariant", "default": "contained" }
+    { "comment": "mapCoordinates omitted - mobileMapCoordinates is a multi-line 'label,latitude,longitude' string the mapping engine does not split into objects yet.",
+      "target": "displayAs", "from": "mobileDisplayAs", "default": "fullMap" }
   ],
   "styles": [
-    { "target": "color", "from": "color" },
-    { "target": "locationColor", "from": "locationColor" }
+    { "target": "color", "from": "mobileColor", "default": "blue" },
+    { "target": "height", "from": "mobileHeight", "type": "number", "default": 500 },
+    { "target": "locationColor", "from": "mobileLocationColor", "default": "green" }
   ]
 }
