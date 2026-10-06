@@ -8,7 +8,7 @@
     { "target": "label", "from": "linkText", "default": "" },
     { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "formId", "from": "formId", "default": "" },
-    { "target": "linkTo", "from": "link", "map": { "/": "home" }, "default": "" },
+    { "target": "linkTo", "from": "link", "map": { "/": "en" }, "default": "" },
     { "target": "message", "from": "message", "default": "" },
     { "target": "variant", "from": "linkType",
       "map": { "cta-button": "contained", "primary-button": "contained",

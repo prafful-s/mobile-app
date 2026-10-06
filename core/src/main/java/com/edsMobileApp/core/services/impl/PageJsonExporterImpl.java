@@ -1212,7 +1212,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         content.put("label", "Confirm");
         content.put("events", "commerce.purchases");
         content.put("formId", "checkoutForm");
-        content.put("linkTo", "home");
+        content.put("linkTo", "en");
         content.put("message", "Thank you for your purchase! Your order has been successfully "
                 + "placed. You'll receive a confirmation email shortly with tracking details. "
                 + "Enjoy your shopping experience!");

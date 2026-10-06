@@ -280,7 +280,7 @@ final class FormBlockBuilder {
         // an explicit authored redirect wins. Only the forms in REDIRECT_KEYS_BY_FORM are read;
         // every other form keeps a blank link here. Left blank when the block authors none, in which
         // case a per-site 'forms' entry in defaults.json supplies the default downstream (e.g.
-        // "home") - see PageJsonExporterImpl#applyFormSettings. Blank throughout means the client
+        // "en") - see PageJsonExporterImpl#applyFormSettings. Blank throughout means the client
         // stays put.
         // formName is null for a form whose fields are authored rather than taken from a bundled
         // schema, and REDIRECT_KEYS_BY_FORM is a Map.of, whose lookups throw on a null key instead

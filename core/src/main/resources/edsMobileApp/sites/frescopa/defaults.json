@@ -12,8 +12,8 @@
     "target": "cart"
   },
   "forms": {
-    "login":        { "redirectAfterSubmit": "home" },
-    "registration": { "redirectAfterSubmit": "home" },
-    "subscription": { "redirectAfterSubmit": "home" }
+    "login":        { "redirectAfterSubmit": "en" },
+    "registration": { "redirectAfterSubmit": "en" },
+    "subscription": { "redirectAfterSubmit": "en" }
   }
 }

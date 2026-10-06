@@ -12,9 +12,9 @@
   },
   "forms": {
     "login": { "heading": "Sign In" },
-    "registration": { "heading": "Create an account", "redirectAfterSubmit": "home" },
+    "registration": { "heading": "Create an account", "redirectAfterSubmit": "en" },
     "checkout": { "heading": "Checkout Shipping" },
-    "luma-plus": { "redirectAfterSubmit": "home" }
+    "luma-plus": { "redirectAfterSubmit": "en" }
   },
   "rightIcon": {
     "icon": "shopping-cart",

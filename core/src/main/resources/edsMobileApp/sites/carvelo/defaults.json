@@ -12,15 +12,15 @@
     "target": "cart"
   },
   "forms": {
-    "login":                { "redirectAfterSubmit": "home" },
-    "registration":         { "redirectAfterSubmit": "home" },
-    "schedule-appointment": { "redirectAfterSubmit": "home",
+    "login":                { "redirectAfterSubmit": "en" },
+    "registration":         { "redirectAfterSubmit": "en" },
+    "schedule-appointment": { "redirectAfterSubmit": "en",
                               "toastMessage": "Thank you! Your service appointment has been scheduled." },
-    "test-drive":           { "redirectAfterSubmit": "home",
+    "test-drive":           { "redirectAfterSubmit": "en",
                               "toastMessage": "Thank you! Your test drive has been scheduled." },
-    "request-a-quote":      { "redirectAfterSubmit": "home" },
+    "request-a-quote":      { "redirectAfterSubmit": "en" },
     "car-loan":             { "redirectAfterSubmit": "carloan-application-submitted" },
-    "build-your-own":       { "redirectAfterSubmit": "home" }
+    "build-your-own":       { "redirectAfterSubmit": "en" }
   },
   "extractInlineLinks": true
 }
