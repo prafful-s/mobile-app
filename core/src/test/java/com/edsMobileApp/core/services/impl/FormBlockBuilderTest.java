@@ -9,9 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.models.factory.ModelFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
+import com.day.cq.wcm.api.Page;
+import com.edsMobileApp.core.models.impl.GenericComponent;
 import com.edsMobileApp.core.schema.SchemaConstants;
 import com.edsMobileApp.core.services.FormSchemaService;
 
@@ -54,6 +58,61 @@ class FormBlockBuilderTest {
     }
 
     @Test
+        @SuppressWarnings("unchecked")
+        void coffeeQuizBuildsAsAFormWithItsConfiguredComponents() {
+        final FormSchemaServiceImpl schemas = new FormSchemaServiceImpl();
+        schemas.activate();
+        final Resource resource = context.create().resource("/content/site/page/jcr:content/quiz");
+        final Map<String, Object> built = new FormBlockBuilder(schemas).build(resource,
+            "coffee-quiz-frescopa", "quiz123", 0,
+            Map.of("mobilebuttoneventtype", "registration"));
+
+        assertEquals("form", meta(built).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("registration", meta(built).get("eventType"));
+        final List<Map<String, Object>> configured = schemas.getSchema("coffee-quiz-frescopa");
+        final List<Map<String, Object>> fields =
+            (List<Map<String, Object>>) built.get(SchemaConstants.KEY_CONTENT);
+        assertEquals(8, fields.size());
+        for (int index = 0; index < configured.size(); index++) {
+            assertEquals(configured.get(index).get(SchemaConstants.KEY_COMPONENT),
+                meta(fields.get(index)).get(SchemaConstants.KEY_COMPONENT));
+            assertEquals(index + 1, meta(fields.get(index)).get(SchemaConstants.KEY_ORDER));
+                assertEquals(configured.get(index).get(SchemaConstants.KEY_COMPONENT) + "-" + (index + 1),
+                    meta(fields.get(index)).get(SchemaConstants.KEY_ID));
+            assertEquals(configured.get(index).get(SchemaConstants.KEY_CONTENT),
+                fields.get(index).get(SchemaConstants.KEY_CONTENT));
+        }
+        final Map<String, Object> withoutEvent = new FormBlockBuilder(schemas).build(resource,
+            "coffee-quiz-frescopa", "quiz123", 0, Collections.emptyMap());
+        assertEquals("", meta(withoutEvent).get("eventType"));
+        }
+
+        @Test
+            @SuppressWarnings("unchecked")
+            void coffeeQuizExportsAsOneFormInsteadOfTopLevelSteps() {
+            final FormSchemaServiceImpl schemas = new FormSchemaServiceImpl();
+            schemas.activate();
+            final UrlServiceImpl urlService = new UrlServiceImpl();
+            final ModelFactory modelFactory = Mockito.mock(ModelFactory.class);
+            Mockito.when(modelFactory.getModelFromResource(Mockito.any()))
+                .thenAnswer(invocation -> new GenericComponent(invocation.getArgument(0), urlService));
+            final ComponentTreeWalker walker = new ComponentTreeWalker(modelFactory, urlService, schemas,
+                new StyleResolver(new String[0]), ComponentMappings.load());
+            final Page page = context.create().page("/content/frescopa/en/quiz");
+            context.create().resource(page.getPath() + "/jcr:content/root");
+            context.create().resource(page.getPath() + "/jcr:content/root/quiz",
+                "sling:resourceType", "eds/components/coffee-quiz-frescopa",
+                "mobilebuttoneventtype", "registration");
+
+            final List<Map<String, Object>> components = walker.componentsOf(page, "", true);
+            assertEquals(1, components.size());
+            assertEquals("form", meta(components.get(0)).get(SchemaConstants.KEY_COMPONENT));
+            assertEquals("registration", meta(components.get(0)).get("eventType"));
+            assertEquals(8, ((List<Map<String, Object>>) components.get(0)
+                .get(SchemaConstants.KEY_CONTENT)).size());
+            }
+
+            @Test
     void aFormWithNoSchemaNameStillBuilds() {
         final Resource resource = context.create().resource("/content/site/page/jcr:content/form");
         final Map<String, Object> built =

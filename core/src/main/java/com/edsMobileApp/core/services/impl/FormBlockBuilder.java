@@ -425,7 +425,21 @@ final class FormBlockBuilder {
                         field.get("id"));
                 continue;
             }
-            final Map<String, Object> built = FormFieldFactory.fromConfig(field, order);
+            final Map<String, Object> built;
+            if (field.get(SchemaConstants.KEY_COMPONENT) != null) {
+                final Map<String, Object> meta = new LinkedHashMap<>();
+                meta.put(SchemaConstants.KEY_ID, StringUtils.defaultIfBlank(
+                    (String) field.get(SchemaConstants.KEY_ID),
+                    field.get(SchemaConstants.KEY_COMPONENT) + "-" + order));
+                meta.put(SchemaConstants.KEY_ORDER, order);
+                meta.put(SchemaConstants.KEY_COMPONENT, field.get(SchemaConstants.KEY_COMPONENT));
+                built = new LinkedHashMap<>(field);
+                built.remove(SchemaConstants.KEY_COMPONENT);
+                built.put(SchemaConstants.KEY_META, meta);
+                built.putIfAbsent(SchemaConstants.KEY_CONTENT, Collections.emptyMap());
+            } else {
+                built = FormFieldFactory.fromConfig(field, order);
+            }
             if (built != null) {
                 fields.add(built);
                 order++;

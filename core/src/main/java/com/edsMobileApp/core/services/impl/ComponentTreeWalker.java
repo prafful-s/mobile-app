@@ -655,21 +655,11 @@ final class ComponentTreeWalker {
                 continue;
             }
 
-            // A quiz block (e.g. Frescopa's coffee-quiz-frescopa) authors only its own behaviour
-            // settings - completion URL, event names, a progress toggle. Its questions, options and
-            // submit button are fixed in the block's own front-end code, not authored in AEM at all,
-            // so there is no child content here to walk. Its bundled schema (edsMobileApp/forms/,
-            // same as every other form) holds that fixed content instead - but unlike a real form's
-            // fields, a quiz step is already the exact component shape the export emits (see
-            // isQuizSchema), so each one is stamped with a fresh id/order and added as its own
-            // top-level component here, rather than going through isFormBlock/FormBlockBuilder below
-            // and being wrapped into one 'form' component the way an actual submitted field list is.
             if (hierarchical) {
                 final List<Map<String, Object>> schema = formSchemaService.getSchema(model.getComponentName());
                 if (isQuizSchema(schema)) {
-                    for (final Map<String, Object> step : schema) {
-                        sink.add(quizStepComponent(step, child.getPath(), sink.size()));
-                    }
+                    sink.add(formBuilder.build(child, model.getComponentName(), model.getId(),
+                            sink.size(), authored));
                     continue;
                 }
             }
@@ -1147,11 +1137,8 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * True when {@code schema} is a quiz's fixed step list rather than a real form's field list -
-     * every entry names a {@code component} (the shape this class emits directly) instead of a
-     * {@code type} (the shape {@link FormFieldFactory} interprets). Empty for a block with no
-     * bundled schema at all, so the caller's own {@code isEmpty()}-shaped check still works: a block
-     * that is neither a quiz nor a form falls straight through untouched.
+    * True when {@code schema} contains preconfigured quiz components instead of typed fields.
+    * These blocks are built as forms before empty-wrapper handling can discard their schema.
      */
     private static boolean isQuizSchema(final List<Map<String, Object>> schema) {
         if (schema.isEmpty()) {
@@ -1163,49 +1150,6 @@ final class ComponentTreeWalker {
             }
         }
         return true;
-    }
-
-    /**
-     * One quiz step (see {@link #isQuizSchema}), stamped into the shape every other component
-     * takes. The step itself already carries {@code component} and {@code content} (and,
-     * optionally, {@code styles}) - only {@code id} and {@code order} are synthesised, the same way
-     * any other non-authored component's are ({@link AbstractComponentModel#generateId}).
-     *
-     * @param resourcePath the quiz block's own path - every step shares it, so {@code order} is
-     *                     folded into the id to keep them distinct
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> quizStepComponent(final Map<String, Object> step, final String resourcePath,
-                                                   final int order) {
-        final Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resourcePath + "#" + order));
-        meta.put(SchemaConstants.KEY_ORDER, order);
-        meta.put(SchemaConstants.KEY_COMPONENT, step.get(SchemaConstants.KEY_COMPONENT));
-
-        final Map<String, Object> entry = new LinkedHashMap<>();
-        entry.put(SchemaConstants.KEY_META, meta);
-        // Every schema key other than 'component' (which the walker owns, via meta) is carried
-        // through in the file's own order - 'content' and 'styles' get their contract shape, and any
-        // other top-level key (e.g. a formSubmitButton's events/formId/webhookUrl siblings) passes
-        // through verbatim, so a quiz step can carry the exact envelope the reference declares.
-        for (final Map.Entry<String, Object> field : step.entrySet()) {
-            final String key = field.getKey();
-            if (SchemaConstants.KEY_COMPONENT.equals(key)) {
-                continue;
-            }
-            if (SchemaConstants.KEY_STYLES.equals(key)) {
-                if (field.getValue() instanceof Map && !((Map<String, Object>) field.getValue()).isEmpty()) {
-                    entry.put(SchemaConstants.KEY_STYLES, field.getValue());
-                }
-            } else if (SchemaConstants.KEY_CONTENT.equals(key)) {
-                entry.put(SchemaConstants.KEY_CONTENT,
-                        field.getValue() instanceof Map ? field.getValue() : Collections.emptyMap());
-            } else {
-                entry.put(key, field.getValue());
-            }
-        }
-        entry.putIfAbsent(SchemaConstants.KEY_CONTENT, Collections.emptyMap());
-        return entry;
     }
 
     /**
