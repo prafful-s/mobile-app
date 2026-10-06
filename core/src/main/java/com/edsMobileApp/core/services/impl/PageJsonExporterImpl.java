@@ -48,6 +48,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * to land even before a site author builds a dedicated profile page.
      */
     private static final String SCREEN_USER_DETAILS = "user-details";
+    private static final String SCREEN_LOGIN = "login";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
@@ -186,6 +187,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // Only added when no AEM page already exports under this key, so a site that has authored
         // its own user-details page keeps that content untouched.
         screens.putIfAbsent(SCREEN_USER_DETAILS, buildUserDetailsScreen(homeRoot));
+        screens.put(SCREEN_LOGIN, buildLoginScreen(homeRoot));
         app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
@@ -262,9 +264,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                                                 final List<Page> screens, final Page homeRoot) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
-        navigation.put("loginScreen",
-                resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
-        // Fixed for every site, unlike loginScreen/registrationScreen below: the profile action
+        navigation.put("loginScreen", SCREEN_LOGIN);
+        // Fixed for every site, unlike registrationScreen below: the profile action
         // always opens the synthetic user-details screen built in buildUserDetailsScreen, never an
         // authored page or a scanned form match.
         navigation.put("profileScreen", SCREEN_USER_DETAILS);
@@ -544,6 +545,46 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> component = new LinkedHashMap<>();
         component.put(SchemaConstants.KEY_META, componentMeta);
         component.put(SchemaConstants.KEY_CONTENT, Collections.singletonMap("showLogoutButton", true));
+
+        final Map<String, Object> screen = new LinkedHashMap<>();
+        screen.put(SchemaConstants.KEY_META, meta);
+        screen.put(SchemaConstants.KEY_EDITOR, editor);
+        screen.put(SchemaConstants.KEY_CONTENT, List.of(component));
+        return screen;
+    }
+
+    private Map<String, Object> buildLoginScreen(final Page homeRoot) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("icon", "login");
+        meta.put("name", SCREEN_LOGIN);
+        meta.put("title", "Login");
+        meta.put("preset", "login");
+        meta.put("template", "FreeformScreen");
+        meta.put("isRootScreen", false);
+        meta.put("navigationOrder", null);
+        meta.put("includeInNavigation", false);
+
+        final Map<String, Object> position = new LinkedHashMap<>();
+        position.put("top", 275);
+        position.put("left", 150);
+        final Map<String, Object> editor = new LinkedHashMap<>();
+        editor.put("zIndex", 26);
+        editor.put("position", position);
+
+        final String syntheticPath = homeRoot.getPath() + "/" + SCREEN_LOGIN;
+        final Map<String, Object> componentMeta = new LinkedHashMap<>();
+        componentMeta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(syntheticPath));
+        componentMeta.put(SchemaConstants.KEY_ORDER, 1);
+        componentMeta.put(SchemaConstants.KEY_COMPONENT, "userLogin");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("title", "Login");
+        content.put("passwordLabel", "Password");
+        content.put("usernameLabel", "Email");
+
+        final Map<String, Object> component = new LinkedHashMap<>();
+        component.put(SchemaConstants.KEY_META, componentMeta);
+        component.put(SchemaConstants.KEY_CONTENT, content);
 
         final Map<String, Object> screen = new LinkedHashMap<>();
         screen.put(SchemaConstants.KEY_META, meta);
