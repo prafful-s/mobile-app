@@ -1,10 +1,9 @@
 {
   "screenKeyAliases": {
-    "sign-in": "login",
-    "order-summary": "review-order"
+    "sign-in": "login"
   },
   "checkoutForm": {
-    "link": "review-order",
+    "link": "order-summary",
     "formId": "checkoutForm",
     "webhookUrl": "",
     "toastMessage": "",

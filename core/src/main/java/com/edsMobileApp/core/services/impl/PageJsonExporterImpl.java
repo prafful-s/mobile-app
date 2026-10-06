@@ -243,11 +243,11 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_LOGIN_SCREEN), "login");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_REGISTRATION_SCREEN), "registration");
         addScreenPreset(presets, navigation.get(SchemaConstants.PN_PROFILE_SCREEN), "profile");
-        // cart and review-order are fixed system screens like the roles above, not authored - their
+        // cart and order-summary have fixed screen roles like the navigation screens above - their
         // preset per the LUMA MOBILE reference is a screen-specific value rather than the generic
         // DEFAULT_SCREEN_PRESET.
         presets.putIfAbsent("cart", "cart");
-        presets.putIfAbsent("review-order", "reviewOrder");
+        presets.putIfAbsent("order-summary", "reviewOrder");
         return presets;
     }
 
@@ -480,7 +480,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         meta.put("thumbnail", StringUtils.EMPTY);
         if ("cart".equals(key)) {
             addCartActionsPanel(content, page);
-        } else if ("review-order".equals(key)) {
+        } else if ("order-summary".equals(key)) {
             content = reviewOrderContent(content, page);
         } else if ("checkout".equals(key)) {
             // checkout owns its meta.link via its dedicated patch (formId/eventType too).
@@ -493,7 +493,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
-        // Outside the branch on purpose: cart, review-order and checkout take their own paths above
+        // Outside the branch on purpose: cart, order-summary and checkout take their own paths above
         // and so never reach applyFormSettings, but a site can configure a heading for any screen
         // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
         applyFormHeading(content, page, key);
@@ -506,6 +506,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // style override should be the last word on how it looks.
         applyComponentMeta(content, page, key);
         applyComponentStyles(content, page, key);
+        content = normalizeScreenTargets(content, page);
         screen.put(SchemaConstants.KEY_CONTENT,
                 options.isReduced() ? keepEnabledComponents(content) : content);
         return screen;
@@ -670,7 +671,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * The review-order screen's content, flattened to exactly {@code [cartSummary, confirm button]}
+    * The order-summary screen's content, flattened to exactly {@code [cartSummary, confirm button]}
      * with no wrapping panel - unlike the cart screen, the reference here has both as direct
      * siblings. The authored {@code order-summary} block already maps onto {@code cartSummary}
      * (see {@code orderSummary.json}); {@link #walker} still wraps its section into a panel like any
@@ -704,14 +705,14 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * {@link FormBlockBuilder} derives {@code eventType}/{@code submitButtonLabel}/etc. purely from
     * the authored {@code checkout-shipping} block's own properties. Its {@code mobilebuttoneventtype}
     * is preserved as {@code eventType}, without a site override or fallback event. Other settings,
-    * including the {@code checkoutForm} id and {@code link} to the review-order screen after submit,
-    * may use site overrides or the defaults below.
+    * including the {@code checkoutForm} id, may use site overrides or the defaults below.
+    * An authored redirect wins; otherwise the form links to the order-summary screen by default.
      * The reset button is dropped entirely (the reference form has none) rather than left hidden.
      * Fields (from {@code checkout-shipping.json}) and the component's own id/order are untouched.
      */
     /** Compiled-in fallback used when a site's {@code defaults.json} has no {@code checkoutForm} block. */
     private static final Map<String, Object> CHECKOUT_FORM_DEFAULTS = Map.of(
-            "link", "review-order",
+            "link", "order-summary",
             "formId", "checkoutForm",
             "webhookUrl", "",
             "toastMessage", "",
@@ -738,7 +739,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // this contract everywhere else in the export.
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, old.get(SchemaConstants.KEY_ID));
-        meta.put("link", override(overrides, "link", old.get("link")));
+        final Object authoredLink = old.get("link");
+        meta.put("link", authoredLink instanceof String && StringUtils.isNotBlank((String) authoredLink)
+            ? authoredLink : override(overrides, "link", authoredLink));
         meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
         meta.put("formId", override(overrides, "formId", old.get("formId")));
         meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
@@ -1204,7 +1207,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return (Map<String, Object>) value;
     }
 
-    /** The review-order screen's JSON-configured "Confirm" button - see {@link #reviewOrderContent}. */
+    /** The order-summary screen's JSON-configured "Confirm" button - see {@link #reviewOrderContent}. */
     private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order, final String event) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID,
@@ -1487,27 +1490,64 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * The site's login page is authored as {@code sign-in}, but the LUMA MOBILE reference names
      * that screen {@code login} - the same key {@code navigation.loginScreen} points at - the same
      * way its {@code registration} screen's key matches {@code navigation.registrationScreen}
-     * exactly. Likewise the authored {@code order-summary} page is the reference's
-     * {@code review-order} screen. Rewritten after kebab-casing so {@code Sign_In}, {@code sign-in},
-     * etc. all resolve.
+        * exactly. The review screen keeps the authored {@code order-summary} name.
+        * Rewritten after kebab-casing so {@code Sign_In}, {@code sign-in}, etc. all resolve.
      */
     /**
-     * Compiled-in default screen-key rewrites: two AEM node names the client expects under a
-     * different key. A site's {@code defaults.json} may override or extend this - see
+        * Compiled-in default screen-key rewrite for login.
+    * A site's {@code defaults.json} may override or extend this - see
      * {@link SiteDefaults}. Kept as a fallback so a site that ships no {@code defaults.json} still
-     * gets the two rewrites the reference contract has always relied on.
+    * gets the same canonical keys.
      */
     private static final Map<String, String> SCREEN_KEY_ALIASES =
-            Map.of("sign-in", "login", "order-summary", "review-order");
+            Map.of("sign-in", "login");
 
     private String screenKey(final Page page) {
-        final String key = kebab(page.getName());
+        return screenKey(page.getName(), page);
+    }
+
+    private String screenKey(final String name, final Page page) {
+        final String key = kebab(name);
         final Map<String, String> siteAliases = SiteDefaults.stringMap(
                 siteDefaults.forPage(page), SiteDefaults.KEY_SCREEN_KEY_ALIASES);
         if (siteAliases.containsKey(key)) {
             return siteAliases.get(key);
         }
         return SCREEN_KEY_ALIASES.getOrDefault(key, key);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> normalizeScreenTargets(final List<Map<String, Object>> components,
+                                                           final Page page) {
+        final List<Map<String, Object>> normalized = new ArrayList<>();
+        for (final Map<String, Object> component : components) {
+            final Map<String, Object> copy = new LinkedHashMap<>(component);
+            for (final String section : List.of("meta", "content")) {
+                final Object value = component.get(section);
+                if (value instanceof Map) {
+                    final Map<String, Object> properties = new LinkedHashMap<>((Map<String, Object>) value);
+                    for (final String property : List.of("link", "linkTo", "navigateOnSubmit")) {
+                        final Object target = properties.get(property);
+                        if (!(target instanceof String) || StringUtils.isBlank((String) target)) {
+                            continue;
+                        }
+                        final String text = ((String) target).trim();
+                        final int suffixIndex = StringUtils.indexOfAny(text, '?', '#');
+                        final String name = suffixIndex >= 0 ? text.substring(0, suffixIndex) : text;
+                        if (name.isEmpty() || name.contains("/") || name.contains(":")) {
+                            continue;
+                        }
+                        final String suffix = suffixIndex >= 0 ? text.substring(suffixIndex) : "";
+                        properties.put(property, screenKey(name, page) + suffix);
+                    }
+                    copy.put(section, properties);
+                } else if ("content".equals(section) && value instanceof List) {
+                    copy.put(section, normalizeScreenTargets((List<Map<String, Object>>) value, page));
+                }
+            }
+            normalized.add(copy);
+        }
+        return normalized;
     }
 
     /**

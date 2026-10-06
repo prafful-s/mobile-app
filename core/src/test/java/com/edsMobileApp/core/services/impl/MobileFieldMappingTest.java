@@ -33,7 +33,7 @@ class MobileFieldMappingTest {
         final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
         exporter.activate(Map.of());
         final Page page = mock(Page.class);
-        when(page.getPath()).thenReturn("/content/confirmation-test/en/review-order");
+        when(page.getPath()).thenReturn("/content/confirmation-test/en/order-summary");
         when(page.getContentResource()).thenThrow(new IllegalStateException("Confirmation must use mapped content"));
         final Map<String, Object> original = mappedConfirmation(exporter, page, Map.of());
         final Map<String, Object> originalContent = (Map<String, Object>) original.get("content");
@@ -81,7 +81,7 @@ class MobileFieldMappingTest {
         assertFalse(missingContent.containsKey("events"));
         assertFalse(missingContent.containsKey("customEvent"));
 
-        when(page.getPath()).thenReturn("/content/another-site/en/review-order");
+        when(page.getPath()).thenReturn("/content/another-site/en/order-summary");
         final Map<String, Object> otherSite = mappedConfirmation(exporter, page, properties);
         assertEquals(originalContent, otherSite.get("content"));
         assertEquals(original.get("styles"), otherSite.get("styles"));
@@ -132,7 +132,7 @@ class MobileFieldMappingTest {
             final Map<String, Object> meta = (Map<String, Object>) form.get("meta");
             assertEquals(event, meta.get("eventType"));
             assertEquals("checkout-id", meta.get("id"));
-            assertEquals("review-order", meta.get("link"));
+            assertEquals("order-summary", meta.get("link"));
             assertEquals("checkoutForm", meta.get("formId"));
             assertEquals("Checkout", meta.get("submitButtonLabel"));
         }
@@ -160,6 +160,64 @@ class MobileFieldMappingTest {
         assertEquals(false, content.get("showButton"));
         assertEquals(false, content.get("showDebugMessage"));
         assertSurvivesReducedExport(rule, content);
+    }
+
+    @Test
+    void orderSummaryUsesItsAuthoredScreenName() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/luma-site/en/order-summary");
+        final Method key = PageJsonExporterImpl.class.getDeclaredMethod("screenKey", Page.class);
+        key.setAccessible(true);
+        for (final String name : List.of("order-summary", "review-order")) {
+            when(page.getName()).thenReturn(name);
+            assertEquals(name, key.invoke(exporter, page));
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void checkoutAuthoredRedirectWinsOverSiteDefault() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/luma-site/en/checkout");
+        final Method patch = PageJsonExporterImpl.class.getDeclaredMethod("patchCheckoutFormMeta", List.class, Page.class);
+        patch.setAccessible(true);
+        for (final String redirect : List.of("confirmation", "", " ")) {
+            final Map<String, Object> form = new HashMap<>();
+            form.put("meta", Map.of("id", "checkout-id", "order", 0, "component", "form", "link", redirect));
+            patch.invoke(exporter, List.of(form), page);
+            final Map<String, Object> meta = (Map<String, Object>) form.get("meta");
+            assertEquals("confirmation".equals(redirect) ? "confirmation" : "order-summary", meta.get("link"));
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void navigationTargetsUseTheExportedScreenAliases() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/luma-site/en/checkout");
+        final Map<String, Object> form = Map.of("meta", Map.of("component", "form",
+                "link", "review-order?source=mobile#summary", "navigateOnSubmit", "sign-in"));
+        final Map<String, Object> button = Map.of("meta", Map.of("component", "button"),
+                "content", Map.of("linkTo", "sign-in#account"));
+        final Map<String, Object> external = Map.of("meta", Map.of("component", "button"),
+                "content", Map.of("linkTo", "https://example.com/sign-in#account", "link", "#account"));
+        final Map<String, Object> panel = Map.of("meta", Map.of("component", "panel"),
+                "content", List.of(form, button, external));
+        final Method normalize = PageJsonExporterImpl.class.getDeclaredMethod("normalizeScreenTargets", List.class, Page.class);
+        normalize.setAccessible(true);
+        final List<Map<String, Object>> result = (List<Map<String, Object>>) normalize.invoke(exporter, List.of(panel), page);
+        final List<Map<String, Object>> children = (List<Map<String, Object>>) result.get(0).get("content");
+        assertEquals("review-order?source=mobile#summary", ((Map<String, Object>) children.get(0).get("meta")).get("link"));
+        assertEquals("login", ((Map<String, Object>) children.get(0).get("meta")).get("navigateOnSubmit"));
+        assertEquals("login#account", ((Map<String, Object>) children.get(1).get("content")).get("linkTo"));
+        assertEquals(external, children.get(2));
+        assertEquals("review-order?source=mobile#summary", ((Map<String, Object>) form.get("meta")).get("link"));
     }
 
     @Test

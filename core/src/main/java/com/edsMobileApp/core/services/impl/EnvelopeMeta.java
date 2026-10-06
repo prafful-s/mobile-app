@@ -212,10 +212,8 @@ final class EnvelopeMeta {
         meta.put("iconInactive", StringUtils.defaultString(props.get("mobileIconInactive", String.class)));
         meta.put("name", screenKey);
         meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
-        // review-order's authored jcr:title is "Order-summary" (the AEM page's own leftover name,
-        // pre-dating the review-order rename) - the reference titles the screen "Review Order", so
-        // this one screen's title is forced rather than left to the authored value.
-        meta.put("title", "review-order".equals(screenKey)
+        // Keep the review screen's display title independent of its order-summary navigation key.
+        meta.put("title", "order-summary".equals(screenKey)
                 ? "Review Order"
                 : StringUtils.defaultIfBlank(page.getTitle(), page.getName()));
 
