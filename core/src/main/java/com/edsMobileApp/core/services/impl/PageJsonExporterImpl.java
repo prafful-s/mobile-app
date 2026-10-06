@@ -675,21 +675,27 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * siblings. The authored {@code order-summary} block already maps onto {@code cartSummary}
      * (see {@code orderSummary.json}); {@link #walker} still wraps its section into a panel like any
      * other single-block section, so that wrapper is unwound here rather than emitted. The confirm
-    * button uses shared/site configuration except for its event, read from the authored order-summary.
-    * Falls back to the walker's own content (plus the button) if no cartSummary is found,
+        * button uses shared/site configuration except for its event, taken from the mapped order-summary.
+        * Falls back to the walker's own content (plus the button) if no cartSummary is found,
      * so a re-authored page still gets something rather than an empty screen.
      */
     private List<Map<String, Object>> reviewOrderContent(final List<Map<String, Object>> content,
                                                           final Page page) {
         final Map<String, Object> cartSummary = findComponent(content, "cartSummary");
         final List<Map<String, Object>> result = new ArrayList<>();
+        String event = null;
         if (cartSummary != null) {
+            final Map<String, Object> summaryContent = new LinkedHashMap<>(
+                    SiteDefaults.objectMap(cartSummary, SchemaConstants.KEY_CONTENT));
+            final Object mappedEvent = summaryContent.remove("eventType");
+            event = mappedEvent instanceof String ? (String) mappedEvent : null;
+            cartSummary.put(SchemaConstants.KEY_CONTENT, summaryContent);
             asMeta(cartSummary.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, 0);
             result.add(cartSummary);
         } else {
             result.addAll(content);
         }
-        result.add(confirmButton(page, result.size()));
+        result.add(confirmButton(page, result.size(), event));
         return result;
     }
 
@@ -1199,7 +1205,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /** The review-order screen's JSON-configured "Confirm" button - see {@link #reviewOrderContent}. */
-    private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order) {
+    private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order, final String event) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID,
                 AbstractComponentModel.generateId(reviewOrderPage.getPath() + "/confirm"));
@@ -1216,9 +1222,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         content.putAll(SiteDefaults.objectMap(overrides, SchemaConstants.KEY_CONTENT));
         content.remove("events");
         content.remove("customEvent");
-        final Resource orderSummary = findOrderSummary(reviewOrderPage.getContentResource(), 0);
-        final String event = orderSummary == null ? null
-                : orderSummary.getValueMap().get("mobilebuttoneventtype", String.class);
         if (StringUtils.isNotBlank(event)) {
             content.put("events", event);
             content.put("customEvent", event);
@@ -1229,32 +1232,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         button.put(SchemaConstants.KEY_STYLES, styles);
         button.put(SchemaConstants.KEY_CONTENT, content);
         return button;
-    }
-
-    private static Resource findOrderSummary(final Resource resource, final int depth) {
-        if (resource == null || depth > MAX_COMPONENT_DEPTH) {
-            return null;
-        }
-        final String resourceType = StringUtils.trimToEmpty(resource.getResourceType());
-        final String componentName = StringUtils.defaultIfBlank(
-            resource.getValueMap().get(SchemaConstants.PN_MODEL, String.class),
-            StringUtils.defaultIfBlank(StringUtils.substringAfterLast(resourceType, "/"),
-                StringUtils.defaultIfBlank(resourceType, resource.getName())));
-        if ("order-summary".equals(componentName)) {
-            return resource;
-        }
-        for (final Resource child : resource.getChildren()) {
-            final String name = child.getName();
-            if (name.startsWith("cq:") || name.startsWith("jcr:") || name.startsWith("rep:")
-                    || name.startsWith("oak:") || "edsMobileApp".equals(name)) {
-                continue;
-            }
-            final Resource found = findOrderSummary(child, depth + 1);
-            if (found != null) {
-                return found;
-            }
-        }
-        return null;
     }
 
     private static Map<String, Object> readConfirmButtonDefaults() {

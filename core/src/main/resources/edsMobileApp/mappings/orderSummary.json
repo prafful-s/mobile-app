@@ -4,6 +4,7 @@
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
+    { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "label", "const": "TOTAl" },
     { "target": "totalLabel", "const": "TOTAL" },
     { "target": "showDiscount", "const": true },
