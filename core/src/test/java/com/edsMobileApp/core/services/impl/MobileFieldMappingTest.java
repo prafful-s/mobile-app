@@ -108,6 +108,35 @@ class MobileFieldMappingTest {
         }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void checkoutPreservesOnlyAuthoredEvents() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/checkout-test/en/checkout");
+        final Field defaultsField = PageJsonExporterImpl.class.getDeclaredField("siteDefaults");
+        defaultsField.setAccessible(true);
+        final Field cacheField = SiteDefaults.class.getDeclaredField("bySite");
+        cacheField.setAccessible(true);
+        final Map<String, Optional<Map<String, Object>>> cache =
+                (Map<String, Optional<Map<String, Object>>>) cacheField.get(defaultsField.get(exporter));
+        cache.put("checkout-test", Optional.of(Map.of("checkoutForm", Map.of("eventType", "site.event"))));
+        final Method patch = PageJsonExporterImpl.class.getDeclaredMethod("patchCheckoutFormMeta", List.class, Page.class);
+        patch.setAccessible(true);
+        for (final String event : List.of("authored.checkout.event", "")) {
+            final Map<String, Object> form = new HashMap<>();
+            form.put("meta", Map.of("id", "checkout-id", "order", 0, "component", "form", "eventType", event));
+            patch.invoke(exporter, List.of(form), page);
+            final Map<String, Object> meta = (Map<String, Object>) form.get("meta");
+            assertEquals(event, meta.get("eventType"));
+            assertEquals("checkout-id", meta.get("id"));
+            assertEquals("review-order", meta.get("link"));
+            assertEquals("checkoutForm", meta.get("formId"));
+            assertEquals("Checkout", meta.get("submitButtonLabel"));
+        }
+    }
+
+    @Test
     void experienceDecisioningSurvivesReducedExport() throws Exception {
         final Map<String, Object> source = authored(
                 "mobileDecisioningType", "experience",

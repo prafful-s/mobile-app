@@ -696,10 +696,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     /**
      * Overrides the checkout screen's form meta with the LUMA MOBILE reference's values.
      * {@link FormBlockBuilder} derives {@code eventType}/{@code submitButtonLabel}/etc. purely from
-     * the authored {@code checkout-shipping} block's own properties (its {@code buttoneventtype}
-     * gives {@code eventType: "checkout"}) or its own hardcoded defaults - there is no authored
-     * source for the reference's {@code commerce.checkouts} event name, its {@code checkoutForm} id,
-     * or the {@code link} to the review-order screen after submit, so those are patched in here.
+    * the authored {@code checkout-shipping} block's own properties. Its {@code mobilebuttoneventtype}
+    * is preserved as {@code eventType}, without a site override or fallback event. Other settings,
+    * including the {@code checkoutForm} id and {@code link} to the review-order screen after submit,
+    * may use site overrides or the defaults below.
      * The reset button is dropped entirely (the reference form has none) rather than left hidden.
      * Fields (from {@code checkout-shipping.json}) and the component's own id/order are untouched.
      */
@@ -707,7 +707,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private static final Map<String, Object> CHECKOUT_FORM_DEFAULTS = Map.of(
             "link", "review-order",
             "formId", "checkoutForm",
-            "eventType", "commerce.checkouts",
             "webhookUrl", "",
             "toastMessage", "",
             "submitButtonLabel", "Checkout");
@@ -719,10 +718,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         final Map<String, Object> old = asMeta(form.get(SchemaConstants.KEY_META));
 
-        // A site may override any subset of these in defaults.json.checkoutForm. A key the site
+        // A site may override settings other than eventType in defaults.json.checkoutForm. A key the site
         // doesn't override keeps whatever the authored block itself produced (via FormBlockBuilder)
         // when that's present, and only falls back to the compiled-in reference value below when
-        // neither exists - so a site whose checkout block authors its own eventType/formId/etc.
+        // neither exists - so a site whose checkout block authors its own formId/etc.
         // keeps those, while link/toastMessage/submitButtonLabel (which no block authors) still get
         // a sensible default.
         final Map<String, Object> overrides = SiteDefaults.objectMap(
@@ -737,7 +736,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
         meta.put("formId", override(overrides, "formId", old.get("formId")));
         meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
-        meta.put("eventType", override(overrides, "eventType", old.get("eventType")));
+        meta.put("eventType", old.get("eventType"));
         meta.put("webhookUrl", override(overrides, "webhookUrl", old.get("webhookUrl")));
         meta.put("toastMessage", override(overrides, "toastMessage", old.get("toastMessage")));
         meta.put("submitButtonLabel", override(overrides, "submitButtonLabel", old.get("submitButtonLabel")));
