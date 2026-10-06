@@ -4,7 +4,9 @@
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
+    { "target": "_orderSummary", "const": true },
     { "target": "eventType", "from": "mobilebuttoneventtype" },
+    { "target": "link", "from": "mobileRedirectUrl", "default": "" },
     { "target": "label", "const": "TOTAl" },
     { "target": "totalLabel", "const": "TOTAL" },
     { "target": "showDiscount", "const": true },

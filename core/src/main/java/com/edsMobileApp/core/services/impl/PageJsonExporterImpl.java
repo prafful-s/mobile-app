@@ -480,8 +480,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         meta.put("thumbnail", StringUtils.EMPTY);
         if ("cart".equals(key)) {
             addCartActionsPanel(content, page);
-        } else if ("order-summary".equals(key)) {
-            content = reviewOrderContent(content, page);
         } else if ("checkout".equals(key)) {
             // checkout owns its meta.link via its dedicated patch (formId/eventType too).
             patchCheckoutFormMeta(content, page);
@@ -491,9 +489,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
+        content = reviewOrderContent(content, page);
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
-        // Outside the branch on purpose: cart, order-summary and checkout take their own paths above
+        // Outside the branch on purpose: cart and checkout take their own paths above
         // and so never reach applyFormSettings, but a site can configure a heading for any screen
         // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
         applyFormHeading(content, page, key);
@@ -670,33 +669,39 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return content;
     }
 
-    /**
-    * The order-summary screen's content, flattened to exactly {@code [cartSummary, confirm button]}
-     * with no wrapping panel - unlike the cart screen, the reference here has both as direct
-     * siblings. The authored {@code order-summary} block already maps onto {@code cartSummary}
-     * (see {@code orderSummary.json}); {@link #walker} still wraps its section into a panel like any
-     * other single-block section, so that wrapper is unwound here rather than emitted. The confirm
-        * button uses shared/site configuration except for its event, taken from the mapped order-summary.
-        * Falls back to the walker's own content (plus the button) if no cartSummary is found,
-     * so a re-authored page still gets something rather than an empty screen.
-     */
+    @SuppressWarnings("unchecked")
     private List<Map<String, Object>> reviewOrderContent(final List<Map<String, Object>> content,
                                                           final Page page) {
-        final Map<String, Object> cartSummary = findComponent(content, "cartSummary");
         final List<Map<String, Object>> result = new ArrayList<>();
-        String event = null;
-        if (cartSummary != null) {
-            final Map<String, Object> summaryContent = new LinkedHashMap<>(
-                    SiteDefaults.objectMap(cartSummary, SchemaConstants.KEY_CONTENT));
-            final Object mappedEvent = summaryContent.remove("eventType");
-            event = mappedEvent instanceof String ? (String) mappedEvent : null;
-            cartSummary.put(SchemaConstants.KEY_CONTENT, summaryContent);
-            asMeta(cartSummary.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, 0);
-            result.add(cartSummary);
-        } else {
-            result.addAll(content);
+        for (final Map<String, Object> component : content) {
+            final Map<String, Object> entry = new LinkedHashMap<>(component);
+            final Map<String, Object> meta = new LinkedHashMap<>(
+                    SiteDefaults.objectMap(component, SchemaConstants.KEY_META));
+            meta.put(SchemaConstants.KEY_ORDER, result.size());
+            entry.put(SchemaConstants.KEY_META, meta);
+            final Object componentContent = component.get(SchemaConstants.KEY_CONTENT);
+            if (SchemaConstants.COMPONENT_PANEL.equals(meta.get(SchemaConstants.KEY_COMPONENT))
+                    && componentContent instanceof List) {
+                entry.put(SchemaConstants.KEY_CONTENT,
+                        reviewOrderContent((List<Map<String, Object>>) componentContent, page));
+            }
+            final Map<String, Object> summaryContent = SiteDefaults.objectMap(component, SchemaConstants.KEY_CONTENT);
+            if ("cartSummary".equals(meta.get(SchemaConstants.KEY_COMPONENT))
+                    && Boolean.TRUE.equals(summaryContent.get("_orderSummary"))) {
+                final Map<String, Object> emittedContent = new LinkedHashMap<>(summaryContent);
+                emittedContent.remove("_orderSummary");
+                final Object event = emittedContent.remove("eventType");
+                final Object redirect = emittedContent.remove("link");
+                entry.put(SchemaConstants.KEY_CONTENT, emittedContent);
+                result.add(entry);
+                result.add(confirmButton(page, result.size(),
+                        event instanceof String ? (String) event : null,
+                        redirect instanceof String ? (String) redirect : null,
+                        String.valueOf(meta.get(SchemaConstants.KEY_ID))));
+            } else {
+                result.add(entry);
+            }
         }
-        result.add(confirmButton(page, result.size(), event));
         return result;
     }
 
@@ -1207,11 +1212,11 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return (Map<String, Object>) value;
     }
 
-    /** The order-summary screen's JSON-configured "Confirm" button - see {@link #reviewOrderContent}. */
-    private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order, final String event) {
+    private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order, final String event,
+                                              final String redirect, final String summaryId) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID,
-                AbstractComponentModel.generateId(reviewOrderPage.getPath() + "/confirm"));
+                AbstractComponentModel.generateId(reviewOrderPage.getPath() + "/" + summaryId + "/confirm"));
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, "button");
 
@@ -1223,6 +1228,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> content = new LinkedHashMap<>(
             SiteDefaults.objectMap(confirmButtonDefaults, SchemaConstants.KEY_CONTENT));
         content.putAll(SiteDefaults.objectMap(overrides, SchemaConstants.KEY_CONTENT));
+        if (StringUtils.isNotBlank(redirect)) {
+            content.put("linkTo", redirect);
+        }
         content.remove("events");
         content.remove("customEvent");
         if (StringUtils.isNotBlank(event)) {

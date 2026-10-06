@@ -2,6 +2,8 @@ package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -11,21 +13,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import org.apache.sling.models.factory.ModelFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.day.cq.wcm.api.Page;
+import com.edsMobileApp.core.models.impl.GenericComponent;
+import com.edsMobileApp.core.services.ExportOptions;
+
+import io.wcm.testing.mock.aem.junit5.AemContext;
+import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
  * The hero and product-detail rules read their Mobile Specific image-fit (and, for hero, the show
  * button switch) in addition to what they derived before. Each rule's own default still applies
  * when nothing mobile is authored, so existing content exports exactly what it did.
  */
+@ExtendWith(AemContextExtension.class)
 class MobileFieldMappingTest {
 
     private static final String LINKED_TEXT = "<h1>Title</h1><p>Body</p><p><a href=\"/content/s/en/trip\">Book</a></p>";
 
     private final ComponentMappings mappings = ComponentMappings.load();
+    private final AemContext context = new AemContext();
 
         @Test
         @SuppressWarnings("unchecked")
@@ -99,15 +111,152 @@ class MobileFieldMappingTest {
         final Method review = PageJsonExporterImpl.class.getDeclaredMethod("reviewOrderContent", List.class, Page.class);
         review.setAccessible(true);
         final List<Map<String, Object>> result = (List<Map<String, Object>>) review.invoke(exporter, List.of(panel), page);
-        assertEquals(2, result.size());
-        assertEquals(summary, result.get(0));
-        assertEquals(0, ((Map<String, Object>) summary.get("meta")).get("order"));
-        final Map<String, Object> emittedContent = (Map<String, Object>) summary.get("content");
+        assertEquals(1, result.size());
+        assertEquals("panel", ((Map<String, Object>) result.get(0).get("meta")).get("component"));
+        final List<Map<String, Object>> children = (List<Map<String, Object>>) result.get(0).get("content");
+        assertEquals(2, children.size());
+        assertEquals(0, ((Map<String, Object>) children.get(0).get("meta")).get("order"));
+        final Map<String, Object> emittedContent = (Map<String, Object>) children.get(0).get("content");
         assertFalse(emittedContent.containsKey("eventType"));
+        assertFalse(emittedContent.containsKey("link"));
+        assertFalse(emittedContent.containsKey("_orderSummary"));
         assertEquals("TOTAL", emittedContent.get("totalLabel"));
-        assertEquals(1, ((Map<String, Object>) result.get(1).get("meta")).get("order"));
-        return result.get(1);
+        assertEquals(1, ((Map<String, Object>) children.get(1).get("meta")).get("order"));
+        assertEquals(3, ((Map<String, Object>) summary.get("meta")).get("order"));
+        return children.get(1);
     }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void orderSummaryRedirectOverridesDefaultsAndIgnoresWebConfirmPath() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/confirmation-test/en/another-page");
+        final Field defaultsField = PageJsonExporterImpl.class.getDeclaredField("siteDefaults");
+        defaultsField.setAccessible(true);
+        final Field cacheField = SiteDefaults.class.getDeclaredField("bySite");
+        cacheField.setAccessible(true);
+        final Map<String, Optional<Map<String, Object>>> cache =
+            (Map<String, Optional<Map<String, Object>>>) cacheField.get(defaultsField.get(exporter));
+        cache.put("confirmation-test", Optional.of(Map.of("confirmButton", Map.of(
+            "content", Map.of("linkTo", "site-default")))));
+        final Map<String, Object> authored = new HashMap<>();
+        authored.put("confirm-path", "/content/luma-site/language-masters/en/web-confirmation");
+        authored.put("mobileRedirectUrl", "/content/luma-site/language-masters/en/order-confirmation.html?source=mobile#complete");
+        assertEquals("order-confirmation?source=mobile#complete",
+            ((Map<String, Object>) mappedConfirmation(exporter, page, authored).get("content")).get("linkTo"));
+        for (final String blank : List.of("", " ")) {
+            authored.put("mobileRedirectUrl", blank);
+            assertEquals("site-default",
+                ((Map<String, Object>) mappedConfirmation(exporter, page, authored).get("content")).get("linkTo"));
+        }
+        authored.remove("mobileRedirectUrl");
+        assertEquals("site-default",
+            ((Map<String, Object>) mappedConfirmation(exporter, page, authored).get("content")).get("linkTo"));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void orderSummariesWorkOnAnyScreenWithoutReplacingOtherContent() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/confirmation-test/en/review-purchase");
+        when(page.getName()).thenReturn("review-purchase");
+        final Map<String, Object> heading = Map.of("meta", Map.of("id", "heading", "component", "htmlText", "order", 0),
+            "content", Map.of("text", "Your order"));
+        final Map<String, Object> firstSummary = Map.of(
+            "meta", Map.of("id", "first-summary", "component", "cartSummary", "order", 0),
+            "content", mappings.find("order-summary").apply(Map.of(
+                "mobileRedirectUrl", "/content/luma-site/language-masters/en/order-confirmation",
+                "mobilebuttoneventtype", "commerce.purchases"), Map.of()));
+        final Map<String, Object> cart = Map.of("meta", Map.of("id", "cart", "component", "cartSummary", "order", 1),
+            "content", Map.of("totalLabel", "CART TOTAL"));
+        final Map<String, Object> secondSummary = Map.of(
+            "meta", Map.of("id", "second-summary", "component", "cartSummary", "order", 2),
+            "content", mappings.find("order-summary").apply(Map.of(
+                "mobileRedirectUrl", "sign-in?source=order#complete",
+                "mobilebuttoneventtype", "other.purchase"), Map.of()));
+        final List<Map<String, Object>> fields = List.of(Map.of("name", "email", "type", "text"));
+        final Map<String, Object> form = Map.of("meta", Map.of("id", "form", "component", "form", "order", 3),
+            "content", fields);
+        final Map<String, Object> panel = Map.of("meta", Map.of("id", "panel", "component", "panel", "order", 1),
+            "styles", Map.of("marginTop", "8"), "content", List.of(firstSummary, cart, secondSummary, form));
+        final Method review = PageJsonExporterImpl.class.getDeclaredMethod("reviewOrderContent", List.class, Page.class);
+        review.setAccessible(true);
+        {
+            final List<Map<String, Object>> content = (List<Map<String, Object>>) review.invoke(exporter,
+                List.of(heading, panel), page);
+            assertEquals(2, content.size());
+            assertEquals(heading, content.get(0));
+            assertEquals(panel.get("styles"), content.get(1).get("styles"));
+            final List<Map<String, Object>> children = (List<Map<String, Object>>) content.get(1).get("content");
+            assertEquals(6, children.size());
+            assertEquals("first-summary", ((Map<String, Object>) children.get(0).get("meta")).get("id"));
+            assertEquals(cart.get("content"), children.get(2).get("content"));
+            assertEquals("second-summary", ((Map<String, Object>) children.get(3).get("meta")).get("id"));
+            assertEquals(fields, children.get(5).get("content"));
+            final Map<String, Object> firstConfirm = (Map<String, Object>) children.get(1).get("content");
+            assertEquals("order-confirmation", firstConfirm.get("linkTo"));
+            assertEquals("commerce.purchases", firstConfirm.get("events"));
+            assertEquals("commerce.purchases", firstConfirm.get("customEvent"));
+            final Map<String, Object> secondConfirm = (Map<String, Object>) children.get(4).get("content");
+            assertEquals("sign-in?source=order#complete", secondConfirm.get("linkTo"));
+            assertEquals("other.purchase", secondConfirm.get("events"));
+            assertNotEquals(((Map<String, Object>) children.get(1).get("meta")).get("id"),
+                ((Map<String, Object>) children.get(4).get("meta")).get("id"));
+            for (int index = 0; index < children.size(); index++) {
+            assertEquals(index, ((Map<String, Object>) children.get(index).get("meta")).get("order"));
+                if (children.get(index).get("content") instanceof Map) {
+                    assertFalse(((Map<String, Object>) children.get(index).get("content")).containsKey("_orderSummary"));
+                }
+            }
+        }
+        assertEquals(4, ((List<?>) panel.get("content")).size());
+        assertEquals(List.of(heading, cart), review.invoke(exporter, List.of(heading, cart), page));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void buildScreenAddsConfirmationToAnAuthoredBlockOnAnyPage() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final UrlServiceImpl urlService = new UrlServiceImpl();
+        final ModelFactory modelFactory = mock(ModelFactory.class);
+        when(modelFactory.getModelFromResource(any()))
+            .thenAnswer(invocation -> new GenericComponent(invocation.getArgument(0), urlService));
+        final FormSchemaServiceImpl schemas = new FormSchemaServiceImpl();
+        schemas.activate();
+        final ComponentTreeWalker walker = new ComponentTreeWalker(modelFactory, urlService, schemas,
+            new StyleResolver(new String[0]), mappings);
+        final Field walkerField = PageJsonExporterImpl.class.getDeclaredField("walker");
+        walkerField.setAccessible(true);
+        walkerField.set(exporter, walker);
+        final Page page = context.create().page("/content/confirmation-test/en/review-purchase");
+        final String root = page.getPath() + "/jcr:content/root";
+        context.create().resource(root);
+        context.create().resource(root + "/summary", "sling:resourceType", "eds/components/order-summary",
+            "mobileRedirectUrl", "/content/luma-site/language-masters/en/order-confirmation",
+            "mobilebuttoneventtype", "commerce.purchases");
+        final Method build = PageJsonExporterImpl.class.getDeclaredMethod("buildScreen", Page.class, Page.class,
+            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class);
+        build.setAccessible(true);
+        for (final boolean reduced : List.of(false, true)) {
+            final Map<String, Object> screen = (Map<String, Object>) build.invoke(exporter, page, page, "",
+                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of());
+            assertEquals("review-purchase", ((Map<String, Object>) screen.get("meta")).get("name"));
+            final List<Map<String, Object>> content = (List<Map<String, Object>>) screen.get("content");
+            assertEquals(2, content.size());
+            assertEquals("cartSummary", ((Map<String, Object>) content.get(0).get("meta")).get("component"));
+            assertFalse(((Map<String, Object>) content.get(0).get("content")).containsKey("_orderSummary"));
+            assertEquals("button", ((Map<String, Object>) content.get(1).get("meta")).get("component"));
+            final Map<String, Object> confirm = (Map<String, Object>) content.get(1).get("content");
+            assertEquals("order-confirmation", confirm.get("linkTo"));
+            assertEquals("commerce.purchases", confirm.get("events"));
+            assertEquals("commerce.purchases", confirm.get("customEvent"));
+        }
+        }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -174,6 +323,15 @@ class MobileFieldMappingTest {
             when(page.getName()).thenReturn(name);
             assertEquals(name, key.invoke(exporter, page));
         }
+    }
+
+    @Test
+    void orderSummaryMapsItsMobileRedirectToAScreenKey() {
+        assertEquals("order-confirmation?source=mobile#complete", mappings.find("order-summary").apply(
+                Map.of("mobileRedirectUrl", "/content/luma-site/language-masters/en/order-confirmation.html?source=mobile#complete"),
+                Map.of()).get("link"));
+        assertEquals("", mappings.find("order-summary").apply(Map.of(), Map.of()).get("link"));
+        assertEquals("", mappings.find("order-summary").apply(Map.of("mobileRedirectUrl", " "), Map.of()).get("link"));
     }
 
     @Test
