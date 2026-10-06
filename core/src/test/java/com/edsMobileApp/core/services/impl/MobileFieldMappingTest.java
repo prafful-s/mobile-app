@@ -108,7 +108,7 @@ class MobileFieldMappingTest {
         summary.put("meta", new HashMap<>(Map.of("id", "summary-id", "component", "cartSummary", "order", 3)));
         summary.put("content", summaryContent);
         final Map<String, Object> panel = Map.of("meta", Map.of("component", "panel"), "content", List.of(summary));
-        final Method review = PageJsonExporterImpl.class.getDeclaredMethod("reviewOrderContent", List.class, Page.class);
+        final Method review = PageJsonExporterImpl.class.getDeclaredMethod("addCommerceActions", List.class, Page.class);
         review.setAccessible(true);
         final List<Map<String, Object>> result = (List<Map<String, Object>>) review.invoke(exporter, List.of(panel), page);
         assertEquals(1, result.size());
@@ -183,7 +183,7 @@ class MobileFieldMappingTest {
             "content", fields);
         final Map<String, Object> panel = Map.of("meta", Map.of("id", "panel", "component", "panel", "order", 1),
             "styles", Map.of("marginTop", "8"), "content", List.of(firstSummary, cart, secondSummary, form));
-        final Method review = PageJsonExporterImpl.class.getDeclaredMethod("reviewOrderContent", List.class, Page.class);
+        final Method review = PageJsonExporterImpl.class.getDeclaredMethod("addCommerceActions", List.class, Page.class);
         review.setAccessible(true);
         {
             final List<Map<String, Object>> content = (List<Map<String, Object>>) review.invoke(exporter,
@@ -260,6 +260,158 @@ class MobileFieldMappingTest {
 
     @Test
     @SuppressWarnings("unchecked")
+        void cartActionsFollowEveryCartBlockOnAnyScreen() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final UrlServiceImpl urlService = new UrlServiceImpl();
+        final ModelFactory modelFactory = mock(ModelFactory.class);
+        when(modelFactory.getModelFromResource(any()))
+            .thenAnswer(invocation -> new GenericComponent(invocation.getArgument(0), urlService));
+        final FormSchemaServiceImpl schemas = new FormSchemaServiceImpl();
+        schemas.activate();
+        final ComponentTreeWalker walker = new ComponentTreeWalker(modelFactory, urlService, schemas,
+            new StyleResolver(new String[0]), mappings);
+        final Field walkerField = PageJsonExporterImpl.class.getDeclaredField("walker");
+        walkerField.setAccessible(true);
+        walkerField.set(exporter, walker);
+        final Page page = context.create().page("/content/confirmation-test/en/review-items");
+        final String root = page.getPath() + "/jcr:content/root";
+        context.create().resource(root);
+        context.create().resource(root + "/first-cart", "sling:resourceType", "eds/components/cart", "label", "FIRST",
+            "mobileButtonEventOnEmptyCart", " commerce.cartCleared ",
+            "mobileButtonEventOnCheckout", " commerce.checkouts ",
+            "mobileRedirectUrl", "/content/luma-site/language-masters/en/review-purchase.html?source=mobile#order");
+        context.create().resource(root + "/second-cart", "sling:resourceType", "eds/components/cart", "label", "SECOND");
+        context.create().resource(root + "/summary", "sling:resourceType", "eds/components/order-summary");
+        final Method build = PageJsonExporterImpl.class.getDeclaredMethod("buildScreen", Page.class, Page.class,
+            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class);
+        build.setAccessible(true);
+        Map<String, Object> previousRowMeta = null;
+        for (final boolean reduced : List.of(false, true)) {
+            final Map<String, Object> screen = (Map<String, Object>) build.invoke(exporter, page, page, "",
+                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of());
+            assertEquals("review-items", ((Map<String, Object>) screen.get("meta")).get("name"));
+            final List<Map<String, Object>> content = (List<Map<String, Object>>) screen.get("content");
+            assertEquals(6, content.size());
+            assertEquals("FIRST", ((Map<String, Object>) content.get(0).get("content")).get("label"));
+            assertEquals("SECOND", ((Map<String, Object>) content.get(2).get("content")).get("label"));
+            for (final int cartIndex : List.of(0, 2)) {
+            final Map<String, Object> cartContent = (Map<String, Object>) content.get(cartIndex).get("content");
+            assertFalse(cartContent.containsKey("_cart"));
+            assertFalse(cartContent.containsKey("emptyCartEvent"));
+            assertFalse(cartContent.containsKey("checkoutEvent"));
+            assertFalse(cartContent.containsKey("checkoutLink"));
+            assertFalse(cartContent.containsKey("mobileRedirectUrl"));
+            final Map<String, Object> row = content.get(cartIndex + 1);
+            final Map<String, Object> rowMeta = (Map<String, Object>) row.get("meta");
+            assertEquals("panel", rowMeta.get("component"));
+            assertEquals("horizontal", rowMeta.get("layout"));
+            assertEquals(cartIndex + 1, rowMeta.get("order"));
+            final List<Map<String, Object>> buttons = (List<Map<String, Object>>) row.get("content");
+            assertEquals(2, buttons.size());
+            final Map<String, Object> empty = (Map<String, Object>) buttons.get(0).get("content");
+            assertEquals("Empty cart", empty.get("label"));
+            assertEquals(cartIndex == 0 ? "commerce.cartCleared" : mappings.find("cart").apply(Map.of(), Map.of()).get("emptyCartEvent"), empty.get("events"));
+            assertEquals("", empty.get("linkTo"));
+            final Map<String, Object> review = (Map<String, Object>) buttons.get(1).get("content");
+            assertEquals("Review order", review.get("label"));
+            assertEquals(cartIndex == 0 ? "commerce.checkouts" : mappings.find("cart").apply(Map.of(), Map.of()).get("checkoutEvent"), review.get("events"));
+            assertEquals(cartIndex == 0 ? "review-purchase?source=mobile#order" : "checkout", review.get("linkTo"));
+            assertEquals(0, ((Map<String, Object>) buttons.get(0).get("meta")).get("order"));
+            assertEquals(1, ((Map<String, Object>) buttons.get(1).get("meta")).get("order"));
+            }
+            assertNotEquals(((Map<String, Object>) content.get(1).get("meta")).get("id"),
+                ((Map<String, Object>) content.get(3).get("meta")).get("id"));
+            final List<Map<String, Object>> firstButtons = (List<Map<String, Object>>) content.get(1).get("content");
+            final List<Map<String, Object>> secondButtons = (List<Map<String, Object>>) content.get(3).get("content");
+            for (int index = 0; index < 2; index++) {
+            assertNotEquals(((Map<String, Object>) firstButtons.get(index).get("meta")).get("id"),
+                ((Map<String, Object>) secondButtons.get(index).get("meta")).get("id"));
+            }
+            final Map<String, Object> rowMeta = (Map<String, Object>) content.get(1).get("meta");
+            if (previousRowMeta != null) {
+            assertEquals(previousRowMeta, rowMeta);
+            }
+            previousRowMeta = rowMeta;
+            assertEquals("cartSummary", ((Map<String, Object>) content.get(4).get("meta")).get("component"));
+            assertFalse(((Map<String, Object>) content.get(4).get("content")).containsKey("_orderSummary"));
+            assertEquals("Confirm", ((Map<String, Object>) content.get(5).get("content")).get("label"));
+        }
+        final Page emptyCartPage = context.create().page("/content/confirmation-test/en/cart");
+        final Map<String, Object> emptyScreen = (Map<String, Object>) build.invoke(exporter,
+            emptyCartPage, emptyCartPage, "", ExportOptions.of(false), List.of(), null, Set.of(), Map.of());
+        assertEquals(List.of(), emptyScreen.get("content"));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void blankCartButtonEventsKeepExistingDefaults() throws Exception {
+            final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+            exporter.activate(Map.of());
+            final Page page = mock(Page.class);
+            when(page.getPath()).thenReturn("/content/cart-test/en/basket");
+            final Method actions = PageJsonExporterImpl.class.getDeclaredMethod("addCommerceActions", List.class, Page.class);
+            actions.setAccessible(true);
+            for (final String blank : List.of("", " \t ")) {
+                final Map<String, Object> cart = Map.of(
+                        "meta", Map.of("id", "cart-id", "component", "cartSummary", "order", 0),
+                        "content", mappings.find("cart").apply(Map.of(
+                                "mobileButtonEventOnEmptyCart", blank,
+                                "mobileButtonEventOnCheckout", blank,
+                                "mobileRedirectUrl", blank), Map.of()));
+                final List<Map<String, Object>> result = (List<Map<String, Object>>) actions.invoke(exporter, List.of(cart), page);
+                final List<Map<String, Object>> buttons = (List<Map<String, Object>>) result.get(1).get("content");
+                assertEquals(mappings.find("cart").apply(Map.of(), Map.of()).get("emptyCartEvent"),
+                    ((Map<String, Object>) buttons.get(0).get("content")).get("events"));
+                assertEquals(mappings.find("cart").apply(Map.of(), Map.of()).get("checkoutEvent"),
+                    ((Map<String, Object>) buttons.get(1).get("content")).get("events"));
+                assertEquals("checkout", ((Map<String, Object>) buttons.get(1).get("content")).get("linkTo"));
+                assertFalse(((Map<String, Object>) result.get(0).get("content")).containsKey("checkoutLink"));
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void cartActionsPreserveNestedPanelsAndSurroundingContent() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/cart-test/en/basket");
+        final Map<String, Object> heading = Map.of("meta", Map.of("component", "htmlText", "order", 0),
+            "content", Map.of("text", "Your items"));
+        final Map<String, Object> cart = Map.of("meta", Map.of("id", "cart-id", "component", "cartSummary", "order", 1),
+            "content", mappings.find("cart").apply(Map.of("mobileRedirectUrl",
+                "/content/luma-site/language-masters/en/nested-checkout.html"), Map.of()));
+        final Map<String, Object> innerPanel = Map.of("meta", Map.of("component", "panel", "order", 1),
+            "styles", Map.of("marginTop", "8"), "content", List.of(cart));
+        final Map<String, Object> outerPanel = Map.of("meta", Map.of("component", "panel", "order", 0),
+            "styles", Map.of("padding", "16"), "content", List.of(heading, innerPanel, heading));
+        final Method actions = PageJsonExporterImpl.class.getDeclaredMethod("addCommerceActions", List.class, Page.class);
+        actions.setAccessible(true);
+        final List<Map<String, Object>> result = (List<Map<String, Object>>) actions.invoke(exporter,
+            List.of(outerPanel), page);
+        assertEquals(1, result.size());
+        assertEquals(outerPanel.get("styles"), result.get(0).get("styles"));
+        final List<Map<String, Object>> outerChildren = (List<Map<String, Object>>) result.get(0).get("content");
+        assertEquals(3, outerChildren.size());
+        assertEquals(heading.get("content"), outerChildren.get(0).get("content"));
+        assertEquals(heading.get("content"), outerChildren.get(2).get("content"));
+        assertEquals(innerPanel.get("styles"), outerChildren.get(1).get("styles"));
+        final List<Map<String, Object>> innerChildren = (List<Map<String, Object>>) outerChildren.get(1).get("content");
+        assertEquals(2, innerChildren.size());
+        assertEquals("cart-id", ((Map<String, Object>) innerChildren.get(0).get("meta")).get("id"));
+        assertFalse(((Map<String, Object>) innerChildren.get(0).get("content")).containsKey("_cart"));
+        assertFalse(((Map<String, Object>) innerChildren.get(0).get("content")).containsKey("checkoutLink"));
+        final List<Map<String, Object>> buttons = (List<Map<String, Object>>) innerChildren.get(1).get("content");
+        assertEquals("nested-checkout", ((Map<String, Object>) buttons.get(1).get("content")).get("linkTo"));
+        assertEquals("nested-checkout", ((Map<String, Object>) cart.get("content")).get("checkoutLink"));
+        assertEquals("panel", ((Map<String, Object>) innerChildren.get(1).get("meta")).get("component"));
+        assertEquals(1, ((Map<String, Object>) innerChildren.get(1).get("meta")).get("order"));
+        assertEquals(List.of(cart), innerPanel.get("content"));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
     void checkoutPreservesOnlyAuthoredEvents() throws Exception {
         final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
         exporter.activate(Map.of());
@@ -332,6 +484,17 @@ class MobileFieldMappingTest {
                 Map.of()).get("link"));
         assertEquals("", mappings.find("order-summary").apply(Map.of(), Map.of()).get("link"));
         assertEquals("", mappings.find("order-summary").apply(Map.of("mobileRedirectUrl", " "), Map.of()).get("link"));
+    }
+
+    @Test
+    void cartMapsItsMobileRedirectToAScreenKeyWithCheckoutFallback() {
+        assertEquals("review-purchase?source=mobile#order", mappings.find("cart").apply(
+                Map.of("mobileRedirectUrl", " /content/luma-site/language-masters/en/review-purchase.html?source=mobile#order "),
+                Map.of()).get("checkoutLink"));
+        assertEquals("checkout", mappings.find("cart").apply(Map.of(), Map.of()).get("checkoutLink"));
+        for (final String blank : List.of("", " \t ")) {
+            assertEquals("checkout", mappings.find("cart").apply(Map.of("mobileRedirectUrl", blank), Map.of()).get("checkoutLink"));
+        }
     }
 
     @Test

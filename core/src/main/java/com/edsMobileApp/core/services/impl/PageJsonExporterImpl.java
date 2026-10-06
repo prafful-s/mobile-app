@@ -478,9 +478,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         List<Map<String, Object>> content = walker.componentsOf(page, assetHost, true, true,
             knownScreenKeys, screenThumbnailOverrides);
         meta.put("thumbnail", StringUtils.EMPTY);
-        if ("cart".equals(key)) {
-            addCartActionsPanel(content, page);
-        } else if ("checkout".equals(key)) {
+        if ("checkout".equals(key)) {
             // checkout owns its meta.link via its dedicated patch (formId/eventType too).
             patchCheckoutFormMeta(content, page);
         } else {
@@ -489,10 +487,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFormSettings(content, page, key);
             applyFlightDestination(content, page, key);
         }
-        content = reviewOrderContent(content, page);
+        content = addCommerceActions(content, page);
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
-        // Outside the branch on purpose: cart and checkout take their own paths above
+        // Outside the branch on purpose: checkout takes its own path above
         // and so never reach applyFormSettings, but a site can configure a heading for any screen
         // that carries a form - a forms.checkout.heading that silently did nothing would be a trap.
         applyFormHeading(content, page, key);
@@ -573,59 +571,28 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     /**
-     * Nests the cart screen's static "Empty cart" / "Review order" action row inside the panel
-     * that already wraps {@code cartSummary} - the reference shape is one outer panel holding both,
-     * not two sibling panels. Falls back to appending at the top level when the page's content does
-     * not follow that shape (e.g. the cart block sits outside any section), so a re-authored cart
-     * page still gets the action row rather than silently losing it.
-     */
-    @SuppressWarnings("unchecked")
-    private void addCartActionsPanel(final List<Map<String, Object>> content, final Page cartPage) {
-        for (final Map<String, Object> component : content) {
-            final Object meta = component.get(SchemaConstants.KEY_META);
-            if (!(meta instanceof Map)
-                    || !"panel".equals(((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
-                continue;
-            }
-            final Object innerContent = component.get(SchemaConstants.KEY_CONTENT);
-            if (!(innerContent instanceof List)) {
-                continue;
-            }
-            final List<Map<String, Object>> inner = (List<Map<String, Object>>) innerContent;
-            final boolean holdsCartSummary = inner.stream().anyMatch(c -> {
-                final Object innerMeta = c.get(SchemaConstants.KEY_META);
-                return innerMeta instanceof Map
-                        && "cartSummary".equals(((Map<String, Object>) innerMeta).get(SchemaConstants.KEY_COMPONENT));
-            });
-            if (holdsCartSummary) {
-                inner.add(cartActionsPanel(cartPage, inner.size()));
-                return;
-            }
-        }
-        // No panel holding cartSummary found - fall back to a top-level sibling so the action row
-        // still appears somewhere rather than being dropped.
-        content.add(cartActionsPanel(cartPage, content.size()));
-    }
-
-    /**
-     * The cart screen's "Empty cart" / "Review order" action row. No AEM block backs it - the
+    * Each cart block's "Empty cart" / "Review order" action row. No AEM block backs it - the
      * authored {@code cart} block already maps entirely onto {@code cartSummary} - so this is the
      * LUMA MOBILE reference's static panel, added verbatim rather than derived from content.
      * Ids are generated the same way real components are, from a stable synthetic path, so a
      * rebuild does not renumber them.
      */
-    private Map<String, Object> cartActionsPanel(final Page cartPage, final int order) {
-        final String base = cartPage.getPath() + "/cart-actions";
+    private Map<String, Object> cartActionsPanel(final Page cartPage, final int order, final String cartId,
+                                                final String emptyCartEvent, final String checkoutEvent,
+                                                final String checkoutLink) {
+        final String base = cartPage.getPath() + "/" + cartId + "/cart-actions";
 
         final Map<String, Object> emptyCartButton = new LinkedHashMap<>();
         emptyCartButton.put(SchemaConstants.KEY_META, buttonMeta(base + "/empty-cart", 0));
         emptyCartButton.put(SchemaConstants.KEY_CONTENT, buttonContent(
-                "Empty cart", "emptyCart", "", "", "contained-tonal", "stretch"));
+                "Empty cart", emptyCartEvent,
+                "", "", "contained-tonal", "stretch"));
 
         final Map<String, Object> reviewOrderButton = new LinkedHashMap<>();
-        reviewOrderButton.put(SchemaConstants.KEY_META, buttonMeta(base + "/review-order", 2));
+        reviewOrderButton.put(SchemaConstants.KEY_META, buttonMeta(base + "/review-order", 1));
         reviewOrderButton.put(SchemaConstants.KEY_CONTENT, buttonContent(
-                "Review order", " --- ", "checkout", "", "contained", "stretch"));
+                "Review order", checkoutEvent,
+            checkoutLink, "", "contained", "stretch"));
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(base));
@@ -670,7 +637,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> reviewOrderContent(final List<Map<String, Object>> content,
+    private List<Map<String, Object>> addCommerceActions(final List<Map<String, Object>> content,
                                                           final Page page) {
         final List<Map<String, Object>> result = new ArrayList<>();
         for (final Map<String, Object> component : content) {
@@ -683,10 +650,23 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             if (SchemaConstants.COMPONENT_PANEL.equals(meta.get(SchemaConstants.KEY_COMPONENT))
                     && componentContent instanceof List) {
                 entry.put(SchemaConstants.KEY_CONTENT,
-                        reviewOrderContent((List<Map<String, Object>>) componentContent, page));
+                        addCommerceActions((List<Map<String, Object>>) componentContent, page));
             }
             final Map<String, Object> summaryContent = SiteDefaults.objectMap(component, SchemaConstants.KEY_CONTENT);
             if ("cartSummary".equals(meta.get(SchemaConstants.KEY_COMPONENT))
+                    && Boolean.TRUE.equals(summaryContent.get("_cart"))) {
+                final Map<String, Object> emittedContent = new LinkedHashMap<>(summaryContent);
+                emittedContent.remove("_cart");
+                final Object emptyCartEvent = emittedContent.remove("emptyCartEvent");
+                final Object checkoutEvent = emittedContent.remove("checkoutEvent");
+                final Object checkoutLink = emittedContent.remove("checkoutLink");
+                entry.put(SchemaConstants.KEY_CONTENT, emittedContent);
+                result.add(entry);
+                result.add(cartActionsPanel(page, result.size(), String.valueOf(meta.get(SchemaConstants.KEY_ID)),
+                    emptyCartEvent instanceof String ? (String) emptyCartEvent : null,
+                    checkoutEvent instanceof String ? (String) checkoutEvent : null,
+                    checkoutLink instanceof String ? (String) checkoutLink : null));
+            } else if ("cartSummary".equals(meta.get(SchemaConstants.KEY_COMPONENT))
                     && Boolean.TRUE.equals(summaryContent.get("_orderSummary"))) {
                 final Map<String, Object> emittedContent = new LinkedHashMap<>(summaryContent);
                 emittedContent.remove("_orderSummary");

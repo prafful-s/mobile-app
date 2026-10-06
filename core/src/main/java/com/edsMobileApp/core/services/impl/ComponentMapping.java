@@ -448,7 +448,8 @@ final class ComponentMapping {
      */
     private Object screenTarget(final String targetKey, final Object value,
                                 final Map<String, Object> source) {
-        if ((!"link".equals(targetKey) && !"linkTo".equals(targetKey)) || !(value instanceof String)) {
+        if ((!"link".equals(targetKey) && !"linkTo".equals(targetKey) && !"checkoutLink".equals(targetKey))
+            || !(value instanceof String)) {
             return value;
         }
         final String text = ((String) value).trim();

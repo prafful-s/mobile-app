@@ -4,6 +4,10 @@
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
+    { "target": "_cart", "const": true },
+    { "target": "emptyCartEvent", "from": "mobileButtonEventOnEmptyCart", "type": "trimmedString"},
+    { "target": "checkoutEvent", "from": "mobileButtonEventOnCheckout", "type": "trimmedString"},
+    { "target": "checkoutLink", "from": "mobileRedirectUrl", "type": "trimmedString", "default": "checkout" },
     { "target": "label", "from": "label", "default": "TOTAL" },
     { "target": "totalLabel", "from": "totalLabel", "default": "TOTAL" },
     { "target": "subtotalLabel", "from": "subtotalLabel", "default": "SUBTOTAL" },

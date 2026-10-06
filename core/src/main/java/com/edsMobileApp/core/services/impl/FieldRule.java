@@ -46,6 +46,7 @@ final class FieldRule {
     private static final String TYPE_BOOLEAN = "boolean";
     private static final String TYPE_NUMBER = "number";
     private static final String TYPE_STRING = "string";
+    private static final String TYPE_TRIMMED_STRING = "trimmedString";
     /**
      * Turns a {@code List} (or a {@code String[]}, or any {@code Iterable}) into a single comma-
      * separated string, joining non-blank elements with {@code ", "}. Non-collections and already
@@ -437,6 +438,8 @@ final class FieldRule {
                 return toNumber(text.trim(), value);
             case TYPE_STRING:
                 return text;
+            case TYPE_TRIMMED_STRING:
+                return text.trim();
             case TYPE_PATH:
                 return toPath(text);
             case TYPE_BASENAME:
