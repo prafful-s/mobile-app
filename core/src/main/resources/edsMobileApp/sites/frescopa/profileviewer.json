@@ -24,6 +24,7 @@
     },
     {
       "id": "IahP2c8vyI",
+      "image": "https://demo-system-next.s3.amazonaws.com/assets/frescopa/quiz-option-3-3.jpg",
       "label": "Coffee Quiz Complete",
       "filter": "web.coffeeQuizEnd"
     },
@@ -66,38 +67,72 @@
       "id": "Nw9_ghuzPx",
       "label": "Web Registration",
       "filter": "web.registration"
+    },
+    {
+      "label": "Page View",
+      "filter": "web.webpagedetails.pageViews"
+    },
+    {
+      "image": "https://demo-system-next.s3.amazonaws.com/assets/frescopa/my-barista-logo.png",
+      "label": "My Barista Subscription",
+      "filter": "frescopa.myBarista.subscription"
+    },
+    {
+      "image": "https://demo-system-next.s3.amazonaws.com/assets/frescopa/quiz-option-3-3.jpg",
+      "label": "Coffee Quiz Complete",
+      "filter": "mobile.coffeeQuizEnd"
+    },
+    {
+      "image": "https://demo-system-next.s3.amazonaws.com/assets/frescopa/coffee-machine.jpeg",
+      "label": "Ordered a service",
+      "filter": "orderService"
     }
   ],
   "profileFields": [
     {
-      "id": "uz5bsjbYY",
+      "id": "o0ZAOcx9D",
       "path": "person.name.firstName person.name.lastName",
       "label": "Name"
     },
     {
-      "id": "60OzPOcOh0",
+      "id": "G$qtmz3zDn",
       "path": "person.gender",
       "label": "Gender"
     },
     {
-      "id": "l6$y_f1lay",
+      "id": "0SxwFiCK6d",
       "path": "homeAddress.street1 homeAddress.city",
       "label": "Address"
     },
     {
-      "id": "d$CQoPAj2b",
+      "id": "Hoyd6Il5B8",
       "path": "_demosystem4.individualCharacteristics.cpg.activeSubscription.name",
       "label": "Active Subscription"
     },
     {
-      "id": "Kp5MjQkrZT",
+      "id": "TyWFQerfKf",
       "path": "_demosystem4.individualCharacteristics.cpg.activeSubscription.startDate",
       "label": "Subscription Start Date"
     },
     {
-      "id": "l1QxAgr9x",
+      "id": "z1r8b2P4Pd",
       "path": "pushNotificationDetails[].token",
       "label": "Push Token"
+    },
+    {
+      "id": "UEYUm2gwe",
+      "path": "_demosystem4.individualCharacteristics.cpg.consumptionFrequency",
+      "label": "Consumption Frequency"
+    },
+    {
+      "id": "rFkcWIUPr",
+      "path": "_demosystem4.individualCharacteristics.cpg.coffeeType",
+      "label": "Coffee Type"
+    },
+    {
+      "id": "7Zp173$WR",
+      "path": "_demosystem4.individualCharacteristics.cpg.flavorAffinity",
+      "label": "Flavor Affinity"
     }
   ]
 }
