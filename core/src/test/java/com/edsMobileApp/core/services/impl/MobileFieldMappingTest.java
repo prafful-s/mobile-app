@@ -1,13 +1,22 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.wrappers.ValueMapDecorator;
+
+import com.day.cq.wcm.api.Page;
 
 /**
  * The hero and product-detail rules read their Mobile Specific image-fit (and, for hero, the show
@@ -19,6 +28,84 @@ class MobileFieldMappingTest {
     private static final String LINKED_TEXT = "<h1>Title</h1><p>Body</p><p><a href=\"/content/s/en/trip\">Book</a></p>";
 
     private final ComponentMappings mappings = ComponentMappings.load();
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void confirmationButtonUsesOnlyAuthoredComponentEvents() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final Page page = mock(Page.class);
+        when(page.getPath()).thenReturn("/content/confirmation-test/en/review-order");
+        final Method confirm = PageJsonExporterImpl.class.getDeclaredMethod("confirmButton", Page.class, int.class);
+        confirm.setAccessible(true);
+        final Map<String, Object> original = (Map<String, Object>) confirm.invoke(exporter, page, 1);
+        final Map<String, Object> originalContent = (Map<String, Object>) original.get("content");
+        assertEquals("Confirm", originalContent.get("label"));
+        assertFalse(originalContent.containsKey("events"));
+        assertFalse(originalContent.containsKey("customEvent"));
+        assertEquals("checkoutForm", originalContent.get("formId"));
+        assertEquals("en", originalContent.get("linkTo"));
+        assertEquals(Map.of("marginTop", "16"), original.get("styles"));
+
+        final Field defaultsField = PageJsonExporterImpl.class.getDeclaredField("siteDefaults");
+        defaultsField.setAccessible(true);
+        final SiteDefaults defaults = (SiteDefaults) defaultsField.get(exporter);
+        final Field cacheField = SiteDefaults.class.getDeclaredField("bySite");
+        cacheField.setAccessible(true);
+        final Map<String, Optional<Map<String, Object>>> cache =
+            (Map<String, Optional<Map<String, Object>>>) cacheField.get(defaults);
+        cache.put("confirmation-test", Optional.of(Map.of("confirmButton", Map.of(
+            "content", Map.of("events", "order.confirmed", "customEvent", "order.confirmed"),
+            "styles", Map.of("marginTop", "24")))));
+
+        final Resource root = mock(Resource.class);
+        when(page.getContentResource()).thenReturn(root);
+        when(root.getValueMap()).thenReturn(new ValueMapDecorator(Map.of("mobilebuttoneventtype", "page.event")));
+        final Resource unrelated = mock(Resource.class);
+        when(unrelated.getName()).thenReturn("registration");
+        when(unrelated.getResourceType()).thenReturn("edsMobileApp/components/create-account");
+        when(unrelated.getValueMap()).thenReturn(new ValueMapDecorator(Map.of("mobilebuttoneventtype", "registration.event")));
+        when(unrelated.getChildren()).thenReturn(List.of());
+        final Resource section = mock(Resource.class);
+        when(section.getName()).thenReturn("section");
+        when(section.getValueMap()).thenReturn(new ValueMapDecorator(Map.of()));
+        final Resource orderSummary = mock(Resource.class);
+        when(orderSummary.getName()).thenReturn("order-summary");
+        when(orderSummary.getResourceType()).thenReturn("edsMobileApp/components/order-summary");
+        final Map<String, Object> properties = new HashMap<>();
+        properties.put("mobilebuttoneventtype", "authored.order.confirmed");
+        when(orderSummary.getValueMap()).thenReturn(new ValueMapDecorator(properties));
+        when(root.getChildren()).thenReturn(List.of(unrelated, section));
+        when(section.getChildren()).thenReturn(List.of(orderSummary));
+
+        final Map<String, Object> configured = (Map<String, Object>) confirm.invoke(exporter, page, 1);
+        final Map<String, Object> configuredContent = (Map<String, Object>) configured.get("content");
+        assertEquals("authored.order.confirmed", configuredContent.get("events"));
+        assertEquals("authored.order.confirmed", configuredContent.get("customEvent"));
+        assertEquals("Confirm", configuredContent.get("label"));
+        assertEquals("en", configuredContent.get("linkTo"));
+        assertEquals(Map.of("marginTop", "24"), configured.get("styles"));
+        assertEquals(original.get("meta"), configured.get("meta"));
+        assertFalse(originalContent.containsKey("events"));
+
+        for (final String blank : List.of("", " ")) {
+            properties.put("mobilebuttoneventtype", blank);
+            final Map<String, Object> noEvent = (Map<String, Object>) confirm.invoke(exporter, page, 1);
+            final Map<String, Object> noEventContent = (Map<String, Object>) noEvent.get("content");
+            assertFalse(noEventContent.containsKey("events"));
+            assertFalse(noEventContent.containsKey("customEvent"));
+        }
+        properties.remove("mobilebuttoneventtype");
+        final Map<String, Object> missing = (Map<String, Object>) confirm.invoke(exporter, page, 1);
+        final Map<String, Object> missingContent = (Map<String, Object>) missing.get("content");
+        assertFalse(missingContent.containsKey("events"));
+        assertFalse(missingContent.containsKey("customEvent"));
+
+        when(page.getPath()).thenReturn("/content/another-site/en/review-order");
+        final Map<String, Object> otherSite = (Map<String, Object>) confirm.invoke(exporter, page, 1);
+        assertEquals(originalContent, otherSite.get("content"));
+        assertEquals(original.get("styles"), otherSite.get("styles"));
+        }
 
     @Test
     void experienceDecisioningSurvivesReducedExport() throws Exception {

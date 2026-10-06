@@ -1,0 +1,14 @@
+{
+  "styles": {
+    "marginTop": "16"
+  },
+  "content": {
+    "icon": "cash-check",
+    "label": "Confirm",
+    "formId": "checkoutForm",
+    "linkTo": "en",
+    "message": "Thank you for your purchase! Your order has been successfully placed. You'll receive a confirmation email shortly with tracking details. Enjoy your shopping experience!",
+    "variant": "contained",
+    "alignment": "center"
+  }
+}

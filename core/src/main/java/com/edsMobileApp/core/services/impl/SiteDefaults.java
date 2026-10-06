@@ -71,6 +71,7 @@ final class SiteDefaults {
 
     static final String KEY_SCREEN_KEY_ALIASES = "screenKeyAliases";
     static final String KEY_CHECKOUT_FORM = "checkoutForm";
+    static final String KEY_CONFIRM_BUTTON = "confirmButton";
     static final String KEY_FORM_HEADINGS = "formHeadings";
     static final String KEY_RIGHT_ICON = "rightIcon";
     static final String KEY_META = "meta";

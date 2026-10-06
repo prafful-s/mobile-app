@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,6 +78,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private SiteIntegrations siteIntegrations;
     private SiteDefaults siteDefaults;
     private ProductCatalog productCatalog;
+    private Map<String, Object> confirmButtonDefaults;
 
     @Activate
     protected void activate(final Map<String, Object> properties) {
@@ -98,6 +100,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteProfileViewer = SiteProfileViewer.load();
         this.siteIntegrations = SiteIntegrations.load();
         this.siteDefaults = SiteDefaults.load();
+        this.confirmButtonDefaults = readConfirmButtonDefaults();
         this.productCatalog = new ProductCatalog(productMappings);
         this.walker.setSiteDefaults(this.siteDefaults);
     }
@@ -672,8 +675,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * siblings. The authored {@code order-summary} block already maps onto {@code cartSummary}
      * (see {@code orderSummary.json}); {@link #walker} still wraps its section into a panel like any
      * other single-block section, so that wrapper is unwound here rather than emitted. The confirm
-     * button has no AEM block behind it at all - the LUMA MOBILE reference's static content, added
-     * verbatim. Falls back to the walker's own content (plus the button) if no cartSummary is found,
+    * button uses shared/site configuration except for its event, read from the authored order-summary.
+    * Falls back to the walker's own content (plus the button) if no cartSummary is found,
      * so a re-authored page still gets something rather than an empty screen.
      */
     private List<Map<String, Object>> reviewOrderContent(final List<Map<String, Object>> content,
@@ -1196,7 +1199,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         return (Map<String, Object>) value;
     }
 
-    /** The review-order screen's static "Confirm" button - see {@link #reviewOrderContent}. */
+    /** The review-order screen's JSON-configured "Confirm" button - see {@link #reviewOrderContent}. */
     private Map<String, Object> confirmButton(final Page reviewOrderPage, final int order) {
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID,
@@ -1204,27 +1207,67 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, "button");
 
-        final Map<String, Object> styles = new LinkedHashMap<>();
-        styles.put("marginTop", "16");
-
-        final Map<String, Object> content = new LinkedHashMap<>();
-        content.put("icon", "cash-check");
-        content.put("label", "Confirm");
-        content.put("events", "commerce.purchases");
-        content.put("formId", "checkoutForm");
-        content.put("linkTo", "en");
-        content.put("message", "Thank you for your purchase! Your order has been successfully "
-                + "placed. You'll receive a confirmation email shortly with tracking details. "
-                + "Enjoy your shopping experience!");
-        content.put("variant", "contained");
-        content.put("alignment", "center");
-        content.put("customEvent", "commerce.purchases");
+        final Map<String, Object> overrides = SiteDefaults.objectMap(
+            siteDefaults.forPage(reviewOrderPage), SiteDefaults.KEY_CONFIRM_BUTTON);
+        final Map<String, Object> styles = new LinkedHashMap<>(
+            SiteDefaults.objectMap(confirmButtonDefaults, SchemaConstants.KEY_STYLES));
+        styles.putAll(SiteDefaults.objectMap(overrides, SchemaConstants.KEY_STYLES));
+        final Map<String, Object> content = new LinkedHashMap<>(
+            SiteDefaults.objectMap(confirmButtonDefaults, SchemaConstants.KEY_CONTENT));
+        content.putAll(SiteDefaults.objectMap(overrides, SchemaConstants.KEY_CONTENT));
+        content.remove("events");
+        content.remove("customEvent");
+        final Resource orderSummary = findOrderSummary(reviewOrderPage.getContentResource(), 0);
+        final String event = orderSummary == null ? null
+                : orderSummary.getValueMap().get("mobilebuttoneventtype", String.class);
+        if (StringUtils.isNotBlank(event)) {
+            content.put("events", event);
+            content.put("customEvent", event);
+        }
 
         final Map<String, Object> button = new LinkedHashMap<>();
         button.put(SchemaConstants.KEY_META, meta);
         button.put(SchemaConstants.KEY_STYLES, styles);
         button.put(SchemaConstants.KEY_CONTENT, content);
         return button;
+    }
+
+    private static Resource findOrderSummary(final Resource resource, final int depth) {
+        if (resource == null || depth > MAX_COMPONENT_DEPTH) {
+            return null;
+        }
+        final String resourceType = StringUtils.trimToEmpty(resource.getResourceType());
+        final String componentName = StringUtils.defaultIfBlank(
+            resource.getValueMap().get(SchemaConstants.PN_MODEL, String.class),
+            StringUtils.defaultIfBlank(StringUtils.substringAfterLast(resourceType, "/"),
+                StringUtils.defaultIfBlank(resourceType, resource.getName())));
+        if ("order-summary".equals(componentName)) {
+            return resource;
+        }
+        for (final Resource child : resource.getChildren()) {
+            final String name = child.getName();
+            if (name.startsWith("cq:") || name.startsWith("jcr:") || name.startsWith("rep:")
+                    || name.startsWith("oak:") || "edsMobileApp".equals(name)) {
+                continue;
+            }
+            final Resource found = findOrderSummary(child, depth + 1);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static Map<String, Object> readConfirmButtonDefaults() {
+        final String path = "/edsMobileApp/components/confirm-button.json";
+        try (InputStream input = PageJsonExporterImpl.class.getResourceAsStream(path)) {
+            if (input == null) {
+                throw new IllegalStateException("Missing confirm button configuration: " + path);
+            }
+            return MAPPER.readValue(input, new TypeReference<Map<String, Object>>() { });
+        } catch (final IOException e) {
+            throw new IllegalStateException("Could not read confirm button configuration: " + path, e);
+        }
     }
 
     /**
