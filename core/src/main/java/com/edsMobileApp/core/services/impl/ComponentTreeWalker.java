@@ -714,17 +714,21 @@ final class ComponentTreeWalker {
             // image-right is really a card), then switch to its own fallback based on what was
             // authored (a card with no image is a rich-text block) - resolve both before applying.
             ComponentMapping base = matched;
+            // What the rule reads: the authored content, with the redirecting variant's defaults
+            // laid under it (a hero handled by the card rule reads as 'stacked' unless authored).
+            Map<String, Object> ruleInput = authored;
             if (matched != null) {
                 final String variantRule = matched.variantRuleFor(authored);
                 final ComponentMapping redirected = variantRule == null ? null : mappings.find(variantRule);
                 if (redirected != null) {
                     base = redirected;
+                    ruleInput = matched.withVariantDefaults(authored);
                 }
             }
-            final ComponentMapping mapping = base == null ? null : base.effectiveFor(authored);
+            final ComponentMapping mapping = base == null ? null : base.effectiveFor(ruleInput);
             if (mapping != null) {
                 final Map<String, Object> ruleSource =
-                        withContentFragmentFolderRef(mapping, withContentFragmentRef(mapping, authored, child), child);
+                        withContentFragmentFolderRef(mapping, withContentFragmentRef(mapping, ruleInput, child), child);
                 final Map<String, Object> mapped = mapping.apply(ruleSource, sectionProps);
                 if (mapped.isEmpty()) {
                     // The rule matched a component with none of its source fields authored. An empty
