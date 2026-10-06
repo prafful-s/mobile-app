@@ -46,6 +46,14 @@ class SingleFieldMappingTest {
                 "the web event type is not read");
     }
 
+    @Test
+    void flightSearchReadsItsMobileRedirectOrKeepsItsDefault() {
+        assertEquals("results?source=mobile#flights", map("flight-search", "mobileRedirectUrl",
+                "/content/site/en/results.html?source=mobile#flights").get("link"));
+        assertEquals("flights", map("flight-search").get("link"));
+        assertEquals("flights", map("flight-search", "mobileRedirectUrl", " ").get("link"));
+    }
+
     /** flights reads nothing else off the block, so it is a skeleton rule: always a flightResults. */
     @Test
     void aFlightsBlockWithNoMobileEventStillBecomesFlightResults() {

@@ -3,7 +3,7 @@
   "component": "flightSearch",
   "skeleton": true,
   "fields": [
-    { "target": "link", "const": "flights" },
+    { "target": "link", "from": "mobileRedirectUrl", "default": "flights" },
     { "target": "mode", "const": "outlined" },
     { "target": "type", "const": "automaticPicker" },
     { "target": "formId", "const": "flightSearch" },

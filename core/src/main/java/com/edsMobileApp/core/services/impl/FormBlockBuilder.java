@@ -52,21 +52,22 @@ final class FormBlockBuilder {
 
     /** Authored property names per emitted setting, most specific first. */
     private static final String[] EVENT_TYPE_KEYS = {"mobilebuttoneventtype"};
+    private static final String[] MOBILE_REDIRECT_KEYS = {"mobileRedirectUrl"};
     /** Authored per-block custom style rows the block emits - see {@link #applyCheckboxWidth}. */
     private static final String CUSTOM_MOBILE_STYLE_KEY = "custommobilestyle";
     /** The one {@code custommobilestyle} row key this export currently understands - see
      *  {@link #applyCheckboxWidth}. */
     private static final String STYLE_KEY_WIDTH = "width";
     /**
-     * The authored post-submit redirect field, per form that has one, mapped to the property its own
+    * The legacy post-submit redirect field, per form that has one, mapped to the property its own
      * block model defines: create-account names it {@code redirectUrl}, join-us names it
      * {@code submit-redirect-url} (both an {@code aem-content} page reference). Keyed by form name
      * rather than read for every form, because the field name {@code redirectUrl} is shared by many
      * other form blocks (child-account-application, loan-application-form, transfer-funds, ...) that
-     * this feature is not meant to touch - only the forms listed here surface an authored redirect
-     * into {@code meta.link}; every other form keeps the blank {@code link} it had before. A value
-     * authored here wins over the per-site {@code forms.<screen>.redirectAfterSubmit} default applied
-     * downstream in {@code PageJsonExporterImpl#applyFormSettings}.
+    * this feature is not meant to touch. Every form reads {@code mobileRedirectUrl} first; only the
+    * forms listed here also fall back to their legacy redirect. Either authored value wins over the
+    * per-site {@code forms.<screen>.redirectAfterSubmit} default applied downstream in
+    * {@code PageJsonExporterImpl#applyFormSettings}.
      */
     private static final Map<String, String[]> REDIRECT_KEYS_BY_FORM = Map.of(
             "create-account", new String[]{"redirectUrl"},
@@ -275,20 +276,16 @@ final class FormBlockBuilder {
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
-        // Post-submit redirect target screen. Taken from the block's own authored redirect field
-        // (create-account's redirectUrl, join-us's submit-redirect-url) when the author set one -
-        // an explicit authored redirect wins. Only the forms in REDIRECT_KEYS_BY_FORM are read;
-        // every other form keeps a blank link here. Left blank when the block authors none, in which
-        // case a per-site 'forms' entry in defaults.json supplies the default downstream (e.g.
-        // "en") - see PageJsonExporterImpl#applyFormSettings. Blank throughout means the client
-        // stays put.
+        // mobileRedirectUrl wins on every form, with legacy redirects retained for existing content.
+        // A blank link lets PageJsonExporterImpl#applyFormSettings supply a per-site default.
         // formName is null for a form whose fields are authored rather than taken from a bundled
         // schema, and REDIRECT_KEYS_BY_FORM is a Map.of, whose lookups throw on a null key instead
         // of missing. Guard here rather than swapping the map: every other read of it is keyed on a
         // name that exists, and a null key genuinely means "no form-specific redirect keys".
-        meta.put("link", first(authored,
+        meta.put("link", redirectScreen(first(authored, MOBILE_REDIRECT_KEYS,
+            first(authored,
                 formName == null ? NO_KEYS : REDIRECT_KEYS_BY_FORM.getOrDefault(formName, NO_KEYS),
-                StringUtils.EMPTY));
+                StringUtils.EMPTY))));
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_FORM);
         meta.put("eventType", first(authored, EVENT_TYPE_KEYS, StringUtils.EMPTY));
@@ -366,6 +363,20 @@ final class FormBlockBuilder {
         button.put(SchemaConstants.KEY_META, meta);
         button.put(SchemaConstants.KEY_CONTENT, content);
         return button;
+    }
+
+    private static String redirectScreen(final String redirect) {
+        final String text = StringUtils.trimToEmpty(redirect);
+        if (!text.startsWith("/content/")) {
+            return redirect;
+        }
+        final int suffixIndex = StringUtils.indexOfAny(text, '?', '#');
+        final String suffix = suffixIndex >= 0 ? text.substring(suffixIndex) : "";
+        final String path = StringUtils.stripEnd(
+                suffixIndex >= 0 ? text.substring(0, suffixIndex) : text, "/");
+        final String screen = StringUtils.removeEndIgnoreCase(
+                StringUtils.substringAfterLast(path, "/"), ".html");
+        return StringUtils.isEmpty(screen) ? redirect : screen + suffix;
     }
 
     /** @return the form's own {@code "type": "link"} schema entry, or {@code null} when it has none */
