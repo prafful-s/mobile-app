@@ -93,6 +93,39 @@ class ActionButtonCustomStyleTest {
     }
 
     @Test
+        @SuppressWarnings("unchecked")
+        void aWebViewExportsUrlAndCustomMobileStyles() {
+        final Page page = context.create().page("/content/s/en/web-view");
+        context.create().resource(page.getPath() + "/jcr:content/root");
+        context.create().resource(page.getPath() + "/jcr:content/root/web-view",
+            "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+            "model", "web-view",
+            "mobileNickname", "Adobe",
+            "mobileUrl", "https://www.adobe.com");
+
+        final ComponentTreeWalker walker = walkerWithMockedModelFactory();
+        final Map<String, Object> entry = entryFor(
+            walker.componentsOf(page, "https://assets.example.com", true, false), "webView");
+        assertEquals(Map.of("url", "https://www.adobe.com"), entry.get(SchemaConstants.KEY_CONTENT));
+        final Map<String, Object> meta = (Map<String, Object>) entry.get(SchemaConstants.KEY_META);
+        assertEquals(0, meta.get("order"));
+        assertFalse(meta.get("id").toString().isEmpty());
+        assertFalse(entry.containsKey(SchemaConstants.KEY_STYLES));
+
+        context.create().resource(page.getPath() + "/jcr:content/root/styled-web-view",
+            "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+            "model", "web-view",
+            "mobileUrl", "https://www.adobe.com",
+            "custommobilestyle", new String[] {"height:500", "backgroundColor:#ffffff"});
+        final List<Map<String, Object>> components =
+            walker.componentsOf(page, "https://assets.example.com", true, false);
+        assertEquals(Map.of("height", 500L, "backgroundColor", "#ffffff"),
+            components.get(1).get(SchemaConstants.KEY_STYLES));
+        assertEquals(Map.of("url", "https://www.adobe.com"),
+            components.get(1).get(SchemaConstants.KEY_CONTENT));
+        }
+
+        @Test
     void anActionButtonsOwnCustomMobileStyleReachesItsExportedStyles() {
         final Page page = context.create().page("/content/s/en/p");
         context.create().resource(page.getPath() + "/jcr:content/root");

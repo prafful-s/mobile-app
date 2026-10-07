@@ -600,6 +600,16 @@ class MobileFieldMappingTest {
         }
     }
 
+    @Test
+    void webViewSurvivesReducedExport() throws Exception {
+        final ComponentMapping rule = mappings.find("web-view");
+        assertEquals("webView", rule.getComponent());
+        final Map<String, Object> content = rule.apply(
+                Map.of("mobileUrl", "https://www.adobe.com"), Map.of());
+        assertEquals(Map.of("url", "https://www.adobe.com"), content);
+        assertSurvivesReducedExport(rule, content);
+    }
+
     private static void assertSurvivesReducedExport(final ComponentMapping rule,
             final Map<String, Object> content) throws Exception {
         final List<Map<String, Object>> components = List.of(Map.of(

@@ -18,6 +18,7 @@
   "contentCards",
   "inbox",
   "map",
+  "web-view",
   "decisioning-container",
   "decisioning-offer"
 ]
