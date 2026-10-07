@@ -880,6 +880,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
         putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
+        // Whether the form shows its Reset button beside Submit; the form builder hides it by default.
+        if (settings.get("hideResetButton") instanceof Boolean) {
+            meta.put("hideResetButton", settings.get("hideResetButton"));
+        }
     }
 
     /**
@@ -1286,7 +1290,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
             "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
-                "flightSearch", "flightResults", "offer", "offerRenderer", "inbox", "contentCards", "webView");
+                "flightSearch", "flightResults", "offer", "offerRenderer", "inbox", "contentCards", "webView", "map");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
