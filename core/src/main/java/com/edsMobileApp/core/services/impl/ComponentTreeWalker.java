@@ -748,11 +748,6 @@ final class ComponentTreeWalker {
                 if (heading != null) {
                     sink.add(heading);
                 }
-                final Map<String, Object> description = formBuilder.description(formName, resolvedAuthored,
-                        AbstractComponentModel.generateId(child.getPath() + "/description"), sink.size());
-                if (description != null) {
-                    sink.add(description);
-                }
                 sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), resolvedAuthored));
                 final Map<String, Object> secondaryLink = formBuilder.secondaryLink(formName,
                         navScreensByRole, AbstractComponentModel.generateId(child.getPath() + "/secondary-link"),

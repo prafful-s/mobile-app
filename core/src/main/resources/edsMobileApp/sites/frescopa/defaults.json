@@ -12,5 +12,6 @@
     "target": "cart"
   },
   "forms": {
+    "service": { "hideResetButton": false }
   }
 }

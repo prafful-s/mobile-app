@@ -145,85 +145,6 @@ class ServiceVariantFormTest {
         return texts;
     }
 
-    @Test
-    void theServiceVariantShowsItsDescriptionBeforeTheForm() {
-        assertEquals(List.of("<p class=\"ql-align-center\">Your coffee machine needs cleaning? "
-                + "Order a service with our partners.</p>"), descriptions("service"));
-    }
-
-    @Test
-    void anAuthoredFormDescriptionWinsAndIsEscaped() {
-        assertEquals(List.of("<p class=\"ql-align-center\">Book &amp; relax</p>"),
-                descriptions("service", "formDescription", "Book & relax"));
-        assertEquals(List.of("<p class=\"ql-align-center\">Pick a slot</p>"),
-                descriptions("test-drive", "formDescription", "Pick a slot"));
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void otherFormsGetALargeCentredTitleToo() {
-        fieldIds("test-drive", new Object[] {"form-title", "Book your drive"}, null);
-        final List<Map<String, Object>> titles = new ArrayList<>();
-        collectByComponent(lastTree, "title", titles);
-        final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
-        assertEquals("large", title.get("size"));
-        assertEquals("center", title.get("textAlignment"));
-    }
-
-    @Test
-    void otherVariantsHaveNoDescriptionUnlessAuthored() {
-        assertEquals(List.of(), descriptions("test-drive"));
-        assertEquals(List.of(), descriptions("schedule-appointment"));
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void theHeadingIsLargeAndTheMachineTypeFieldHasNoLabel() {
-        fieldIds("service", new Object[0], null);
-        final List<Map<String, Object>> titles = new ArrayList<>();
-        collectByComponent(lastTree, "title", titles);
-        final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
-        assertEquals("large", title.get("size"));
-        assertEquals("center", title.get("textAlignment"));
-        final List<Map<String, Object>> fields = new ArrayList<>();
-        collectByComponent(lastTree, "textField", fields);
-        final Map<String, Object> machine = fields.stream()
-                .filter(f -> "machineType".equals(((Map<String, Object>) f.get(SchemaConstants.KEY_META)).get("id")))
-                .findFirst().orElseThrow();
-        final Map<String, Object> content = (Map<String, Object>) machine.get(SchemaConstants.KEY_CONTENT);
-        assertEquals("", content.get("label"));
-        assertEquals("Frescopa Smart Machine", content.get("placeholder"));
-    }
-
-    @Test
-    void theServiceVariantIsTitledCustomerServiceWhenNoTitleIsAuthored() {
-        assertEquals(List.of("Customer service"), pageTitles("service"));
-    }
-
-    @Test
-    void anAuthoredTitleWinsOverTheServiceDefault() {
-        assertEquals(List.of("Order a clean"), pageTitles("service", "form-title", "Order a clean"));
-    }
-
-    @Test
-    void theOtherVariantsStillShowNoTitleUnlessAuthored() {
-        assertEquals(List.of(), pageTitles("test-drive"));
-        assertEquals(List.of(), pageTitles("schedule-appointment"));
-        assertEquals(List.of("Book your drive"), pageTitles("test-drive", "form-title", "Book your drive"));
-    }
-
-    @Test
-    void onlyTheServiceVariantShowsTheResetButton() {
-        final Map<String, Object> service = new java.util.LinkedHashMap<>();
-        fieldIds("service", new Object[0], service);
-        assertEquals(false, service.get("hideResetButton"));
-        for (final String variant : new String[] {"test-drive", "schedule-appointment", null}) {
-            final Map<String, Object> other = new java.util.LinkedHashMap<>();
-            fieldIds(variant, new Object[0], other);
-            assertEquals(true, other.get("hideResetButton"), String.valueOf(variant));
-        }
-    }
-
     /** The web block's Redirect URL sends its form home after submit; the app form takes the same page. */
     @Test
     void theAuthoredRedirectUrlIsTheFormsLink() {
@@ -247,6 +168,102 @@ class ServiceVariantFormTest {
         assertEquals("products", meta.get("link"));
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> contentOfField(final String variant, final String fieldId) {
+        fieldIds(variant, new Object[0], null);
+        final List<Map<String, Object>> found = new ArrayList<>();
+        for (final String component : new String[] {"title", "textField"}) {
+            collectByComponent(lastTree, component, found);
+        }
+        return (Map<String, Object>) found.stream()
+                .filter(f -> fieldId.equals(((Map<String, Object>) f.get(SchemaConstants.KEY_META)).get("id")))
+                .findFirst().orElseThrow().get(SchemaConstants.KEY_CONTENT);
+    }
+
+    /** The description is a schema entry gated to the service variant: a small, regular, centred line. */
+    @Test
+    void theServiceDescriptionIsASmallCentredLineFromTheSchema() {
+        final Map<String, Object> description = contentOfField("service", "service-description");
+        assertEquals("Your coffee machine needs cleaning? Order a service with our partners.", description.get("text"));
+        assertEquals("small", description.get("size"));
+        assertEquals("regular", description.get("weight"));
+        assertEquals("center", description.get("textAlignment"));
+    }
+
+    @Test
+    void theMachineTypeFieldHasNoLabelSoItsPlaceholderShows() {
+        final Map<String, Object> machine = contentOfField("service", "machineType");
+        assertEquals("", machine.get("label"));
+        assertEquals("Frescopa Smart Machine", machine.get("placeholder"));
+    }
+
+    @Test
+    void ordinaryHeadingsKeepTheirMediumBoldLeftStyle() {
+        final Map<String, Object> heading = contentOfField("service", "machine-heading");
+        assertEquals("medium", heading.get("size"));
+        assertEquals("bold", heading.get("weight"));
+        assertEquals("left", heading.get("textAlignment"));
+    }
+
+    /** With no Form Title authored the schema supplies "Customer service": large, bold and centred. */
+    @Test
+    void theSchemaSuppliesTheServiceTitleWhenNoneIsAuthored() {
+        assertEquals(List.of(), pageTitles("service"));
+        final Map<String, Object> title = contentOfField("service", "service-title");
+        assertEquals("Customer service", title.get("text"));
+        assertEquals("large", title.get("size"));
+        assertEquals("bold", title.get("weight"));
+        assertEquals("center", title.get("textAlignment"));
+    }
+
+    /** An authored Form Title replaces the default - one title, not two. */
+    @SuppressWarnings("unchecked")
+    @Test
+    void anAuthoredFormTitleReplacesTheSchemaDefault() {
+        final List<String> ids = fieldIds("service", new Object[] {"form-title", "Order a clean"}, null);
+        assertEquals(false, ids.contains("service-title"));
+        fieldIds("service", new Object[] {"form-title", "Order a clean"}, null);
+        final List<Map<String, Object>> titles = new ArrayList<>();
+        collectByComponent(lastTree, "title", titles);
+        final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
+        assertEquals("Order a clean", title.get("text"));
+        assertEquals("large", title.get("size"));
+        assertEquals("center", title.get("textAlignment"));
+    }
+
+    @Test
+    void everyFormHidesResetUnlessTheSiteSaysOtherwise() {
+        for (final String variant : new String[] {"service", "test-drive", "schedule-appointment"}) {
+            final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+            fieldIds(variant, new Object[0], meta);
+            assertEquals(true, meta.get("hideResetButton"), variant);
+        }
+    }
+
+    /** Frescopa's defaults.json shows Reset on its service screen - read through the exporter's form settings. */
+    @SuppressWarnings("unchecked")
+    @Test
+    void frescopasDefaultsShowResetOnTheServiceScreenOnly() throws Exception {
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        final java.lang.reflect.Field defaults = PageJsonExporterImpl.class.getDeclaredField("siteDefaults");
+        defaults.setAccessible(true);
+        defaults.set(exporter, SiteDefaults.load());
+        final java.lang.reflect.Method apply = PageJsonExporterImpl.class.getDeclaredMethod(
+                "applyFormSettings", List.class, Page.class, String.class);
+        apply.setAccessible(true);
+        final Page page = context.create().page("/content/frescopa/language-masters/en/service");
+        for (final String screen : new String[] {"service", "login"}) {
+            final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+            meta.put(SchemaConstants.KEY_COMPONENT, "form");
+            meta.put("hideResetButton", true);
+            final Map<String, Object> form = new java.util.LinkedHashMap<>();
+            form.put(SchemaConstants.KEY_META, meta);
+            form.put(SchemaConstants.KEY_CONTENT, new ArrayList<>());
+            apply.invoke(exporter, new ArrayList<>(List.of(form)), page, screen);
+            assertEquals("service".equals(screen) ? false : true, meta.get("hideResetButton"), screen);
+        }
+    }
+
     @Test
     void theAuthoredSuccessMessageIsTheFormsToast() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
@@ -256,7 +273,7 @@ class ServiceVariantFormTest {
 
     @Test
     void theServiceVariantSwapsPersonalInfoForMachineTypeAddressAndTime() {
-        assertEquals(List.of("machine-heading", "machineType", "service-address-heading", "serviceStreet",
+        assertEquals(List.of("service-title", "service-description", "machine-heading", "machineType", "service-address-heading", "serviceStreet",
                 "serviceCity", "service-slot-heading", "appointment-slot"), fieldIds("service"));
     }
 

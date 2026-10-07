@@ -52,6 +52,27 @@
     "variants": ["test-drive", "schedule-appointment"]
   },
   {
+    "id": "service-title",
+    "type": "heading",
+    "label": "Customer service",
+    "size": "large",
+    "weight": "bold",
+    "textAlignment": "center",
+    "conditions": [
+      { "field": "variant", "equals": "service" },
+      { "field": "form-title", "blank": true }
+    ]
+  },
+  {
+    "id": "service-description",
+    "type": "heading",
+    "label": "Your coffee machine needs cleaning? Order a service with our partners.",
+    "size": "small",
+    "weight": "regular",
+    "textAlignment": "center",
+    "variants": ["service"]
+  },
+  {
     "id": "machine-heading",
     "type": "heading",
     "label": "Coffee machine type",
