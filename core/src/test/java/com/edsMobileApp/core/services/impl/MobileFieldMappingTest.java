@@ -610,6 +610,16 @@ class MobileFieldMappingTest {
         assertSurvivesReducedExport(rule, content);
     }
 
+    @Test
+    void mapSurvivesReducedExport() throws Exception {
+        final ComponentMapping rule = mappings.find("map");
+        assertEquals("map", rule.getComponent());
+        final Map<String, Object> content = rule.apply(
+                Map.of("mobileDisplayAs", "fullMap"), Map.of());
+        assertEquals(Map.of("displayAs", "fullMap"), content);
+        assertSurvivesReducedExport(rule, content);
+    }
+
     private static void assertSurvivesReducedExport(final ComponentMapping rule,
             final Map<String, Object> content) throws Exception {
         final List<Map<String, Object>> components = List.of(Map.of(
