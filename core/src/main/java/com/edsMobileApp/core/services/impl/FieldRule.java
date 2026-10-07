@@ -379,7 +379,8 @@ final class FieldRule {
         if (!first.isEmpty()) {
             for (final String candidate : first) {
                 final Object value = blankToNull(source.get(candidate));
-                if (value != null) {
+                if (value != null && (!TYPE_CATEGORY_ROOT_REGEX.equals(type)
+                        || !categoryRootVotes(value).isEmpty())) {
                     return value;
                 }
             }

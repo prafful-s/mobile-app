@@ -13,7 +13,7 @@
   "fields": [
     { "target": "items", "from": "_items", "default": [] },
     { "target": "limit", "from": "number", "type": "number" },
-    { "target": "filter", "from": "_categories", "type": "categoryRootRegex", "default": "" },
+    { "target": "filter", "first": ["cqTags", "cqtags", "tags", "cq-tags", "cq:tags", "_categories"], "type": "categoryRootRegex", "default": "" },
     { "target": "layout", "from": "mobilelayout", "default": "horizontal" },
     { "target": "sort", "from": "mobilesort", "default": "none" },
     { "target": "listType", "from": "listType", "default": "productList" },
