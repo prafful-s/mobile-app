@@ -60,6 +60,60 @@ class ColumnPanelTest {
                 new StyleResolver(new String[0]), ComponentMappings.load());
     }
 
+    @Test
+    void mapAndWebViewArePageLevelEvenInsideNestedSections() {
+        final Page page = context.create().page("/content/s/en/full-width");
+        final String section = page.getPath() + "/jcr:content/root/section";
+        context.create().resource(section,
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        context.create().resource(section + "/nested",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        context.create().resource(section + "/nested/map",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "map", "mobileDisplayAs", "fullMap");
+        context.create().resource(section + "/nested/web-view",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "web-view", "mobileUrl", "https://www.adobe.com");
+
+        final List<Map<String, Object>> components = walker.componentsOf(page, null, true);
+        assertEquals(2, components.size());
+        assertEquals("map", meta(components.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("webView", meta(components.get(1)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(0, meta(components.get(0)).get(SchemaConstants.KEY_ORDER));
+        assertEquals(1, meta(components.get(1)).get(SchemaConstants.KEY_ORDER));
+        assertEquals(Map.of("url", "https://www.adobe.com"),
+                components.get(1).get(SchemaConstants.KEY_CONTENT));
+    }
+
+    @Test
+    void mixedSectionKeepsOrdinaryContentInPanelsAroundMap() {
+        final Page page = context.create().page("/content/s/en/mixed");
+        final String section = page.getPath() + "/jcr:content/root/section";
+        context.create().resource(section,
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        context.create().resource(section + "/before",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>Before</p>");
+        context.create().resource(section + "/map",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK, "model", "map");
+        context.create().resource(section + "/after",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>After</p>");
+
+        final List<Map<String, Object>> components = walker.componentsOf(page, null, true);
+        assertEquals(3, components.size());
+        assertEquals("panel", meta(components.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("map", meta(components.get(1)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("panel", meta(components.get(2)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(1, ((List<?>) components.get(0).get(SchemaConstants.KEY_CONTENT)).size());
+        assertEquals(1, ((List<?>) components.get(2).get(SchemaConstants.KEY_CONTENT)).size());
+        assertEquals(3, components.stream().map(component ->
+                meta(component).get(SchemaConstants.KEY_ID)).distinct().count());
+        for (int index = 0; index < components.size(); index++) {
+            assertEquals(index, meta(components.get(index)).get(SchemaConstants.KEY_ORDER));
+        }
+    }
+
     private Page twoColumnPage(final String firstAlignment) {
         final Page page = context.create().page("/content/s/en/p");
         context.create().resource(page.getPath() + "/jcr:content/root");
