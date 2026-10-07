@@ -73,6 +73,8 @@ final class FormBlockBuilder {
             "create-account", new String[]{"redirectUrl"},
             "join-us", new String[]{"submit-redirect-url"});
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
+    private static final String VARIANT_SERVICE = "service";
+    private static final String SERVICE_HEADING = "Customer service";
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
         "submitButtonLabel", "buttontext", "button-label", "sign-in-btn-text", "submitText",
@@ -221,7 +223,8 @@ final class FormBlockBuilder {
         // Per-site override for the default text, e.g. Luma's defaults.json.formHeadings.
         // The keys (block property names) stay compiled-in - those describe the block itself, not
         // the site. Only the display text is site-overridable.
-        final String defaultText = siteOverride(formName, resourcePath, config.defaultText);
+        final String defaultText = siteOverride(formName, resourcePath,
+                variantHeadingDefault(formName, authored, config.defaultText));
         final String text = first(authored, config.keys, defaultText);
         // A form whose block authors no title and whose reference carries no default (test-drive)
         // gets no pre-form heading at all, rather than an empty title box.
@@ -244,6 +247,23 @@ final class FormBlockBuilder {
         title.put(SchemaConstants.KEY_META, meta);
         title.put(SchemaConstants.KEY_CONTENT, content);
         return title;
+    }
+
+    /**
+     * The heading a form variant shows when its block authors none. Only the {@code service}
+     * variant of test-drive has one: its field list opens with the machine type, so unlike the other
+     * variants (whose first field heading already titles the form) nothing else names the page.
+     * Matches the block's own {@code VARIANTS.service.formTitle}.
+     */
+    private static String variantHeadingDefault(final String formName, final Map<String, Object> authored,
+                                                final String formDefault) {
+        return "test-drive".equals(formName) && VARIANT_SERVICE.equals(variantOf(authored))
+                ? SERVICE_HEADING : formDefault;
+    }
+
+    private static String variantOf(final Map<String, Object> authored) {
+        final Object variant = authored == null ? null : authored.get("variant");
+        return variant instanceof String ? StringUtils.trimToEmpty((String) variant).toLowerCase(java.util.Locale.ROOT) : "";
     }
 
     /**
@@ -294,7 +314,9 @@ final class FormBlockBuilder {
 
         // A reset button is opt-in: most authored forms have no reset control, and showing one the
         // author never asked for is worse than omitting a rarely-used affordance.
-        meta.put("hideResetButton", true);
+        // The test-drive service form is the exception: it shows Reset beside Submit.
+        meta.put("hideResetButton",
+                !("test-drive".equals(formName) && VARIANT_SERVICE.equals(variantOf(authored))));
         meta.put("resetButtonLabel", first(authored, RESET_LABEL_KEYS, DEFAULT_RESET_LABEL));
         meta.put("submitButtonLabel",
                 StringUtils.defaultIfBlank(first(authored, SUBMIT_LABEL_KEYS, null),
