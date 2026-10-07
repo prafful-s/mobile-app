@@ -224,6 +224,29 @@ class ServiceVariantFormTest {
         }
     }
 
+    /** The web block's Redirect URL sends its form home after submit; the app form takes the same page. */
+    @Test
+    void theAuthoredRedirectUrlIsTheFormsLink() {
+        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+        fieldIds("service", new Object[] {"redirect-url", "/content/frescopa/language-masters/en"}, meta);
+        assertEquals("en", meta.get("link"));
+    }
+
+    @Test
+    void withNoRedirectAuthoredTheLinkStaysBlank() {
+        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+        fieldIds("service", new Object[0], meta);
+        assertEquals("", meta.get("link"));
+    }
+
+    @Test
+    void aMobileRedirectStillWinsOverTheWebOne() {
+        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+        fieldIds("service", new Object[] {"redirect-url", "/content/frescopa/language-masters/en",
+                "mobileRedirectUrl", "/content/frescopa/language-masters/en/products"}, meta);
+        assertEquals("products", meta.get("link"));
+    }
+
     @Test
     void theAuthoredSuccessMessageIsTheFormsToast() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
