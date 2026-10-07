@@ -2,7 +2,8 @@
   {
     "id": "personal-info-heading",
     "type": "heading",
-    "label": "Your personal informations"
+    "label": "Your personal informations",
+    "variants": ["test-drive", "schedule-appointment"]
   },
   {
     "id": "firstName",
@@ -11,7 +12,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "variants": ["test-drive", "schedule-appointment"]
   },
   {
     "id": "lastName",
@@ -20,7 +22,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "variants": ["test-drive", "schedule-appointment"]
   },
   {
     "id": "email",
@@ -29,7 +32,8 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "variants": ["test-drive", "schedule-appointment"]
   },
   {
     "id": "phone",
@@ -38,12 +42,62 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": ""
+    "defaultValue": "",
+    "variants": ["test-drive", "schedule-appointment"]
   },
   {
     "id": "appointment-heading",
     "type": "heading",
-    "label": "Choose available day and time"
+    "label": "Choose available day and time",
+    "variants": ["test-drive", "schedule-appointment"]
+  },
+  {
+    "id": "machine-heading",
+    "type": "heading",
+    "label": "Coffee machine type",
+    "variants": ["service"]
+  },
+  {
+    "id": "machineType",
+    "name": "machineType",
+    "label": "Coffee machine type",
+    "value": "",
+    "type": "text",
+    "placeholder": "Frescopa Smart Machine",
+    "defaultValue": "",
+    "variants": ["service"]
+  },
+  {
+    "id": "service-address-heading",
+    "type": "heading",
+    "label": "Service address",
+    "variants": ["service"]
+  },
+  {
+    "id": "serviceStreet",
+    "name": "person.address.street",
+    "label": "Street",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "variants": ["service"]
+  },
+  {
+    "id": "serviceCity",
+    "name": "person.address.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "variants": ["service"]
+  },
+  {
+    "id": "service-slot-heading",
+    "type": "heading",
+    "label": "Preferred service time",
+    "variants": ["service"]
   },
   {
     "id": "appointment-slot",
