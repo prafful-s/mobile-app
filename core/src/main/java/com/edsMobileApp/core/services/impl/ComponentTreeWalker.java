@@ -1332,7 +1332,31 @@ final class ComponentTreeWalker {
         collectComponents(resource, children, depth + 1, true, ancestorSection, knownScreenKeys,
             screenThumbnailOverrides);
 
+        emitPanel(resource, sink, resourceType, children, resource.getPath());
+    }
+
+    private void emitPanel(final Resource resource, final List<Map<String, Object>> sink,
+                           final String resourceType, final List<Map<String, Object>> children,
+                           final String panelPath) {
         if (children.isEmpty()) {
+            return;
+        }
+
+        if (children.stream().anyMatch(this::isPageLevelComponent)) {
+            final List<Map<String, Object>> panelChildren = new ArrayList<>();
+            for (final Map<String, Object> child : children) {
+                if (isPageLevelComponent(child)) {
+                    emitPanel(resource, sink, resourceType, new ArrayList<>(panelChildren),
+                            panelPath + "/mobile-panel-" + sink.size());
+                    panelChildren.clear();
+                    asMeta(child.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, sink.size());
+                    sink.add(child);
+                } else {
+                    panelChildren.add(child);
+                }
+            }
+            emitPanel(resource, sink, resourceType, panelChildren,
+                    panelPath + "/mobile-panel-" + sink.size());
             return;
         }
 
@@ -1346,7 +1370,7 @@ final class ComponentTreeWalker {
         }
 
         final Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(panelPath));
         meta.put(SchemaConstants.KEY_ORDER, sink.size());
         meta.put(SchemaConstants.KEY_LAYOUT, panelLayout(resource, resourceType));
         meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
@@ -1366,6 +1390,11 @@ final class ComponentTreeWalker {
         entry.put(SchemaConstants.KEY_CONTENT,
                 isColumnItem(resource) ? groupColumnImages(children, resource) : children);
         sink.add(entry);
+    }
+
+    private boolean isPageLevelComponent(final Map<String, Object> component) {
+        final Object name = asMeta(component.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT);
+        return "map".equals(name) || "webView".equals(name);
     }
 
     /**
