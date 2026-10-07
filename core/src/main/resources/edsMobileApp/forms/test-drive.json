@@ -60,7 +60,7 @@
   {
     "id": "machineType",
     "name": "machineType",
-    "label": "Coffee machine type",
+    "label": "",
     "value": "",
     "type": "text",
     "placeholder": "Frescopa Smart Machine",

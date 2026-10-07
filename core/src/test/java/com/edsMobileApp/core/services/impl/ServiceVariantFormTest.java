@@ -119,6 +119,82 @@ class ServiceVariantFormTest {
         return titles;
     }
 
+    @SuppressWarnings("unchecked")
+    private static void collectByComponent(final List<Map<String, Object>> tree, final String name,
+                                           final List<Map<String, Object>> sink) {
+        for (final Map<String, Object> component : tree) {
+            final Map<String, Object> meta = (Map<String, Object>) component.get(SchemaConstants.KEY_META);
+            if (name.equals(meta.get(SchemaConstants.KEY_COMPONENT))) {
+                sink.add(component);
+            }
+            if (component.get(SchemaConstants.KEY_CONTENT) instanceof List) {
+                collectByComponent((List<Map<String, Object>>) component.get(SchemaConstants.KEY_CONTENT), name, sink);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> descriptions(final String variant, final Object... props) {
+        fieldIds(variant, props, null);
+        final List<Map<String, Object>> found = new ArrayList<>();
+        collectByComponent(lastTree, "htmlText", found);
+        final List<String> texts = new ArrayList<>();
+        for (final Map<String, Object> c : found) {
+            texts.add(String.valueOf(((Map<String, Object>) c.get(SchemaConstants.KEY_CONTENT)).get("text")));
+        }
+        return texts;
+    }
+
+    @Test
+    void theServiceVariantShowsItsDescriptionBeforeTheForm() {
+        assertEquals(List.of("<p class=\"ql-align-center\">Your coffee machine needs cleaning? "
+                + "Order a service with our partners.</p>"), descriptions("service"));
+    }
+
+    @Test
+    void anAuthoredFormDescriptionWinsAndIsEscaped() {
+        assertEquals(List.of("<p class=\"ql-align-center\">Book &amp; relax</p>"),
+                descriptions("service", "formDescription", "Book & relax"));
+        assertEquals(List.of("<p class=\"ql-align-center\">Pick a slot</p>"),
+                descriptions("test-drive", "formDescription", "Pick a slot"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void otherFormsGetALargeCentredTitleToo() {
+        fieldIds("test-drive", new Object[] {"form-title", "Book your drive"}, null);
+        final List<Map<String, Object>> titles = new ArrayList<>();
+        collectByComponent(lastTree, "title", titles);
+        final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
+        assertEquals("large", title.get("size"));
+        assertEquals("center", title.get("textAlignment"));
+    }
+
+    @Test
+    void otherVariantsHaveNoDescriptionUnlessAuthored() {
+        assertEquals(List.of(), descriptions("test-drive"));
+        assertEquals(List.of(), descriptions("schedule-appointment"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void theHeadingIsLargeAndTheMachineTypeFieldHasNoLabel() {
+        fieldIds("service", new Object[0], null);
+        final List<Map<String, Object>> titles = new ArrayList<>();
+        collectByComponent(lastTree, "title", titles);
+        final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
+        assertEquals("large", title.get("size"));
+        assertEquals("center", title.get("textAlignment"));
+        final List<Map<String, Object>> fields = new ArrayList<>();
+        collectByComponent(lastTree, "textField", fields);
+        final Map<String, Object> machine = fields.stream()
+                .filter(f -> "machineType".equals(((Map<String, Object>) f.get(SchemaConstants.KEY_META)).get("id")))
+                .findFirst().orElseThrow();
+        final Map<String, Object> content = (Map<String, Object>) machine.get(SchemaConstants.KEY_CONTENT);
+        assertEquals("", content.get("label"));
+        assertEquals("Frescopa Smart Machine", content.get("placeholder"));
+    }
+
     @Test
     void theServiceVariantIsTitledCustomerServiceWhenNoTitleIsAuthored() {
         assertEquals(List.of("Customer service"), pageTitles("service"));
