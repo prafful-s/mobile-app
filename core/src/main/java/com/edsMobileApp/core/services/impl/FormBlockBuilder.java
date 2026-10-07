@@ -75,6 +75,10 @@ final class FormBlockBuilder {
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String VARIANT_SERVICE = "service";
     private static final String SERVICE_HEADING = "Customer service";
+    private static final String SERVICE_DESCRIPTION =
+            "Your coffee machine needs cleaning? Order a service with our partners.";
+    /** The block property that carries a form's description, most specific first. */
+    private static final String[] DESCRIPTION_KEYS = {"formDescription", "form-description", "formdescription"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
         "submitButtonLabel", "buttontext", "button-label", "sign-in-btn-text", "submitText",
@@ -238,15 +242,49 @@ final class FormBlockBuilder {
         meta.put(SchemaConstants.KEY_COMPONENT, "title");
 
         final Map<String, Object> content = new LinkedHashMap<>();
-        content.put("size", "medium");
+        // A form's heading is the page's title, so it is large (the app's earlier version of these
+        // screens used a large title too); medium read too small beside the body text.
+        content.put("size", "large");
         content.put("text", text);
         content.put("weight", "bold");
-        content.put("textAlignment", "left");
+        content.put("textAlignment", "center");
 
         final Map<String, Object> title = new LinkedHashMap<>();
         title.put(SchemaConstants.KEY_META, meta);
         title.put(SchemaConstants.KEY_CONTENT, content);
         return title;
+    }
+
+    /**
+     * The form's description, as a standalone {@code htmlText} component to sit between the title and
+     * the form - the sentence that says what the form is for. Read from the block's
+     * {@code formDescription}; the service variant falls back to its own sentence (the same one the
+     * web block shows) when none is authored. Every other form has none unless authored.
+     *
+     * @return the component, or {@code null} when the form has no description
+     */
+    Map<String, Object> description(final String formName, final Map<String, Object> authored,
+                                    final String id, final int order) {
+        final String text = first(authored, DESCRIPTION_KEYS,
+                isServiceForm(formName, authored) ? SERVICE_DESCRIPTION : StringUtils.EMPTY);
+        if (StringUtils.isBlank(text)) {
+            return null;
+        }
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, id);
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, "htmlText");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        // ql-align-center is the rich-text editor's own centring class, which the app's HTML text
+        // renderer already honours (the earlier app's content used it for centred headings).
+        content.put("text", "<p class=\"ql-align-center\">"
+                + org.jsoup.nodes.Entities.escape(text.trim()) + "</p>");
+
+        final Map<String, Object> component = new LinkedHashMap<>();
+        component.put(SchemaConstants.KEY_META, meta);
+        component.put(SchemaConstants.KEY_CONTENT, content);
+        return component;
     }
 
     /**
@@ -257,8 +295,11 @@ final class FormBlockBuilder {
      */
     private static String variantHeadingDefault(final String formName, final Map<String, Object> authored,
                                                 final String formDefault) {
-        return "test-drive".equals(formName) && VARIANT_SERVICE.equals(variantOf(authored))
-                ? SERVICE_HEADING : formDefault;
+        return isServiceForm(formName, authored) ? SERVICE_HEADING : formDefault;
+    }
+
+    private static boolean isServiceForm(final String formName, final Map<String, Object> authored) {
+        return "test-drive".equals(formName) && VARIANT_SERVICE.equals(variantOf(authored));
     }
 
     private static String variantOf(final Map<String, Object> authored) {
@@ -315,8 +356,7 @@ final class FormBlockBuilder {
         // A reset button is opt-in: most authored forms have no reset control, and showing one the
         // author never asked for is worse than omitting a rarely-used affordance.
         // The test-drive service form is the exception: it shows Reset beside Submit.
-        meta.put("hideResetButton",
-                !("test-drive".equals(formName) && VARIANT_SERVICE.equals(variantOf(authored))));
+        meta.put("hideResetButton", !isServiceForm(formName, authored));
         meta.put("resetButtonLabel", first(authored, RESET_LABEL_KEYS, DEFAULT_RESET_LABEL));
         meta.put("submitButtonLabel",
                 StringUtils.defaultIfBlank(first(authored, SUBMIT_LABEL_KEYS, null),
