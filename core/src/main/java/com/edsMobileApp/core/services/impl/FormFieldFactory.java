@@ -55,8 +55,7 @@ final class FormFieldFactory {
     /** A static section divider inside the field list - "Communication preferences", "LET US KNOW
      *  YOU BETTER" - not a value the user supplies. Reuses the {@code title} component's shape
      *  ({@code size}/{@code text}/{@code weight}/{@code textAlignment}), the only heading-shaped
-     *  component this project already emits (the form's own pre-form heading, see
-     *  {@link FormBlockBuilder#heading}). */
+     *  component this project already emits. */
     private static final String TYPE_HEADING = "heading";
     private static final String COMPONENT_TITLE = "title";
     /** A day/time grid the user picks an appointment slot from - test-drive and schedule-appointment
