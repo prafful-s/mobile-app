@@ -80,13 +80,6 @@ final class ComponentTreeWalker {
         this.formBuilder = new FormBlockBuilder(formSchemaService);
     }
 
-    /** Kept for this walker's own per-site lookups and forwarded to
-     * the internal {@link FormBlockBuilder} so form headings can honour per-site overrides. */
-    void setSiteDefaults(final SiteDefaults siteDefaults) {
-        this.siteDefaults = siteDefaults;
-        this.formBuilder.setSiteDefaults(siteDefaults);
-    }
-
     /** See {@link #navScreensByRole}. */
     void setNavScreensByRole(final Map<String, String> navScreensByRole) {
         this.navScreensByRole = navScreensByRole == null ? Collections.emptyMap() : navScreensByRole;
@@ -731,12 +724,6 @@ final class ComponentTreeWalker {
             if (hierarchical && isFormBlock(child, authoredName, authored)) {
                 final String formName = formNameOf(authoredName, authored);
                 final Map<String, Object> resolvedAuthored = formBuilder.withDefaultVariant(formName, authored);
-                final Map<String, Object> heading = formBuilder.heading(formName, resolvedAuthored,
-                        AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size(),
-                        child.getPath());
-                if (heading != null) {
-                    sink.add(heading);
-                }
                 sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), resolvedAuthored));
                 final Map<String, Object> secondaryLink = formBuilder.secondaryLink(formName,
                         navScreensByRole, AbstractComponentModel.generateId(child.getPath() + "/secondary-link"),
