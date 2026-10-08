@@ -269,6 +269,26 @@ class ScheduleAppointmentFormTest {
     }
 
     @Test
+    void theDescriptionIsAuthorableLikeTheTitleAndFallsBackToTheDefault() {
+        final String dflt = "Your coffee machine needs cleaning? Order a service with our partners.";
+        assertEquals(dflt, contentOfField("service-description").get("text"));
+        assertEquals("Book a clean of your machine.", descriptionWith("formDescription", "Book a clean of your machine."));
+        assertEquals("Hyphen key.", descriptionWith("form-description", "Hyphen key."));
+        assertEquals(dflt, descriptionWith("formDescription", "   "));
+    }
+
+    @SuppressWarnings("unchecked")
+    private String descriptionWith(final String property, final String value) {
+        fieldIds(null, new Object[] {property, value}, null);
+        final List<Map<String, Object>> titles = new ArrayList<>();
+        collectByComponent(lastTree, "title", titles);
+        return titles.stream()
+                .filter(t -> "service-description".equals(((Map<String, Object>) t.get(SchemaConstants.KEY_META)).get("id")))
+                .map(t -> String.valueOf(((Map<String, Object>) t.get(SchemaConstants.KEY_CONTENT)).get("text")))
+                .findFirst().orElseThrow();
+    }
+
+    @Test
     void theAuthoredSuccessMessageIsTheFormsToast() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
         fieldIds(null, new Object[] {"success-message", "Thanks, we will confirm your service shortly."}, meta);

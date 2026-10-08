@@ -456,7 +456,7 @@ final class FormBlockBuilder {
                 built.put(SchemaConstants.KEY_META, meta);
                 built.putIfAbsent(SchemaConstants.KEY_CONTENT, Collections.emptyMap());
             } else {
-                built = FormFieldFactory.fromConfig(field, order);
+                built = FormFieldFactory.fromConfig(withAuthoredLabel(field, authored), order);
             }
             if (built != null) {
                 fields.add(built);
@@ -464,6 +464,29 @@ final class FormBlockBuilder {
             }
         }
         return fields;
+    }
+
+    /**
+     * A schema entry may name block properties in {@code labelFrom}; the first one the author filled in
+     * replaces the entry's own {@code label}, which stays as the default. This is how a static line in a
+     * schema (a form's description, say) is made authorable the way a form's title is, without the form
+     * code knowing about it.
+     */
+    private static Map<String, Object> withAuthoredLabel(final Map<String, Object> field,
+                                                         final Map<String, Object> authored) {
+        final Object labelFrom = field.get("labelFrom");
+        if (!(labelFrom instanceof List) || authored == null) {
+            return field;
+        }
+        for (final Object key : (List<?>) labelFrom) {
+            final Object value = authored.get(String.valueOf(key));
+            if (value instanceof String && StringUtils.isNotBlank((String) value)) {
+                final Map<String, Object> copy = new LinkedHashMap<>(field);
+                copy.put("label", ((String) value).trim());
+                return copy;
+            }
+        }
+        return field;
     }
 
     /**
