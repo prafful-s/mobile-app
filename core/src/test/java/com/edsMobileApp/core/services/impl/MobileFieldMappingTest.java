@@ -240,11 +240,11 @@ class MobileFieldMappingTest {
             "mobileRedirectUrl", "/content/luma-site/language-masters/en/order-confirmation",
             "mobilebuttoneventtype", "commerce.purchases");
         final Method build = PageJsonExporterImpl.class.getDeclaredMethod("buildScreen", Page.class, Page.class,
-            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class);
+            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class, String.class);
         build.setAccessible(true);
         for (final boolean reduced : List.of(false, true)) {
             final Map<String, Object> screen = (Map<String, Object>) build.invoke(exporter, page, page, "",
-                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of());
+                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of(), "");
             assertEquals("review-purchase", ((Map<String, Object>) screen.get("meta")).get("name"));
             final List<Map<String, Object>> content = (List<Map<String, Object>>) screen.get("content");
             assertEquals(2, content.size());
@@ -284,12 +284,12 @@ class MobileFieldMappingTest {
         context.create().resource(root + "/second-cart", "sling:resourceType", "eds/components/cart", "label", "SECOND");
         context.create().resource(root + "/summary", "sling:resourceType", "eds/components/order-summary");
         final Method build = PageJsonExporterImpl.class.getDeclaredMethod("buildScreen", Page.class, Page.class,
-            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class);
+            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class, String.class);
         build.setAccessible(true);
         Map<String, Object> previousRowMeta = null;
         for (final boolean reduced : List.of(false, true)) {
             final Map<String, Object> screen = (Map<String, Object>) build.invoke(exporter, page, page, "",
-                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of());
+                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of(), "");
             assertEquals("review-items", ((Map<String, Object>) screen.get("meta")).get("name"));
             final List<Map<String, Object>> content = (List<Map<String, Object>>) screen.get("content");
             assertEquals(6, content.size());
@@ -339,7 +339,7 @@ class MobileFieldMappingTest {
         }
         final Page emptyCartPage = context.create().page("/content/confirmation-test/en/cart");
         final Map<String, Object> emptyScreen = (Map<String, Object>) build.invoke(exporter,
-            emptyCartPage, emptyCartPage, "", ExportOptions.of(false), List.of(), null, Set.of(), Map.of());
+            emptyCartPage, emptyCartPage, "", ExportOptions.of(false), List.of(), null, Set.of(), Map.of(), "");
         assertEquals(List.of(), emptyScreen.get("content"));
         }
 

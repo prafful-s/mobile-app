@@ -11,9 +11,8 @@
   },
   "forms": {
     "login": { "heading": "Sign In" },
-    "registration": { "heading": "Create an account", "redirectAfterSubmit": "en" },
-    "checkout": { "heading": "Checkout Shipping" },
-    "luma-plus": { "redirectAfterSubmit": "en" }
+    "registration": { "heading": "Create an account" },
+    "checkout": { "heading": "Checkout Shipping" }
   },
   "rightIcon": {
     "icon": "shopping-cart",
