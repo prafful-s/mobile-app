@@ -720,9 +720,20 @@ class MobileFieldMappingTest {
 
     private List<Map<String, Object>> exportProductDetail(final Object hideCart, final boolean hierarchical,
                                                          final Object customDetails) {
+        return exportProductDetail(hideCart, hierarchical, customDetails, Map.of(), false);
+    }
+
+    private List<Map<String, Object>> exportProductDetail(final Object hideCart, final boolean hierarchical,
+                                                         final Object customDetails,
+                                                         final Map<String, Object> overrides,
+                                                         final boolean insideSection) {
         final Page page = context.create().page("/content/s/en/product-" + hideCart + "-" + hierarchical
                 + "-" + customDetails);
         context.create().resource(page.getPath() + "/jcr:content/root");
+        final String parentPath = page.getPath() + "/jcr:content/root" + (insideSection ? "/section" : "");
+        if (insideSection) {
+            context.create().resource(parentPath, "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        }
         final Map<String, Object> properties = authored("model", "product-detail", "filter", "product-detail",
                 "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
                 "folder", "/content/dam/s/products");
@@ -732,7 +743,8 @@ class MobileFieldMappingTest {
         if (hideCart != null) {
             properties.put("mobilehideaddtocart", hideCart);
         }
-        context.create().resource(page.getPath() + "/jcr:content/root/product-detail", properties);
+        properties.putAll(overrides);
+        context.create().resource(parentPath + "/product-detail", properties);
         final FormSchemaService schemas = mock(FormSchemaService.class);
         when(schemas.getSchema(any())).thenReturn(List.of());
         final ComponentTreeWalker walker = new ComponentTreeWalker(mock(ModelFactory.class),
@@ -755,22 +767,65 @@ class MobileFieldMappingTest {
     @Test
     void productDetailAcceptsStringCustomMobileDetailsToggle() {
         final List<Map<String, Object>> entries = exportProductDetail(false, true, "true");
-        assertEquals(1, entries.size());
+        assertEquals(5, entries.size());
         assertEquals("productImage", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
     }
 
     @Test
-    void productDetailExportsOnlyImageWithContentDefaults() {
+        void productDetailExpandsThroughComponentMappingsWithContentDefaults() {
         for (final Object hideCart : new Object[] {null, false, "false", true, "true"}) {
             final List<Map<String, Object>> entries = exportProductDetail(hideCart, true);
-            assertEquals(1, entries.size());
-            final Map<?, ?> meta = (Map<?, ?>) entries.get(0).get("meta");
-            assertEquals("productImage", meta.get("component"));
-            assertEquals(0, meta.get("order"));
+            final List<String> names = List.of("productImage", "productTitle", "productPrice",
+                "productAddToCartButton", "productDescription");
+            assertEquals(names.size(), entries.size());
+            for (int index = 0; index < entries.size(); index++) {
+            final Map<?, ?> meta = (Map<?, ?>) entries.get(index).get("meta");
+            assertEquals(names.get(index), meta.get("component"));
+            assertEquals(index, meta.get("order"));
             assertEquals(true, meta.get("id") instanceof String);
-            assertEquals(false, entries.get(0).containsKey("styles"));
+            assertEquals(false, entries.get(index).containsKey("styles"));
+            assertEquals(mappings.find(names.get(index)).apply(Map.of(), Map.of()),
+                entries.get(index).get("content"));
+            }
+            assertEquals(5, entries.stream().map(entry -> ((Map<?, ?>) entry.get("meta")).get("id"))
+                .distinct().count());
             assertEquals(Map.of("fullWidth", true, "imageResize", "contain"), entries.get(0).get("content"));
+            assertEquals(Map.of("size", "medium", "weight", "bold", "textAlignment", "left"),
+                entries.get(1).get("content"));
+            assertEquals(Map.of(), entries.get(2).get("content"));
+            assertEquals(Map.of("label", "Add", "variant", "text", "alignment", "center",
+                "appearanceVariant", "text-icon"), entries.get(3).get("content"));
+            assertEquals(Map.of(), entries.get(4).get("content"));
         }
+    }
+
+    @Test
+    void productDetailExpansionMapsAuthoredImageResize() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileimageresize", "cover"), false);
+        assertEquals(Map.of("fullWidth", true, "imageResize", "cover"), entries.get(0).get("content"));
+        assertEquals(Map.of(), entries.get(2).get("content"));
+        assertEquals(Map.of(), entries.get(4).get("content"));
+    }
+
+    @Test
+    void productDetailExpansionStaysInSectionAndSerializes() throws Exception {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true, Map.of(), true);
+        assertEquals(1, entries.size());
+        final Map<?, ?> panelMeta = (Map<?, ?>) entries.get(0).get("meta");
+        assertEquals("panel", panelMeta.get("component"));
+        assertEquals("vertical", panelMeta.get("layout"));
+        final List<?> children = (List<?>) entries.get(0).get("content");
+        assertEquals(5, children.size());
+        for (int index = 0; index < children.size(); index++) {
+            final Map<?, ?> child = (Map<?, ?>) children.get(index);
+            assertEquals(index, ((Map<?, ?>) child.get("meta")).get("order"));
+        }
+        final Method filter = PageJsonExporterImpl.class.getDeclaredMethod("keepEnabledComponents", List.class);
+        filter.setAccessible(true);
+        assertEquals(entries, filter.invoke(null, entries));
+        final com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        assertEquals(5, mapper.readTree(mapper.writeValueAsString(entries)).get(0).get("content").size());
     }
 
     @Test

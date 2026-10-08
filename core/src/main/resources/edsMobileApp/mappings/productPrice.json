@@ -1,0 +1,7 @@
+{
+  "match": ["productPrice"],
+  "component": "productPrice",
+  "skeleton": true,
+  "ignoreExtras": ["*"],
+  "fields": []
+}
