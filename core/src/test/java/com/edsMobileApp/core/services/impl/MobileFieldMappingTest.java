@@ -800,6 +800,73 @@ class MobileFieldMappingTest {
     }
 
     @Test
+    void productDetailCanDisableEachExpandedComponent() {
+        final List<String> names = List.of("productImage", "productTitle", "productPrice",
+                "productAddToCartButton", "productDescription");
+        for (final String disabledName : names) {
+            for (final Object disabled : new Object[] {false, "false"}) {
+                final List<Map<String, Object>> entries = exportProductDetail(
+                        disabledName + disabled.getClass().getSimpleName(), true, true,
+                        Map.of("mobileappshow" + disabledName.toLowerCase(java.util.Locale.ROOT), disabled), false);
+                final List<String> expected = new java.util.ArrayList<>(names);
+                expected.remove(disabledName);
+                assertEquals(expected, entries.stream()
+                        .map(entry -> ((Map<?, ?>) entry.get("meta")).get("component"))
+                        .collect(java.util.stream.Collectors.toList()));
+                for (int index = 0; index < entries.size(); index++) {
+                    assertEquals(index, ((Map<?, ?>) entries.get(index).get("meta")).get("order"));
+                }
+            }
+        }
+    }
+
+    @Test
+    void productDetailCanEnableOnlySelectedComponents() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileappshowproductimage", "true", "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", "true",
+                        "mobileappshowproductdescription", false), true);
+        assertEquals(1, entries.size());
+        final List<?> children = (List<?>) entries.get(0).get("content");
+        assertEquals(2, children.size());
+        assertEquals("productImage", ((Map<?, ?>) ((Map<?, ?>) children.get(0)).get("meta")).get("component"));
+        assertEquals("productAddToCartButton",
+                ((Map<?, ?>) ((Map<?, ?>) children.get(1)).get("meta")).get("component"));
+        assertEquals(1, ((Map<?, ?>) ((Map<?, ?>) children.get(1)).get("meta")).get("order"));
+    }
+
+    @Test
+    void classicProductDetailComponentUsesMobileVisibilityToggles() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("sling:resourceType", "livescenarios/components/product-detail",
+                        "mobileappshowproductimage", false, "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", false,
+                        "mobileappshowproductdescription", "true"), false);
+        assertEquals(1, entries.size());
+        assertEquals("productDescription", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
+        assertEquals(Map.of(), entries.get(0).get("content"));
+    }
+
+    @Test
+    void productDetailWithAllComponentsDisabledDoesNotEmitAnEmptyPanel() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileappshowproductimage", false, "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", false,
+                        "mobileappshowproductdescription", false), true);
+        assertEquals(List.of(), entries);
+    }
+
+    @Test
+    void productDetailVisibilityTogglesDoNotChangeProductCardFallback() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, false,
+                Map.of("mobileappshowproductimage", false, "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", false,
+                        "mobileappshowproductdescription", false), false);
+        assertEquals(1, entries.size());
+        assertEquals("productCard", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
+    }
+
+    @Test
     void productDetailExpansionMapsAuthoredImageResize() {
         final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
                 Map.of("mobileimageresize", "cover"), false);

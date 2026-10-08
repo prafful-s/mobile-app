@@ -682,13 +682,19 @@ final class ComponentTreeWalker {
             Map<String, Object> styles = Collections.emptyMap();
             final Map<String, Object> sectionProps = ancestorSection == null
                     ? Collections.emptyMap() : ancestorSection.getValueMap();
-                if (hierarchical && "product-detail".equals(authoredName)
+            if (hierarchical && "product-detail".equals(authoredName)
                     && child.getValueMap().get("mobileappcustomproductdetails", Boolean.FALSE)) {
                 final Map<String, Object> componentSource = new LinkedHashMap<>();
                 componentSource.put("imageResize", authored.get("mobileimageresize"));
-                emitMappedComponents(child, PRODUCT_DETAIL_COMPONENTS, componentSource, sectionProps, sink);
-                continue;
+                final List<String> enabledComponents = new ArrayList<>();
+                for (final String name : PRODUCT_DETAIL_COMPONENTS) {
+                    if (child.getValueMap().get("mobileappshow" + name.toLowerCase(Locale.ROOT), Boolean.TRUE)) {
+                        enabledComponents.add(name);
+                    }
                 }
+                emitMappedComponents(child, enabledComponents, componentSource, sectionProps, sink);
+                continue;
+            }
 
             // v2 speaks the app's vocabulary, so an authored 'hero' becomes a 'banner' carrying the
             // fields the client expects. v1 is left exactly as it was: the two schemas are each a
