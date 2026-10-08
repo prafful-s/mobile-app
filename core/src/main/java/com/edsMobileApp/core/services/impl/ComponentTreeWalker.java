@@ -675,11 +675,6 @@ final class ComponentTreeWalker {
             }
 
             final String authoredName = model.getComponentName();
-            if (hierarchical && "product-detail".equals(authoredName)
-                    && child.getValueMap().get("mobileappcustomproductdetails", Boolean.FALSE)) {
-                sink.addAll(productDetailComponents(child, sink.size()));
-                continue;
-            }
             String componentName = authoredName;
             Map<String, Object> content = authored;
             Map<String, Object> styles = Collections.emptyMap();
@@ -909,38 +904,6 @@ final class ComponentTreeWalker {
      */
     private static boolean rendersCardsAsList(final Resource resource) {
         return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
-    }
-
-        private static List<Map<String, Object>> productDetailComponents(final Resource resource, final int order) {
-        final Map<String, Object> image = productDetailEntry(resource, "image", "productImage", order);
-        image.put(SchemaConstants.KEY_CONTENT, Map.of("fullWidth", true,
-            "imageResize", resource.getValueMap().get("mobileimageresize", "contain")));
-        final Map<String, Object> title = productDetailEntry(resource, "title", "productTitle", order + 1);
-        title.put(SchemaConstants.KEY_CONTENT,
-            Map.of("size", "medium", "weight", "bold", "textAlignment", "left"));
-        final List<Map<String, Object>> entries = new ArrayList<>();
-        entries.add(image);
-        entries.add(title);
-        entries.add(productDetailEntry(resource, "price", "productPrice", order + 2));
-        final Map<String, Object> button = productDetailEntry(resource, "add-to-cart",
-            "productAddToCartButton", order + entries.size());
-        button.put(SchemaConstants.KEY_CONTENT, Map.of("label", "Add", "variant", "text",
-            "alignment", "center", "appearanceVariant", "text-icon"));
-        entries.add(button);
-        entries.add(productDetailEntry(resource, "description", "productDescription", order + entries.size()));
-        return entries;
-    }
-
-    private static Map<String, Object> productDetailEntry(final Resource resource, final String suffix,
-                                                         final String component, final int order) {
-        final Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath() + "/" + suffix));
-        meta.put(SchemaConstants.KEY_ORDER, order);
-        meta.put(SchemaConstants.KEY_COMPONENT, component);
-        final Map<String, Object> entry = new LinkedHashMap<>();
-        entry.put(SchemaConstants.KEY_META, meta);
-        entry.put(SchemaConstants.KEY_CONTENT, Collections.emptyMap());
-        return entry;
     }
 
     /** Every {@code card}-modelled child, regardless of count. */

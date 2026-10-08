@@ -1,6 +1,9 @@
 {
   "match": ["product-detail"],
   "component": "productCard",
+  "variants": [
+    { "when": { "field": "mobileappcustomproductdetails", "equals": "true" }, "useRule": "product-detail-image" }
+  ],
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [

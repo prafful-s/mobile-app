@@ -3,6 +3,7 @@
   "card",
   "productCard",
   "productDetail",
+  "productDetailImage",
   "cart",
   "orderSummary",
   "categoryProductsLister",

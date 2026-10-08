@@ -1,0 +1,10 @@
+{
+  "match": ["product-detail-image"],
+  "component": "productImage",
+  "skeleton": true,
+  "ignoreExtras": ["*"],
+  "fields": [
+    { "target": "fullWidth", "const": true },
+    { "target": "imageResize", "from": "mobileimageresize", "default": "contain" }
+  ]
+}
