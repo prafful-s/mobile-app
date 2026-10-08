@@ -21,7 +21,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.day.cq.wcm.api.Page;
 import com.edsMobileApp.core.models.impl.GenericComponent;
+import com.edsMobileApp.core.schema.SchemaConstants;
 import com.edsMobileApp.core.services.ExportOptions;
+import com.edsMobileApp.core.services.FormSchemaService;
 
 import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
@@ -710,5 +712,78 @@ class MobileFieldMappingTest {
     @Test
     void productDetailReadsMobileImageResize() {
         assertEquals("cover", productDetail(authored("mobileimageresize", "cover")).get("imageResize"));
+    }
+
+    private List<Map<String, Object>> exportProductDetail(final Object hideCart, final boolean hierarchical) {
+        final Page page = context.create().page("/content/s/en/product-" + hideCart + "-" + hierarchical);
+        context.create().resource(page.getPath() + "/jcr:content/root");
+        final Map<String, Object> properties = authored("model", "product-detail", "filter", "product-detail",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "folder", "/content/dam/s/products");
+        if (hideCart != null) {
+            properties.put("mobilehideaddtocart", hideCart);
+        }
+        context.create().resource(page.getPath() + "/jcr:content/root/product-detail", properties);
+        final FormSchemaService schemas = mock(FormSchemaService.class);
+        when(schemas.getSchema(any())).thenReturn(List.of());
+        final ComponentTreeWalker walker = new ComponentTreeWalker(mock(ModelFactory.class),
+                new UrlServiceImpl(), schemas, new StyleResolver(new String[0]), mappings);
+        return walker.componentsOf(page, null, hierarchical, false, Set.of());
+    }
+
+    @Test
+    void productDetailKeepsProductCardUnlessMobileHideCartIsEnabled() {
+        for (final Object hideCart : new Object[] {null, false, "false"}) {
+            final List<Map<String, Object>> entries = exportProductDetail(hideCart, true);
+            assertEquals(1, entries.size());
+            assertEquals("productCard", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
+            assertEquals("contain", ((Map<?, ?>) entries.get(0).get("content")).get("imageResize"));
+        }
+    }
+
+    @Test
+    void productDetailWithoutCartExportsImageTitlePanelAndDescription() {
+        for (final Object hideCart : new Object[] {true, "true"}) {
+            final List<Map<String, Object>> entries = exportProductDetail(hideCart, true);
+            assertEquals(3, entries.size());
+            assertEquals(List.of("productImage", "panel", "productDescription"),
+                    entries.stream().map(entry -> ((Map<?, ?>) entry.get("meta")).get("component"))
+                            .collect(java.util.stream.Collectors.toList()));
+            for (int index = 0; index < entries.size(); index++) {
+                assertEquals(index, ((Map<?, ?>) entries.get(index).get("meta")).get("order"));
+            }
+            assertEquals(Map.of("height", 300), entries.get(0).get("styles"));
+            assertEquals(Map.of(), entries.get(0).get("content"));
+            final Map<?, ?> panelMeta = (Map<?, ?>) entries.get(1).get("meta");
+            assertEquals("vertical", panelMeta.get("layout"));
+            assertEquals(false, panelMeta.get("showBorder"));
+            assertEquals(true, panelMeta.get("itemsFillWidth"));
+            assertEquals(false, panelMeta.get("wrapOverflowing"));
+            assertEquals(Map.of("gap", 8, "margin", 8, "padding", 8, "alignItems", "center",
+                    "justifyContent", "space-between"), entries.get(1).get("styles"));
+            final List<?> children = (List<?>) entries.get(1).get("content");
+            assertEquals(1, children.size());
+            final Map<?, ?> title = (Map<?, ?>) children.get(0);
+            assertEquals("productTitle", ((Map<?, ?>) title.get("meta")).get("component"));
+            assertEquals(2, ((Map<?, ?>) title.get("meta")).get("order"));
+            assertEquals(Map.of(), title.get("content"));
+            assertEquals(Map.of("textColor", "#a04343"), entries.get(2).get("styles"));
+            assertEquals(Map.of(), entries.get(2).get("content"));
+        }
+    }
+
+    @Test
+    void productDetailWithoutCartSurvivesFinalExporterFiltering() throws Exception {
+        final List<Map<String, Object>> entries = exportProductDetail(true, true);
+        final Method filter = PageJsonExporterImpl.class.getDeclaredMethod("keepEnabledComponents", List.class);
+        filter.setAccessible(true);
+        assertEquals(entries, filter.invoke(null, entries));
+    }
+
+    @Test
+    void mobileHideCartDoesNotChangeLegacyProductDetailExport() {
+        final List<Map<String, Object>> entries = exportProductDetail(true, false);
+        assertEquals(1, entries.size());
+        assertEquals("product-detail", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
     }
 }

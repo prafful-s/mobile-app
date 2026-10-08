@@ -675,6 +675,11 @@ final class ComponentTreeWalker {
             }
 
             final String authoredName = model.getComponentName();
+            if (hierarchical && "product-detail".equals(authoredName)
+                    && child.getValueMap().get("mobilehideaddtocart", Boolean.FALSE)) {
+                sink.addAll(productDetailWithoutCart(child, sink.size()));
+                continue;
+            }
             String componentName = authoredName;
             Map<String, Object> content = authored;
             Map<String, Object> styles = Collections.emptyMap();
@@ -904,6 +909,40 @@ final class ComponentTreeWalker {
      */
     private static boolean rendersCardsAsList(final Resource resource) {
         return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
+    }
+
+    private static List<Map<String, Object>> productDetailWithoutCart(final Resource resource, final int order) {
+        final Map<String, Object> image = productDetailEntry(resource, "image", "productImage", order);
+        image.put(SchemaConstants.KEY_STYLES, Map.of("height", 300));
+
+        final Map<String, Object> panel = productDetailEntry(resource, "panel", "panel", order + 1);
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> panelMeta = (Map<String, Object>) panel.get(SchemaConstants.KEY_META);
+        panelMeta.put("layout", "vertical");
+        panelMeta.put("showBorder", false);
+        panelMeta.put("itemsFillWidth", true);
+        panelMeta.put("wrapOverflowing", false);
+        panel.put(SchemaConstants.KEY_STYLES, Map.of("gap", 8, "margin", 8, "padding", 8,
+                "alignItems", "center", "justifyContent", "space-between"));
+        panel.put(SchemaConstants.KEY_CONTENT,
+                List.of(productDetailEntry(resource, "title", "productTitle", 2)));
+
+        final Map<String, Object> description = productDetailEntry(resource, "description", "productDescription",
+                order + 2);
+        description.put(SchemaConstants.KEY_STYLES, Map.of("textColor", "#a04343"));
+        return List.of(image, panel, description);
+    }
+
+    private static Map<String, Object> productDetailEntry(final Resource resource, final String suffix,
+                                                         final String component, final int order) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath() + "/" + suffix));
+        meta.put(SchemaConstants.KEY_ORDER, order);
+        meta.put(SchemaConstants.KEY_COMPONENT, component);
+        final Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put(SchemaConstants.KEY_META, meta);
+        entry.put(SchemaConstants.KEY_CONTENT, Collections.emptyMap());
+        return entry;
     }
 
     /** Every {@code card}-modelled child, regardless of count. */
