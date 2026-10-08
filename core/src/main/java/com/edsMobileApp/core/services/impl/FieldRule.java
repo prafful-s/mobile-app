@@ -168,6 +168,7 @@ final class FieldRule {
     private final Object defaultValue;
     private final String type;
     private final boolean nullable;
+    private final boolean omitIfAbsent;
     private final Map<String, Object> valueMap;
     private final String prefix;
     private final String template;
@@ -175,6 +176,7 @@ final class FieldRule {
     private FieldRule(final String target, final String from, final String parentFrom,
                       final List<String> first, final Object constant, final Extract extract,
                       final Object defaultValue, final String type, final boolean nullable,
+                      final boolean omitIfAbsent,
                       final Map<String, Object> valueMap, final String prefix, final String template) {
         this.target = target;
         this.from = from;
@@ -185,6 +187,7 @@ final class FieldRule {
         this.defaultValue = defaultValue;
         this.type = type;
         this.nullable = nullable;
+        this.omitIfAbsent = omitIfAbsent;
         this.valueMap = valueMap;
         this.prefix = prefix;
         this.template = template;
@@ -208,6 +211,7 @@ final class FieldRule {
                 definition.get("default"),
                 string(definition.get("type")),
                 Boolean.TRUE.equals(definition.get("nullable")),
+                Boolean.TRUE.equals(definition.get("omitIfAbsent")),
                 stringMap(definition.get("map")),
                 string(definition.get("prefix")),
                 string(definition.get("template")));
@@ -215,6 +219,10 @@ final class FieldRule {
 
     String getTarget() {
         return target;
+    }
+
+    boolean isOmitIfAbsent() {
+        return omitIfAbsent;
     }
 
     /**
