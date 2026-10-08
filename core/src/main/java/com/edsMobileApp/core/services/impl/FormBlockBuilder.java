@@ -61,7 +61,7 @@ final class FormBlockBuilder {
     /**
     * The legacy post-submit redirect field, per form that has one, mapped to the property its own
      * block model defines: create-account names it {@code redirectUrl}, join-us names it
-     * {@code submit-redirect-url} and test-drive names it {@code redirect-url} (all {@code aem-content}
+     * {@code submit-redirect-url} and schedule-appointment names it {@code redirect-url} (all {@code aem-content}
      * page references). Keyed by form name
      * rather than read for every form, because the field name {@code redirectUrl} is shared by many
      * other form blocks (child-account-application, loan-application-form, transfer-funds, ...) that
@@ -73,7 +73,7 @@ final class FormBlockBuilder {
     private static final Map<String, String[]> REDIRECT_KEYS_BY_FORM = Map.of(
             "create-account", new String[]{"redirectUrl"},
             "join-us", new String[]{"submit-redirect-url"},
-            "test-drive", new String[]{"redirect-url"});
+            "schedule-appointment", new String[]{"redirect-url"});
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
@@ -123,6 +123,9 @@ final class FormBlockBuilder {
         // defaults.json). With neither, heading() emits nothing - the form's own field-list heading
         // ("Your personal informations") is the first title, so the outer one is not duplicated.
         headings.put("test-drive", new Heading(new String[]{"form-title", "formtitle"}, ""));
+        // The schedule-appointment block: its schema carries a default title, used only while no
+        // form-title is authored, so no compiled default here either.
+        headings.put("schedule-appointment", new Heading(new String[]{"form-title", "formtitle"}, ""));
 
         // Forms with no heading property in their block - default is the form's own name.
         headings.put("add-external", new Heading(NO_KEYS, "Add External"));
