@@ -2,8 +2,7 @@
   {
     "id": "personal-info-heading",
     "type": "heading",
-    "label": "Your personal informations",
-    "variants": ["test-drive", "schedule-appointment"]
+    "label": "Your personal informations"
   },
   {
     "id": "firstName",
@@ -12,8 +11,7 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": "",
-    "variants": ["test-drive", "schedule-appointment"]
+    "defaultValue": ""
   },
   {
     "id": "lastName",
@@ -22,8 +20,7 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": "",
-    "variants": ["test-drive", "schedule-appointment"]
+    "defaultValue": ""
   },
   {
     "id": "email",
@@ -32,8 +29,7 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": "",
-    "variants": ["test-drive", "schedule-appointment"]
+    "defaultValue": ""
   },
   {
     "id": "phone",
@@ -42,83 +38,12 @@
     "value": "",
     "type": "text",
     "placeholder": "",
-    "defaultValue": "",
-    "variants": ["test-drive", "schedule-appointment"]
+    "defaultValue": ""
   },
   {
     "id": "appointment-heading",
     "type": "heading",
-    "label": "Choose available day and time",
-    "variants": ["test-drive", "schedule-appointment"]
-  },
-  {
-    "id": "service-title",
-    "type": "heading",
-    "label": "Customer service",
-    "size": "large",
-    "weight": "bold",
-    "textAlignment": "center",
-    "conditions": [
-      { "field": "variant", "equals": "service" },
-      { "field": "form-title", "blank": true }
-    ]
-  },
-  {
-    "id": "service-description",
-    "type": "heading",
-    "label": "Your coffee machine needs cleaning? Order a service with our partners.",
-    "size": "small",
-    "weight": "regular",
-    "textAlignment": "center",
-    "variants": ["service"]
-  },
-  {
-    "id": "machine-heading",
-    "type": "heading",
-    "label": "Coffee machine type",
-    "variants": ["service"]
-  },
-  {
-    "id": "machineType",
-    "name": "machineType",
-    "label": "",
-    "value": "",
-    "type": "text",
-    "placeholder": "Frescopa Smart Machine",
-    "defaultValue": "",
-    "variants": ["service"]
-  },
-  {
-    "id": "service-address-heading",
-    "type": "heading",
-    "label": "Service address",
-    "variants": ["service"]
-  },
-  {
-    "id": "serviceStreet",
-    "name": "person.address.street",
-    "label": "Street",
-    "value": "",
-    "type": "text",
-    "placeholder": "",
-    "defaultValue": "",
-    "variants": ["service"]
-  },
-  {
-    "id": "serviceCity",
-    "name": "person.address.city",
-    "label": "City",
-    "value": "",
-    "type": "text",
-    "placeholder": "",
-    "defaultValue": "",
-    "variants": ["service"]
-  },
-  {
-    "id": "service-slot-heading",
-    "type": "heading",
-    "label": "Preferred service time",
-    "variants": ["service"]
+    "label": "Choose available day and time"
   },
   {
     "id": "appointment-slot",

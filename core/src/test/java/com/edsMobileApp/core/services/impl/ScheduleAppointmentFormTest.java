@@ -21,14 +21,17 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
- * The {@code test-drive} block's {@code variant} picks which of its schema's fields the form
- * carries: the two existing variants keep the personal-info section, and the {@code service} variant
- * swaps it for a machine-type field, a service address and its own time heading.
+ * The {@code schedule-appointment} block is Frescopa's customer-service form: its own schema, with a
+ * machine-type field, a service address and a time heading. The {@code test-drive} block, which keeps
+ * its own {@code variant}s, must be exactly what it was.
  */
 @ExtendWith(AemContextExtension.class)
-class ServiceVariantFormTest {
+class ScheduleAppointmentFormTest {
 
     private final AemContext context = new AemContext();
+
+    /** The block model the next {@link #fieldIds} call exports: the customer-service form by default. */
+    private String model = "schedule-appointment";
 
     /** The tree the last {@link #fieldIds} call exported. */
     private List<Map<String, Object>> lastTree;
@@ -44,7 +47,7 @@ class ServiceVariantFormTest {
         context.create().resource(page.getPath() + "/jcr:content/root");
         final String block = page.getPath() + "/jcr:content/root/form";
         final List<Object> props = new ArrayList<>(List.of("sling:resourceType",
-                SchemaConstants.RT_FRANKLIN_BLOCK, "model", "test-drive"));
+                SchemaConstants.RT_FRANKLIN_BLOCK, "model", model));
         if (variant != null) {
             props.addAll(List.of("variant", variant));
         }
@@ -149,28 +152,28 @@ class ServiceVariantFormTest {
     @Test
     void theAuthoredRedirectUrlIsTheFormsLink() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds("service", new Object[] {"redirect-url", "/content/frescopa/language-masters/en"}, meta);
+        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en"}, meta);
         assertEquals("en", meta.get("link"));
     }
 
     @Test
     void withNoRedirectAuthoredTheLinkStaysBlank() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds("service", new Object[0], meta);
+        fieldIds(null, new Object[0], meta);
         assertEquals("", meta.get("link"));
     }
 
     @Test
     void aMobileRedirectStillWinsOverTheWebOne() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds("service", new Object[] {"redirect-url", "/content/frescopa/language-masters/en",
+        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en",
                 "mobileRedirectUrl", "/content/frescopa/language-masters/en/products"}, meta);
         assertEquals("products", meta.get("link"));
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> contentOfField(final String variant, final String fieldId) {
-        fieldIds(variant, new Object[0], null);
+    private Map<String, Object> contentOfField(final String fieldId) {
+        fieldIds(null, new Object[0], null);
         final List<Map<String, Object>> found = new ArrayList<>();
         for (final String component : new String[] {"title", "textField"}) {
             collectByComponent(lastTree, component, found);
@@ -180,10 +183,10 @@ class ServiceVariantFormTest {
                 .findFirst().orElseThrow().get(SchemaConstants.KEY_CONTENT);
     }
 
-    /** The description is a schema entry gated to the service variant: a small, regular, centred line. */
+    /** The description is a schema entry: a small, regular, centred line. */
     @Test
     void theServiceDescriptionIsASmallCentredLineFromTheSchema() {
-        final Map<String, Object> description = contentOfField("service", "service-description");
+        final Map<String, Object> description = contentOfField("service-description");
         assertEquals("Your coffee machine needs cleaning? Order a service with our partners.", description.get("text"));
         assertEquals("small", description.get("size"));
         assertEquals("regular", description.get("weight"));
@@ -192,14 +195,14 @@ class ServiceVariantFormTest {
 
     @Test
     void theMachineTypeFieldHasNoLabelSoItsPlaceholderShows() {
-        final Map<String, Object> machine = contentOfField("service", "machineType");
+        final Map<String, Object> machine = contentOfField("machineType");
         assertEquals("", machine.get("label"));
         assertEquals("Frescopa Smart Machine", machine.get("placeholder"));
     }
 
     @Test
     void ordinaryHeadingsKeepTheirMediumBoldLeftStyle() {
-        final Map<String, Object> heading = contentOfField("service", "machine-heading");
+        final Map<String, Object> heading = contentOfField("machine-heading");
         assertEquals("medium", heading.get("size"));
         assertEquals("bold", heading.get("weight"));
         assertEquals("left", heading.get("textAlignment"));
@@ -208,8 +211,8 @@ class ServiceVariantFormTest {
     /** With no Form Title authored the schema supplies "Customer service": large, bold and centred. */
     @Test
     void theSchemaSuppliesTheServiceTitleWhenNoneIsAuthored() {
-        assertEquals(List.of(), pageTitles("service"));
-        final Map<String, Object> title = contentOfField("service", "service-title");
+        assertEquals(List.of(), pageTitles(null));
+        final Map<String, Object> title = contentOfField("service-title");
         assertEquals("Customer service", title.get("text"));
         assertEquals("large", title.get("size"));
         assertEquals("bold", title.get("weight"));
@@ -220,9 +223,9 @@ class ServiceVariantFormTest {
     @SuppressWarnings("unchecked")
     @Test
     void anAuthoredFormTitleReplacesTheSchemaDefault() {
-        final List<String> ids = fieldIds("service", new Object[] {"form-title", "Order a clean"}, null);
+        final List<String> ids = fieldIds(null, new Object[] {"form-title", "Order a clean"}, null);
         assertEquals(false, ids.contains("service-title"));
-        fieldIds("service", new Object[] {"form-title", "Order a clean"}, null);
+        fieldIds(null, new Object[] {"form-title", "Order a clean"}, null);
         final List<Map<String, Object>> titles = new ArrayList<>();
         collectByComponent(lastTree, "title", titles);
         final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
@@ -233,10 +236,11 @@ class ServiceVariantFormTest {
 
     @Test
     void everyFormHidesResetUnlessTheSiteSaysOtherwise() {
-        for (final String variant : new String[] {"service", "test-drive", "schedule-appointment"}) {
+        for (final String block : new String[] {"schedule-appointment", "test-drive"}) {
+            model = block;
             final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-            fieldIds(variant, new Object[0], meta);
-            assertEquals(true, meta.get("hideResetButton"), variant);
+            fieldIds(null, new Object[0], meta);
+            assertEquals(true, meta.get("hideResetButton"), block);
         }
     }
 
@@ -267,31 +271,37 @@ class ServiceVariantFormTest {
     @Test
     void theAuthoredSuccessMessageIsTheFormsToast() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds("service", new Object[] {"success-message", "Thanks, we will confirm your service shortly."}, meta);
+        fieldIds(null, new Object[] {"success-message", "Thanks, we will confirm your service shortly."}, meta);
         assertEquals("Thanks, we will confirm your service shortly.", meta.get("toastMessage"));
     }
 
     @Test
-    void theServiceVariantSwapsPersonalInfoForMachineTypeAddressAndTime() {
-        assertEquals(List.of("service-title", "service-description", "machine-heading", "machineType", "service-address-heading", "serviceStreet",
-                "serviceCity", "service-slot-heading", "appointment-slot"), fieldIds("service"));
+    void theScheduleAppointmentBlockHasTheCustomerServiceFields() {
+        assertEquals(List.of("service-title", "service-description", "machine-heading", "machineType",
+                "service-address-heading", "serviceStreet", "serviceCity", "service-slot-heading",
+                "appointment-slot"), fieldIds(null));
     }
 
     @Test
-    void theTestDriveVariantIsUnchanged() {
+    void theTestDriveBlockIsUnchanged() {
+        model = "test-drive";
         assertEquals(List.of("personal-info-heading", "firstName", "lastName", "email", "phone",
                 "appointment-heading", "appointment-slot", "address-heading", "address", "city", "zipCode"),
                 fieldIds("test-drive"));
-    }
-
-    @Test
-    void aBlockWithNoVariantStillDefaultsToTestDrive() {
         assertEquals(fieldIds("test-drive"), fieldIds(null));
     }
 
     @Test
-    void theScheduleAppointmentVariantKeepsPersonalInfoWithoutAnAddress() {
+    void theTestDriveBlocksScheduleAppointmentVariantKeepsPersonalInfoWithoutAnAddress() {
+        model = "test-drive";
         assertEquals(List.of("personal-info-heading", "firstName", "lastName", "email", "phone",
                 "appointment-heading", "appointment-slot"), fieldIds("schedule-appointment"));
+    }
+
+    @Test
+    void theTestDriveBlockGetsNoDescriptionOrDefaultTitle() {
+        model = "test-drive";
+        assertEquals(List.of(), pageTitles(null));
+        assertEquals(List.of(), descriptions(null));
     }
 }
