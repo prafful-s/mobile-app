@@ -676,8 +676,8 @@ final class ComponentTreeWalker {
 
             final String authoredName = model.getComponentName();
             if (hierarchical && "product-detail".equals(authoredName)
-                    && child.getValueMap().get("mobilehideaddtocart", Boolean.FALSE)) {
-                sink.addAll(productDetailWithoutCart(child, sink.size()));
+                    && child.getValueMap().get("mobileappcustomproductdetails", Boolean.FALSE)) {
+                sink.addAll(productDetailComponents(child, sink.size()));
                 continue;
             }
             String componentName = authoredName;
@@ -911,26 +911,24 @@ final class ComponentTreeWalker {
         return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
     }
 
-    private static List<Map<String, Object>> productDetailWithoutCart(final Resource resource, final int order) {
+        private static List<Map<String, Object>> productDetailComponents(final Resource resource, final int order) {
         final Map<String, Object> image = productDetailEntry(resource, "image", "productImage", order);
-        image.put(SchemaConstants.KEY_STYLES, Map.of("height", 300));
-
-        final Map<String, Object> panel = productDetailEntry(resource, "panel", "panel", order + 1);
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> panelMeta = (Map<String, Object>) panel.get(SchemaConstants.KEY_META);
-        panelMeta.put("layout", "vertical");
-        panelMeta.put("showBorder", false);
-        panelMeta.put("itemsFillWidth", true);
-        panelMeta.put("wrapOverflowing", false);
-        panel.put(SchemaConstants.KEY_STYLES, Map.of("gap", 8, "margin", 8, "padding", 8,
-                "alignItems", "center", "justifyContent", "space-between"));
-        panel.put(SchemaConstants.KEY_CONTENT,
-                List.of(productDetailEntry(resource, "title", "productTitle", 2)));
-
-        final Map<String, Object> description = productDetailEntry(resource, "description", "productDescription",
-                order + 2);
-        description.put(SchemaConstants.KEY_STYLES, Map.of("textColor", "#a04343"));
-        return List.of(image, panel, description);
+        image.put(SchemaConstants.KEY_CONTENT, Map.of("fullWidth", true,
+            "imageResize", resource.getValueMap().get("mobileimageresize", "contain")));
+        final Map<String, Object> title = productDetailEntry(resource, "title", "productTitle", order + 1);
+        title.put(SchemaConstants.KEY_CONTENT,
+            Map.of("size", "medium", "weight", "bold", "textAlignment", "left"));
+        final List<Map<String, Object>> entries = new ArrayList<>();
+        entries.add(image);
+        entries.add(title);
+        entries.add(productDetailEntry(resource, "price", "productPrice", order + 2));
+        final Map<String, Object> button = productDetailEntry(resource, "add-to-cart",
+            "productAddToCartButton", order + entries.size());
+        button.put(SchemaConstants.KEY_CONTENT, Map.of("label", "Add", "variant", "text",
+            "alignment", "center", "appearanceVariant", "text-icon"));
+        entries.add(button);
+        entries.add(productDetailEntry(resource, "description", "productDescription", order + entries.size()));
+        return entries;
     }
 
     private static Map<String, Object> productDetailEntry(final Resource resource, final String suffix,

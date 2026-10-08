@@ -1296,7 +1296,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
             "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
-            "productImage", "productTitle", "productDescription",
+            "productImage", "productTitle", "productPrice", "productAddToCartButton", "productDescription",
                 "flightSearch", "flightResults", "offer", "offerRenderer", "inbox", "contentCards", "webView", "map");
 
     @SuppressWarnings("unchecked")
