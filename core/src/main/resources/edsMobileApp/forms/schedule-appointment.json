@@ -17,6 +17,7 @@
     "id": "service-description",
     "type": "heading",
     "label": "Your coffee machine needs cleaning? Order a service with our partners.",
+    "labelFrom": ["formDescription", "form-description"],
     "size": "small",
     "weight": "regular",
     "textAlignment": "center"
