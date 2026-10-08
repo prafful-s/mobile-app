@@ -148,11 +148,11 @@ class ScheduleAppointmentFormTest {
         return texts;
     }
 
-    /** The web block's Redirect URL sends its form home after submit; the app form takes the same page. */
+    /** The block's Mobile Redirect URL (mobileRedirectUrl) is the form's link; a page path becomes its screen key. */
     @Test
-    void theAuthoredRedirectUrlIsTheFormsLink() {
+    void theMobileRedirectUrlIsTheFormsLink() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en"}, meta);
+        fieldIds(null, new Object[] {"mobileRedirectUrl", "/content/frescopa/language-masters/en"}, meta);
         assertEquals("en", meta.get("link"));
     }
 
@@ -161,14 +161,6 @@ class ScheduleAppointmentFormTest {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
         fieldIds(null, new Object[0], meta);
         assertEquals("", meta.get("link"));
-    }
-
-    @Test
-    void aMobileRedirectStillWinsOverTheWebOne() {
-        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en",
-                "mobileRedirectUrl", "/content/frescopa/language-masters/en/products"}, meta);
-        assertEquals("products", meta.get("link"));
     }
 
     @SuppressWarnings("unchecked")
@@ -183,7 +175,13 @@ class ScheduleAppointmentFormTest {
                 .findFirst().orElseThrow().get(SchemaConstants.KEY_CONTENT);
     }
 
-    /** The description is a schema entry: a small, regular, centred line. */
+    @Test
+    void theWebBlocksRedirectUrlIsNotReadByTheApp() {
+        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en"}, meta);
+        assertEquals("", meta.get("link"));
+    }
+
     @Test
     void theServiceDescriptionIsASmallCentredLineFromTheSchema() {
         final Map<String, Object> description = contentOfField("service-description");
@@ -253,7 +251,7 @@ class ScheduleAppointmentFormTest {
         defaults.setAccessible(true);
         defaults.set(exporter, SiteDefaults.load());
         final java.lang.reflect.Method apply = PageJsonExporterImpl.class.getDeclaredMethod(
-                "applyFormSettings", List.class, Page.class, String.class);
+                "applyFormSettings", List.class, Page.class, String.class, String.class);
         apply.setAccessible(true);
         final Page page = context.create().page("/content/frescopa/language-masters/en/service");
         for (final String screen : new String[] {"service", "login"}) {
@@ -263,7 +261,7 @@ class ScheduleAppointmentFormTest {
             final Map<String, Object> form = new java.util.LinkedHashMap<>();
             form.put(SchemaConstants.KEY_META, meta);
             form.put(SchemaConstants.KEY_CONTENT, new ArrayList<>());
-            apply.invoke(exporter, new ArrayList<>(List.of(form)), page, screen);
+            apply.invoke(exporter, new ArrayList<>(List.of(form)), page, screen, "en");
             assertEquals("service".equals(screen) ? false : true, meta.get("hideResetButton"), screen);
         }
     }

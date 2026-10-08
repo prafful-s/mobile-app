@@ -61,8 +61,7 @@ final class FormBlockBuilder {
     /**
     * The legacy post-submit redirect field, per form that has one, mapped to the property its own
      * block model defines: create-account names it {@code redirectUrl}, join-us names it
-     * {@code submit-redirect-url} and schedule-appointment names it {@code redirect-url} (all {@code aem-content}
-     * page references). Keyed by form name
+     * {@code submit-redirect-url} (both an {@code aem-content} page reference). Keyed by form name
      * rather than read for every form, because the field name {@code redirectUrl} is shared by many
      * other form blocks (child-account-application, loan-application-form, transfer-funds, ...) that
     * this feature is not meant to touch. Every form reads {@code mobileRedirectUrl} first; only the
@@ -72,8 +71,7 @@ final class FormBlockBuilder {
      */
     private static final Map<String, String[]> REDIRECT_KEYS_BY_FORM = Map.of(
             "create-account", new String[]{"redirectUrl"},
-            "join-us", new String[]{"submit-redirect-url"},
-            "schedule-appointment", new String[]{"redirect-url"});
+            "join-us", new String[]{"submit-redirect-url"});
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
