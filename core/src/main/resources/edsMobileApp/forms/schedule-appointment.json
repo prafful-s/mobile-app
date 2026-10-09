@@ -1,0 +1,55 @@
+[
+  {
+    "id": "machine-heading",
+    "type": "heading",
+    "label": "Coffee machine type"
+  },
+  {
+    "id": "machineType",
+    "name": "machineType",
+    "label": "",
+    "value": "",
+    "type": "text",
+    "placeholder": "Frescopa Smart Machine",
+    "defaultValue": ""
+  },
+  {
+    "id": "service-address-heading",
+    "type": "heading",
+    "label": "Service address"
+  },
+  {
+    "id": "serviceStreet",
+    "name": "person.address.street",
+    "label": "Street",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "serviceCity",
+    "name": "person.address.city",
+    "label": "City",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "service-slot-heading",
+    "type": "heading",
+    "label": "Preferred service time"
+  },
+  {
+    "id": "appointment-slot",
+    "type": "timeslot",
+    "name": "appointment.dateTime",
+    "prefill": true,
+    "timeOptions": ["09:00", "10:00", "11:00", "12:00"],
+    "defaultValue": "",
+    "numberOfDays": 3,
+    "numberOfTimeColumns": 3,
+    "gap": 16
+  }
+]

@@ -906,6 +906,16 @@ class MobileFieldMappingTest {
     }
 
     @Test
+    void scheduleAppointmentSurvivesFinalExporterFiltering() throws Exception {
+        final Method filter = PageJsonExporterImpl.class.getDeclaredMethod("keepEnabledComponents", List.class);
+        filter.setAccessible(true);
+        final List<Map<String, Object>> entries = List.of(Map.of(
+                "meta", Map.of("component", "schedule-appointment"),
+                "content", List.of()));
+        assertEquals(entries, filter.invoke(null, entries));
+    }
+
+    @Test
     void mobileHideCartDoesNotChangeLegacyProductDetailExport() {
         final List<Map<String, Object>> entries = exportProductDetail(true, false);
         assertEquals(1, entries.size());
