@@ -30,6 +30,24 @@ class SingleFieldMappingTest {
                 "label and text are not read");
     }
 
+    /** The button's Mobile Specific tab overrides the web fields; with nothing authored the web ones still apply. */
+    @Test
+    void aButtonsMobileFieldsOverrideTheWebOnes() {
+        final Map<String, Object> mobile = map("button", "linkType", "cta-button", "alignment", "left",
+                "mobilebuttonvariant", "elevated", "mobilealignment", "stretch", "mobileicon", "credit-card");
+        assertEquals("elevated", mobile.get("variant"));
+        assertEquals("stretch", mobile.get("alignment"));
+        assertEquals("credit-card", mobile.get("icon"));
+        assertNull(mobile.get("mobilebuttonvariant"), "the mobile fields do not leak");
+        assertNull(mobile.get("mobilealignment"), "the mobile fields do not leak");
+        assertNull(mobile.get("mobileicon"), "the mobile fields do not leak");
+
+        final Map<String, Object> web = map("button", "linkType", "secondary-button", "alignment", "left");
+        assertEquals("outlined", web.get("variant"));
+        assertEquals("left", web.get("alignment"));
+        assertEquals("", web.get("icon"));
+    }
+
     @Test
     void flightSearchEventTypeIsTheMobileField() {
         assertEquals("mobile.search", map("flight-search", "mobilebuttoneventtype", "mobile.search",

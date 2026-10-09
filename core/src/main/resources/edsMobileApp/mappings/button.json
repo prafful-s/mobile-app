@@ -5,6 +5,7 @@
   "ignoreExtras": ["textUppercase"],
   "fields": [
     { "target": "icon", "from": "icon", "default": "" },
+    { "target": "icon", "from": "mobileicon", "omitIfAbsent": true },
     { "target": "label", "from": "linkText", "default": "" },
     { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "formId", "from": "formId", "default": "" },
@@ -15,7 +16,9 @@
                "secondary-button": "outlined", "tonal-button": "contained-tonal",
                "text-button": "text", "cta-button-secondary": "outlined", "cta-button-dark": "contained-tonal" },
       "default": "contained" },
+    { "target": "variant", "from": "mobilebuttonvariant", "omitIfAbsent": true },
     { "target": "alignment", "from": "alignment", "default": "center" },
+    { "target": "alignment", "from": "mobilealignment", "omitIfAbsent": true },
     { "target": "customEvent", "from": "customEvent", "default": "" }
   ],
   "styles": [
