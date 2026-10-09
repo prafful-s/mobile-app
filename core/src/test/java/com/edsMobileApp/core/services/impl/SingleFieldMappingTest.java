@@ -52,6 +52,23 @@ class SingleFieldMappingTest {
         assertEquals("", web.get("message"));
     }
 
+    /** An action-button's Mobile Specific tab carries the same icon and message the core button's does. */
+    @Test
+    void anActionButtonReadsItsMobileIconAndMessage() {
+        final Map<String, Object> mapped = map("action-button", "label", "Go", "mobileicon", "credit-card",
+                "mobilemessage", "Thank you", "mobilebuttonvariant", "elevated", "mobilealignment", "left");
+        assertEquals("credit-card", mapped.get("icon"));
+        assertEquals("Thank you", mapped.get("message"));
+        assertEquals("elevated", mapped.get("variant"));
+        assertEquals("left", mapped.get("alignment"));
+        assertNull(mapped.get("mobileicon"), "the mobile fields do not leak");
+        assertNull(mapped.get("mobilemessage"), "the mobile fields do not leak");
+
+        final Map<String, Object> bare = map("action-button", "label", "Go");
+        assertEquals("", bare.get("icon"));
+        assertEquals("", bare.get("message"));
+    }
+
     @Test
     void flightSearchEventTypeIsTheMobileField() {
         assertEquals("mobile.search", map("flight-search", "mobilebuttoneventtype", "mobile.search",
