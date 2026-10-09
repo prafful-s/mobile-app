@@ -183,15 +183,6 @@ class ScheduleAppointmentFormTest {
     }
 
     @Test
-    void theServiceDescriptionIsASmallCentredLineFromTheSchema() {
-        final Map<String, Object> description = contentOfField("service-description");
-        assertEquals("Your coffee machine needs cleaning? Order a service with our partners.", description.get("text"));
-        assertEquals("small", description.get("size"));
-        assertEquals("regular", description.get("weight"));
-        assertEquals("center", description.get("textAlignment"));
-    }
-
-    @Test
     void theMachineTypeFieldHasNoLabelSoItsPlaceholderShows() {
         final Map<String, Object> machine = contentOfField("machineType");
         assertEquals("", machine.get("label"));
@@ -204,32 +195,6 @@ class ScheduleAppointmentFormTest {
         assertEquals("medium", heading.get("size"));
         assertEquals("bold", heading.get("weight"));
         assertEquals("left", heading.get("textAlignment"));
-    }
-
-    /** With no Form Title authored the schema supplies "Customer service": large, bold and centred. */
-    @Test
-    void theSchemaSuppliesTheServiceTitleWhenNoneIsAuthored() {
-        assertEquals(List.of(), pageTitles(null));
-        final Map<String, Object> title = contentOfField("service-title");
-        assertEquals("Customer service", title.get("text"));
-        assertEquals("large", title.get("size"));
-        assertEquals("bold", title.get("weight"));
-        assertEquals("center", title.get("textAlignment"));
-    }
-
-    /** An authored Form Title replaces the default - one title, not two. */
-    @SuppressWarnings("unchecked")
-    @Test
-    void anAuthoredFormTitleReplacesTheSchemaDefault() {
-        final List<String> ids = fieldIds(null, new Object[] {"form-title", "Order a clean"}, null);
-        assertEquals(false, ids.contains("service-title"));
-        fieldIds(null, new Object[] {"form-title", "Order a clean"}, null);
-        final List<Map<String, Object>> titles = new ArrayList<>();
-        collectByComponent(lastTree, "title", titles);
-        final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
-        assertEquals("Order a clean", title.get("text"));
-        assertEquals("large", title.get("size"));
-        assertEquals("center", title.get("textAlignment"));
     }
 
     @Test
@@ -266,24 +231,24 @@ class ScheduleAppointmentFormTest {
         }
     }
 
-    @Test
-    void theDescriptionIsAuthorableLikeTheTitleAndFallsBackToTheDefault() {
-        final String dflt = "Your coffee machine needs cleaning? Order a service with our partners.";
-        assertEquals(dflt, contentOfField("service-description").get("text"));
-        assertEquals("Book a clean of your machine.", descriptionWith("formDescription", "Book a clean of your machine."));
-        assertEquals("Hyphen key.", descriptionWith("form-description", "Hyphen key."));
-        assertEquals(dflt, descriptionWith("formDescription", "   "));
-    }
-
+    /** A form's own title - the authored Form Title - is large and centred, on every form. */
     @SuppressWarnings("unchecked")
-    private String descriptionWith(final String property, final String value) {
-        fieldIds(null, new Object[] {property, value}, null);
+    @Test
+    void aFormsOwnTitleIsLargeAndCentred() {
+        model = "join-us";
+        fieldIds(null, new Object[] {"form-title", "Join the club"}, null);
         final List<Map<String, Object>> titles = new ArrayList<>();
         collectByComponent(lastTree, "title", titles);
-        return titles.stream()
-                .filter(t -> "service-description".equals(((Map<String, Object>) t.get(SchemaConstants.KEY_META)).get("id")))
-                .map(t -> String.valueOf(((Map<String, Object>) t.get(SchemaConstants.KEY_CONTENT)).get("text")))
-                .findFirst().orElseThrow();
+        final Map<String, Object> title = (Map<String, Object>) titles.get(0).get(SchemaConstants.KEY_CONTENT);
+        assertEquals("Join the club", title.get("text"));
+        assertEquals("large", title.get("size"));
+        assertEquals("center", title.get("textAlignment"));
+    }
+
+    @Test
+    void theScheduleAppointmentFormHasNoTitleOrDescriptionOfItsOwn() {
+        assertEquals(List.of(), pageTitles(null));
+        assertEquals(List.of(), descriptions(null));
     }
 
     @Test
@@ -294,10 +259,9 @@ class ScheduleAppointmentFormTest {
     }
 
     @Test
-    void theScheduleAppointmentBlockHasTheCustomerServiceFields() {
-        assertEquals(List.of("service-title", "service-description", "machine-heading", "machineType",
-                "service-address-heading", "serviceStreet", "serviceCity", "service-slot-heading",
-                "appointment-slot"), fieldIds(null));
+    void theScheduleAppointmentBlockHasOnlyTheCustomerServiceFormFields() {
+        assertEquals(List.of("machine-heading", "machineType", "service-address-heading", "serviceStreet",
+                "serviceCity", "service-slot-heading", "appointment-slot"), fieldIds(null));
     }
 
     @Test

@@ -101,7 +101,6 @@ final class FormFieldFactory {
      *   { "field": "variant", "equals": "luma" }                     // string equality
      *   { "field": "variant", "not-equals": "wizard" }               // string inequality
      *   { "field": "variant", "equalsAny": ["luma","wknd-fly"] }     // one of several
-     *   { "field": "form-title", "blank": true }                    // only while not authored
      *   { "field": "showconsentcheckbox", "default": true,
      *     "fallback": { "field": "variant", "not-equals": "no-checkbox" } }
      * </pre>
@@ -160,14 +159,6 @@ final class FormFieldFactory {
         }
         final Object authoredValue = authored == null ? null : authored.get(prop);
         final String authoredStr = normaliseCompare(authoredValue);
-
-        // blank: true shows an entry only while the property is not authored - a schema default that
-        // gives way to the author's own value (as a form's compiled-in heading default does).
-        // blank: false is the opposite.
-        final Object blank = gate.get("blank");
-        if (blank != null) {
-            return (authoredStr == null) == Boolean.parseBoolean(String.valueOf(blank));
-        }
 
         // String-equality gates. equals: visible when authored value matches (hidden if missing,
         // since reference JS only includes the field when the variant equals a specific value).
@@ -231,7 +222,7 @@ final class FormFieldFactory {
 
         if (TYPE_HEADING.equals(type)) {
             final String id = StringUtils.defaultIfBlank(str(field.get("id")), "heading-" + order);
-            return component(id, order, COMPONENT_TITLE, headingContent(str(field.get("label")), field));
+            return component(id, order, COMPONENT_TITLE, headingContent(str(field.get("label"))));
         }
         if (TYPE_LINK.equals(type)) {
             return null;
@@ -469,14 +460,12 @@ final class FormFieldFactory {
      * but there is no reference distinguishing the two, so the one heading shape this project already
      * has is reused rather than inventing a second.
      */
-    private static Map<String, Object> headingContent(final String text, final Map<String, Object> field) {
+    private static Map<String, Object> headingContent(final String text) {
         final Map<String, Object> content = new LinkedHashMap<>();
-        // A heading entry may restyle itself - {@code size}, {@code weight}, {@code textAlignment} -
-        // which is how a schema carries a plain description line as a heading: small, regular, centred.
-        content.put("size", StringUtils.defaultIfBlank(str(field.get("size")), "medium"));
+        content.put("size", "medium");
         content.put("text", StringUtils.defaultString(text));
-        content.put("weight", StringUtils.defaultIfBlank(str(field.get("weight")), "bold"));
-        content.put("textAlignment", StringUtils.defaultIfBlank(str(field.get("textAlignment")), "left"));
+        content.put("weight", "bold");
+        content.put("textAlignment", "left");
         return content;
     }
 
