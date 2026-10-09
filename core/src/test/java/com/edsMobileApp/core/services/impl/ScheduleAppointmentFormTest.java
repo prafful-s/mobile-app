@@ -257,7 +257,13 @@ class ScheduleAppointmentFormTest {
     void theTestDriveBlocksScheduleAppointmentVariantKeepsPersonalInfoWithoutAnAddress() {
         model = "test-drive";
         assertEquals(List.of("personal-info-heading", "firstName", "lastName", "email", "phone",
-                "appointment-heading", "appointment-slot"), fieldIds("schedule-appointment"));
+                "location", "appointment-heading", "appointment-slot"), fieldIds("schedule-appointment"));
+    }
+
+    @Test
+    void theTestDriveBlocksLocationIsHiddenForOtherVariants() {
+        model = "test-drive";
+        assertEquals(false, fieldIds("other").contains("location"));
     }
 
     @Test
