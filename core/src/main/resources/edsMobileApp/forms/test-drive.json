@@ -41,6 +41,19 @@
     "defaultValue": ""
   },
   {
+    "id": "location",
+    "name": "appointment.location",
+    "label": "Location",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": "",
+    "condition": {
+      "field": "variant",
+      "equals": "schedule-appointment"
+    }
+  },
+  {
     "id": "appointment-heading",
     "type": "heading",
     "label": "Choose available day and time"

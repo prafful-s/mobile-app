@@ -6,7 +6,7 @@
   },
   {
     "id": "machineType",
-    "name": "machineType",
+    "name": "_demosystem4.interactionDetails.cpg.service.machineName",
     "label": "",
     "value": "",
     "type": "text",
@@ -20,7 +20,7 @@
   },
   {
     "id": "serviceStreet",
-    "name": "person.address.street",
+    "name": "service.street",
     "label": "Street",
     "value": "",
     "type": "text",
