@@ -1,0 +1,18 @@
+[
+  {
+    "id": "consultation-slot-heading",
+    "type": "heading",
+    "label": "Next Available Slots"
+  },
+  {
+    "id": "consultation-slot",
+    "type": "timeslot",
+    "name": "consultation.dateTime",
+    "prefill": true,
+    "timeOptions": ["09:00", "10:00", "11:00", "12:00"],
+    "defaultValue": "",
+    "numberOfDays": 3,
+    "numberOfTimeColumns": 3,
+    "gap": 16
+  }
+]
