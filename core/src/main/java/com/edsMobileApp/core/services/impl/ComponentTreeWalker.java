@@ -1595,10 +1595,20 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * A column's own itemAlignment decides whether its contents stack or sit side by side; every
+     * A section's authored Mobile Specific layout wins, being the most specific choice there is. A
+     * column's own itemAlignment decides whether its contents stack or sit side by side; every
      * other panel takes its layout from the container's resource type.
+     *
+     * <p>Only the two panel layout values are honoured: a block carrying a {@code mobilelayout} in
+     * a different vocabulary - a cards block's "vertical/grid", say - must not reach a panel. An
+     * unauthored container keeps the layout its resource type has always given it, so adding the
+     * field does not reflow sections that nobody has touched.
      */
     private static String panelLayout(final Resource resource, final String resourceType) {
+        final String authored = resource.getValueMap().get("mobilelayout", String.class);
+        if ("vertical".equals(authored) || "horizontal".equals(authored)) {
+            return authored;
+        }
         if (isColumnItem(resource)) {
             return "horizontal".equals(resource.getValueMap().get("itemAlignment", String.class))
                     ? "horizontal" : "vertical";
