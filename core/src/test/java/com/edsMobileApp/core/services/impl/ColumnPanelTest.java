@@ -286,4 +286,42 @@ class ColumnPanelTest {
         assertEquals("htmlText", meta(cell.get(1)).get(SchemaConstants.KEY_COMPONENT),
                 "text drops to its own full-width row below the images");
     }
+
+    private Map<String, Object> sectionPanel(final String name, final Object... sectionProps) {
+        final Page page = context.create().page("/content/s/en/" + name);
+        final String section = page.getPath() + "/jcr:content/root/section";
+        final Object[] props = new Object[sectionProps.length + 2];
+        props[0] = "sling:resourceType";
+        props[1] = SchemaConstants.RT_FRANKLIN_SECTION;
+        System.arraycopy(sectionProps, 0, props, 2, sectionProps.length);
+        context.create().resource(section, props);
+        context.create().resource(section + "/text",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>Body</p>");
+        return walker.componentsOf(page, null, true).get(0);
+    }
+
+    @Test
+    void sectionTakesItsAuthoredMobileLayout() {
+        final Map<String, Object> panel = sectionPanel("authored", "mobilelayout", "horizontal");
+
+        assertEquals(SchemaConstants.COMPONENT_PANEL, meta(panel).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+        assertEquals(0, styles(panel).get("gap"), "a horizontal panel takes the horizontal spacing defaults");
+    }
+
+    @Test
+    void unauthoredSectionKeepsStackingAsItAlwaysHas() {
+        final Map<String, Object> panel = sectionPanel("unauthored");
+
+        assertEquals("vertical", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+        assertEquals(8, styles(panel).get("gap"));
+    }
+
+    @Test
+    void mobileLayoutInAnotherVocabularyIsIgnored() {
+        // A cards block's own mobilelayout says "vertical/grid"; that is not a panel layout.
+        assertEquals("vertical",
+                meta(sectionPanel("grid", "mobilelayout", "vertical/grid")).get(SchemaConstants.KEY_LAYOUT));
+    }
 }
