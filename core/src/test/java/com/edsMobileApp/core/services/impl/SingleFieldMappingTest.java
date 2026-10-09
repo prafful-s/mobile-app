@@ -34,10 +34,13 @@ class SingleFieldMappingTest {
     @Test
     void aButtonsMobileFieldsOverrideTheWebOnes() {
         final Map<String, Object> mobile = map("button", "linkType", "cta-button", "alignment", "left",
-                "mobilebuttonvariant", "elevated", "mobilealignment", "stretch", "mobileicon", "credit-card");
+                "mobilebuttonvariant", "elevated", "mobilealignment", "stretch", "mobileicon", "credit-card",
+                "mobilemessage", "Thank you");
         assertEquals("elevated", mobile.get("variant"));
         assertEquals("stretch", mobile.get("alignment"));
         assertEquals("credit-card", mobile.get("icon"));
+        assertEquals("Thank you", mobile.get("message"));
+        assertNull(mobile.get("mobilemessage"), "the mobile fields do not leak");
         assertNull(mobile.get("mobilebuttonvariant"), "the mobile fields do not leak");
         assertNull(mobile.get("mobilealignment"), "the mobile fields do not leak");
         assertNull(mobile.get("mobileicon"), "the mobile fields do not leak");
@@ -46,6 +49,7 @@ class SingleFieldMappingTest {
         assertEquals("outlined", web.get("variant"));
         assertEquals("left", web.get("alignment"));
         assertEquals("", web.get("icon"));
+        assertEquals("", web.get("message"));
     }
 
     @Test

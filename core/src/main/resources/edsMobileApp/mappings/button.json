@@ -11,6 +11,7 @@
     { "target": "formId", "from": "formId", "default": "" },
     { "target": "linkTo", "from": "link", "map": { "/": "en" }, "default": "" },
     { "target": "message", "from": "message", "default": "" },
+    { "target": "message", "from": "mobilemessage", "omitIfAbsent": true },
     { "target": "variant", "from": "linkType",
       "map": { "cta-button": "contained", "primary-button": "contained",
                "secondary-button": "outlined", "tonal-button": "contained-tonal",
