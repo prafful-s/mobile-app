@@ -218,7 +218,7 @@ class ScheduleAppointmentFormTest {
         defaults.setAccessible(true);
         defaults.set(exporter, SiteDefaults.load());
         final java.lang.reflect.Method apply = PageJsonExporterImpl.class.getDeclaredMethod(
-                "applyFormSettings", List.class, Page.class, String.class);
+                "applyFormSettings", List.class, Page.class, String.class, String.class);
         apply.setAccessible(true);
         final Page page = context.create().page("/content/frescopa/language-masters/en/service");
         for (final String screen : new String[] {"service", "login"}) {
@@ -228,7 +228,7 @@ class ScheduleAppointmentFormTest {
             final Map<String, Object> form = new java.util.LinkedHashMap<>();
             form.put(SchemaConstants.KEY_META, meta);
             form.put(SchemaConstants.KEY_CONTENT, new ArrayList<>());
-            apply.invoke(exporter, new ArrayList<>(List.of(form)), page, screen);
+            apply.invoke(exporter, new ArrayList<>(List.of(form)), page, screen, "en");
             assertEquals("service".equals(screen) ? false : true, meta.get("hideResetButton"), screen);
         }
     }

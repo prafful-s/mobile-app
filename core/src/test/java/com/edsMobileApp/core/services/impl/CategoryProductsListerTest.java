@@ -40,8 +40,8 @@ class CategoryProductsListerTest {
     }
 
     /**
-     * The rule is {@code skeleton: true}, so every declared target is emitted whether authored or
-     * not - there is no "write only when authored" here. A list serves with the client's standard
+    * The rule is {@code skeleton: true}, so targets are emitted whether authored or not unless
+    * explicitly optional. A list serves with the client's standard
      * defaults: a cover-cropped image in a horizontal row of overlay items.
      */
     @Test
@@ -53,6 +53,25 @@ class CategoryProductsListerTest {
         assertEquals(150, mapped.get("itemHeight"));
         assertEquals("overlay", mapped.get("itemRenderer"));
         assertEquals("productList", mapped.get("listType"), "unchanged");
+    }
+
+    @Test
+    void authoredRedirectUrlMapsToLinkTo() {
+        assertEquals("new-screen", map(authored("redirect-url", "new-screen")).get("linkTo"));
+        assertEquals("product?source=list#details",
+                map(authored("redirect-url", "/content/frescopa/en/product.html?source=list#details"))
+                        .get("linkTo"));
+    }
+
+    @Test
+    void missingOrBlankRedirectUrlDoesNotEmitLinkTo() {
+        assertFalse(map(authored()).containsKey("linkTo"));
+        for (final String redirect : List.of("", " ", "\t")) {
+            assertFalse(map(authored("redirect-url", redirect)).containsKey("linkTo"));
+        }
+        final Map<String, Object> source = new HashMap<>();
+        source.put("redirect-url", null);
+        assertFalse(map(source).containsKey("linkTo"));
     }
 
     @Test

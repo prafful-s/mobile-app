@@ -12,9 +12,6 @@
     "target": "cart"
   },
   "forms": {
-    "login":        { "redirectAfterSubmit": "en" },
-    "registration": { "redirectAfterSubmit": "en" },
-    "subscription": { "redirectAfterSubmit": "en" },
-    "service":      { "hideResetButton": false }
+    "service": { "hideResetButton": false }
   }
 }

@@ -15,6 +15,7 @@
     { "target": "limit", "from": "number", "type": "number" },
     { "target": "filter", "first": ["cqTags", "cqtags", "tags", "cq-tags", "cq:tags", "_categories"], "type": "categoryRootRegex", "default": "" },
     { "target": "layout", "from": "mobilelayout", "default": "horizontal" },
+    { "target": "linkTo", "from": "redirect-url", "type": "trimmedString", "omitIfAbsent": true },
     { "target": "sort", "from": "mobilesort", "default": "none" },
     { "target": "listType", "from": "listType", "default": "productList" },
     { "target": "textColor", "from": "textColor", "default": "#8B8B8B" },

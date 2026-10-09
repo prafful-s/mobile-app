@@ -463,7 +463,7 @@ final class ComponentMapping {
     private void resolveInto(final Map<String, Object> target, final FieldRule field, final Object value) {
         if (isPresent(value)) {
             putTarget(target, field.getTarget(), value);
-        } else if (skeleton) {
+        } else if (skeleton && !field.isOmitIfAbsent()) {
             // Fixed-shape opt-in: emit the key anyway, typed to what the schema declared.
             // The client always sees the same key set, whatever the author left blank.
             putTarget(target, field.getTarget(), field.emptyDefault());
