@@ -6,6 +6,7 @@
     { "target": "text", "from": "text", "default": "" }
   ],
   "styles": [
-    { "target": "padding", "from": "padding", "default": "" }
+    { "target": "padding", "from": "padding", "default": "" },
+    { "target": "color", "from": "color", "type": "hexColor", "default": "" }
   ]
 }
