@@ -42,6 +42,49 @@ class MobileFieldMappingTest {
     private final AemContext context = new AemContext();
 
         @Test
+        void exporterOverridesAllScreensUsingTheRequestedRootTheme() throws Exception {
+        final Page root = context.create().page("/content/export-theme-test/en");
+        context.resourceResolver().getResource(root.getPath() + "/jcr:content")
+            .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "carvelo-theme");
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final List<Map<String, Object>> original = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "person.mobileNumber")))));
+        final List<Map<String, Object>> expected = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "mobilePhone.number")))));
+        final Map<String, Object> checkout = new HashMap<>(Map.of("content", original));
+        final Map<String, Object> registration = new HashMap<>(Map.of("content", original));
+        final Method apply = PageJsonExporterImpl.class.getDeclaredMethod("applyFormFieldPathOverrides",
+            Map.class, Page.class);
+        apply.setAccessible(true);
+        apply.invoke(exporter, Map.of("checkout", checkout, "registration", registration), root);
+        assertEquals(expected, checkout.get("content"));
+        assertEquals(expected, registration.get("content"));
+        }
+
+        @Test
+        void fieldOverridesUseAuthoredAndInheritedThemeWithoutADamFragment() {
+        final Page site = context.create().page("/content/authored-theme-test");
+        context.resourceResolver().getResource(site.getPath() + "/jcr:content")
+            .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "carvelo-theme");
+        final Page page = context.create().page("/content/authored-theme-test/en");
+        final Page otherSite = context.create().page("/content/no-authored-theme/en");
+        final SiteBranding branding = SiteBranding.load(new String[0], ProductMappings.load());
+        assertEquals("carvelo-theme", branding.themeNameForPage(site));
+        assertEquals("carvelo-theme", branding.themeNameForPage(page));
+        assertEquals(null, branding.themeNameForPage(otherSite));
+        final List<Map<String, Object>> content = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "person.mobileNumber")))));
+        final List<Map<String, Object>> expected = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "mobilePhone.number")))));
+        assertEquals(expected, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        context.resourceResolver().getResource(page.getPath() + "/jcr:content")
+            .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "luma-theme");
+        assertEquals("luma-theme", branding.themeNameForPage(page));
+        assertEquals(content, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        }
+
+        @Test
         void fieldOverridesUseTheResolvedThemeFragmentName() {
         final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
         final Page page = context.create().page("/content/override-test/en");

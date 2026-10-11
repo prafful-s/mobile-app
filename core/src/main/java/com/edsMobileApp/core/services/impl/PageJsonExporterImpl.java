@@ -193,6 +193,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // its own user-details page keeps that content untouched.
         screens.putIfAbsent(SCREEN_USER_DETAILS, buildUserDetailsScreen(homeRoot));
         screens.put(SCREEN_LOGIN, buildLoginScreen(homeRoot));
+        applyFormFieldPathOverrides(screens, envelopeSource);
         app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
@@ -349,6 +350,25 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     }
 
     @SuppressWarnings("unchecked")
+    private void applyFormFieldPathOverrides(final Map<String, Object> screens, final Page root) {
+        if (formFieldPathOverrides == null || siteBranding == null) {
+            return;
+        }
+        final String themeName = siteBranding.themeNameForPage(root);
+        for (final Object value : screens.values()) {
+            if (!(value instanceof Map)) {
+                continue;
+            }
+            final Map<String, Object> screen = (Map<String, Object>) value;
+            final Object content = screen.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof List) {
+                screen.put(SchemaConstants.KEY_CONTENT,
+                        formFieldPathOverrides.apply((List<Map<String, Object>>) content, themeName));
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private void applyScreenThumbnailOverrides(final Map<String, Object> screens,
                                                final Map<String, String> overrides,
                                                final String assetHost) {
@@ -496,9 +516,6 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFlightDestination(content, page, key);
         }
         content = addCommerceActions(content, page);
-        if (formFieldPathOverrides != null && siteBranding != null) {
-            content = formFieldPathOverrides.apply(content, siteBranding.themeNameForPage(root));
-        }
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
         // Outside the branch on purpose: checkout takes its own path above

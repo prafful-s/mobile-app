@@ -140,6 +140,15 @@ final class SiteBranding {
     }
 
     String themeNameForPage(final Page page) {
+        final String siteRoot = page == null ? null : SiteHostResolver.siteRoot(page.getPath());
+        for (Page current = page; current != null && siteRoot != null
+                && (siteRoot.equals(current.getPath()) || current.getPath().startsWith(siteRoot + "/"));
+                current = current.getParent()) {
+            final String authoredTheme = current.getProperties().get("theme", String.class);
+            if (StringUtils.isNotBlank(authoredTheme)) {
+                return authoredTheme.trim();
+            }
+        }
         final String fragmentPath = fragmentPathForPage(page);
         if (fragmentPath == null
                 || page.getContentResource().getResourceResolver().getResource(fragmentPath) == null) {
