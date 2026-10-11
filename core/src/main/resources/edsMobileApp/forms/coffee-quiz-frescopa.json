@@ -11,7 +11,7 @@
   {
     "component": "dropdown",
     "content": {
-      "path": "quiz.favourieCoffeeLocation",
+      "path": "quiz.favouriteCoffeeLocation",
       "formId": "coffee-quiz",
       "options": [
         { "label": "With your toes in the sand", "value": "sand" },

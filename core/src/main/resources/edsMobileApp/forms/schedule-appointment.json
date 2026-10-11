@@ -29,7 +29,7 @@
   },
   {
     "id": "serviceCity",
-    "name": "person.address.city",
+    "name": "service.city",
     "label": "City",
     "value": "",
     "type": "text",
@@ -44,7 +44,7 @@
   {
     "id": "appointment-slot",
     "type": "timeslot",
-    "name": "appointment.dateTime",
+    "name": "service.time",
     "prefill": true,
     "timeOptions": ["09:00", "10:00", "11:00", "12:00"],
     "defaultValue": "",
