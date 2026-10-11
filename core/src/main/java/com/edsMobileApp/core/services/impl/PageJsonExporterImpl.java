@@ -80,6 +80,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private SiteDefaults siteDefaults;
     private ProductCatalog productCatalog;
     private Map<String, Object> confirmButtonDefaults;
+    private FormFieldPathOverrides formFieldPathOverrides;
 
     @Activate
     protected void activate(final Map<String, Object> properties) {
@@ -102,6 +103,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteIntegrations = SiteIntegrations.load();
         this.siteDefaults = SiteDefaults.load();
         this.confirmButtonDefaults = readConfirmButtonDefaults();
+        this.formFieldPathOverrides = FormFieldPathOverrides.load();
         this.productCatalog = new ProductCatalog(productMappings);
         this.walker.setSiteDefaults(this.siteDefaults);
     }
@@ -494,6 +496,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             applyFlightDestination(content, page, key);
         }
         content = addCommerceActions(content, page);
+        if (formFieldPathOverrides != null && siteBranding != null) {
+            content = formFieldPathOverrides.apply(content, siteBranding.themeNameForPage(root));
+        }
         // Point every product-list item at the site's product-detail screen (client appends
         // ?productId=<sku>); a no-op when the site configures no productDetailScreen.
         // Outside the branch on purpose: checkout takes its own path above

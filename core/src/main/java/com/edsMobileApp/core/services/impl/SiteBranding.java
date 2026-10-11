@@ -113,23 +113,12 @@ final class SiteBranding {
      *         when the site's DAM root carries no matching fragment
      */
     Map<String, Object> forPage(final Page page) {
-        if (themeModels.isEmpty() || page == null || page.getContentResource() == null) {
-            return null;
-        }
-        final String siteRoot = SiteHostResolver.siteRoot(page.getPath());
-        if (siteRoot == null) {
-            return null;
-        }
-        final String site = StringUtils.substringAfterLast(siteRoot, "/");
-        final ResourceResolver resolver = page.getContentResource().getResourceResolver();
-        final String fragmentPath = fragmentPathBySite
-                .computeIfAbsent(site, s -> findThemeFragment(resolver, searchRoots(siteRoot, s)))
-                .orElse(null);
+        final String fragmentPath = fragmentPathForPage(page);
         if (fragmentPath == null) {
-            LOG.info("No theme Content Fragment resolved for site {} (page {}) - no shipped branding",
-                    site, page.getPath());
             return null;
         }
+        final String site = StringUtils.substringAfterLast(SiteHostResolver.siteRoot(page.getPath()), "/");
+        final ResourceResolver resolver = page.getContentResource().getResourceResolver();
         LOG.info("Using theme Content Fragment {} for site {} (page {})", fragmentPath, site, page.getPath());
         final Resource fragment = resolver.getResource(fragmentPath);
         if (fragment == null) {
@@ -148,6 +137,35 @@ final class SiteBranding {
                 site, fragmentPath, elements.size(), branding.size(), hybrid ? "hybrid" : "flat",
                 branding.keySet());
         return branding;
+    }
+
+    String themeNameForPage(final Page page) {
+        final String fragmentPath = fragmentPathForPage(page);
+        if (fragmentPath == null
+                || page.getContentResource().getResourceResolver().getResource(fragmentPath) == null) {
+            return null;
+        }
+        return StringUtils.substringAfterLast(fragmentPath, "/");
+    }
+
+    private String fragmentPathForPage(final Page page) {
+        if (themeModels.isEmpty() || page == null || page.getContentResource() == null) {
+            return null;
+        }
+        final String siteRoot = SiteHostResolver.siteRoot(page.getPath());
+        if (siteRoot == null) {
+            return null;
+        }
+        final String site = StringUtils.substringAfterLast(siteRoot, "/");
+        final ResourceResolver resolver = page.getContentResource().getResourceResolver();
+        final String fragmentPath = fragmentPathBySite
+                .computeIfAbsent(site, s -> findThemeFragment(resolver, searchRoots(siteRoot, s)))
+                .orElse(null);
+        if (fragmentPath == null) {
+            LOG.info("No theme Content Fragment resolved for site {} (page {}) - no shipped branding",
+                    site, page.getPath());
+        }
+        return fragmentPath;
     }
 
     /**

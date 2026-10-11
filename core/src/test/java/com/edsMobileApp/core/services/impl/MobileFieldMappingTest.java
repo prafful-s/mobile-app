@@ -42,6 +42,51 @@ class MobileFieldMappingTest {
     private final AemContext context = new AemContext();
 
         @Test
+        void fieldOverridesUseTheResolvedThemeFragmentName() {
+        final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
+        final Page page = context.create().page("/content/override-test/en");
+        final Page otherPage = context.create().page("/content/other-override-test/en");
+        context.create().resource("/content/dam/override-test/brand-themes/carvelo-theme/jcr:content/data",
+            "cq:model", model);
+        final SiteBranding branding = SiteBranding.load(new String[]{model}, ProductMappings.load());
+        assertEquals("carvelo-theme", branding.themeNameForPage(page));
+        assertEquals(null, branding.themeNameForPage(otherPage));
+        final List<Map<String, Object>> content = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "person.mobileNumber")))));
+        final List<Map<String, Object>> expected = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "mobilePhone.number")))));
+        assertEquals(expected, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        assertEquals(content, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(otherPage)));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void themeOverridesApplyOnlyToFormPathsWithoutMutatingSource() {
+        final Map<String, Object> phone = Map.of("meta", Map.of("component", "textField"),
+            "content", Map.of("path", "person.mobileNumber", "label", "Phone"));
+        final Map<String, Object> consent = Map.of("meta", Map.of("component", "checkboxGroup"),
+            "content", Map.of("options", List.of(Map.of("path", "person.mobileNumber"))));
+        final Map<String, Object> form = Map.of("meta", Map.of("component", "form"),
+            "content", List.of(phone, consent));
+        final List<Map<String, Object>> content = List.of(phone,
+            Map.of("meta", Map.of("component", "panel"), "content", List.of(form)), form);
+        final FormFieldPathOverrides overrides = FormFieldPathOverrides.load();
+        final List<Map<String, Object>> changed = overrides.apply(content, "carvelo-theme");
+        assertEquals("person.mobileNumber", ((Map<?, ?>) changed.get(0).get("content")).get("path"));
+        final List<Map<String, Object>> panel = (List<Map<String, Object>>) changed.get(1).get("content");
+        for (final Map<String, Object> changedForm : List.of(panel.get(0), changed.get(2))) {
+            final List<Map<String, Object>> fields = (List<Map<String, Object>>) changedForm.get("content");
+            assertEquals("mobilePhone.number", ((Map<?, ?>) fields.get(0).get("content")).get("path"));
+            assertEquals("Phone", ((Map<?, ?>) fields.get(0).get("content")).get("label"));
+            final Map<?, ?> group = (Map<?, ?>) fields.get(1).get("content");
+            assertEquals("mobilePhone.number", ((Map<?, ?>) ((List<?>) group.get("options")).get(0)).get("path"));
+        }
+        assertEquals("person.mobileNumber", ((Map<?, ?>) phone.get("content")).get("path"));
+        assertEquals(content, overrides.apply(content, "luma-theme"));
+        assertEquals(content, overrides.apply(content, null));
+        }
+
+        @Test
         @SuppressWarnings("unchecked")
         void confirmationButtonUsesOnlyAuthoredComponentEvents() throws Exception {
         final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
