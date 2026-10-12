@@ -80,6 +80,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private SiteDefaults siteDefaults;
     private ProductCatalog productCatalog;
     private Map<String, Object> confirmButtonDefaults;
+    private FormFieldPathOverrides formFieldPathOverrides;
 
     @Activate
     protected void activate(final Map<String, Object> properties) {
@@ -102,6 +103,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteIntegrations = SiteIntegrations.load();
         this.siteDefaults = SiteDefaults.load();
         this.confirmButtonDefaults = readConfirmButtonDefaults();
+        this.formFieldPathOverrides = FormFieldPathOverrides.load();
         this.productCatalog = new ProductCatalog(productMappings);
     }
 
@@ -190,6 +192,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // its own user-details page keeps that content untouched.
         screens.putIfAbsent(SCREEN_USER_DETAILS, buildUserDetailsScreen(homeRoot));
         screens.put(SCREEN_LOGIN, buildLoginScreen(homeRoot));
+        applyFormFieldPathOverrides(screens, envelopeSource);
         app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
@@ -343,6 +346,25 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                     screenThumbnailOverrides, rootKey));
         }
         return screens;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyFormFieldPathOverrides(final Map<String, Object> screens, final Page root) {
+        if (formFieldPathOverrides == null || siteBranding == null) {
+            return;
+        }
+        final String themeName = siteBranding.themeNameForPage(root);
+        for (final Object value : screens.values()) {
+            if (!(value instanceof Map)) {
+                continue;
+            }
+            final Map<String, Object> screen = (Map<String, Object>) value;
+            final Object content = screen.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof List) {
+                screen.put(SchemaConstants.KEY_CONTENT,
+                        formFieldPathOverrides.apply((List<Map<String, Object>>) content, themeName));
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -871,8 +893,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> settings = entry instanceof Map
                 ? (Map<String, Object>) entry : Collections.emptyMap();
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
-        // A redirect authored on the block itself (FormBlockBuilder reads redirectUrl /
-        // submit-redirect-url into meta.link) is the author's explicit choice and wins; the per-site
+        // A redirect authored on the block itself (FormBlockBuilder reads mobileRedirectUrl
+        // into meta.link) is the author's explicit choice and wins; the per-site
         // 'redirectAfterSubmit' only fills in the default when the block left it blank.
         final Object authoredLink = meta.get("link");
         if (!(authoredLink instanceof String) || StringUtils.isBlank((String) authoredLink)) {

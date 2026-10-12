@@ -58,22 +58,6 @@ final class FormBlockBuilder {
     /** The one {@code custommobilestyle} row key this export currently understands - see
      *  {@link #applyCheckboxWidth}. */
     private static final String STYLE_KEY_WIDTH = "width";
-    /**
-    * The legacy post-submit redirect field, per form that has one, mapped to the property its own
-     * block model defines: create-account names it {@code redirectUrl}, join-us names it
-     * {@code submit-redirect-url} and schedule-appointment names it {@code redirect-url} (all {@code aem-content}
-     * page references). Keyed by form name
-     * rather than read for every form, because the field name {@code redirectUrl} is shared by many
-     * other form blocks (child-account-application, loan-application-form, transfer-funds, ...) that
-    * this feature is not meant to touch. Every form reads {@code mobileRedirectUrl} first; only the
-    * forms listed here also fall back to their legacy redirect. Either authored value wins over the
-    * per-site {@code forms.<screen>.redirectAfterSubmit} default applied downstream in
-    * {@code PageJsonExporterImpl#applyFormSettings}.
-     */
-    private static final Map<String, String[]> REDIRECT_KEYS_BY_FORM = Map.of(
-            "create-account", new String[]{"redirectUrl"},
-            "join-us", new String[]{"submit-redirect-url"},
-            "schedule-appointment", new String[]{"redirect-url"});
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
@@ -94,8 +78,20 @@ final class FormBlockBuilder {
      */
     private static final Map<String, String> DEFAULT_VARIANTS = Map.of(
             "add-external", "account",
+            "additional-service", "mobile",
             "create-account", "default",
             "test-drive", "test-drive");
+
+    /**
+     * The submit button text a form's own block falls back to when no label is authored - the
+     * block's own default, keyed by schema name, or by {@code name:variant} where the variant
+     * decides it (additional-service: "Buy" for mobile, "Add to plan" for TV). Anything not listed
+     * keeps {@link #DEFAULT_SUBMIT_LABEL}.
+     */
+    private static final Map<String, String> DEFAULT_SUBMIT_LABELS = Map.of(
+            "automatic-payments", "Create",
+            "additional-service:mobile", "Buy",
+            "additional-service:tv", "Add to plan");
 
     /**
      * {@code authored}, with {@code variant} filled in from {@link #DEFAULT_VARIANTS} when the form
@@ -141,16 +137,7 @@ final class FormBlockBuilder {
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
-        // mobileRedirectUrl wins on every form, with legacy redirects retained for existing content.
-        // A blank link lets PageJsonExporterImpl#applyFormSettings supply a per-site default.
-        // formName is null for a form whose fields are authored rather than taken from a bundled
-        // schema, and REDIRECT_KEYS_BY_FORM is a Map.of, whose lookups throw on a null key instead
-        // of missing. Guard here rather than swapping the map: every other read of it is keyed on a
-        // name that exists, and a null key genuinely means "no form-specific redirect keys".
-        meta.put("link", redirectScreen(first(authored, MOBILE_REDIRECT_KEYS,
-            first(authored,
-                formName == null ? NO_KEYS : REDIRECT_KEYS_BY_FORM.getOrDefault(formName, NO_KEYS),
-                StringUtils.EMPTY))));
+        meta.put("link", redirectScreen(first(authored, MOBILE_REDIRECT_KEYS, StringUtils.EMPTY)));
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_FORM);
         meta.put("eventType", first(authored, EVENT_TYPE_KEYS, StringUtils.EMPTY));
@@ -164,7 +151,7 @@ final class FormBlockBuilder {
         meta.put("submitButtonLabel",
                 StringUtils.defaultIfBlank(first(authored, SUBMIT_LABEL_KEYS, null),
                         StringUtils.defaultIfBlank(submitLabelFromChildren(resource),
-                                DEFAULT_SUBMIT_LABEL)));
+                                defaultSubmitLabel(formName, authored))));
 
         final Map<String, Object> form = new LinkedHashMap<>();
         form.put(SchemaConstants.KEY_META, meta);
@@ -228,6 +215,22 @@ final class FormBlockBuilder {
         button.put(SchemaConstants.KEY_META, meta);
         button.put(SchemaConstants.KEY_CONTENT, content);
         return button;
+    }
+
+    /** @return the form's own default submit text - see {@link #DEFAULT_SUBMIT_LABELS} */
+    private static String defaultSubmitLabel(final String formName, final Map<String, Object> authored) {
+        if (formName == null) {
+            return DEFAULT_SUBMIT_LABEL;
+        }
+        final Object variant = authored.get("variant");
+        if (variant instanceof String && StringUtils.isNotBlank((String) variant)) {
+            final String byVariant = DEFAULT_SUBMIT_LABELS.get(
+                    formName + ":" + ((String) variant).trim().toLowerCase(java.util.Locale.ROOT));
+            if (byVariant != null) {
+                return byVariant;
+            }
+        }
+        return DEFAULT_SUBMIT_LABELS.getOrDefault(formName, DEFAULT_SUBMIT_LABEL);
     }
 
     private static String redirectScreen(final String redirect) {
@@ -421,7 +424,11 @@ final class FormBlockBuilder {
                     ((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
                 continue;
             }
-            final Map<String, Object> styles = new LinkedHashMap<>();
+            // Merged into whatever styles the schema already gave the group (its layout), not
+            // replacing them.
+            final Object existing = field.get(SchemaConstants.KEY_STYLES);
+            final Map<String, Object> styles = existing instanceof Map
+                    ? new LinkedHashMap<>((Map<String, Object>) existing) : new LinkedHashMap<>();
             styles.put("width", width);
             field.put(SchemaConstants.KEY_STYLES, styles);
         }

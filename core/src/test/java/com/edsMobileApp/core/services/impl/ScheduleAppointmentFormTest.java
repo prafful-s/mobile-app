@@ -150,13 +150,6 @@ class ScheduleAppointmentFormTest {
 
     /** The web block's Redirect URL sends its form home after submit; the app form takes the same page. */
     @Test
-    void theAuthoredRedirectUrlIsTheFormsLink() {
-        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en"}, meta);
-        assertEquals("en", meta.get("link"));
-    }
-
-    @Test
     void withNoRedirectAuthoredTheLinkStaysBlank() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
         fieldIds(null, new Object[0], meta);

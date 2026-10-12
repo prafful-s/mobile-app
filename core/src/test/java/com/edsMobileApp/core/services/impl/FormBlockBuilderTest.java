@@ -125,7 +125,7 @@ class FormBlockBuilderTest {
     }
 
     @Test
-    void aNamedFormStillReadsItsOwnRedirectKey() {
+    void aCreateAccountFormIgnoresItsLegacyRedirectKey() {
         final Resource resource = context.create().resource("/content/site/page/jcr:content/form2");
         final Map<String, Object> authored = new HashMap<>();
         authored.put("redirectUrl", "/content/frescopa/language-masters/en/sign-in");
@@ -133,11 +133,11 @@ class FormBlockBuilderTest {
         final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS)
                 .build(resource, "create-account", "def456", 1, authored);
 
-        assertEquals("sign-in", meta(built).get("link"));
+            assertEquals("", meta(built).get("link"));
         }
 
         @Test
-        void aJoinUsRedirectPreservesItsQueryAndFragment() {
+            void aJoinUsFormIgnoresItsLegacyRedirectKey() {
         final Resource resource = context.create().resource("/content/site/page/jcr:content/join-us");
         final Map<String, Object> authored = new HashMap<>();
         authored.put("submit-redirect-url", "/content/site/en/sign-in.html/?source=registration#login");
@@ -145,7 +145,7 @@ class FormBlockBuilderTest {
         final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS)
             .build(resource, "join-us", "join123", 0, authored);
 
-        assertEquals("sign-in?source=registration#login", meta(built).get("link"));
+        assertEquals("", meta(built).get("link"));
         }
 
         @Test
@@ -154,7 +154,7 @@ class FormBlockBuilderTest {
         for (final String redirect : new String[]{"sign-in", "", "#login", "mailto:help@example.com",
             "https://example.com/sign-in"}) {
             final Map<String, Object> authored = new HashMap<>();
-            authored.put("redirectUrl", redirect);
+            authored.put("mobileRedirectUrl", redirect);
 
             final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS)
                 .build(resource, "create-account", "redirect123", 0, authored);
@@ -172,7 +172,6 @@ class FormBlockBuilderTest {
         final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS)
                 .build(resource, "not-a-known-form", "ghi789", 2, authored);
 
-        // redirectUrl is only read for the forms that declare it, so this one is ignored
         assertEquals("", meta(built).get("link"));
     }
 
@@ -207,18 +206,17 @@ class FormBlockBuilderTest {
     }
 
     @Test
-    void aBlankMobileRedirectKeepsTheLegacyFallback() {
+    void aBlankMobileRedirectDoesNotUseLegacyFallbacks() {
         final Resource resource = context.create().resource("/content/site/page/jcr:content/blank-redirect");
         final Map<String, Object> authored = new HashMap<>();
         authored.put("mobileRedirectUrl", " ");
         authored.put("redirectUrl", "/content/site/en/sign-in");
+        authored.put("submit-redirect-url", "/content/site/en/sign-in");
 
-        final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS)
-                .build(resource, "create-account", "blank123", 0, authored);
-
-        assertEquals("sign-in", meta(built).get("link"));
-        final Map<String, Object> otherForm = new FormBlockBuilder(NO_SCHEMAS)
-                .build(resource, "transfer-funds", "blank456", 0, authored);
-        assertEquals("", meta(otherForm).get("link"));
+        for (final String formName : new String[]{"create-account", "join-us", "transfer-funds"}) {
+            final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS)
+                .build(resource, formName, "blank123", 0, authored);
+            assertEquals("", meta(built).get("link"), formName);
+        }
     }
 }
