@@ -62,6 +62,7 @@ final class FormBlockBuilder {
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
         "submitButtonLabel", "buttontext", "button-label", "sign-in-btn-text", "submitText",
+        "submit-label",
     };
     private static final String[] RESET_LABEL_KEYS = {"resetButtonLabel", "resetText"};
 
@@ -132,8 +133,20 @@ final class FormBlockBuilder {
      */
     private static final Map<String, String> DEFAULT_VARIANTS = Map.of(
             "add-external", "account",
+            "additional-service", "mobile",
             "create-account", "default",
             "test-drive", "test-drive");
+
+    /**
+     * The submit button text a form's own block falls back to when no label is authored - the
+     * block's own default, keyed by schema name, or by {@code name:variant} where the variant
+     * decides it (additional-service: "Buy" for mobile, "Add to plan" for TV). Anything not listed
+     * keeps {@link #DEFAULT_SUBMIT_LABEL}.
+     */
+    private static final Map<String, String> DEFAULT_SUBMIT_LABELS = Map.of(
+            "automatic-payments", "Create",
+            "additional-service:mobile", "Buy",
+            "additional-service:tv", "Add to plan");
 
     /**
      * {@code authored}, with {@code variant} filled in from {@link #DEFAULT_VARIANTS} when the form
@@ -276,7 +289,7 @@ final class FormBlockBuilder {
         meta.put("submitButtonLabel",
                 StringUtils.defaultIfBlank(first(authored, SUBMIT_LABEL_KEYS, null),
                         StringUtils.defaultIfBlank(submitLabelFromChildren(resource),
-                                DEFAULT_SUBMIT_LABEL)));
+                                defaultSubmitLabel(formName, authored))));
 
         final Map<String, Object> form = new LinkedHashMap<>();
         form.put(SchemaConstants.KEY_META, meta);
@@ -340,6 +353,22 @@ final class FormBlockBuilder {
         button.put(SchemaConstants.KEY_META, meta);
         button.put(SchemaConstants.KEY_CONTENT, content);
         return button;
+    }
+
+    /** @return the form's own default submit text - see {@link #DEFAULT_SUBMIT_LABELS} */
+    private static String defaultSubmitLabel(final String formName, final Map<String, Object> authored) {
+        if (formName == null) {
+            return DEFAULT_SUBMIT_LABEL;
+        }
+        final Object variant = authored.get("variant");
+        if (variant instanceof String && StringUtils.isNotBlank((String) variant)) {
+            final String byVariant = DEFAULT_SUBMIT_LABELS.get(
+                    formName + ":" + ((String) variant).trim().toLowerCase(java.util.Locale.ROOT));
+            if (byVariant != null) {
+                return byVariant;
+            }
+        }
+        return DEFAULT_SUBMIT_LABELS.getOrDefault(formName, DEFAULT_SUBMIT_LABEL);
     }
 
     private static String redirectScreen(final String redirect) {
@@ -533,7 +562,11 @@ final class FormBlockBuilder {
                     ((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
                 continue;
             }
-            final Map<String, Object> styles = new LinkedHashMap<>();
+            // Merged into whatever styles the schema already gave the group (its layout), not
+            // replacing them.
+            final Object existing = field.get(SchemaConstants.KEY_STYLES);
+            final Map<String, Object> styles = existing instanceof Map
+                    ? new LinkedHashMap<>((Map<String, Object>) existing) : new LinkedHashMap<>();
             styles.put("width", width);
             field.put(SchemaConstants.KEY_STYLES, styles);
         }
