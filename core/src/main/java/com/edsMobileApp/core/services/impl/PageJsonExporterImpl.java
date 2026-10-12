@@ -895,8 +895,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> settings = entry instanceof Map
                 ? (Map<String, Object>) entry : Collections.emptyMap();
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
-        // A redirect authored on the block itself (FormBlockBuilder reads redirectUrl /
-        // submit-redirect-url into meta.link) is the author's explicit choice and wins; the per-site
+        // A redirect authored on the block itself (FormBlockBuilder reads mobileRedirectUrl
+        // into meta.link) is the author's explicit choice and wins; the per-site
         // 'redirectAfterSubmit' only fills in the default when the block left it blank.
         final Object authoredLink = meta.get("link");
         if (!(authoredLink instanceof String) || StringUtils.isBlank((String) authoredLink)) {
