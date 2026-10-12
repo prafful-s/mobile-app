@@ -324,4 +324,49 @@ class ColumnPanelTest {
         assertEquals("vertical",
                 meta(sectionPanel("grid", "mobilelayout", "vertical/grid")).get(SchemaConstants.KEY_LAYOUT));
     }
+
+    private Map<String, Object> columnsPanel(final String name, final Object... columnsProps) {
+        final Page page = context.create().page("/content/s/en/" + name);
+        final String columns = page.getPath() + "/jcr:content/root/columns";
+        final Object[] props = new Object[columnsProps.length + 2];
+        props[0] = "sling:resourceType";
+        props[1] = SchemaConstants.RT_FRANKLIN_COLUMNS;
+        System.arraycopy(columnsProps, 0, props, 2, columnsProps.length);
+        context.create().resource(columns, props);
+        context.create().resource(columns + "/col0",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
+                "model", "column", "itemAlignment", "vertical");
+        context.create().resource(columns + "/col0/text",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>Left</p>");
+        return walker.componentsOf(page, null, true).get(0);
+    }
+
+    @Test
+    void columnsBlockTakesItsAuthoredMobileLayout() {
+        assertEquals("vertical",
+                meta(columnsPanel("stacked", "mobilelayout", "vertical")).get(SchemaConstants.KEY_LAYOUT),
+                "an authored layout overrides the horizontal a columns block gets from its type");
+    }
+
+    @Test
+    void unauthoredColumnsBlockStaysHorizontal() {
+        assertEquals("horizontal", meta(columnsPanel("plain")).get(SchemaConstants.KEY_LAYOUT));
+    }
+
+    @Test
+    void aColumnsMobileLayoutBeatsItsItemAlignment() {
+        final Page page = context.create().page("/content/s/en/cell");
+        final String columns = page.getPath() + "/jcr:content/root/columns";
+        context.create().resource(columns, "sling:resourceType", SchemaConstants.RT_FRANKLIN_COLUMNS);
+        context.create().resource(columns + "/col0",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
+                "model", "column", "itemAlignment", "vertical", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/col0/text",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>Left</p>");
+
+        final Map<String, Object> cell = content(walker.componentsOf(page, null, true).get(0)).get(0);
+        assertEquals("horizontal", meta(cell).get(SchemaConstants.KEY_LAYOUT));
+    }
 }
