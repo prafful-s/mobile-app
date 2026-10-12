@@ -382,12 +382,17 @@ class ColumnPanelTest {
         props[1] = SchemaConstants.RT_FRANKLIN_COLUMNS;
         System.arraycopy(columnsProps, 0, props, 2, columnsProps.length);
         context.create().resource(columns, props);
-        final String row = columns + "/row";
+        // The block/item cells UE creates up front stay empty once content goes into the row, and
+        // an empty panel is dropped rather than emitted - so they contribute nothing.
+        context.create().resource(columns + "/column",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
+                "model", "column", "itemAlignment", "vertical");
+        // row1 and its cols carry no sling:resourceType at all, so each is a panel by virtue of
+        // being untyped with children rather than by being a recognised column item.
+        final String row = columns + "/row1";
         context.create().resource(row);
-        for (final String cell : new String[] {"col0", "col1"}) {
-            context.create().resource(row + "/" + cell,
-                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
-                    "model", "column", "itemAlignment", "vertical");
+        for (final String cell : new String[] {"col1", "col2"}) {
+            context.create().resource(row + "/" + cell);
             context.create().resource(row + "/" + cell + "/text",
                     "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
                     "model", "text", "text", "<p>" + cell + "</p>");
