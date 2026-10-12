@@ -623,4 +623,36 @@ class ColumnPanelTest {
         assertEquals("htmlText",
                 meta(content(components.get(0)).get(0)).get(SchemaConstants.KEY_COMPONENT));
     }
+
+    @Test
+    void theModelsEmptyDefaultIsNotAPanelLayout() {
+        // UE materialises a select field's value onto the node when the component is saved, so the
+        // Layout field defaults to "" rather than "horizontal". An empty value must read as unset:
+        // neither a layout nor a reason to flatten.
+        final String columns = columnsNode("empty-default", "mobilelayout", "");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/text", "a");
+        text(columns + "/row1/col2/text", "b");
+
+        final Map<String, Object> panel = exportOf(columns).get(0);
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT),
+                "falls back to the resource type, as an untouched block always has");
+        assertEquals(SchemaConstants.COMPONENT_PANEL,
+                meta(content(panel).get(0)).get(SchemaConstants.KEY_COMPONENT),
+                "and the nesting is kept - an empty default must not switch flattening on");
+    }
+
+    @Test
+    void anEmptyDefaultOnASectionLeavesItStacked() {
+        final Page page = context.create().page("/content/s/en/sec-empty");
+        final String section = page.getPath() + "/jcr:content/root/section";
+        context.create().resource(section,
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION,
+                "mobilelayout", "");
+        text(section + "/text", "a");
+
+        final Map<String, Object> panel = walker.componentsOf(page, null, true).get(0);
+        assertEquals("vertical", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+        assertEquals(8, styles(panel).get("gap"), "keeps the vertical spacing it always had");
+    }
 }
