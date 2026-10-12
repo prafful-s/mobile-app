@@ -369,4 +369,71 @@ class ColumnPanelTest {
         final Map<String, Object> cell = content(walker.componentsOf(page, null, true).get(0)).get(0);
         assertEquals("horizontal", meta(cell).get(SchemaConstants.KEY_LAYOUT));
     }
+
+    /**
+     * The shape AEM really produces: an untyped row wrapper sits between a columns block and its
+     * cells. Every one of the 11 columns blocks on secur-financial looks like this.
+     */
+    private Page rowWrappedColumnsPage(final String name, final Object... columnsProps) {
+        final Page page = context.create().page("/content/s/en/" + name);
+        final String columns = page.getPath() + "/jcr:content/root/columns";
+        final Object[] props = new Object[columnsProps.length + 2];
+        props[0] = "sling:resourceType";
+        props[1] = SchemaConstants.RT_FRANKLIN_COLUMNS;
+        System.arraycopy(columnsProps, 0, props, 2, columnsProps.length);
+        context.create().resource(columns, props);
+        final String row = columns + "/row";
+        context.create().resource(row);
+        for (final String cell : new String[] {"col0", "col1"}) {
+            context.create().resource(row + "/" + cell,
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
+                    "model", "column", "itemAlignment", "vertical");
+            context.create().resource(row + "/" + cell + "/text",
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                    "model", "text", "text", "<p>" + cell + "</p>");
+        }
+        return page;
+    }
+
+    @Test
+    void authoredColumnsFlattenIntoOnePanel() {
+        final List<Map<String, Object>> components =
+                walker.componentsOf(rowWrappedColumnsPage("flat", "mobilelayout", "horizontal"), null, true);
+
+        assertEquals(1, components.size());
+        final Map<String, Object> panel = components.get(0);
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+
+        final List<Map<String, Object>> kids = content(panel);
+        assertEquals(2, kids.size(), "both cells' contents become the panel's own content");
+        for (int index = 0; index < kids.size(); index++) {
+            assertEquals("htmlText", meta(kids.get(index)).get(SchemaConstants.KEY_COMPONENT),
+                    "mapped by their own rule, with the row wrapper and cell panels gone");
+            assertEquals(index, meta(kids.get(index)).get(SchemaConstants.KEY_ORDER),
+                    "each cell numbered its content from zero, so order is stamped again");
+        }
+    }
+
+    @Test
+    void unauthoredColumnsKeepTheirNesting() {
+        final Map<String, Object> panel =
+                walker.componentsOf(rowWrappedColumnsPage("nested"), null, true).get(0);
+
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+        final List<Map<String, Object>> kids = content(panel);
+        assertEquals(1, kids.size(), "the untyped row wrapper still emits a panel of its own");
+        assertEquals(SchemaConstants.COMPONENT_PANEL, meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("vertical", meta(kids.get(0)).get(SchemaConstants.KEY_LAYOUT),
+                "which is why an authored layout on the block alone was inert");
+        assertEquals(2, content(kids.get(0)).size(), "and the cells are still panels below it");
+    }
+
+    @Test
+    void everyPanelCarriesItemsAlignment() {
+        final Map<String, Object> panel =
+                walker.componentsOf(rowWrappedColumnsPage("aligned"), null, true).get(0);
+
+        assertEquals("center", meta(panel).get("itemsAlignment"));
+        assertEquals("center", meta(content(panel).get(0)).get("itemsAlignment"));
+    }
 }
