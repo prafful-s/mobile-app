@@ -441,4 +441,186 @@ class ColumnPanelTest {
         assertEquals("center", meta(panel).get("itemsAlignment"));
         assertEquals("center", meta(content(panel).get(0)).get("itemsAlignment"));
     }
+
+    // ---------------------------------------------------------------------------------------
+    // The columns/row/column combination matrix. Each case fixes one dimension: what the block
+    // authored, how deep the wrappers go, what the cells hold, and what else is in the tree.
+    // ---------------------------------------------------------------------------------------
+
+    /** A columns block under its own page, with whatever properties the case needs. */
+    private String columnsNode(final String page, final Object... props) {
+        final Page created = context.create().page("/content/s/en/" + page);
+        final String columns = created.getPath() + "/jcr:content/root/columns";
+        final Object[] all = new Object[props.length + 2];
+        all[0] = "sling:resourceType";
+        all[1] = SchemaConstants.RT_FRANKLIN_COLUMNS;
+        System.arraycopy(props, 0, all, 2, props.length);
+        context.create().resource(columns, all);
+        return columns;
+    }
+
+    private void text(final String path, final String body) {
+        context.create().resource(path,
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
+                "model", "text", "text", "<p>" + body + "</p>");
+    }
+
+    private List<Map<String, Object>> exportOf(final String columnsPath) {
+        final String pagePath = columnsPath.substring(0, columnsPath.indexOf("/jcr:content"));
+        return walker.componentsOf(context.pageManager().getPage(pagePath), null, true);
+    }
+
+    @Test
+    void verticalAuthoredOnColumnsFlattensAndStacks() {
+        final String columns = columnsNode("v-flat", "mobilelayout", "vertical");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/text", "a");
+        text(columns + "/row1/col2/text", "b");
+
+        final Map<String, Object> panel = exportOf(columns).get(0);
+        assertEquals("vertical", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+        assertEquals(2, content(panel).size(),
+                "vertical flattens too - the field is the gate, not the direction");
+        assertEquals(8, styles(panel).get("gap"), "and it takes the vertical spacing defaults");
+    }
+
+    @Test
+    void foreignLayoutVocabularyNeitherFlattensNorChangesLayout() {
+        // "vertical/grid" belongs to the cards and lister blocks. It is not a panel layout, so it
+        // must neither be honoured nor switch the flattening on.
+        final String columns = columnsNode("foreign", "mobilelayout", "vertical/grid");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/text", "a");
+
+        final Map<String, Object> panel = exportOf(columns).get(0);
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+        assertEquals(SchemaConstants.COMPONENT_PANEL,
+                meta(content(panel).get(0)).get(SchemaConstants.KEY_COMPONENT), "nesting kept");
+    }
+
+    @Test
+    void typedColumnCellsWithNoRowWrapperAlsoFlatten() {
+        final String columns = columnsNode("typed", "mobilelayout", "horizontal");
+        for (final String cell : new String[] {"col0", "col1"}) {
+            context.create().resource(columns + "/" + cell,
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
+                    "model", "column", "itemAlignment", "vertical");
+            text(columns + "/" + cell + "/text", cell);
+        }
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals(2, kids.size(), "a recognised column cell is unwrapped like an untyped one");
+        assertEquals("htmlText", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+    }
+
+    @Test
+    void leavesDirectlyUnderColumnsAreLeftAlone() {
+        final String columns = columnsNode("direct", "mobilelayout", "horizontal");
+        text(columns + "/t1", "a");
+        text(columns + "/t2", "b");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals(2, kids.size(), "nothing to unwrap - flattening is a no-op here");
+        assertEquals(0, meta(kids.get(0)).get(SchemaConstants.KEY_ORDER));
+        assertEquals(1, meta(kids.get(1)).get(SchemaConstants.KEY_ORDER));
+    }
+
+    @Test
+    void nestedColumnsBlockCollapsesAllTheWay() {
+        final String columns = columnsNode("deep", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/text", "outer");
+        final String inner = columns + "/row1/col2/columns";
+        context.create().resource(inner, "sling:resourceType", SchemaConstants.RT_FRANKLIN_COLUMNS);
+        context.create().resource(inner + "/row1");
+        text(inner + "/row1/col1/text", "inner-a");
+        text(inner + "/row1/col2/text", "inner-b");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals(3, kids.size(), "the inner block's own panels go too - flattening recurses");
+        for (int index = 0; index < kids.size(); index++) {
+            assertEquals("htmlText", meta(kids.get(index)).get(SchemaConstants.KEY_COMPONENT));
+            assertEquals(index, meta(kids.get(index)).get(SchemaConstants.KEY_ORDER));
+        }
+    }
+
+    @Test
+    void cellsHoldingSeveralLeavesKeepOneOrderAcrossThePanel() {
+        final String columns = columnsNode("multi", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/t1", "a");
+        text(columns + "/row1/col1/t2", "b");
+        text(columns + "/row1/col2/t1", "c");
+        text(columns + "/row1/col2/t2", "d");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals(4, kids.size());
+        for (int index = 0; index < 4; index++) {
+            assertEquals(index, meta(kids.get(index)).get(SchemaConstants.KEY_ORDER),
+                    "order runs across the whole panel, not per cell");
+        }
+    }
+
+    @Test
+    void emptyCellsLeaveNoGapInTheOrder() {
+        final String columns = columnsNode("gappy", "mobilelayout", "horizontal");
+        // the spare block/item cell UE creates up front, and an empty untyped col
+        context.create().resource(columns + "/column",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK_ITEM,
+                "model", "column", "itemAlignment", "vertical");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1");
+        text(columns + "/row1/col2/text", "only");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals(1, kids.size(), "an empty cell emits no panel, so there is nothing to unwrap");
+        assertEquals(0, meta(kids.get(0)).get(SchemaConstants.KEY_ORDER));
+    }
+
+    @Test
+    void anEmptyColumnsBlockEmitsNothingAtAll() {
+        final String columns = columnsNode("void", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1");
+
+        assertEquals(0, exportOf(columns).size(), "a panel with no content is dropped, authored or not");
+    }
+
+    @Test
+    void aSectionIsNeverFlattened() {
+        final Page page = context.create().page("/content/s/en/sec-flat");
+        final String section = page.getPath() + "/jcr:content/root/section";
+        context.create().resource(section,
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION,
+                "mobilelayout", "horizontal");
+        final String inner = section + "/columns";
+        context.create().resource(inner, "sling:resourceType", SchemaConstants.RT_FRANKLIN_COLUMNS);
+        context.create().resource(inner + "/row1");
+        text(inner + "/row1/col1/text", "a");
+
+        final Map<String, Object> panel = walker.componentsOf(page, null, true).get(0);
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT),
+                "a section honours the field for its own layout");
+        assertEquals(SchemaConstants.COMPONENT_PANEL,
+                meta(content(panel).get(0)).get(SchemaConstants.KEY_COMPONENT),
+                "but does not flatten - the unauthored columns block inside keeps its panel");
+    }
+
+    @Test
+    void aPageLevelComponentStillEscapesAFlattenedBlock() {
+        final String columns = columnsNode("hoist", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/text", "before");
+        context.create().resource(columns + "/row1/col2/map",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "map", "mobileDisplayAs", "fullMap");
+
+        final List<Map<String, Object>> components = exportOf(columns);
+        assertEquals(2, components.size(), "the map is hoisted out rather than left in the panel");
+        assertEquals(SchemaConstants.COMPONENT_PANEL,
+                meta(components.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("map", meta(components.get(1)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("htmlText",
+                meta(content(components.get(0)).get(0)).get(SchemaConstants.KEY_COMPONENT));
+    }
 }
