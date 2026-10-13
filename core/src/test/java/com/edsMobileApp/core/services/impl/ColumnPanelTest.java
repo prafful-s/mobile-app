@@ -759,4 +759,57 @@ class ColumnPanelTest {
             assertEquals("htmlText", meta(kid).get(SchemaConstants.KEY_COMPONENT));
         }
     }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> contentMap(final Map<String, Object> entry) {
+        return (Map<String, Object>) entry.get(SchemaConstants.KEY_CONTENT);
+    }
+
+    @Test
+    void anImageInARowDoesNotClaimTheWholeWidth() {
+        final String columns = columnsNode("img-row", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col2/title", "Janet Lee");
+        text(columns + "/row1/col2/subtitle", "Loan Officer");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals("image", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(Boolean.FALSE, contentMap(kids.get(0)).get("fullWidth"),
+                "beside the stack it must leave room for it, or the siblings get no width at all");
+    }
+
+    @Test
+    void anImageStackedAloneKeepsItsFullWidth() {
+        final String columns = columnsNode("img-stack", "mobilelayout", "vertical");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col2/title", "Janet Lee");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals("image", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(Boolean.TRUE, contentMap(kids.get(0)).get("fullWidth"),
+                "a vertical panel stacks, so the image across the screen is still right");
+    }
+
+    @Test
+    void anImageInsideItsOwnCellKeepsItsFullWidth() {
+        // The unauthored shape: cells survive, so the image is alone in a vertical cell even
+        // though the block around it is horizontal.
+        final String columns = columnsNode("img-celled");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col1/caption", "Janet Lee");
+        text(columns + "/row1/col2/title", "Loan Officer");
+
+        final Map<String, Object> row = content(exportOf(columns).get(0)).get(0);
+        final Map<String, Object> cell = content(row).get(0);
+        assertEquals(Boolean.TRUE, contentMap(content(cell).get(0)).get("fullWidth"));
+    }
 }
