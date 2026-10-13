@@ -661,4 +661,101 @@ class ColumnPanelTest {
         assertEquals("vertical", meta(panel).get(SchemaConstants.KEY_LAYOUT));
         assertEquals(8, styles(panel).get("gap"), "keeps the vertical spacing it always had");
     }
+
+    /**
+     * The shape that exposed the flaw: an image in one cell, a title/subtitle/button stack in the
+     * other. Flattening both cells laid all four along the block's horizontal axis, and the image
+     * is fullWidth, so it took the row and pushed the rest off screen.
+     */
+    @Test
+    void anImageCellBesideAStackedCellKeepsTheStackTogether() {
+        final String columns = columnsNode("janet", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col2/title", "Janet Lee");
+        text(columns + "/row1/col2/subtitle", "Loan Officer");
+        text(columns + "/row1/col2/cta", "Call me now");
+
+        final Map<String, Object> panel = exportOf(columns).get(0);
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+
+        final List<Map<String, Object>> kids = content(panel);
+        assertEquals(2, kids.size(), "the image, then the stack - not four siblings in a row");
+        assertEquals("image", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(SchemaConstants.COMPONENT_PANEL, meta(kids.get(1)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("vertical", meta(kids.get(1)).get(SchemaConstants.KEY_LAYOUT));
+        assertEquals(3, content(kids.get(1)).size(), "title, subtitle and button stay grouped");
+    }
+
+    @Test
+    void aLoneWrapperIsDissolvedHoweverMuchItHolds() {
+        // row1 is the only child of the block. Keeping it would leave its vertical layout in charge
+        // of the cells, which is the whole reason an authored horizontal was inert to begin with.
+        final String columns = columnsNode("lone-wrapper", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/a", "a");
+        text(columns + "/row1/col2/b", "b");
+        text(columns + "/row1/col3/c", "c");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals(3, kids.size(), "three single-leaf cells, no row panel between them");
+        for (final Map<String, Object> kid : kids) {
+            assertEquals("htmlText", meta(kid).get(SchemaConstants.KEY_COMPONENT));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> contentMap(final Map<String, Object> entry) {
+        return (Map<String, Object>) entry.get(SchemaConstants.KEY_CONTENT);
+    }
+
+    @Test
+    void anImageInARowDoesNotClaimTheWholeWidth() {
+        final String columns = columnsNode("img-row", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col2/title", "Janet Lee");
+        text(columns + "/row1/col2/subtitle", "Loan Officer");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals("image", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(Boolean.FALSE, contentMap(kids.get(0)).get("fullWidth"),
+                "beside the stack it must leave room for it, or the siblings get no width at all");
+    }
+
+    @Test
+    void anImageStackedAloneKeepsItsFullWidth() {
+        final String columns = columnsNode("img-stack", "mobilelayout", "vertical");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col2/title", "Janet Lee");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals("image", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(Boolean.TRUE, contentMap(kids.get(0)).get("fullWidth"),
+                "a vertical panel stacks, so the image across the screen is still right");
+    }
+
+    @Test
+    void anImageInsideItsOwnCellKeepsItsFullWidth() {
+        // The unauthored shape: cells survive, so the image is alone in a vertical cell even
+        // though the block around it is horizontal.
+        final String columns = columnsNode("img-celled");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col1/caption", "Janet Lee");
+        text(columns + "/row1/col2/title", "Loan Officer");
+
+        final Map<String, Object> row = content(exportOf(columns).get(0)).get(0);
+        final Map<String, Object> cell = content(row).get(0);
+        assertEquals(Boolean.TRUE, contentMap(content(cell).get(0)).get("fullWidth"));
+    }
 }
