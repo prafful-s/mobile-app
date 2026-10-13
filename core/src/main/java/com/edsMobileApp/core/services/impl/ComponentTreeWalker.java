@@ -1506,14 +1506,34 @@ final class ComponentTreeWalker {
      * colliding {@code order} values until they are stamped again against their new position.</p>
      */
     @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> contentOf(final Map<String, Object> panel) {
+        final Object content = panel.get(SchemaConstants.KEY_CONTENT);
+        return content instanceof List ? (List<Map<String, Object>>) content : Collections.emptyList();
+    }
+
     private static List<Map<String, Object>> flattenPanels(final List<Map<String, Object>> children) {
+        // A lone panel wrapping everything is scaffolding, not layout: it is AEM's untyped row
+        // wrapper, and its own vertical layout is exactly what was overriding the block's. Dissolve
+        // it however much it holds, then decide cell by cell.
+        if (children.size() == 1 && isPanel(children.get(0))) {
+            return flattenPanels(contentOf(children.get(0)));
+        }
+
         final List<Map<String, Object>> flat = new ArrayList<>();
         for (final Map<String, Object> child : children) {
-            if (isPanel(child)) {
-                final Object content = child.get(SchemaConstants.KEY_CONTENT);
-                flat.addAll(flattenPanels(content instanceof List
-                        ? (List<Map<String, Object>>) content : Collections.emptyList()));
-            } else {
+            if (!isPanel(child)) {
+                flat.add(child);
+                continue;
+            }
+            final List<Map<String, Object>> inner = flattenPanels(contentOf(child));
+            if (inner.size() == 1) {
+                // A cell holding one component says nothing that the component does not.
+                flat.addAll(inner);
+            } else if (!inner.isEmpty()) {
+                // Several components in one cell were grouped on purpose - an image beside a title,
+                // a subtitle and a button - so the cell keeps the panel that groups them. Dropping
+                // it would lay all of them out along the block's own axis and push most off screen.
+                child.put(SchemaConstants.KEY_CONTENT, inner);
                 flat.add(child);
             }
         }
