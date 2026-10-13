@@ -1417,6 +1417,9 @@ final class ComponentTreeWalker {
         meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
 
         final boolean vertical = "vertical".equals(meta.get(SchemaConstants.KEY_LAYOUT));
+        if (!vertical) {
+            clearFullWidthImages(children);
+        }
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
@@ -1490,6 +1493,29 @@ final class ComponentTreeWalker {
         final Map<String, Object> created = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_STYLES, created);
         return created;
+    }
+
+    /**
+     * An image declares {@code fullWidth} so a client stretches it across the screen, and
+     * image.json defaults it to true because that is right for the usual case - an image alone in
+     * a stack. Beside something else in a row it is not: the image takes the whole width and its
+     * siblings get none, which is a blank space rather than a layout.
+     *
+     * <p>Only direct children are touched. An image inside a cell of its own is still alone in
+     * that cell, whatever the block around it is doing, so it keeps its full width.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private static void clearFullWidthImages(final List<Map<String, Object>> children) {
+        for (final Map<String, Object> child : children) {
+            if (!SchemaConstants.COMPONENT_IMAGE.equals(
+                    asMeta(child.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
+                continue;
+            }
+            final Object content = child.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof Map) {
+                ((Map<String, Object>) content).put("fullWidth", Boolean.FALSE);
+            }
+        }
     }
 
     private static boolean isPanel(final Map<String, Object> entry) {
