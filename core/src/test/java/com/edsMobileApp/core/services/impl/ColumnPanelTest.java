@@ -526,7 +526,7 @@ class ColumnPanelTest {
     }
 
     @Test
-    void nestedColumnsBlockCollapsesAllTheWay() {
+    void aNestedColumnsBlockKeepsWhatItGrouped() {
         final String columns = columnsNode("deep", "mobilelayout", "horizontal");
         context.create().resource(columns + "/row1");
         text(columns + "/row1/col1/text", "outer");
@@ -537,15 +537,17 @@ class ColumnPanelTest {
         text(inner + "/row1/col2/text", "inner-b");
 
         final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
-        assertEquals(3, kids.size(), "the inner block's own panels go too - flattening recurses");
-        for (int index = 0; index < kids.size(); index++) {
-            assertEquals("htmlText", meta(kids.get(index)).get(SchemaConstants.KEY_COMPONENT));
-            assertEquals(index, meta(kids.get(index)).get(SchemaConstants.KEY_ORDER));
-        }
+        assertEquals(2, kids.size(), "the outer cell's single leaf, then the inner block's pair");
+        assertEquals("htmlText", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(SchemaConstants.COMPONENT_PANEL, meta(kids.get(1)).get(SchemaConstants.KEY_COMPONENT),
+                "the inner block held two components, so the panel grouping them survives");
+        assertEquals(2, content(kids.get(1)).size());
+        assertEquals(0, meta(kids.get(0)).get(SchemaConstants.KEY_ORDER));
+        assertEquals(1, meta(kids.get(1)).get(SchemaConstants.KEY_ORDER));
     }
 
     @Test
-    void cellsHoldingSeveralLeavesKeepOneOrderAcrossThePanel() {
+    void aCellHoldingSeveralLeavesKeepsItsOwnPanel() {
         final String columns = columnsNode("multi", "mobilelayout", "horizontal");
         context.create().resource(columns + "/row1");
         text(columns + "/row1/col1/t1", "a");
@@ -554,10 +556,14 @@ class ColumnPanelTest {
         text(columns + "/row1/col2/t2", "d");
 
         final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
-        assertEquals(4, kids.size());
-        for (int index = 0; index < 4; index++) {
-            assertEquals(index, meta(kids.get(index)).get(SchemaConstants.KEY_ORDER),
-                    "order runs across the whole panel, not per cell");
+        assertEquals(2, kids.size(), "two cells, each holding a pair, so both keep their panel");
+        for (int index = 0; index < kids.size(); index++) {
+            assertEquals(SchemaConstants.COMPONENT_PANEL,
+                    meta(kids.get(index)).get(SchemaConstants.KEY_COMPONENT));
+            assertEquals("vertical", meta(kids.get(index)).get(SchemaConstants.KEY_LAYOUT),
+                    "each cell stacks its own contents, across the block's horizontal axis");
+            assertEquals(2, content(kids.get(index)).size());
+            assertEquals(index, meta(kids.get(index)).get(SchemaConstants.KEY_ORDER));
         }
     }
 
@@ -708,5 +714,49 @@ class ColumnPanelTest {
         assertEquals(SchemaConstants.COMPONENT_PANEL, meta(cell).get(SchemaConstants.KEY_COMPONENT),
                 "flattening is a columns-block decision; a cell setting its own layout keeps its panel");
         assertEquals(2, content(cell).size());
+    }
+
+    /**
+     * The shape that exposed the flaw: an image in one cell, a title/subtitle/button stack in the
+     * other. Flattening both cells laid all four along the block's horizontal axis, and the image
+     * is fullWidth, so it took the row and pushed the rest off screen.
+     */
+    @Test
+    void anImageCellBesideAStackedCellKeepsTheStackTogether() {
+        final String columns = columnsNode("janet", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        context.create().resource(columns + "/row1/col1/image",
+                "sling:resourceType", "core/franklin/components/image/v1/image",
+                "model", "image", "image", "/content/dam/s/janet.png");
+        text(columns + "/row1/col2/title", "Janet Lee");
+        text(columns + "/row1/col2/subtitle", "Loan Officer");
+        text(columns + "/row1/col2/cta", "Call me now");
+
+        final Map<String, Object> panel = exportOf(columns).get(0);
+        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT));
+
+        final List<Map<String, Object>> kids = content(panel);
+        assertEquals(2, kids.size(), "the image, then the stack - not four siblings in a row");
+        assertEquals("image", meta(kids.get(0)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals(SchemaConstants.COMPONENT_PANEL, meta(kids.get(1)).get(SchemaConstants.KEY_COMPONENT));
+        assertEquals("vertical", meta(kids.get(1)).get(SchemaConstants.KEY_LAYOUT));
+        assertEquals(3, content(kids.get(1)).size(), "title, subtitle and button stay grouped");
+    }
+
+    @Test
+    void aLoneWrapperIsDissolvedHoweverMuchItHolds() {
+        // row1 is the only child of the block. Keeping it would leave its vertical layout in charge
+        // of the cells, which is the whole reason an authored horizontal was inert to begin with.
+        final String columns = columnsNode("lone-wrapper", "mobilelayout", "horizontal");
+        context.create().resource(columns + "/row1");
+        text(columns + "/row1/col1/a", "a");
+        text(columns + "/row1/col2/b", "b");
+        text(columns + "/row1/col3/c", "c");
+
+        final List<Map<String, Object>> kids = content(exportOf(columns).get(0));
+        assertEquals(3, kids.size(), "three single-leaf cells, no row panel between them");
+        for (final Map<String, Object> kid : kids) {
+            assertEquals("htmlText", meta(kid).get(SchemaConstants.KEY_COMPONENT));
+        }
     }
 }
