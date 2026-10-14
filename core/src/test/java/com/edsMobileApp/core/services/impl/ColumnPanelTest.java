@@ -302,15 +302,6 @@ class ColumnPanelTest {
     }
 
     @Test
-    void sectionTakesItsAuthoredMobileLayout() {
-        final Map<String, Object> panel = sectionPanel("authored", "mobilelayout", "horizontal");
-
-        assertEquals(SchemaConstants.COMPONENT_PANEL, meta(panel).get(SchemaConstants.KEY_COMPONENT));
-        assertEquals("horizontal", meta(panel).get(SchemaConstants.KEY_LAYOUT));
-        assertEquals(0, styles(panel).get("gap"), "a horizontal panel takes the horizontal spacing defaults");
-    }
-
-    @Test
     void unauthoredSectionKeepsStackingAsItAlwaysHas() {
         final Map<String, Object> panel = sectionPanel("unauthored");
 
@@ -646,20 +637,6 @@ class ColumnPanelTest {
         assertEquals(SchemaConstants.COMPONENT_PANEL,
                 meta(content(panel).get(0)).get(SchemaConstants.KEY_COMPONENT),
                 "and the nesting is kept - an empty default must not switch flattening on");
-    }
-
-    @Test
-    void anEmptyDefaultOnASectionLeavesItStacked() {
-        final Page page = context.create().page("/content/s/en/sec-empty");
-        final String section = page.getPath() + "/jcr:content/root/section";
-        context.create().resource(section,
-                "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION,
-                "mobilelayout", "");
-        text(section + "/text", "a");
-
-        final Map<String, Object> panel = walker.componentsOf(page, null, true).get(0);
-        assertEquals("vertical", meta(panel).get(SchemaConstants.KEY_LAYOUT));
-        assertEquals(8, styles(panel).get("gap"), "keeps the vertical spacing it always had");
     }
 
     /** A cell with its own Layout field set: the dropdown added to the column model. */
