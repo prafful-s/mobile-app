@@ -662,6 +662,60 @@ class ColumnPanelTest {
         assertEquals(8, styles(panel).get("gap"), "keeps the vertical spacing it always had");
     }
 
+    /** A cell with its own Layout field set: the dropdown added to the column model. */
+    private Map<String, Object> cellPanel(final String name, final Object... cellProps) {
+        final Page page = context.create().page("/content/s/en/" + name);
+        final String columns = page.getPath() + "/jcr:content/root/columns";
+        context.create().resource(columns, "sling:resourceType", SchemaConstants.RT_FRANKLIN_COLUMNS);
+        final Object[] props = new Object[cellProps.length + 6];
+        props[0] = "sling:resourceType";
+        props[1] = SchemaConstants.RT_FRANKLIN_BLOCK_ITEM;
+        props[2] = "model";
+        props[3] = "column";
+        props[4] = "itemAlignment";
+        props[5] = "vertical";
+        System.arraycopy(cellProps, 0, props, 6, cellProps.length);
+        context.create().resource(columns + "/col0", props);
+        context.create().resource(columns + "/col0/t1",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT, "model", "text", "text", "<p>a</p>");
+        context.create().resource(columns + "/col0/t2",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT, "model", "text", "text", "<p>b</p>");
+        return content(walker.componentsOf(page, null, true).get(0)).get(0);
+    }
+
+    @Test
+    void aCellsOwnLayoutFieldOverridesItsItemAlignment() {
+        assertEquals("horizontal",
+                meta(cellPanel("cell-h", "mobilelayout", "horizontal")).get(SchemaConstants.KEY_LAYOUT),
+                "the Layout field is more specific than the Basic tab's Item Alignment");
+    }
+
+    @Test
+    void aCellCanBeForcedVerticalAgainstAHorizontalItemAlignment() {
+        assertEquals("vertical",
+                meta(cellPanel("cell-v", "itemAlignment", "horizontal", "mobilelayout", "vertical"))
+                        .get(SchemaConstants.KEY_LAYOUT),
+                "and it overrides in the other direction too, not just towards horizontal");
+    }
+
+    @Test
+    void aCellsDefaultLayoutFallsBackToItemAlignment() {
+        assertEquals("horizontal",
+                meta(cellPanel("cell-default", "itemAlignment", "horizontal", "mobilelayout", ""))
+                        .get(SchemaConstants.KEY_LAYOUT),
+                "the Default option must leave the existing Item Alignment in charge");
+        assertEquals("vertical",
+                meta(cellPanel("cell-default-v", "mobilelayout", "")).get(SchemaConstants.KEY_LAYOUT));
+    }
+
+    @Test
+    void aCellLayoutDoesNotFlattenTheBlockAroundIt() {
+        final Map<String, Object> cell = cellPanel("cell-no-flatten", "mobilelayout", "horizontal");
+        assertEquals(SchemaConstants.COMPONENT_PANEL, meta(cell).get(SchemaConstants.KEY_COMPONENT),
+                "flattening is a columns-block decision; a cell setting its own layout keeps its panel");
+        assertEquals(2, content(cell).size());
+    }
+
     /**
      * The shape that exposed the flaw: an image in one cell, a title/subtitle/button stack in the
      * other. Flattening both cells laid all four along the block's horizontal axis, and the image
