@@ -125,7 +125,7 @@ class CitiSignalFormsTest {
     @Test
     void automaticPaymentsButtonDefaultsToCreateAndTheAuthoredLabelWins() {
         assertEquals("Create", meta(exportForm("automatic-payments")).get("submitButtonLabel"));
-        assertEquals("Pay", meta(exportForm("automatic-payments", "submit-label", "Pay"))
+        assertEquals("Pay", meta(exportForm("automatic-payments", "button-label", "Pay"))
                 .get("submitButtonLabel"));
     }
 
