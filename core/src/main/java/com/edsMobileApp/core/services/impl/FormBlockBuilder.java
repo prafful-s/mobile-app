@@ -136,16 +136,6 @@ final class FormBlockBuilder {
             "test-drive", "test-drive");
 
     /**
-     * The submit button text a form's own block falls back to when no label is authored - the
-     * block's own default, keyed by schema name. Anything not listed keeps
-     * {@link #DEFAULT_SUBMIT_LABEL}.
-     */
-    private static final Map<String, String> DEFAULT_SUBMIT_LABELS = Map.of(
-            "automatic-payments", "Create",
-            "mobile-additional-service", "Buy",
-            "tv-additional-service", "Add to plan");
-
-    /**
      * {@code authored}, with {@code variant} filled in from {@link #DEFAULT_VARIANTS} when the form
      * names an entry there and the block itself carries none - so a block whose author never touched
      * the variant dropdown is evaluated exactly as its own dialog default would render it, not as
@@ -286,7 +276,7 @@ final class FormBlockBuilder {
         meta.put("submitButtonLabel",
                 StringUtils.defaultIfBlank(first(authored, SUBMIT_LABEL_KEYS, null),
                         StringUtils.defaultIfBlank(submitLabelFromChildren(resource),
-                                defaultSubmitLabel(formName))));
+                                DEFAULT_SUBMIT_LABEL)));
 
         final Map<String, Object> form = new LinkedHashMap<>();
         form.put(SchemaConstants.KEY_META, meta);
@@ -350,12 +340,6 @@ final class FormBlockBuilder {
         button.put(SchemaConstants.KEY_META, meta);
         button.put(SchemaConstants.KEY_CONTENT, content);
         return button;
-    }
-
-    /** @return the form's own default submit text - see {@link #DEFAULT_SUBMIT_LABELS} */
-    private static String defaultSubmitLabel(final String formName) {
-        return formName == null ? DEFAULT_SUBMIT_LABEL
-                : DEFAULT_SUBMIT_LABELS.getOrDefault(formName, DEFAULT_SUBMIT_LABEL);
     }
 
     private static String redirectScreen(final String redirect) {

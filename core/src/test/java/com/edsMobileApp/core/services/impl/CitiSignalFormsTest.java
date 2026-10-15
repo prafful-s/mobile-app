@@ -123,10 +123,12 @@ class CitiSignalFormsTest {
     }
 
     @Test
-    void automaticPaymentsButtonDefaultsToCreateAndTheAuthoredLabelWins() {
-        assertEquals("Create", meta(exportForm("automatic-payments")).get("submitButtonLabel"));
-        assertEquals("Pay", meta(exportForm("automatic-payments", "button-label", "Pay"))
-                .get("submitButtonLabel"));
+    void theButtonTextIsAuthoredAndDefaultsToSubmit() {
+        for (final String form : new String[] {"automatic-payments", "mobile-additional-service", "tv-additional-service"}) {
+            assertEquals("Submit", meta(exportForm(form)).get("submitButtonLabel"), form + " with no text authored");
+            assertEquals("Pay now", meta(exportForm(form, "button-label", "Pay now")).get("submitButtonLabel"),
+                    form + " with an authored text");
+        }
     }
 
     @Test
@@ -141,7 +143,6 @@ class CitiSignalFormsTest {
         for (final Map<String, Object> heading : byComponent(form, "title")) {
             assertEquals("bold", content(heading).get("weight"));
         }
-        assertEquals("Buy", meta(form).get("submitButtonLabel"));
 
         final Map<String, Object> first = byComponent(form, "checkboxGroup").get(0);
         final Map<String, Object> firstOption = ((List<Map<String, Object>>) content(first).get("options")).get(0);
@@ -161,7 +162,6 @@ class CitiSignalFormsTest {
         for (final Map<String, Object> heading : byComponent(form, "title")) {
             assertEquals("regular", content(heading).get("weight"));
         }
-        assertEquals("Add to plan", meta(form).get("submitButtonLabel"));
 
         final Map<String, Object> premium = byComponent(form, "checkboxGroup").get(1);
         final List<Map<String, Object>> options = (List<Map<String, Object>>) content(premium).get("options");
