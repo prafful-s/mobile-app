@@ -10,8 +10,7 @@
   "fields": [
     { "target": "image", "from": "image" },
     { "target": "title", "extract": { "from": "text", "select": "h1, h2", "as": "text" } },
-    { "target": "titleVariant", "from": "mobiletitlevariant", "default": "titleLarge" },
-    { "target": "subtitleVariant", "from": "mobilesubtitlevariant" },
+    { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitle",
       "extract": { "from": "text", "select": "p:not(:has(a)), h3, h4, h5, h6", "as": "text", "all": true },
       "nullable": true },
@@ -34,8 +33,6 @@
     { "target": "verticalAlignment", "from": "verticalalignment", "default": "top" },
     { "target": "contentAlignment", "from": "alignment", "default": "left" },
     { "target": "horizontalAlignment", "from": "mobilehorizontalalignment" },
-    { "target": "contentAlignment", "from": "mobilecontentalignment" },
-    { "target": "verticalAlignment", "from": "mobileverticalalignment" },
     { "target": "opacity", "from": "textoverlay", "type": "number",
       "map": { "true": 0.5, "false": 0 }, "default": 0.5 },
     { "target": "opacity", "from": "mobileopacity", "type": "number" }

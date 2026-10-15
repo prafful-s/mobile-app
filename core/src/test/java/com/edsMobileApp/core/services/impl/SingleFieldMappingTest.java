@@ -48,6 +48,26 @@ class SingleFieldMappingTest {
         assertEquals("", web.get("icon"));
     }
 
+    /**
+     * The hero's Mobile Specific tab carries only horizontal alignment and overlay opacity. Content and
+     * vertical alignment come from the web fields and the title and subtitle from the text, so the
+     * mobile title/subtitle variants and content/vertical alignments are not read.
+     */
+    @Test
+    void aHeroReadsOnlyItsMobileHorizontalAlignmentAndOpacity() {
+        final Map<String, Object> mapped = map("hero", "text", "<h1>Title</h1><p>Sub</p>", "image", "/hero.jpg",
+                "alignment", "center", "verticalalignment", "bottom",
+                "mobilehorizontalalignment", "right", "mobileopacity", "0.4",
+                "mobiletitlevariant", "headlineLarge", "mobilesubtitlevariant", "headlineMedium",
+                "mobilecontentalignment", "right", "mobileverticalalignment", "top");
+        assertEquals("right", mapped.get("horizontalAlignment"));
+        assertEquals(0.4, ((Number) mapped.get("opacity")).doubleValue(), 0.0001);
+        assertEquals("center", mapped.get("contentAlignment"), "content alignment follows the web field");
+        assertEquals("bottom", mapped.get("verticalAlignment"), "vertical alignment follows the web field");
+        assertEquals("titleLarge", mapped.get("titleVariant"), "the title keeps its default size");
+        assertNull(mapped.get("subtitleVariant"), "there is no authored subtitle size");
+    }
+
     @Test
     void flightSearchEventTypeIsTheMobileField() {
         assertEquals("mobile.search", map("flight-search", "mobilebuttoneventtype", "mobile.search",
