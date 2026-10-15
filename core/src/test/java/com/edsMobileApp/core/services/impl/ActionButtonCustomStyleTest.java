@@ -169,4 +169,26 @@ class ActionButtonCustomStyleTest {
         assertFalse(contentOf(components, "button").containsKey("custommobilestyle"),
                 "custommobilestyle already reached styles - content must not carry a raw duplicate");
     }
+
+    /** The core {@code button} (button.json) takes the same {@code custommobilestyle} as an action-button. */
+    @Test
+    void aCoreButtonsCustomMobileStyleReachesItsStylesAndStaysOutOfContent() {
+        final Page page = context.create().page("/content/s/en/p");
+        context.create().resource(page.getPath() + "/jcr:content/root");
+        context.create().resource(page.getPath() + "/jcr:content/root/cta",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "button",
+                "linkText", "Apply for New Card",
+                "mobilebuttonvariant", "elevated",
+                "custommobilestyle", new String[] {"marginTop:20", "width:200"});
+
+        final List<Map<String, Object>> components =
+                walkerWithMockedModelFactory().componentsOf(page, "https://assets.example.com", true, false);
+
+        assertEquals(20L, stylesOf(components, "button").get("marginTop"));
+        assertEquals(200L, stylesOf(components, "button").get("width"));
+        assertEquals("elevated", contentOf(components, "button").get("variant"));
+        assertFalse(contentOf(components, "button").containsKey("custommobilestyle"),
+                "custommobilestyle reached styles - content must not carry a raw duplicate");
+    }
 }
