@@ -1,0 +1,100 @@
+[
+  {
+    "id": "mobile-heading-1",
+    "type": "heading",
+    "label": "Data & Internet Add-Ons",
+    "weight": "bold"
+  },
+  {
+    "id": "mobile-options-1",
+    "value": "",
+    "type": "checkbox",
+    "variant": "checkbox",
+    "styles": {
+      "flexDirection": "vertical",
+      "width": 300
+    },
+    "options": [
+      {
+        "path": "extraData",
+        "label": "Extra Data - 5GB - $40"
+      },
+      {
+        "path": "internationalDataPlans",
+        "label": "International Data Plans - $10/month"
+      },
+      {
+        "path": "mobileHotspots",
+        "label": "Mobile Hotspot Data Boosts -$35 for 5GB extra data"
+      }
+    ]
+  },
+  {
+    "id": "mobile-heading-2",
+    "type": "heading",
+    "label": "Entertainment & Streaming",
+    "weight": "bold"
+  },
+  {
+    "id": "mobile-options-2",
+    "value": "",
+    "type": "checkbox",
+    "variant": "checkbox",
+    "styles": {
+      "flexDirection": "vertical",
+      "width": 300
+    },
+    "options": [
+      {
+        "path": "appleMusic",
+        "label": "Apple Music Subscription - $10.99/month"
+      },
+      {
+        "path": "disneyHulu",
+        "label": "Disney+ / Hulu / ESPN+ Bundles - $10.99/month"
+      },
+      {
+        "path": "cloudStorage",
+        "label": "CitiSignal Cloud Storage - 600GB: $6/month"
+      },
+      {
+        "path": "gamingPass",
+        "label": "Gaming Passes or Streaming Services - $10.99/month"
+      }
+    ]
+  },
+  {
+    "id": "mobile-heading-3",
+    "type": "heading",
+    "label": "Device Protection & Security",
+    "weight": "bold"
+  },
+  {
+    "id": "mobile-options-3",
+    "value": "",
+    "type": "checkbox",
+    "variant": "checkbox",
+    "styles": {
+      "flexDirection": "vertical",
+      "width": 300
+    },
+    "options": [
+      {
+        "path": "mobileProtect",
+        "label": "CitiSignal Mobile Protect (phone insurance & tech support) - $17/month per device"
+      },
+      {
+        "path": "smartFamily",
+        "label": "Smart Family (parental controls & location tracking) - $4.99/month"
+      },
+      {
+        "path": "callFilterPlus",
+        "label": "Call Filter Plus (spam call blocking) - $2.99/month"
+      },
+      {
+        "path": "totalMobileProtect",
+        "label": "Total Mobile Protection (extended warranty & device repair) - $14/month per device"
+      }
+    ]
+  }
+]

@@ -25,8 +25,9 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
- * Citi Signal's two forms: {@code automatic-payments}, and {@code additional-service} with its
- * Mobile and TV variants. Both are fixed schemas, so what is tested is the shape the old app JSON
+ * Citi Signal's forms: {@code automatic-payments}, and the two independent additional service forms,
+ * {@code mobile-additional-service} and {@code tv-additional-service}. All are fixed schemas, so what
+ * is tested is the shape the old app JSON
  * carried - paths, option values, heading weights, the vertical width-capped checkbox groups and
  * each form's own button text.
  */
@@ -130,8 +131,8 @@ class CitiSignalFormsTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void additionalServiceIsTheMobileVariantUntilAuthoredOtherwise() {
-        final Map<String, Object> form = exportForm("additional-service");
+    void mobileAdditionalServiceHasItsThreeSectionsAndBuyButton() {
+        final Map<String, Object> form = exportForm("mobile-additional-service");
         assertEquals(3, byComponent(form, "checkboxGroup").size());
         assertEquals(11, optionCount(form));
         assertEquals(List.of("Data & Internet Add-Ons", "Entertainment & Streaming",
@@ -151,8 +152,8 @@ class CitiSignalFormsTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void additionalServiceTvHasItsOwnSectionsEmojisAndButton() {
-        final Map<String, Object> form = exportForm("additional-service", "variant", "tv");
+    void tvAdditionalServiceHasItsOwnSectionsEmojisAndButton() {
+        final Map<String, Object> form = exportForm("tv-additional-service");
         assertEquals(3, byComponent(form, "checkboxGroup").size());
         assertEquals(8, optionCount(form));
         assertEquals(List.of("Upgrade Your Plan", "Premium Channels", "Sports Add-ons"),
@@ -171,7 +172,7 @@ class CitiSignalFormsTest {
 
     @Test
     void checkboxGroupsAreVerticalAndWidthCappedSoLongLabelsWrap() {
-        final Map<String, Object> form = exportForm("additional-service");
+        final Map<String, Object> form = exportForm("mobile-additional-service");
         for (final Map<String, Object> group : byComponent(form, "checkboxGroup")) {
             @SuppressWarnings("unchecked")
             final Map<String, Object> styles = (Map<String, Object>) group.get(SchemaConstants.KEY_STYLES);
@@ -182,7 +183,7 @@ class CitiSignalFormsTest {
 
     @Test
     void anAuthoredWidthReplacesTheDefaultButKeepsTheVerticalLayout() {
-        final Map<String, Object> form = exportForm("additional-service",
+        final Map<String, Object> form = exportForm("mobile-additional-service",
                 "custommobilestyle", new String[] {"width:260"});
         for (final Map<String, Object> group : byComponent(form, "checkboxGroup")) {
             @SuppressWarnings("unchecked")

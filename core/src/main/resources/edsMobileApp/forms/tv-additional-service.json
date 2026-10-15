@@ -1,0 +1,88 @@
+[
+  {
+    "id": "tv-heading-1",
+    "type": "heading",
+    "label": "Upgrade Your Plan",
+    "weight": "regular"
+  },
+  {
+    "id": "tv-options-1",
+    "value": "",
+    "type": "checkbox",
+    "variant": "checkbox",
+    "styles": {
+      "flexDirection": "vertical",
+      "width": 300
+    },
+    "options": [
+      {
+        "path": "eliteMaxTV",
+        "label": "🌟 Elite Max Package (200+ channels, premium sports) – $15/month"
+      },
+      {
+        "path": "entertainmentTV",
+        "label": "🎬 Entertainment+ Package (More movies & lifestyle channels) – $10/month"
+      }
+    ]
+  },
+  {
+    "id": "tv-heading-2",
+    "type": "heading",
+    "label": "Premium Channels",
+    "weight": "regular"
+  },
+  {
+    "id": "tv-options-2",
+    "value": "",
+    "type": "checkbox",
+    "variant": "checkbox",
+    "styles": {
+      "flexDirection": "vertical",
+      "width": 300
+    },
+    "options": [
+      {
+        "path": "hboMax",
+        "label": "🍿 HBO Max – $15.99/month"
+      },
+      {
+        "path": "showtime",
+        "label": "🔥 Showtime – $10.99/month"
+      },
+      {
+        "path": "starz",
+        "label": "🎭 Starz – $9.99/month"
+      }
+    ]
+  },
+  {
+    "id": "tv-heading-3",
+    "type": "heading",
+    "label": "Sports Add-ons",
+    "weight": "regular"
+  },
+  {
+    "id": "tv-options-3",
+    "value": "",
+    "type": "checkbox",
+    "variant": "checkbox",
+    "styles": {
+      "flexDirection": "vertical",
+      "width": 300
+    },
+    "options": [
+      {
+        "path": "nfl",
+        "label": "🏈 NFL RedZone – $14.99/month"
+      },
+      {
+        "path": "mlb",
+        "label": "⚾ MLB Extra Innings – $129.99/season"
+      },
+      {
+        "path": "nba",
+        "label": "🏀 NBA League Pass – $99.99/season"
+      }
+    ]
+  }
+]
