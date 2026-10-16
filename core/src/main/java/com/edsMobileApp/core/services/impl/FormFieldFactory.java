@@ -222,8 +222,7 @@ final class FormFieldFactory {
 
         if (TYPE_HEADING.equals(type)) {
             final String id = StringUtils.defaultIfBlank(str(field.get("id")), "heading-" + order);
-            return component(id, order, COMPONENT_TITLE,
-                    headingContent(str(field.get("label")), str(field.get("weight"))));
+            return component(id, order, COMPONENT_TITLE, headingContent(str(field.get("label"))));
         }
         if (TYPE_LINK.equals(type)) {
             return null;
@@ -252,11 +251,7 @@ final class FormFieldFactory {
 
         // Only a field that knows where its value lives can be pre-filled - and a password never is,
         // whatever the configuration says.
-        // An entry may switch pre-filling off where the reference form does (a radio group whose
-        // path is only a label, not a profile location).
-        final boolean prefill = field.get("prefill") instanceof Boolean
-                ? (Boolean) field.get("prefill")
-                : StringUtils.isNotBlank(path) && !TYPE_PASSWORD.equals(type);
+        final boolean prefill = StringUtils.isNotBlank(path) && !TYPE_PASSWORD.equals(type);
 
         final Map<String, Object> content;
         if (isToggleGroup(component)) {
@@ -266,18 +261,11 @@ final class FormFieldFactory {
             content = dropdownContent(path, label, options(field), prefill);
         } else {
             content = typedContent(component, path, label, prefill,
-                    StringUtils.defaultIfBlank(str(field.get("inputMode")),
-                            inputMode(type, id, component)),
-                    TYPE_PASSWORD.equals(type),
+                    inputMode(type, id, component), TYPE_PASSWORD.equals(type),
                     str(field.get("value")), str(field.get("placeholder")),
                     str(field.get("defaultValue")));
         }
-        final Map<String, Object> built = component(id, order, component, content);
-        // Styles the reference form carries on a field (a vertical, width-capped checkbox group).
-        if (field.get("styles") instanceof Map && !((Map<?, ?>) field.get("styles")).isEmpty()) {
-            built.put(SchemaConstants.KEY_STYLES, new LinkedHashMap<>((Map<?, ?>) field.get("styles")));
-        }
-        return built;
+        return component(id, order, component, content);
     }
 
     /**
@@ -470,14 +458,13 @@ final class FormFieldFactory {
      * defaults as {@code title.json}'s mapping rule (size medium, weight bold, left-aligned): a
      * section-divider heading, not a page title, so a smaller/lighter treatment would be a mismatch,
      * but there is no reference distinguishing the two, so the one heading shape this project already
-     * has is reused rather than inventing a second. A schema entry may set {@code weight} (e.g.
-     * {@code regular}) where the reference form's section headings are not bold.
+     * has is reused rather than inventing a second.
      */
-    private static Map<String, Object> headingContent(final String text, final String weight) {
+    private static Map<String, Object> headingContent(final String text) {
         final Map<String, Object> content = new LinkedHashMap<>();
         content.put("size", "medium");
         content.put("text", StringUtils.defaultString(text));
-        content.put("weight", StringUtils.defaultIfBlank(weight, "bold"));
+        content.put("weight", "bold");
         content.put("textAlignment", "left");
         return content;
     }

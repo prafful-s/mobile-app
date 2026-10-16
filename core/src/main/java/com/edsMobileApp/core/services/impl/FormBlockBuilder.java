@@ -57,7 +57,7 @@ final class FormBlockBuilder {
     private static final String CUSTOM_MOBILE_STYLE_KEY = "custommobilestyle";
     /** The one {@code custommobilestyle} row key this export currently understands - see
      *  {@link #applyCheckboxWidth}. */
-    private static final String STYLE_KEY_WIDTH = "width";
+    private static final String STYLE_KEY_WIDTH = "checkbox-width";
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
@@ -364,7 +364,7 @@ final class FormBlockBuilder {
 
     /**
      * Applies the block's authored {@code custommobilestyle} - a multifield of free-text
-     * {@code key:value} rows (e.g. {@code "width:250"}, {@code "padding:0"}) - as {@code
+     * {@code key:value} rows (e.g. {@code "checkbox-width:250"}) - as {@code
      * styles.width} on every {@code checkboxGroup} field this form emits. The mapping has no way
      * to express a per-instance width, and several checkboxGroup labels run long enough on a phone
      * screen to need one (WKND Fly Club's consent, SecurFinancial's mortgage authorization and
@@ -373,14 +373,14 @@ final class FormBlockBuilder {
      * component models.
      *
      * <p>{@code custommobilestyle} is authored once per block, not per component, so today there is
-     * no way to say which of a form's several components a given row targets - only {@code width}
+     * no way to say which of a form's several components a given row targets - only {@code checkbox-width}
      * is read here, and it is applied to every {@code checkboxGroup} field, because a checkboxGroup
      * is the one component this form-building path currently needs a custom width for. Every other
      * row key ({@code padding}, or anything else) is ignored for now rather than guessed at; how a
      * block with more than one styleable component should target its rows is still open - Prafful
-     * to confirm before this reads more than {@code width}.</p>
+     * to confirm before this reads more than {@code checkbox-width}.</p>
      *
-     * <p>A blank/unauthored value, or no {@code width} row, leaves every checkboxGroup exactly as
+     * <p>A blank/unauthored value, or no {@code checkbox-width} row, leaves every checkboxGroup exactly as
      * built.</p>
      */
     @SuppressWarnings("unchecked")
