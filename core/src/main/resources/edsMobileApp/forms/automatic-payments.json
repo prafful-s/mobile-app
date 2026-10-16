@@ -1,23 +1,12 @@
 [
   {
     "id": "accountNumber",
-    "component": "textField",
-    "content": {
-      "mode": "outlined",
-      "path": "accountNumber",
-      "label": "Account number",
-      "prefill": true,
-      "inputMode": "decimal",
-      "multiline": false,
-      "isPassword": false,
-      "autoCorrect": false,
-      "leftElement": "off",
-      "rightElement": "off",
-      "enterKeyHint": "enter",
-      "value": "",
-      "placeholder": "",
-      "defaultValue": ""
-    }
+    "name": "accountNumber",
+    "label": "Account number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
   },
   {
     "id": "fullName",
@@ -44,29 +33,27 @@
   },
   {
     "id": "paymentMethod",
-    "component": "radioGroup",
-    "content": {
-      "path": "Payment Method",
-      "options": [
-        {
-          "label": "Credit/Debit Card",
-          "value": "card"
-        },
-        {
-          "label": "Bank Account (Direct Debit)",
-          "value": "bank"
-        },
-        {
-          "label": "PayPal",
-          "value": "paypall"
-        },
-        {
-          "label": "Other (Please specify)",
-          "value": "other"
-        }
-      ],
-      "prefill": false
-    }
+    "name": "Payment Method",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Credit/Debit Card",
+        "value": "card"
+      },
+      {
+        "label": "Bank Account (Direct Debit)",
+        "value": "bank"
+      },
+      {
+        "label": "PayPal",
+        "value": "paypall"
+      },
+      {
+        "label": "Other (Please specify)",
+        "value": "other"
+      }
+    ]
   },
   {
     "id": "payment-cycle-heading",
@@ -75,24 +62,22 @@
   },
   {
     "id": "paymentCycle",
-    "component": "radioGroup",
-    "content": {
-      "path": "Payment Cycle",
-      "options": [
-        {
-          "label": "Monthly",
-          "value": "monthly"
-        },
-        {
-          "label": "Quarterly",
-          "value": "quaterly"
-        },
-        {
-          "label": "Annually",
-          "value": "annualy"
-        }
-      ],
-      "prefill": false
-    }
+    "name": "Payment Cycle",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Monthly",
+        "value": "monthly"
+      },
+      {
+        "label": "Quarterly",
+        "value": "quaterly"
+      },
+      {
+        "label": "Annually",
+        "value": "annualy"
+      }
+    ]
   }
 ]

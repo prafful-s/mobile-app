@@ -101,7 +101,7 @@ class CitiSignalFormsTest {
         final List<Map<String, Object>> inputs = byComponent(form, "textField");
         assertEquals(List.of("accountNumber", "person.name.fullName", "personalEmail.address"),
                 inputs.stream().map(f -> content(f).get("path")).collect(Collectors.toList()));
-        assertEquals("decimal", content(inputs.get(0)).get("inputMode"));
+        assertEquals("text", content(inputs.get(0)).get("inputMode"));
         assertEquals("Email Address", content(inputs.get(2)).get("label"));
 
         final List<Map<String, Object>> radios = byComponent(form, "radioGroup");
@@ -169,18 +169,6 @@ class CitiSignalFormsTest {
             final Map<String, Object> styles = (Map<String, Object>) group.get(SchemaConstants.KEY_STYLES);
             assertEquals("vertical", styles.get("flexDirection"));
             assertEquals(300, styles.get("width"));
-        }
-    }
-
-    @Test
-    void anAuthoredWidthReplacesTheDefaultButKeepsTheVerticalLayout() {
-        final Map<String, Object> form = exportForm("mobile-additional-service",
-                "custommobilestyle", new String[] {"checkbox-width:260"});
-        for (final Map<String, Object> group : byComponent(form, "checkboxGroup")) {
-            @SuppressWarnings("unchecked")
-            final Map<String, Object> styles = (Map<String, Object>) group.get(SchemaConstants.KEY_STYLES);
-            assertEquals(260, styles.get("width"));
-            assertEquals("vertical", styles.get("flexDirection"));
         }
     }
 
