@@ -25,7 +25,7 @@ import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
  * The form blocks whose bundled schemas carry a long consent label take a {@code custommobilestyle}
- * field in their EDS model. A {@code width:<n>} row has to reach every {@code checkboxGroup} the
+ * field in their EDS model. A {@code checkbox-width:<n>} row has to reach every {@code checkboxGroup} the
  * form emits, and a block without the row has to export exactly what it did before.
  */
 @ExtendWith(AemContextExtension.class)
@@ -80,7 +80,7 @@ class CheckboxWidthTest {
     @ValueSource(strings = {"join-us", "checkout", "create-account", "child-account-application",
             "loan-application-form"})
     void aWidthRowReachesEveryCheckboxGroupOfTheForm(final String model) {
-        final List<Map<String, Object>> groups = checkboxGroupsOf(model, new String[] {"width:250"});
+        final List<Map<String, Object>> groups = checkboxGroupsOf(model, new String[] {"checkbox-width:250"});
         assertFalse(groups.isEmpty(), model + " should emit at least one checkboxGroup");
         for (final Map<String, Object> group : groups) {
             @SuppressWarnings("unchecked")
