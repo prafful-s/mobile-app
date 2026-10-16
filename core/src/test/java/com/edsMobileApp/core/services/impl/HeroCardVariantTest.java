@@ -20,9 +20,9 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
- * A hero laid out image-left or image-right is handled by the card rule. The card rule's own
- * default type is {@code overlay}, which is not how those layouts read, so the hero's variants
- * declare {@code stacked} as the default source value; an authored {@code mobilecardstyle} still wins.
+ * A hero laid out image-left or image-right is handled by the card rule, which reads the card type
+ * from the authored {@code mobilecardstyle} (the hero's Mobile Specific tab offers it, defaulting to
+ * {@code stacked}); with none authored it falls back to the card rule's own {@code overlay}.
  */
 @ExtendWith(AemContextExtension.class)
 class HeroCardVariantTest {
@@ -85,31 +85,31 @@ class HeroCardVariantTest {
     }
 
     @Test
-    void anImageLeftHeroIsAStackedCardByDefault() {
+    void anImageLeftHeroIsACard() {
         final Map<String, Object> entry = exported("text", "<h2>T</h2><p>B</p>", "herolayout", "image-left");
         assertEquals("card", componentOf(entry));
-        assertEquals("stacked", cardTypeOf(entry));
     }
 
     @Test
-    void anImageRightHeroIsAStackedCardByDefault() {
+    void anImageRightHeroIsACard() {
         final Map<String, Object> entry = exported("text", "<h2>T</h2><p>B</p>", "herolayout", "image-right");
         assertEquals("card", componentOf(entry));
-        assertEquals("stacked", cardTypeOf(entry));
     }
 
     @Test
-    void anAuthoredCardStyleStillWins() {
-        final Map<String, Object> entry = exported("text", "<h2>T</h2><p>B</p>", "herolayout", "image-left",
-                "mobilecardstyle", "overlay");
+    void theCardTypeComesFromTheAuthoredCardStyle() {
+        for (final String[] pair : new String[][] {
+                {"stacked", "stacked"}, {"overlay", "overlay"}, {"image-text-one-line", "image-text-one-line"}}) {
+            final Map<String, Object> entry = exported("text", "<h2>T</h2><p>B</p>", "herolayout", "image-left",
+                    "mobilecardstyle", pair[0]);
+            assertEquals(pair[1], cardTypeOf(entry), pair[0]);
+        }
+    }
+
+    @Test
+    void aHeroWithNoCardStyleAuthoredUsesTheCardRulesOwnDefault() {
+        final Map<String, Object> entry = exported("text", "<h2>T</h2><p>B</p>", "herolayout", "image-right");
         assertEquals("overlay", cardTypeOf(entry));
-    }
-
-    @Test
-    void aBlankAuthoredCardStyleTakesTheDefault() {
-        final Map<String, Object> entry = exported("text", "<h2>T</h2><p>B</p>", "herolayout", "image-right",
-                "mobilecardstyle", "");
-        assertEquals("stacked", cardTypeOf(entry));
     }
 
     @Test

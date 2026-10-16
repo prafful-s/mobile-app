@@ -143,47 +143,17 @@ final class ComponentMapping {
         return null;
     }
 
-    /**
-     * {@code source} with the matching variant's {@code defaults} laid underneath it: a default is
-     * written only where the authored value is absent or blank, so an authored value always wins.
-     * This lets a rule that defers to another say how that rule should read the component when the
-     * author has not chosen - a hero laid out image-left is handled by the card rule, which then
-     * reads it as {@code stacked} rather than the card rule's own {@code overlay}. Returns
-     * {@code source} itself when no variant matches or the matching one declares no defaults.
-     */
-    Map<String, Object> withVariantDefaults(final Map<String, Object> source) {
-        for (final Variant variant : variants) {
-            if (!variant.matches(source)) {
-                continue;
-            }
-            if (variant.defaults.isEmpty()) {
-                return source;
-            }
-            final Map<String, Object> merged = new LinkedHashMap<>(source);
-            for (final Map.Entry<String, Object> entry : variant.defaults.entrySet()) {
-                if (!isPresent(merged.get(entry.getKey()))) {
-                    merged.put(entry.getKey(), entry.getValue());
-                }
-            }
-            return merged;
-        }
-        return source;
-    }
-
     /** One {@code variants} entry: when an authored field equals a value, defer to another rule. */
     private static final class Variant {
 
         private final String field;
         private final String equals;
         private final String useRule;
-        private final Map<String, Object> defaults;
 
-        private Variant(final String field, final String equals, final String useRule,
-                         final Map<String, Object> defaults) {
+        private Variant(final String field, final String equals, final String useRule) {
             this.field = field;
             this.equals = equals;
             this.useRule = useRule;
-            this.defaults = defaults;
         }
 
         static Variant of(final Object declared) {
@@ -204,16 +174,7 @@ final class ComponentMapping {
             if (field == null || equals == null) {
                 return null;
             }
-            final Object declaredDefaults = map.get("defaults");
-            final Map<String, Object> defaults = new LinkedHashMap<>();
-            if (declaredDefaults instanceof Map) {
-                for (final Map.Entry<?, ?> entry : ((Map<?, ?>) declaredDefaults).entrySet()) {
-                    if (entry.getKey() != null && entry.getValue() != null) {
-                        defaults.put(String.valueOf(entry.getKey()), entry.getValue());
-                    }
-                }
-            }
-            return new Variant(field, equals, useRule, Collections.unmodifiableMap(defaults));
+            return new Variant(field, equals, useRule);
         }
 
         boolean matches(final Map<String, Object> source) {
