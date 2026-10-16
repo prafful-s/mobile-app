@@ -250,8 +250,9 @@ final class FormFieldFactory {
         final String label = StringUtils.defaultString(str(field.get("label")));
 
         // Only a field that knows where its value lives can be pre-filled - and a password never is,
-        // whatever the configuration says.
-        final boolean prefill = StringUtils.isNotBlank(path) && !TYPE_PASSWORD.equals(type);
+        // whatever the configuration says. A radio group is never pre-selected either.
+        final boolean prefill = StringUtils.isNotBlank(path)
+                && !TYPE_PASSWORD.equals(type) && !TYPE_RADIO.equals(type);
 
         final Map<String, Object> content;
         if (isToggleGroup(component)) {
