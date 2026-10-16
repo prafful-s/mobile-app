@@ -11,7 +11,7 @@
   {
     "component": "dropdown",
     "content": {
-      "path": "quiz.favourieCoffeeLocation",
+      "path": "quiz.favouriteCoffeeLocation",
       "formId": "coffee-quiz",
       "options": [
         { "label": "With your toes in the sand", "value": "sand" },
@@ -35,13 +35,13 @@
   {
     "component": "dropdown",
     "content": {
-      "path": "quiz.amountOfCoffeeCups",
+      "path": "quiz.dailyConsumption",
       "formId": "coffee-quiz",
       "options": [
         { "label": "1 Cup", "value": "1cup" },
-        { "label": "2-3 Cups", "value": "23cups" },
-        { "label": "3-4 Cups", "value": "34cups" },
-        { "label": "5+ Cups", "value": "5cups" }
+        { "label": "2-3 Cups", "value": "2-3cups" },
+        { "label": "3-4 Cups", "value": "3-4cups" },
+        { "label": "5+ Cups", "value": "5+cups" }
       ],
       "preFill": true,
       "alignment": "left"
@@ -59,7 +59,7 @@
   {
     "component": "dropdown",
     "content": {
-      "path": "quiz.coffeeMa",
+      "path": "quiz.coffeeType",
       "formId": "coffee-quiz",
       "options": [
         { "label": "French Press", "value": "frenchPress" },
@@ -85,13 +85,13 @@
   {
     "component": "dropdown",
     "content": {
-      "path": "quiz.favouriteFlavor",
+      "path": "quiz.flavorAffinity",
       "formId": "coffee-quiz",
       "options": [
-        { "label": "Light Roast", "value": "1cup" },
-        { "label": "Dark Roast", "value": "23cups" },
-        { "label": "Herbal", "value": "34cups" },
-        { "label": "Nutty", "value": "5cups" }
+        { "label": "Light Roast", "value": "lightRoast" },
+        { "label": "Dark Roast", "value": "darkRoast" },
+        { "label": "Herbal", "value": "herbal" },
+        { "label": "Nutty", "value": "nutty" }
       ],
       "preFill": true,
       "alignment": "left"

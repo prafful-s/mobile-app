@@ -1,0 +1,9 @@
+{
+  "match": ["web-view"],
+  "component": "webView",
+  "skeleton": true,
+  "ignoreExtras": ["*"],
+  "fields": [
+    { "target": "url", "from": "mobileUrl" }
+  ]
+}

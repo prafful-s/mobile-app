@@ -21,7 +21,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.day.cq.wcm.api.Page;
 import com.edsMobileApp.core.models.impl.GenericComponent;
+import com.edsMobileApp.core.schema.SchemaConstants;
 import com.edsMobileApp.core.services.ExportOptions;
+import com.edsMobileApp.core.services.FormSchemaService;
 
 import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
@@ -38,6 +40,94 @@ class MobileFieldMappingTest {
 
     private final ComponentMappings mappings = ComponentMappings.load();
     private final AemContext context = new AemContext();
+
+        @Test
+        void exporterOverridesAllScreensUsingTheRequestedRootTheme() throws Exception {
+        final Page root = context.create().page("/content/export-theme-test/en");
+        context.resourceResolver().getResource(root.getPath() + "/jcr:content")
+            .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "carvelo-theme");
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        exporter.activate(Map.of());
+        final List<Map<String, Object>> original = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "person.mobileNumber")))));
+        final List<Map<String, Object>> expected = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "mobilePhone.number")))));
+        final Map<String, Object> checkout = new HashMap<>(Map.of("content", original));
+        final Map<String, Object> registration = new HashMap<>(Map.of("content", original));
+        final Method apply = PageJsonExporterImpl.class.getDeclaredMethod("applyFormFieldPathOverrides",
+            Map.class, Page.class);
+        apply.setAccessible(true);
+        apply.invoke(exporter, Map.of("checkout", checkout, "registration", registration), root);
+        assertEquals(expected, checkout.get("content"));
+        assertEquals(expected, registration.get("content"));
+        }
+
+        @Test
+        void fieldOverridesUseAuthoredAndInheritedThemeWithoutADamFragment() {
+        final Page site = context.create().page("/content/authored-theme-test");
+        context.resourceResolver().getResource(site.getPath() + "/jcr:content")
+            .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "carvelo-theme");
+        final Page page = context.create().page("/content/authored-theme-test/en");
+        final Page otherSite = context.create().page("/content/no-authored-theme/en");
+        final SiteBranding branding = SiteBranding.load(new String[0], ProductMappings.load());
+        assertEquals("carvelo-theme", branding.themeNameForPage(site));
+        assertEquals("carvelo-theme", branding.themeNameForPage(page));
+        assertEquals(null, branding.themeNameForPage(otherSite));
+        final List<Map<String, Object>> content = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "person.mobileNumber")))));
+        final List<Map<String, Object>> expected = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "mobilePhone.number")))));
+        assertEquals(expected, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        context.resourceResolver().getResource(page.getPath() + "/jcr:content")
+            .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "luma-theme");
+        assertEquals("luma-theme", branding.themeNameForPage(page));
+        assertEquals(content, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        }
+
+        @Test
+        void fieldOverridesUseTheResolvedThemeFragmentName() {
+        final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
+        final Page page = context.create().page("/content/override-test/en");
+        final Page otherPage = context.create().page("/content/other-override-test/en");
+        context.create().resource("/content/dam/override-test/brand-themes/carvelo-theme/jcr:content/data",
+            "cq:model", model);
+        final SiteBranding branding = SiteBranding.load(new String[]{model}, ProductMappings.load());
+        assertEquals("carvelo-theme", branding.themeNameForPage(page));
+        assertEquals(null, branding.themeNameForPage(otherPage));
+        final List<Map<String, Object>> content = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "person.mobileNumber")))));
+        final List<Map<String, Object>> expected = List.of(Map.of("meta", Map.of("component", "form"),
+            "content", List.of(Map.of("content", Map.of("path", "mobilePhone.number")))));
+        assertEquals(expected, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        assertEquals(content, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(otherPage)));
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void themeOverridesApplyOnlyToFormPathsWithoutMutatingSource() {
+        final Map<String, Object> phone = Map.of("meta", Map.of("component", "textField"),
+            "content", Map.of("path", "person.mobileNumber", "label", "Phone"));
+        final Map<String, Object> consent = Map.of("meta", Map.of("component", "checkboxGroup"),
+            "content", Map.of("options", List.of(Map.of("path", "person.mobileNumber"))));
+        final Map<String, Object> form = Map.of("meta", Map.of("component", "form"),
+            "content", List.of(phone, consent));
+        final List<Map<String, Object>> content = List.of(phone,
+            Map.of("meta", Map.of("component", "panel"), "content", List.of(form)), form);
+        final FormFieldPathOverrides overrides = FormFieldPathOverrides.load();
+        final List<Map<String, Object>> changed = overrides.apply(content, "carvelo-theme");
+        assertEquals("person.mobileNumber", ((Map<?, ?>) changed.get(0).get("content")).get("path"));
+        final List<Map<String, Object>> panel = (List<Map<String, Object>>) changed.get(1).get("content");
+        for (final Map<String, Object> changedForm : List.of(panel.get(0), changed.get(2))) {
+            final List<Map<String, Object>> fields = (List<Map<String, Object>>) changedForm.get("content");
+            assertEquals("mobilePhone.number", ((Map<?, ?>) fields.get(0).get("content")).get("path"));
+            assertEquals("Phone", ((Map<?, ?>) fields.get(0).get("content")).get("label"));
+            final Map<?, ?> group = (Map<?, ?>) fields.get(1).get("content");
+            assertEquals("mobilePhone.number", ((Map<?, ?>) ((List<?>) group.get("options")).get(0)).get("path"));
+        }
+        assertEquals("person.mobileNumber", ((Map<?, ?>) phone.get("content")).get("path"));
+        assertEquals(content, overrides.apply(content, "luma-theme"));
+        assertEquals(content, overrides.apply(content, null));
+        }
 
         @Test
         @SuppressWarnings("unchecked")
@@ -240,11 +330,11 @@ class MobileFieldMappingTest {
             "mobileRedirectUrl", "/content/luma-site/language-masters/en/order-confirmation",
             "mobilebuttoneventtype", "commerce.purchases");
         final Method build = PageJsonExporterImpl.class.getDeclaredMethod("buildScreen", Page.class, Page.class,
-            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class);
+            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class, String.class);
         build.setAccessible(true);
         for (final boolean reduced : List.of(false, true)) {
             final Map<String, Object> screen = (Map<String, Object>) build.invoke(exporter, page, page, "",
-                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of());
+                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of(), "");
             assertEquals("review-purchase", ((Map<String, Object>) screen.get("meta")).get("name"));
             final List<Map<String, Object>> content = (List<Map<String, Object>>) screen.get("content");
             assertEquals(2, content.size());
@@ -284,12 +374,12 @@ class MobileFieldMappingTest {
         context.create().resource(root + "/second-cart", "sling:resourceType", "eds/components/cart", "label", "SECOND");
         context.create().resource(root + "/summary", "sling:resourceType", "eds/components/order-summary");
         final Method build = PageJsonExporterImpl.class.getDeclaredMethod("buildScreen", Page.class, Page.class,
-            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class);
+            String.class, ExportOptions.class, List.class, String.class, Set.class, Map.class, String.class);
         build.setAccessible(true);
         Map<String, Object> previousRowMeta = null;
         for (final boolean reduced : List.of(false, true)) {
             final Map<String, Object> screen = (Map<String, Object>) build.invoke(exporter, page, page, "",
-                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of());
+                ExportOptions.of(reduced), List.of(), null, Set.of(), Map.of(), "");
             assertEquals("review-items", ((Map<String, Object>) screen.get("meta")).get("name"));
             final List<Map<String, Object>> content = (List<Map<String, Object>>) screen.get("content");
             assertEquals(6, content.size());
@@ -339,7 +429,7 @@ class MobileFieldMappingTest {
         }
         final Page emptyCartPage = context.create().page("/content/confirmation-test/en/cart");
         final Map<String, Object> emptyScreen = (Map<String, Object>) build.invoke(exporter,
-            emptyCartPage, emptyCartPage, "", ExportOptions.of(false), List.of(), null, Set.of(), Map.of());
+            emptyCartPage, emptyCartPage, "", ExportOptions.of(false), List.of(), null, Set.of(), Map.of(), "");
         assertEquals(List.of(), emptyScreen.get("content"));
         }
 
@@ -600,6 +690,26 @@ class MobileFieldMappingTest {
         }
     }
 
+    @Test
+    void webViewSurvivesReducedExport() throws Exception {
+        final ComponentMapping rule = mappings.find("web-view");
+        assertEquals("webView", rule.getComponent());
+        final Map<String, Object> content = rule.apply(
+                Map.of("mobileUrl", "https://www.adobe.com"), Map.of());
+        assertEquals(Map.of("url", "https://www.adobe.com"), content);
+        assertSurvivesReducedExport(rule, content);
+    }
+
+    @Test
+    void mapSurvivesReducedExport() throws Exception {
+        final ComponentMapping rule = mappings.find("map");
+        assertEquals("map", rule.getComponent());
+        final Map<String, Object> content = rule.apply(
+                Map.of("mobileDisplayAs", "fullMap"), Map.of());
+        assertEquals(Map.of("displayAs", "fullMap"), content);
+        assertSurvivesReducedExport(rule, content);
+    }
+
     private static void assertSurvivesReducedExport(final ComponentMapping rule,
             final Map<String, Object> content) throws Exception {
         final List<Map<String, Object>> components = List.of(Map.of(
@@ -690,5 +800,213 @@ class MobileFieldMappingTest {
     @Test
     void productDetailReadsMobileImageResize() {
         assertEquals("cover", productDetail(authored("mobileimageresize", "cover")).get("imageResize"));
+    }
+
+    private List<Map<String, Object>> exportProductDetail(final Object hideCart, final boolean hierarchical) {
+        return exportProductDetail(hideCart, hierarchical, true);
+    }
+
+    private List<Map<String, Object>> exportProductDetail(final Object hideCart, final boolean hierarchical,
+                                                         final Object customDetails) {
+        return exportProductDetail(hideCart, hierarchical, customDetails, Map.of(), false);
+    }
+
+    private List<Map<String, Object>> exportProductDetail(final Object hideCart, final boolean hierarchical,
+                                                         final Object customDetails,
+                                                         final Map<String, Object> overrides,
+                                                         final boolean insideSection) {
+        final Page page = context.create().page("/content/s/en/product-" + hideCart + "-" + hierarchical
+                + "-" + customDetails);
+        context.create().resource(page.getPath() + "/jcr:content/root");
+        final String parentPath = page.getPath() + "/jcr:content/root" + (insideSection ? "/section" : "");
+        if (insideSection) {
+            context.create().resource(parentPath, "sling:resourceType", SchemaConstants.RT_FRANKLIN_SECTION);
+        }
+        final Map<String, Object> properties = authored("model", "product-detail", "filter", "product-detail",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "folder", "/content/dam/s/products");
+        if (customDetails != null) {
+            properties.put("mobileappcustomproductdetails", customDetails);
+        }
+        if (hideCart != null) {
+            properties.put("mobilehideaddtocart", hideCart);
+        }
+        properties.putAll(overrides);
+        context.create().resource(parentPath + "/product-detail", properties);
+        final FormSchemaService schemas = mock(FormSchemaService.class);
+        when(schemas.getSchema(any())).thenReturn(List.of());
+        final ComponentTreeWalker walker = new ComponentTreeWalker(mock(ModelFactory.class),
+                new UrlServiceImpl(), schemas, new StyleResolver(new String[0]), mappings);
+        return walker.componentsOf(page, null, hierarchical, false, Set.of());
+    }
+
+    @Test
+    void productDetailKeepsProductCardUnlessCustomMobileDetailsAreEnabled() {
+        for (final Object customDetails : new Object[] {null, false, "false"}) {
+            for (final Object hideCart : new Object[] {false, true}) {
+                final List<Map<String, Object>> entries = exportProductDetail(hideCart, true, customDetails);
+                assertEquals(1, entries.size());
+                assertEquals("productCard", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
+                assertEquals("contain", ((Map<?, ?>) entries.get(0).get("content")).get("imageResize"));
+            }
+        }
+    }
+
+    @Test
+    void productDetailAcceptsStringCustomMobileDetailsToggle() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, "true");
+        assertEquals(5, entries.size());
+        assertEquals("productImage", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
+    }
+
+    @Test
+        void productDetailExpandsThroughComponentMappingsWithContentDefaults() {
+        for (final Object hideCart : new Object[] {null, false, "false", true, "true"}) {
+            final List<Map<String, Object>> entries = exportProductDetail(hideCart, true);
+            final List<String> names = List.of("productImage", "productTitle", "productPrice",
+                "productAddToCartButton", "productDescription");
+            assertEquals(names.size(), entries.size());
+            for (int index = 0; index < entries.size(); index++) {
+            final Map<?, ?> meta = (Map<?, ?>) entries.get(index).get("meta");
+            assertEquals(names.get(index), meta.get("component"));
+            assertEquals(index, meta.get("order"));
+            assertEquals(true, meta.get("id") instanceof String);
+            assertEquals(false, entries.get(index).containsKey("styles"));
+            assertEquals(mappings.find(names.get(index)).apply(Map.of(), Map.of()),
+                entries.get(index).get("content"));
+            }
+            assertEquals(5, entries.stream().map(entry -> ((Map<?, ?>) entry.get("meta")).get("id"))
+                .distinct().count());
+            assertEquals(Map.of("fullWidth", true, "imageResize", "contain"), entries.get(0).get("content"));
+            assertEquals(Map.of("size", "medium", "weight", "bold", "textAlignment", "left"),
+                entries.get(1).get("content"));
+            assertEquals(Map.of(), entries.get(2).get("content"));
+            assertEquals(Map.of("label", "Add", "variant", "text", "alignment", "center",
+                "appearanceVariant", "text-icon"), entries.get(3).get("content"));
+            assertEquals(Map.of(), entries.get(4).get("content"));
+        }
+    }
+
+    @Test
+    void productDetailCanDisableEachExpandedComponent() {
+        final List<String> names = List.of("productImage", "productTitle", "productPrice",
+                "productAddToCartButton", "productDescription");
+        for (final String disabledName : names) {
+            for (final Object disabled : new Object[] {false, "false"}) {
+                final List<Map<String, Object>> entries = exportProductDetail(
+                        disabledName + disabled.getClass().getSimpleName(), true, true,
+                        Map.of("mobileappshow" + disabledName.toLowerCase(java.util.Locale.ROOT), disabled), false);
+                final List<String> expected = new java.util.ArrayList<>(names);
+                expected.remove(disabledName);
+                assertEquals(expected, entries.stream()
+                        .map(entry -> ((Map<?, ?>) entry.get("meta")).get("component"))
+                        .collect(java.util.stream.Collectors.toList()));
+                for (int index = 0; index < entries.size(); index++) {
+                    assertEquals(index, ((Map<?, ?>) entries.get(index).get("meta")).get("order"));
+                }
+            }
+        }
+    }
+
+    @Test
+    void productDetailCanEnableOnlySelectedComponents() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileappshowproductimage", "true", "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", "true",
+                        "mobileappshowproductdescription", false), true);
+        assertEquals(1, entries.size());
+        final List<?> children = (List<?>) entries.get(0).get("content");
+        assertEquals(2, children.size());
+        assertEquals("productImage", ((Map<?, ?>) ((Map<?, ?>) children.get(0)).get("meta")).get("component"));
+        assertEquals("productAddToCartButton",
+                ((Map<?, ?>) ((Map<?, ?>) children.get(1)).get("meta")).get("component"));
+        assertEquals(1, ((Map<?, ?>) ((Map<?, ?>) children.get(1)).get("meta")).get("order"));
+    }
+
+    @Test
+    void classicProductDetailComponentUsesMobileVisibilityToggles() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("sling:resourceType", "livescenarios/components/product-detail",
+                        "mobileappshowproductimage", false, "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", false,
+                        "mobileappshowproductdescription", "true"), false);
+        assertEquals(1, entries.size());
+        assertEquals("productDescription", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
+        assertEquals(Map.of(), entries.get(0).get("content"));
+    }
+
+    @Test
+    void productDetailWithAllComponentsDisabledDoesNotEmitAnEmptyPanel() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileappshowproductimage", false, "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", false,
+                        "mobileappshowproductdescription", false), true);
+        assertEquals(List.of(), entries);
+    }
+
+    @Test
+    void productDetailVisibilityTogglesDoNotChangeProductCardFallback() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, false,
+                Map.of("mobileappshowproductimage", false, "mobileappshowproducttitle", false,
+                        "mobileappshowproductprice", false, "mobileappshowproductaddtocartbutton", false,
+                        "mobileappshowproductdescription", false), false);
+        assertEquals(1, entries.size());
+        assertEquals("productCard", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
+    }
+
+    @Test
+    void productDetailExpansionMapsAuthoredImageResize() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileimageresize", "cover"), false);
+        assertEquals(Map.of("fullWidth", true, "imageResize", "cover"), entries.get(0).get("content"));
+        assertEquals(Map.of(), entries.get(2).get("content"));
+        assertEquals(Map.of(), entries.get(4).get("content"));
+    }
+
+    @Test
+    void productDetailExpansionStaysInSectionAndSerializes() throws Exception {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true, Map.of(), true);
+        assertEquals(1, entries.size());
+        final Map<?, ?> panelMeta = (Map<?, ?>) entries.get(0).get("meta");
+        assertEquals("panel", panelMeta.get("component"));
+        assertEquals("vertical", panelMeta.get("layout"));
+        final List<?> children = (List<?>) entries.get(0).get("content");
+        assertEquals(5, children.size());
+        for (int index = 0; index < children.size(); index++) {
+            final Map<?, ?> child = (Map<?, ?>) children.get(index);
+            assertEquals(index, ((Map<?, ?>) child.get("meta")).get("order"));
+        }
+        final Method filter = PageJsonExporterImpl.class.getDeclaredMethod("keepEnabledComponents", List.class);
+        filter.setAccessible(true);
+        assertEquals(entries, filter.invoke(null, entries));
+        final com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        assertEquals(5, mapper.readTree(mapper.writeValueAsString(entries)).get(0).get("content").size());
+    }
+
+    @Test
+    void productDetailComponentsSurviveFinalExporterFiltering() throws Exception {
+        final Method filter = PageJsonExporterImpl.class.getDeclaredMethod("keepEnabledComponents", List.class);
+        filter.setAccessible(true);
+        for (final Object hideCart : new Object[] {false, true}) {
+            final List<Map<String, Object>> entries = exportProductDetail(hideCart, true);
+            assertEquals(entries, filter.invoke(null, entries));
+        }
+    }
+
+    @Test
+    void scheduleAppointmentSurvivesFinalExporterFiltering() throws Exception {
+        final Method filter = PageJsonExporterImpl.class.getDeclaredMethod("keepEnabledComponents", List.class);
+        filter.setAccessible(true);
+        final List<Map<String, Object>> entries = List.of(Map.of(
+                "meta", Map.of("component", "schedule-appointment"),
+                "content", List.of()));
+        assertEquals(entries, filter.invoke(null, entries));
+    }
+
+    @Test
+    void mobileHideCartDoesNotChangeLegacyProductDetailExport() {
+        final List<Map<String, Object>> entries = exportProductDetail(true, false);
+        assertEquals(1, entries.size());
+        assertEquals("product-detail", ((Map<?, ?>) entries.get(0).get("meta")).get("component"));
     }
 }

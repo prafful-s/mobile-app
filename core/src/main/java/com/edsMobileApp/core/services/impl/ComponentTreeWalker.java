@@ -40,6 +40,8 @@ import com.day.cq.wcm.api.Page;
 final class ComponentTreeWalker {
 
     private static final Logger LOG = LoggerFactory.getLogger(ComponentTreeWalker.class);
+        private static final List<String> PRODUCT_DETAIL_COMPONENTS = List.of(
+            "productImage", "productTitle", "productPrice", "productAddToCartButton", "productDescription");
 
     /** Guard against a cycle or a pathological tree while walking deeply nested content. */
     private static final int MAX_COMPONENT_DEPTH = 12;
@@ -680,6 +682,19 @@ final class ComponentTreeWalker {
             Map<String, Object> styles = Collections.emptyMap();
             final Map<String, Object> sectionProps = ancestorSection == null
                     ? Collections.emptyMap() : ancestorSection.getValueMap();
+            if (hierarchical && "product-detail".equals(authoredName)
+                    && child.getValueMap().get("mobileappcustomproductdetails", Boolean.FALSE)) {
+                final Map<String, Object> componentSource = new LinkedHashMap<>();
+                componentSource.put("imageResize", authored.get("mobileimageresize"));
+                final List<String> enabledComponents = new ArrayList<>();
+                for (final String name : PRODUCT_DETAIL_COMPONENTS) {
+                    if (child.getValueMap().get("mobileappshow" + name.toLowerCase(Locale.ROOT), Boolean.TRUE)) {
+                        enabledComponents.add(name);
+                    }
+                }
+                emitMappedComponents(child, enabledComponents, componentSource, sectionProps, sink);
+                continue;
+            }
 
             // v2 speaks the app's vocabulary, so an authored 'hero' becomes a 'banner' carrying the
             // fields the client expects. v1 is left exactly as it was: the two schemas are each a
@@ -904,6 +919,31 @@ final class ComponentTreeWalker {
      */
     private static boolean rendersCardsAsList(final Resource resource) {
         return resource.getValueMap().get("mobilerenderaslist", Boolean.FALSE);
+    }
+
+    private void emitMappedComponents(final Resource resource, final List<String> componentNames,
+                                      final Map<String, Object> source, final Map<String, Object> sectionProps,
+                                      final List<Map<String, Object>> sink) {
+        for (final String componentName : componentNames) {
+            final ComponentMapping matched = mappings.find(componentName);
+            if (matched == null) {
+                LOG.warn("No mapping for expanded component '{}' at {} - skipping it", componentName,
+                        resource.getPath());
+                continue;
+            }
+            final String variantRule = matched.variantRuleFor(source);
+            final ComponentMapping redirected = variantRule == null ? null : mappings.find(variantRule);
+            final ComponentMapping mapping = (redirected == null ? matched : redirected).effectiveFor(source);
+            final Map<String, Object> meta = new LinkedHashMap<>();
+            meta.put(SchemaConstants.KEY_ID,
+                    AbstractComponentModel.generateId(resource.getPath() + "/" + componentName));
+            meta.put(SchemaConstants.KEY_ORDER, sink.size());
+            meta.put(SchemaConstants.KEY_COMPONENT, mapping.getComponent());
+            final Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put(SchemaConstants.KEY_META, meta);
+            entry.put(SchemaConstants.KEY_CONTENT, new LinkedHashMap<>(mapping.apply(source, sectionProps)));
+            sink.add(entry);
+        }
     }
 
     /** Every {@code card}-modelled child, regardless of count. */
@@ -1332,7 +1372,31 @@ final class ComponentTreeWalker {
         collectComponents(resource, children, depth + 1, true, ancestorSection, knownScreenKeys,
             screenThumbnailOverrides);
 
+        emitPanel(resource, sink, resourceType, children, resource.getPath());
+    }
+
+    private void emitPanel(final Resource resource, final List<Map<String, Object>> sink,
+                           final String resourceType, final List<Map<String, Object>> children,
+                           final String panelPath) {
         if (children.isEmpty()) {
+            return;
+        }
+
+        if (children.stream().anyMatch(this::isPageLevelComponent)) {
+            final List<Map<String, Object>> panelChildren = new ArrayList<>();
+            for (final Map<String, Object> child : children) {
+                if (isPageLevelComponent(child)) {
+                    emitPanel(resource, sink, resourceType, new ArrayList<>(panelChildren),
+                            panelPath + "/mobile-panel-" + sink.size());
+                    panelChildren.clear();
+                    asMeta(child.get(SchemaConstants.KEY_META)).put(SchemaConstants.KEY_ORDER, sink.size());
+                    sink.add(child);
+                } else {
+                    panelChildren.add(child);
+                }
+            }
+            emitPanel(resource, sink, resourceType, panelChildren,
+                    panelPath + "/mobile-panel-" + sink.size());
             return;
         }
 
@@ -1346,7 +1410,7 @@ final class ComponentTreeWalker {
         }
 
         final Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(resource.getPath()));
+        meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(panelPath));
         meta.put(SchemaConstants.KEY_ORDER, sink.size());
         meta.put(SchemaConstants.KEY_LAYOUT, panelLayout(resource, resourceType));
         meta.put(SchemaConstants.KEY_COMPONENT, SchemaConstants.COMPONENT_PANEL);
@@ -1366,6 +1430,11 @@ final class ComponentTreeWalker {
         entry.put(SchemaConstants.KEY_CONTENT,
                 isColumnItem(resource) ? groupColumnImages(children, resource) : children);
         sink.add(entry);
+    }
+
+    private boolean isPageLevelComponent(final Map<String, Object> component) {
+        final Object name = asMeta(component.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT);
+        return "map".equals(name) || "webView".equals(name);
     }
 
     /**

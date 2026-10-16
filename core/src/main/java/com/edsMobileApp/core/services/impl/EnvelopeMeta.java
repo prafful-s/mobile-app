@@ -198,7 +198,7 @@ final class EnvelopeMeta {
      * @param menu       the app menu, in order, so navigation membership and order are consistent
      *                   with what {@code meta.navigation.menu} already says
      * @param rolePreset the preset implied by this screen's navigation role (login/registration/
-     *                   profile), or blank when it has none; an explicit {@code preset} prop wins
+     *                   profile), or blank when it has none; an explicit {@code mobilePreset} prop wins
      */
     static Map<String, Object> screenMeta(final Page page, final Page root, final String screenKey,
                                           final List<String> menu, final String rolePreset) {
@@ -219,7 +219,7 @@ final class EnvelopeMeta {
 
         // preset: explicit prop wins, then the screen's navigation role, else the content default.
         meta.put("preset", StringUtils.firstNonBlank(
-                props.get("preset", String.class),
+                props.get("mobilePreset", String.class),
                 rolePreset,
                 DEFAULT_SCREEN_PRESET));
 

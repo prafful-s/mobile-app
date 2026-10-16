@@ -48,6 +48,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      * to land even before a site author builds a dedicated profile page.
      */
     private static final String SCREEN_USER_DETAILS = "user-details";
+    private static final String SCREEN_LOGIN = "login";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final List<String> IGNORED_PROPERTIES = List.of(
@@ -79,6 +80,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private SiteDefaults siteDefaults;
     private ProductCatalog productCatalog;
     private Map<String, Object> confirmButtonDefaults;
+    private FormFieldPathOverrides formFieldPathOverrides;
 
     @Activate
     protected void activate(final Map<String, Object> properties) {
@@ -101,6 +103,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.siteIntegrations = SiteIntegrations.load();
         this.siteDefaults = SiteDefaults.load();
         this.confirmButtonDefaults = readConfirmButtonDefaults();
+        this.formFieldPathOverrides = FormFieldPathOverrides.load();
         this.productCatalog = new ProductCatalog(productMappings);
         this.walker.setSiteDefaults(this.siteDefaults);
     }
@@ -180,12 +183,17 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         // the keys being present rather than testing for them.
         app.put(SchemaConstants.KEY_RULES, Collections.emptyList());
         app.put(SchemaConstants.KEY_MODULES, Collections.emptyList());
+        // The export's root screen (the language node, e.g. 'en'): the default a form's redirect
+        // falls back to when neither the block nor defaults.json names one.
+        final String rootKey = screenKey(envelopeSource);
         final Map<String, Object> screens = buildScreens(screenList, homeRoot, assetHost, opts, menu,
-            screenPresets, knownScreenKeys, screenThumbnailOverrides);
+            screenPresets, knownScreenKeys, screenThumbnailOverrides, rootKey);
         applyScreenThumbnailOverrides(screens, screenThumbnailOverrides, assetHost);
         // Only added when no AEM page already exports under this key, so a site that has authored
         // its own user-details page keeps that content untouched.
         screens.putIfAbsent(SCREEN_USER_DETAILS, buildUserDetailsScreen(homeRoot));
+        screens.put(SCREEN_LOGIN, buildLoginScreen(homeRoot));
+        applyFormFieldPathOverrides(screens, envelopeSource);
         app.put(SchemaConstants.KEY_SCREENS, screens);
         app.put(SchemaConstants.KEY_BRANDING, buildBranding(envelopeSource, assetHost));
         app.put(SchemaConstants.KEY_PRODUCTS, productCatalog.export(envelopeSource, assetHost));
@@ -262,9 +270,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                                                 final List<Page> screens, final Page homeRoot) {
         final Map<String, Object> navigation = new LinkedHashMap<>();
         navigation.put("menu", menu);
-        navigation.put("loginScreen",
-                resolveScreenRef(props, SchemaConstants.PN_LOGIN_SCREEN, "sign-in", screens, homeRoot));
-        // Fixed for every site, unlike loginScreen/registrationScreen below: the profile action
+        navigation.put("loginScreen", SCREEN_LOGIN);
+        // Fixed for every site, unlike registrationScreen below: the profile action
         // always opens the synthetic user-details screen built in buildUserDetailsScreen, never an
         // authored page or a scanned form match.
         navigation.put("profileScreen", SCREEN_USER_DETAILS);
@@ -323,7 +330,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
                                             final List<String> menu,
                                             final Map<String, String> screenPresets,
                                             final Set<String> knownScreenKeys,
-                                            final Map<String, String> screenThumbnailOverrides) {
+                                            final Map<String, String> screenThumbnailOverrides,
+                                            final String rootKey) {
         final Map<String, Object> screens = new LinkedHashMap<>();
         for (final Page page : pages) {
             final String key = screenKey(page);
@@ -336,9 +344,28 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             }
             screens.put(key, buildScreen(page, homeRoot, assetHost, options, menu,
                     screenPresets.getOrDefault(key, StringUtils.EMPTY), knownScreenKeys,
-                    screenThumbnailOverrides));
+                    screenThumbnailOverrides, rootKey));
         }
         return screens;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void applyFormFieldPathOverrides(final Map<String, Object> screens, final Page root) {
+        if (formFieldPathOverrides == null || siteBranding == null) {
+            return;
+        }
+        final String themeName = siteBranding.themeNameForPage(root);
+        for (final Object value : screens.values()) {
+            if (!(value instanceof Map)) {
+                continue;
+            }
+            final Map<String, Object> screen = (Map<String, Object>) value;
+            final Object content = screen.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof List) {
+                screen.put(SchemaConstants.KEY_CONTENT,
+                        formFieldPathOverrides.apply((List<Map<String, Object>>) content, themeName));
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -465,7 +492,8 @@ public class PageJsonExporterImpl implements PageJsonExporter {
     private Map<String, Object> buildScreen(final Page page, final Page root, final String assetHost,
                                            final ExportOptions options, final List<String> menu,
                                            final String rolePreset, final Set<String> knownScreenKeys,
-                                           final Map<String, String> screenThumbnailOverrides) {
+                                           final Map<String, String> screenThumbnailOverrides,
+                                           final String rootKey) {
         final Map<String, Object> screen = new LinkedHashMap<>();
 
         final String key = screenKey(page);
@@ -484,7 +512,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         } else {
             // Every other screen's form takes its redirect + eventType from the site's own
             // defaults.json 'forms' section; screens with no entry keep the emitted defaults.
-            applyFormSettings(content, page, key);
+            applyFormSettings(content, page, key, rootKey);
             applyFlightDestination(content, page, key);
         }
         content = addCommerceActions(content, page);
@@ -544,6 +572,46 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         final Map<String, Object> component = new LinkedHashMap<>();
         component.put(SchemaConstants.KEY_META, componentMeta);
         component.put(SchemaConstants.KEY_CONTENT, Collections.singletonMap("showLogoutButton", true));
+
+        final Map<String, Object> screen = new LinkedHashMap<>();
+        screen.put(SchemaConstants.KEY_META, meta);
+        screen.put(SchemaConstants.KEY_EDITOR, editor);
+        screen.put(SchemaConstants.KEY_CONTENT, List.of(component));
+        return screen;
+    }
+
+    private Map<String, Object> buildLoginScreen(final Page homeRoot) {
+        final Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("icon", "login");
+        meta.put("name", SCREEN_LOGIN);
+        meta.put("title", "Login");
+        meta.put("preset", "login");
+        meta.put("template", "FreeformScreen");
+        meta.put("isRootScreen", false);
+        meta.put("navigationOrder", null);
+        meta.put("includeInNavigation", false);
+
+        final Map<String, Object> position = new LinkedHashMap<>();
+        position.put("top", 275);
+        position.put("left", 150);
+        final Map<String, Object> editor = new LinkedHashMap<>();
+        editor.put("zIndex", 26);
+        editor.put("position", position);
+
+        final String syntheticPath = homeRoot.getPath() + "/" + SCREEN_LOGIN;
+        final Map<String, Object> componentMeta = new LinkedHashMap<>();
+        componentMeta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(syntheticPath));
+        componentMeta.put(SchemaConstants.KEY_ORDER, 1);
+        componentMeta.put(SchemaConstants.KEY_COMPONENT, "userLogin");
+
+        final Map<String, Object> content = new LinkedHashMap<>();
+        content.put("title", "Login");
+        content.put("passwordLabel", "Password");
+        content.put("usernameLabel", "Email");
+
+        final Map<String, Object> component = new LinkedHashMap<>();
+        component.put(SchemaConstants.KEY_META, componentMeta);
+        component.put(SchemaConstants.KEY_CONTENT, content);
 
         final Map<String, Object> screen = new LinkedHashMap<>();
         screen.put(SchemaConstants.KEY_META, meta);
@@ -817,24 +885,29 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     @SuppressWarnings("unchecked")
     private void applyFormSettings(final List<Map<String, Object>> content, final Page page,
-                                   final String screenKey) {
+                                   final String screenKey, final String rootKey) {
         final Map<String, Object> form = findComponent(content, "form");
         if (form == null) {
             return;
         }
         final Object entry = SiteDefaults.objectMap(
                 siteDefaults.forPage(page), SiteDefaults.KEY_FORMS).get(screenKey);
-        if (!(entry instanceof Map)) {
-            return;
-        }
-        final Map<String, Object> settings = (Map<String, Object>) entry;
+        final Map<String, Object> settings = entry instanceof Map
+                ? (Map<String, Object>) entry : Collections.emptyMap();
         final Map<String, Object> meta = asMeta(form.get(SchemaConstants.KEY_META));
-        // A redirect authored on the block itself (FormBlockBuilder reads redirectUrl /
-        // submit-redirect-url into meta.link) is the author's explicit choice and wins; the per-site
+        // A redirect authored on the block itself (FormBlockBuilder reads mobileRedirectUrl
+        // into meta.link) is the author's explicit choice and wins; the per-site
         // 'redirectAfterSubmit' only fills in the default when the block left it blank.
         final Object authoredLink = meta.get("link");
         if (!(authoredLink instanceof String) || StringUtils.isBlank((String) authoredLink)) {
             putIfConfigured(meta, "link", settings.get("redirectAfterSubmit"));
+        }
+        // Still blank after any authored or per-site redirect: fall back to the export root screen
+        // (the language node, e.g. 'en'), so every form lands somewhere without a per-form config.
+        final Object link = meta.get("link");
+        if ((!(link instanceof String) || StringUtils.isBlank((String) link))
+                && StringUtils.isNotBlank(rootKey)) {
+            meta.put("link", rootKey);
         }
         putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
@@ -1245,7 +1318,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
      */
     private static final Set<String> ENABLED_COMPONENTS = Set.of("banner", "card", "htmlText", "form", "list",
             "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
-                "flightSearch", "flightResults", "offer", "offerRenderer", "inbox", "contentCards");
+            "productImage", "productTitle", "productPrice", "productAddToCartButton", "productDescription",
+                "flightSearch", "flightResults", "offer", "offerRenderer", "inbox", "contentCards", "webView", "map",
+                "schedule-appointment");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {

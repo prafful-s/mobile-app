@@ -57,21 +57,7 @@ final class FormBlockBuilder {
     private static final String CUSTOM_MOBILE_STYLE_KEY = "custommobilestyle";
     /** The one {@code custommobilestyle} row key this export currently understands - see
      *  {@link #applyCheckboxWidth}. */
-    private static final String STYLE_KEY_WIDTH = "checkbox-width";
-    /**
-    * The legacy post-submit redirect field, per form that has one, mapped to the property its own
-     * block model defines: create-account names it {@code redirectUrl}, join-us names it
-     * {@code submit-redirect-url} (both an {@code aem-content} page reference). Keyed by form name
-     * rather than read for every form, because the field name {@code redirectUrl} is shared by many
-     * other form blocks (child-account-application, loan-application-form, transfer-funds, ...) that
-    * this feature is not meant to touch. Every form reads {@code mobileRedirectUrl} first; only the
-    * forms listed here also fall back to their legacy redirect. Either authored value wins over the
-    * per-site {@code forms.<screen>.redirectAfterSubmit} default applied downstream in
-    * {@code PageJsonExporterImpl#applyFormSettings}.
-     */
-    private static final Map<String, String[]> REDIRECT_KEYS_BY_FORM = Map.of(
-            "create-account", new String[]{"redirectUrl"},
-            "join-us", new String[]{"submit-redirect-url"});
+    private static final String STYLE_KEY_WIDTH = "width";
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
@@ -276,16 +262,7 @@ final class FormBlockBuilder {
 
         final Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(SchemaConstants.KEY_ID, id);
-        // mobileRedirectUrl wins on every form, with legacy redirects retained for existing content.
-        // A blank link lets PageJsonExporterImpl#applyFormSettings supply a per-site default.
-        // formName is null for a form whose fields are authored rather than taken from a bundled
-        // schema, and REDIRECT_KEYS_BY_FORM is a Map.of, whose lookups throw on a null key instead
-        // of missing. Guard here rather than swapping the map: every other read of it is keyed on a
-        // name that exists, and a null key genuinely means "no form-specific redirect keys".
-        meta.put("link", redirectScreen(first(authored, MOBILE_REDIRECT_KEYS,
-            first(authored,
-                formName == null ? NO_KEYS : REDIRECT_KEYS_BY_FORM.getOrDefault(formName, NO_KEYS),
-                StringUtils.EMPTY))));
+        meta.put("link", redirectScreen(first(authored, MOBILE_REDIRECT_KEYS, StringUtils.EMPTY)));
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_FORM);
         meta.put("eventType", first(authored, EVENT_TYPE_KEYS, StringUtils.EMPTY));

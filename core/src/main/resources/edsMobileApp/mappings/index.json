@@ -3,6 +3,11 @@
   "card",
   "productCard",
   "productDetail",
+  "productImage",
+  "productTitle",
+  "productPrice",
+  "productAddToCartButton",
+  "productDescription",
   "cart",
   "orderSummary",
   "categoryProductsLister",
@@ -18,6 +23,7 @@
   "contentCards",
   "inbox",
   "map",
+  "web-view",
   "decisioning-container",
   "decisioning-offer"
 ]

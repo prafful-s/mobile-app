@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * A {@code category-products-lister} becomes a {@code list} driven only by its Mobile Specific
  * fields - {@code mobilelayout}, {@code mobilesort}, {@code mobileitemsinrow},
  * {@code mobileitemrenderer}, {@code mobileimagestyle}, {@code mobileimagewidth} and
- * {@code mobileitemheight} - with the {@code filter} built from the categories in its folder.
+ * {@code mobileitemheight} - with authored tags preferred over folder categories for {@code filter}.
  * Raw or legacy property names are not read.
  */
 class CategoryProductsListerTest {
@@ -40,8 +40,8 @@ class CategoryProductsListerTest {
     }
 
     /**
-     * The rule is {@code skeleton: true}, so every declared target is emitted whether authored or
-     * not - there is no "write only when authored" here. A list serves with the client's standard
+    * The rule is {@code skeleton: true}, so targets are emitted whether authored or not unless
+    * explicitly optional. A list serves with the client's standard
      * defaults: a cover-cropped image in a horizontal row of overlay items.
      */
     @Test
@@ -53,6 +53,25 @@ class CategoryProductsListerTest {
         assertEquals(150, mapped.get("itemHeight"));
         assertEquals("overlay", mapped.get("itemRenderer"));
         assertEquals("productList", mapped.get("listType"), "unchanged");
+    }
+
+    @Test
+    void authoredRedirectUrlMapsToLinkTo() {
+        assertEquals("new-screen", map(authored("redirect-url", "new-screen")).get("linkTo"));
+        assertEquals("product?source=list#details",
+                map(authored("redirect-url", "/content/frescopa/en/product.html?source=list#details"))
+                        .get("linkTo"));
+    }
+
+    @Test
+    void missingOrBlankRedirectUrlDoesNotEmitLinkTo() {
+        assertFalse(map(authored()).containsKey("linkTo"));
+        for (final String redirect : List.of("", " ", "\t")) {
+            assertFalse(map(authored("redirect-url", redirect)).containsKey("linkTo"));
+        }
+        final Map<String, Object> source = new HashMap<>();
+        source.put("redirect-url", null);
+        assertFalse(map(source).containsKey("linkTo"));
     }
 
     @Test
@@ -155,12 +174,36 @@ class CategoryProductsListerTest {
         assertFalse(mapped.containsKey("imageResizeMode"));
     }
 
-    /** The filter always comes from the folder's categories; a leftover mobilecategoryfilter is ignored. */
     @Test
-    void theFilterComesOnlyFromTheFolder() {
+    void theFilterFallsBackToTheFolderAndIgnoresLegacyMobileFilter() {
         final Map<String, Object> source = authored("mobilecategoryfilter", "Hybrid, fuel");
         source.put("_categories", List.of("carvelo:electric"));
         assertEquals("Electric.*", map(source).get("filter"));
+    }
+
+    @Test
+    void authoredTagsTakePriorityOverFolderCategories() {
+        for (final String property : List.of("cqTags", "cqtags", "tags", "cq-tags", "cq:tags")) {
+            final Map<String, Object> source = authored();
+            source.put(property, new String[] { "carvelo:hybrid", "carvelo:fuel" });
+            source.put("_categories", List.of("carvelo:electric"));
+            assertEquals("(Hybrid|Fuel).*", map(source).get("filter"), property);
+        }
+    }
+
+    @Test
+    void authoredCqTagsWorkWithoutAFolder() {
+        assertEquals("Hybrid.*", map(authored("cqTags", "carvelo:hybrid")).get("filter"));
+    }
+
+    @Test
+    void emptyAuthoredTagsFallBackToFolderCategories() {
+        for (final Object tags : List.of("", "   ", new String[0], List.of())) {
+            final Map<String, Object> source = authored();
+            source.put("cqTags", tags);
+            source.put("_categories", List.of("carvelo:electric"));
+            assertEquals("Electric.*", map(source).get("filter"));
+        }
     }
 
     /** No filter means the whole catalog, so it is never dropped when categories exist. */

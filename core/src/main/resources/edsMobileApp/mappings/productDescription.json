@@ -1,0 +1,7 @@
+{
+  "match": ["productDescription"],
+  "component": "productDescription",
+  "skeleton": true,
+  "ignoreExtras": ["*"],
+  "fields": []
+}

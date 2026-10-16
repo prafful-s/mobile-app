@@ -1,5 +1,6 @@
 [
   "add-external",
+  "automatic-payments",
   "checkout",
   "checkout-shipping",
   "child-account-application",
@@ -12,11 +13,14 @@
   "join-us",
   "loan-application-form",
   "medicare-plan-selection",
+  "mobile-additional-service",
   "name-change-request",
   "new-account",
   "plan-application",
+  "schedule-appointment",
   "set-up-auto-save",
   "sign-in",
   "test-drive",
-  "transfer-funds"
+  "transfer-funds",
+  "tv-additional-service"
 ]

@@ -1,0 +1,83 @@
+[
+  {
+    "id": "accountNumber",
+    "name": "accountNumber",
+    "label": "Account number",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "fullName",
+    "name": "person.name.fullName",
+    "label": "Full Name",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "email",
+    "name": "personalEmail.address",
+    "label": "Email Address",
+    "value": "",
+    "type": "text",
+    "placeholder": "",
+    "defaultValue": ""
+  },
+  {
+    "id": "payment-method-heading",
+    "type": "heading",
+    "label": "Payment Method"
+  },
+  {
+    "id": "paymentMethod",
+    "name": "Payment Method",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Credit/Debit Card",
+        "value": "card"
+      },
+      {
+        "label": "Bank Account (Direct Debit)",
+        "value": "bank"
+      },
+      {
+        "label": "PayPal",
+        "value": "paypall"
+      },
+      {
+        "label": "Other (Please specify)",
+        "value": "other"
+      }
+    ]
+  },
+  {
+    "id": "payment-cycle-heading",
+    "type": "heading",
+    "label": "Payment Cycle"
+  },
+  {
+    "id": "paymentCycle",
+    "name": "Payment Cycle",
+    "value": "",
+    "type": "radio",
+    "options": [
+      {
+        "label": "Monthly",
+        "value": "monthly"
+      },
+      {
+        "label": "Quarterly",
+        "value": "quaterly"
+      },
+      {
+        "label": "Annually",
+        "value": "annualy"
+      }
+    ]
+  }
+]
