@@ -6,7 +6,8 @@
     { "target": "label", "from": "label", "default": "" },
     { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "linkTo", "from": "link", "type": "path", "default": "" },
-    { "target": "message", "default": "" },
+    { "target": "icon", "from": "mobilebuttonicon", "default": "" },
+    { "target": "message", "from": "mobilemessage", "default": "" },
     { "target": "variant", "from": "mobilebuttonvariant", "default": "contained" },
     { "target": "alignment", "from": "mobilealignment", "default": "stretch" }
   ]

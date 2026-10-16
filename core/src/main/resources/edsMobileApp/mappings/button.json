@@ -5,17 +5,21 @@
   "ignoreExtras": ["textUppercase"],
   "fields": [
     { "target": "icon", "from": "icon", "default": "" },
+    { "target": "icon", "from": "mobilebuttonicon", "omitIfAbsent": true },
     { "target": "label", "from": "linkText", "default": "" },
     { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "formId", "from": "formId", "default": "" },
     { "target": "linkTo", "from": "link", "map": { "/": "en" }, "default": "" },
     { "target": "message", "from": "message", "default": "" },
+    { "target": "message", "from": "mobilemessage", "omitIfAbsent": true },
     { "target": "variant", "from": "linkType",
       "map": { "cta-button": "contained", "primary-button": "contained",
                "secondary-button": "outlined", "tonal-button": "contained-tonal",
                "text-button": "text", "cta-button-secondary": "outlined", "cta-button-dark": "contained-tonal" },
       "default": "contained" },
+    { "target": "variant", "from": "mobilebuttonvariant", "omitIfAbsent": true },
     { "target": "alignment", "from": "alignment", "default": "center" },
+    { "target": "alignment", "from": "mobilealignment", "omitIfAbsent": true },
     { "target": "customEvent", "from": "customEvent", "default": "" }
   ],
   "styles": [
