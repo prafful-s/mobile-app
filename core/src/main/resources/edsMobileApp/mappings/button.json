@@ -5,7 +5,7 @@
   "ignoreExtras": ["textUppercase"],
   "fields": [
     { "target": "icon", "from": "icon", "default": "" },
-    { "target": "icon", "from": "mobileicon", "omitIfAbsent": true },
+    { "target": "icon", "from": "mobilebuttonicon", "omitIfAbsent": true },
     { "target": "label", "from": "linkText", "default": "" },
     { "target": "eventType", "from": "mobilebuttoneventtype" },
     { "target": "formId", "from": "formId", "default": "" },
