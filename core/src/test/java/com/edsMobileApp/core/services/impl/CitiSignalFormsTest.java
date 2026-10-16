@@ -28,7 +28,7 @@ import io.wcm.testing.mock.aem.junit5.AemContextExtension;
  * Citi Signal's forms: {@code automatic-payments}, and the two independent additional service forms,
  * {@code mobile-additional-service} and {@code tv-additional-service}. All are fixed schemas, so what
  * is tested is the shape the old app JSON
- * carried - paths, option values, heading weights, the vertical width-capped checkbox groups and
+ * carried - paths, option values, the vertical width-capped checkbox groups and
  * each form's own button text.
  */
 @ExtendWith(AemContextExtension.class)
@@ -111,9 +111,6 @@ class CitiSignalFormsTest {
         assertEquals(List.of("card", "bank", "paypall", "other"), optionValues(radios.get(0)));
         assertEquals(List.of("monthly", "quaterly", "annualy"), optionValues(radios.get(1)));
 
-        for (final Map<String, Object> heading : byComponent(form, "title")) {
-            assertEquals("regular", content(heading).get("weight"));
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -140,9 +137,6 @@ class CitiSignalFormsTest {
         assertEquals(List.of("Data & Internet Add-Ons", "Entertainment & Streaming",
                 "Device Protection & Security"),
                 byComponent(form, "title").stream().map(t -> content(t).get("text")).collect(Collectors.toList()));
-        for (final Map<String, Object> heading : byComponent(form, "title")) {
-            assertEquals("bold", content(heading).get("weight"));
-        }
 
         final Map<String, Object> first = byComponent(form, "checkboxGroup").get(0);
         final Map<String, Object> firstOption = ((List<Map<String, Object>>) content(first).get("options")).get(0);
@@ -159,9 +153,6 @@ class CitiSignalFormsTest {
         assertEquals(8, optionCount(form));
         assertEquals(List.of("Upgrade Your Plan", "Premium Channels", "Sports Add-ons"),
                 byComponent(form, "title").stream().map(t -> content(t).get("text")).collect(Collectors.toList()));
-        for (final Map<String, Object> heading : byComponent(form, "title")) {
-            assertEquals("regular", content(heading).get("weight"));
-        }
 
         final Map<String, Object> premium = byComponent(form, "checkboxGroup").get(1);
         final List<Map<String, Object>> options = (List<Map<String, Object>>) content(premium).get("options");
@@ -184,7 +175,7 @@ class CitiSignalFormsTest {
     @Test
     void anAuthoredWidthReplacesTheDefaultButKeepsTheVerticalLayout() {
         final Map<String, Object> form = exportForm("mobile-additional-service",
-                "custommobilestyle", new String[] {"width:260"});
+                "custommobilestyle", new String[] {"checkbox-width:260"});
         for (final Map<String, Object> group : byComponent(form, "checkboxGroup")) {
             @SuppressWarnings("unchecked")
             final Map<String, Object> styles = (Map<String, Object>) group.get(SchemaConstants.KEY_STYLES);

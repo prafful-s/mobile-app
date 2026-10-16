@@ -2,99 +2,124 @@
   {
     "id": "mobile-heading-1",
     "type": "heading",
-    "label": "Data & Internet Add-Ons",
-    "weight": "bold"
+    "label": "Data & Internet Add-Ons"
   },
   {
     "id": "mobile-options-1",
-    "value": "",
-    "type": "checkbox",
-    "variant": "checkbox",
+    "component": "checkboxGroup",
+    "content": {
+      "options": [
+        {
+          "path": "extraData",
+          "label": "Extra Data - 5GB - $40",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "internationalDataPlans",
+          "label": "International Data Plans - $10/month",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "mobileHotspots",
+          "label": "Mobile Hotspot Data Boosts -$35 for 5GB extra data",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        }
+      ],
+      "prefill": false,
+      "variant": "checkbox"
+    },
     "styles": {
       "flexDirection": "vertical",
       "width": 300
-    },
-    "options": [
-      {
-        "path": "extraData",
-        "label": "Extra Data - 5GB - $40"
-      },
-      {
-        "path": "internationalDataPlans",
-        "label": "International Data Plans - $10/month"
-      },
-      {
-        "path": "mobileHotspots",
-        "label": "Mobile Hotspot Data Boosts -$35 for 5GB extra data"
-      }
-    ]
+    }
   },
   {
     "id": "mobile-heading-2",
     "type": "heading",
-    "label": "Entertainment & Streaming",
-    "weight": "bold"
+    "label": "Entertainment & Streaming"
   },
   {
     "id": "mobile-options-2",
-    "value": "",
-    "type": "checkbox",
-    "variant": "checkbox",
+    "component": "checkboxGroup",
+    "content": {
+      "options": [
+        {
+          "path": "appleMusic",
+          "label": "Apple Music Subscription - $10.99/month",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "disneyHulu",
+          "label": "Disney+ / Hulu / ESPN+ Bundles - $10.99/month",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "cloudStorage",
+          "label": "CitiSignal Cloud Storage - 600GB: $6/month",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "gamingPass",
+          "label": "Gaming Passes or Streaming Services - $10.99/month",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        }
+      ],
+      "prefill": false,
+      "variant": "checkbox"
+    },
     "styles": {
       "flexDirection": "vertical",
       "width": 300
-    },
-    "options": [
-      {
-        "path": "appleMusic",
-        "label": "Apple Music Subscription - $10.99/month"
-      },
-      {
-        "path": "disneyHulu",
-        "label": "Disney+ / Hulu / ESPN+ Bundles - $10.99/month"
-      },
-      {
-        "path": "cloudStorage",
-        "label": "CitiSignal Cloud Storage - 600GB: $6/month"
-      },
-      {
-        "path": "gamingPass",
-        "label": "Gaming Passes or Streaming Services - $10.99/month"
-      }
-    ]
+    }
   },
   {
     "id": "mobile-heading-3",
     "type": "heading",
-    "label": "Device Protection & Security",
-    "weight": "bold"
+    "label": "Device Protection & Security"
   },
   {
     "id": "mobile-options-3",
-    "value": "",
-    "type": "checkbox",
-    "variant": "checkbox",
+    "component": "checkboxGroup",
+    "content": {
+      "options": [
+        {
+          "path": "mobileProtect",
+          "label": "CitiSignal Mobile Protect (phone insurance & tech support) - $17/month per device",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "smartFamily",
+          "label": "Smart Family (parental controls & location tracking) - $4.99/month",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "callFilterPlus",
+          "label": "Call Filter Plus (spam call blocking) - $2.99/month",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        },
+        {
+          "path": "totalMobileProtect",
+          "label": "Total Mobile Protection (extended warranty & device repair) - $14/month per device",
+          "checkedValue": "y",
+          "uncheckedValue": "n"
+        }
+      ],
+      "prefill": false,
+      "variant": "checkbox"
+    },
     "styles": {
       "flexDirection": "vertical",
       "width": 300
-    },
-    "options": [
-      {
-        "path": "mobileProtect",
-        "label": "CitiSignal Mobile Protect (phone insurance & tech support) - $17/month per device"
-      },
-      {
-        "path": "smartFamily",
-        "label": "Smart Family (parental controls & location tracking) - $4.99/month"
-      },
-      {
-        "path": "callFilterPlus",
-        "label": "Call Filter Plus (spam call blocking) - $2.99/month"
-      },
-      {
-        "path": "totalMobileProtect",
-        "label": "Total Mobile Protection (extended warranty & device repair) - $14/month per device"
-      }
-    ]
+    }
   }
 ]
