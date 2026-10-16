@@ -34,7 +34,7 @@ class SingleFieldMappingTest {
     @Test
     void aButtonsMobileFieldsOverrideTheWebOnes() {
         final Map<String, Object> mobile = map("button", "linkType", "cta-button", "alignment", "left",
-                "mobilebuttonvariant", "elevated", "mobilealignment", "stretch", "mobileicon", "credit-card",
+                "mobilebuttonvariant", "elevated", "mobilealignment", "stretch", "mobilebuttonicon", "credit-card",
                 "mobilemessage", "Thank you");
         assertEquals("elevated", mobile.get("variant"));
         assertEquals("stretch", mobile.get("alignment"));
@@ -43,7 +43,7 @@ class SingleFieldMappingTest {
         assertNull(mobile.get("mobilemessage"), "the mobile fields do not leak");
         assertNull(mobile.get("mobilebuttonvariant"), "the mobile fields do not leak");
         assertNull(mobile.get("mobilealignment"), "the mobile fields do not leak");
-        assertNull(mobile.get("mobileicon"), "the mobile fields do not leak");
+        assertNull(mobile.get("mobilebuttonicon"), "the mobile fields do not leak");
 
         final Map<String, Object> web = map("button", "linkType", "secondary-button", "alignment", "left");
         assertEquals("outlined", web.get("variant"));
@@ -55,13 +55,13 @@ class SingleFieldMappingTest {
     /** An action-button's Mobile Specific tab carries the same icon and message the core button's does. */
     @Test
     void anActionButtonReadsItsMobileIconAndMessage() {
-        final Map<String, Object> mapped = map("action-button", "label", "Go", "mobileicon", "credit-card",
+        final Map<String, Object> mapped = map("action-button", "label", "Go", "mobilebuttonicon", "credit-card",
                 "mobilemessage", "Thank you", "mobilebuttonvariant", "elevated", "mobilealignment", "left");
         assertEquals("credit-card", mapped.get("icon"));
         assertEquals("Thank you", mapped.get("message"));
         assertEquals("elevated", mapped.get("variant"));
         assertEquals("left", mapped.get("alignment"));
-        assertNull(mapped.get("mobileicon"), "the mobile fields do not leak");
+        assertNull(mapped.get("mobilebuttonicon"), "the mobile fields do not leak");
         assertNull(mapped.get("mobilemessage"), "the mobile fields do not leak");
 
         final Map<String, Object> bare = map("action-button", "label", "Go");
