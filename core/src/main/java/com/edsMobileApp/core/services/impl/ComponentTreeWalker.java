@@ -1372,7 +1372,9 @@ final class ComponentTreeWalker {
         collectComponents(resource, children, depth + 1, true, ancestorSection, knownScreenKeys,
             screenThumbnailOverrides);
 
-        emitPanel(resource, sink, resourceType, children, resource.getPath());
+        emitPanel(resource, sink, resourceType,
+                flattensColumns(resource, resourceType) ? flattenPanels(children) : children,
+                resource.getPath());
     }
 
     private void emitPanel(final Resource resource, final List<Map<String, Object>> sink,
@@ -1419,10 +1421,14 @@ final class ComponentTreeWalker {
         // them - itemsFillWidth true is what stretches cards to the panel width.
         final ValueMap panelProps = resource.getValueMap();
         meta.put("showBorder", panelProps.get("showBorder", Boolean.FALSE));
+        meta.put("itemsAlignment", panelProps.get("itemsAlignment", "center"));
         meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
         meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
 
         final boolean vertical = "vertical".equals(meta.get(SchemaConstants.KEY_LAYOUT));
+        if (!vertical) {
+            clearFullWidthImages(children);
+        }
 
         final Map<String, Object> entry = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_META, meta);
@@ -1496,6 +1502,81 @@ final class ComponentTreeWalker {
         final Map<String, Object> created = new LinkedHashMap<>();
         entry.put(SchemaConstants.KEY_STYLES, created);
         return created;
+    }
+
+    /**
+     * An image declares {@code fullWidth} so a client stretches it across the screen, and
+     * image.json defaults it to true because that is right for the usual case - an image alone in
+     * a stack. Beside something else in a row it is not: the image takes the whole width and its
+     * siblings get none, which is a blank space rather than a layout.
+     *
+     * <p>Only direct children are touched. An image inside a cell of its own is still alone in
+     * that cell, whatever the block around it is doing, so it keeps its full width.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private static void clearFullWidthImages(final List<Map<String, Object>> children) {
+        for (final Map<String, Object> child : children) {
+            if (!SchemaConstants.COMPONENT_IMAGE.equals(
+                    asMeta(child.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
+                continue;
+            }
+            final Object content = child.get(SchemaConstants.KEY_CONTENT);
+            if (content instanceof Map) {
+                ((Map<String, Object>) content).put("fullWidth", Boolean.FALSE);
+            }
+        }
+    }
+
+    private static boolean isPanel(final Map<String, Object> entry) {
+        return SchemaConstants.COMPONENT_PANEL.equals(asMeta(entry.get(SchemaConstants.KEY_META))
+                .get(SchemaConstants.KEY_COMPONENT));
+    }
+
+    /**
+     * Replaces every nested panel with the components inside it, however deep, and renumbers what
+     * is left. The children are collected normally first, so each one keeps the fields, styles and
+     * component name its own mapping rule gave it - only the panels wrapping them are dropped.
+     *
+     * <p>Each nested panel numbered its own content from zero, so the surviving components carry
+     * colliding {@code order} values until they are stamped again against their new position.</p>
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> contentOf(final Map<String, Object> panel) {
+        final Object content = panel.get(SchemaConstants.KEY_CONTENT);
+        return content instanceof List ? (List<Map<String, Object>>) content : Collections.emptyList();
+    }
+
+    private static List<Map<String, Object>> flattenPanels(final List<Map<String, Object>> children) {
+        // A lone panel wrapping everything is scaffolding, not layout: it is AEM's untyped row
+        // wrapper, and its own vertical layout is exactly what was overriding the block's. Dissolve
+        // it however much it holds, then decide cell by cell.
+        if (children.size() == 1 && isPanel(children.get(0))) {
+            return flattenPanels(contentOf(children.get(0)));
+        }
+
+        final List<Map<String, Object>> flat = new ArrayList<>();
+        for (final Map<String, Object> child : children) {
+            if (!isPanel(child)) {
+                flat.add(child);
+                continue;
+            }
+            final List<Map<String, Object>> inner = flattenPanels(contentOf(child));
+            if (inner.size() == 1) {
+                // A cell holding one component says nothing that the component does not.
+                flat.addAll(inner);
+            } else if (!inner.isEmpty()) {
+                // Several components in one cell were grouped on purpose - an image beside a title,
+                // a subtitle and a button - so the cell keeps the panel that groups them. Dropping
+                // it would lay all of them out along the block's own axis and push most off screen.
+                child.put(SchemaConstants.KEY_CONTENT, inner);
+                flat.add(child);
+            }
+        }
+        for (int order = 0; order < flat.size(); order++) {
+            asMeta(flat.get(order).get(SchemaConstants.KEY_META))
+                    .put(SchemaConstants.KEY_ORDER, order);
+        }
+        return flat;
     }
 
     private static boolean isBanner(final Map<String, Object> entry) {
@@ -1587,18 +1668,62 @@ final class ComponentTreeWalker {
         return styles;
     }
 
+    /** A columns block, by its franklin resource type or by the last segment of a custom one. */
+    private static boolean isColumnsBlock(final String resourceType) {
+        return SchemaConstants.RT_FRANKLIN_COLUMNS.equals(resourceType)
+                || StringUtils.endsWith(resourceType, "/columns");
+    }
+
     /** Columns lay their children out side by side; a section stacks them. */
     private static String layoutOf(final String resourceType) {
-        return SchemaConstants.RT_FRANKLIN_COLUMNS.equals(resourceType)
-                || StringUtils.endsWith(resourceType, "/columns")
-                ? "horizontal" : "vertical";
+        return isColumnsBlock(resourceType) ? "horizontal" : "vertical";
     }
 
     /**
-     * A column's own itemAlignment decides whether its contents stack or sit side by side; every
-     * other panel takes its layout from the container's resource type.
+     * The panel layout an author set on this node, or {@code null}. Only the two values the panel
+     * contract knows count: a block may carry a {@code mobilelayout} in its own vocabulary - a
+     * cards block's "vertical/grid" - which is meaningful there but is not a panel layout.
+     */
+    private static String authoredPanelLayout(final Resource resource) {
+        final String authored = resource.getValueMap().get("mobilelayout", String.class);
+        return "vertical".equals(authored) || "horizontal".equals(authored) ? authored : null;
+    }
+
+    /**
+     * True when this columns block should emit one flat panel: its cells' components become the
+     * panel's own content, with the untyped row wrapper and the per-cell panels left out.
+     *
+     * <p>Without the flattening an authored layout on a columns block is inert. AEM puts an
+     * untyped row wrapper between the block and its cells, and that wrapper emits a panel of its
+     * own whose layout comes from its (absent) resource type - vertical. So the block says
+     * horizontal, the row below it says vertical, and the cells stack either way.</p>
+     *
+     * <p>Gated on the author having set the field, so a columns block nobody has touched keeps the
+     * nesting it has always had rather than reflowing on a deploy.</p>
+     */
+    private static boolean flattensColumns(final Resource resource, final String resourceType) {
+        return isColumnsBlock(resourceType) && authoredPanelLayout(resource) != null;
+    }
+
+    /**
+     * A panel's own authored Mobile Specific layout wins, being the most specific choice there is -
+     * today that is a columns block or one of its cells. A column's own itemAlignment decides
+     * whether its contents stack or sit side by side; every other panel takes its layout from the
+     * container's resource type.
+     *
+     * <p>Only the two panel layout values are honoured: a block carrying a {@code mobilelayout} in
+     * a different vocabulary - a cards block's "vertical/grid", say - must not reach a panel. An
+     * unauthored container keeps the layout its resource type has always given it, so adding the
+     * field does not reflow containers that nobody has touched. The read is deliberately not
+     * restricted to the blocks that offer the field: a section carrying the property would be
+     * honoured too, which is what keeps already-authored content working if the dropdown is ever
+     * offered on sections as well.
      */
     private static String panelLayout(final Resource resource, final String resourceType) {
+        final String authored = authoredPanelLayout(resource);
+        if (authored != null) {
+            return authored;
+        }
         if (isColumnItem(resource)) {
             return "horizontal".equals(resource.getValueMap().get("itemAlignment", String.class))
                     ? "horizontal" : "vertical";
