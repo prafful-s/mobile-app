@@ -30,8 +30,10 @@
       "default": "left" },
     { "target": "verticalAlignment", "from": "verticalalignment", "default": "top" },
     { "target": "contentAlignment", "from": "alignment", "default": "left" },
+    { "target": "horizontalAlignment", "from": "mobilehorizontalalignment" },
     { "target": "opacity", "from": "textoverlay", "type": "number",
-      "map": { "true": 0.5, "false": 0 }, "default": 0.5 }
+      "map": { "true": 0.5, "false": 0 }, "default": 0.5 },
+    { "target": "opacity", "from": "mobileopacity", "type": "number" }
   ],
   "styles": [
     { "target": "gap", "const": 8 }

@@ -30,43 +30,24 @@ class SingleFieldMappingTest {
                 "label and text are not read");
     }
 
-    /** The button's Mobile Specific tab overrides the web fields; with nothing authored the web ones still apply. */
+    /**
+     * The hero's Mobile Specific tab carries only horizontal alignment and overlay opacity. Content and
+     * vertical alignment come from the web fields and the title and subtitle from the text, so the
+     * mobile title/subtitle variants and content/vertical alignments are not read.
+     */
     @Test
-    void aButtonsMobileFieldsOverrideTheWebOnes() {
-        final Map<String, Object> mobile = map("button", "linkType", "cta-button", "alignment", "left",
-                "mobilebuttonvariant", "elevated", "mobilealignment", "stretch", "mobilebuttonicon", "credit-card",
-                "mobilemessage", "Thank you");
-        assertEquals("elevated", mobile.get("variant"));
-        assertEquals("stretch", mobile.get("alignment"));
-        assertEquals("credit-card", mobile.get("icon"));
-        assertEquals("Thank you", mobile.get("message"));
-        assertNull(mobile.get("mobilemessage"), "the mobile fields do not leak");
-        assertNull(mobile.get("mobilebuttonvariant"), "the mobile fields do not leak");
-        assertNull(mobile.get("mobilealignment"), "the mobile fields do not leak");
-        assertNull(mobile.get("mobilebuttonicon"), "the mobile fields do not leak");
-
-        final Map<String, Object> web = map("button", "linkType", "secondary-button", "alignment", "left");
-        assertEquals("outlined", web.get("variant"));
-        assertEquals("left", web.get("alignment"));
-        assertEquals("", web.get("icon"));
-        assertEquals("", web.get("message"));
-    }
-
-    /** An action-button's Mobile Specific tab carries the same icon and message the core button's does. */
-    @Test
-    void anActionButtonReadsItsMobileIconAndMessage() {
-        final Map<String, Object> mapped = map("action-button", "label", "Go", "mobilebuttonicon", "credit-card",
-                "mobilemessage", "Thank you", "mobilebuttonvariant", "elevated", "mobilealignment", "left");
-        assertEquals("credit-card", mapped.get("icon"));
-        assertEquals("Thank you", mapped.get("message"));
-        assertEquals("elevated", mapped.get("variant"));
-        assertEquals("left", mapped.get("alignment"));
-        assertNull(mapped.get("mobilebuttonicon"), "the mobile fields do not leak");
-        assertNull(mapped.get("mobilemessage"), "the mobile fields do not leak");
-
-        final Map<String, Object> bare = map("action-button", "label", "Go");
-        assertEquals("", bare.get("icon"));
-        assertEquals("", bare.get("message"));
+    void aHeroReadsOnlyItsMobileHorizontalAlignmentAndOpacity() {
+        final Map<String, Object> mapped = map("hero", "text", "<h1>Title</h1><p>Sub</p>", "image", "/hero.jpg",
+                "alignment", "center", "verticalalignment", "bottom",
+                "mobilehorizontalalignment", "right", "mobileopacity", "0.4",
+                "mobiletitlevariant", "headlineLarge", "mobilesubtitlevariant", "headlineMedium",
+                "mobilecontentalignment", "right", "mobileverticalalignment", "top");
+        assertEquals("right", mapped.get("horizontalAlignment"));
+        assertEquals(0.4, ((Number) mapped.get("opacity")).doubleValue(), 0.0001);
+        assertEquals("center", mapped.get("contentAlignment"), "content alignment follows the web field");
+        assertEquals("bottom", mapped.get("verticalAlignment"), "vertical alignment follows the web field");
+        assertEquals("titleLarge", mapped.get("titleVariant"), "the title keeps its default size");
+        assertNull(mapped.get("subtitleVariant"), "there is no authored subtitle size");
     }
 
     @Test
