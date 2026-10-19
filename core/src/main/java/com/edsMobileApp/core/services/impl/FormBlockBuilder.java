@@ -57,7 +57,7 @@ final class FormBlockBuilder {
     private static final String CUSTOM_MOBILE_STYLE_KEY = "custommobilestyle";
     /** The one {@code custommobilestyle} row key this export currently understands - see
      *  {@link #applyCheckboxWidth}. */
-    private static final String STYLE_KEY_WIDTH = "width";
+    private static final String STYLE_KEY_WIDTH = "checkbox-width";
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
@@ -265,6 +265,10 @@ final class FormBlockBuilder {
         meta.put("link", redirectScreen(first(authored, MOBILE_REDIRECT_KEYS, StringUtils.EMPTY)));
         meta.put(SchemaConstants.KEY_ORDER, order);
         meta.put(SchemaConstants.KEY_COMPONENT, COMPONENT_FORM);
+        final Object mobileFormId = authored.get("mobileFormID");
+        if (mobileFormId instanceof String && StringUtils.isNotBlank((String) mobileFormId)) {
+            meta.put("formId", mobileFormId);
+        }
         meta.put("eventType", first(authored, EVENT_TYPE_KEYS, StringUtils.EMPTY));
         meta.put("webhookUrl", first(authored, WEBHOOK_KEYS, StringUtils.EMPTY));
         meta.put("toastMessage", first(authored, TOAST_KEYS, StringUtils.EMPTY));

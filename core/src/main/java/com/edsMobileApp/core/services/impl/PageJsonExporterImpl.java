@@ -911,7 +911,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         }
         putIfConfigured(meta, "navigateOnSubmit", settings.get("navigateOnSubmit"));
         putIfConfigured(meta, "eventType", settings.get("eventType"));
-        putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
+        final Object authoredToast = meta.get("toastMessage");
+        if (!(authoredToast instanceof String) || StringUtils.isBlank((String) authoredToast)) {
+            putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
+        }
     }
 
     /**

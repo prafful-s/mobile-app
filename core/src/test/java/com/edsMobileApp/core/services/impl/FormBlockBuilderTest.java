@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Collections;
@@ -55,6 +56,31 @@ class FormBlockBuilderTest {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> meta(final Map<String, Object> component) {
         return (Map<String, Object>) component.get(SchemaConstants.KEY_META);
+    }
+
+    @Test
+    void authoredMobileFormIdIsExportedOnTheFormWrapper() {
+        final Resource resource = context.create().resource("/content/site/page/jcr:content/form");
+        final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS).build(resource,
+                "test-drive", "form123", 0,
+                Map.of("mobileFormID", "test-drive-form", "mobilebuttoneventtype", "scheduleTestDrive"));
+
+        assertEquals("test-drive-form", meta(built).get("formId"));
+        assertEquals("scheduleTestDrive", meta(built).get("eventType"));
+        assertEquals("form123", meta(built).get(SchemaConstants.KEY_ID));
+    }
+
+    @Test
+    void mobileFormIdIsOmittedWhenAbsentOrBlank() {
+        final Resource resource = context.create().resource("/content/site/page/jcr:content/form");
+        final Map<String, Object> absent = new FormBlockBuilder(NO_SCHEMAS).build(resource,
+                "test-drive", "form123", 0, Collections.emptyMap());
+        assertFalse(meta(absent).containsKey("formId"));
+        for (final String blank : new String[] {"", " ", "\t"}) {
+            final Map<String, Object> built = new FormBlockBuilder(NO_SCHEMAS).build(resource,
+                    "test-drive", "form123", 0, Map.of("mobileFormID", blank));
+            assertFalse(meta(built).containsKey("formId"));
+        }
     }
 
     @Test
