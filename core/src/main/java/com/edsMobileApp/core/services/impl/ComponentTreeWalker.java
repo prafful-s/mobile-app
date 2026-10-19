@@ -1951,14 +1951,18 @@ final class ComponentTreeWalker {
     }
 
     /**
-     * A section's authored Mobile Specific layout wins, being the most specific choice there is. A
-     * column's own itemAlignment decides whether its contents stack or sit side by side; every
-     * other panel takes its layout from the container's resource type.
+     * A panel's own authored Mobile Specific layout wins, being the most specific choice there is -
+     * today that is a columns block or one of its cells. A column's own itemAlignment decides
+     * whether its contents stack or sit side by side; every other panel takes its layout from the
+     * container's resource type.
      *
      * <p>Only the two panel layout values are honoured: a block carrying a {@code mobilelayout} in
      * a different vocabulary - a cards block's "vertical/grid", say - must not reach a panel. An
      * unauthored container keeps the layout its resource type has always given it, so adding the
-     * field does not reflow sections that nobody has touched.
+     * field does not reflow containers that nobody has touched. The read is deliberately not
+     * restricted to the blocks that offer the field: a section carrying the property would be
+     * honoured too, which is what keeps already-authored content working if the dropdown is ever
+     * offered on sections as well.
      */
     private static String panelLayout(final Resource resource, final String resourceType) {
         final String authored = authoredPanelLayout(resource);
