@@ -30,8 +30,9 @@ import com.day.cq.wcm.api.Page;
  * model-name filter instead of a product-rule match. A site is expected to carry exactly one theme
  * fragment; if it somehow carries more than one, whichever the walk reaches first wins.</p>
  *
- * <p>The site's resolved fragment <em>path</em> is cached for the bundle's lifetime once found - an
- * unknown/themeless site is only walked once - but the fragment itself is live content an author can
+ * <p>The site's resolved fragment <em>path</em> is cached for the bundle's lifetime once found - a
+ * site that has none is searched again only after {@link #DEFAULT_MISS_RETRY_MILLIS}, so a fragment
+ * added later is picked up without a redeploy - but the fragment itself is live content an author can
  * change at any time, so its elements are re-read on every {@link #forPage} call rather than cached
  * alongside the path. A site with no matching fragment simply exports no shipped branding.</p>
  *
@@ -76,16 +77,27 @@ final class SiteBranding {
     private static final String TYPE_NUMBER = "number";
     private static final String TYPE_BOOLEAN = "boolean";
 
+    /** How long a search that found no theme fragment is not repeated - long enough that a themeless
+     * site is not walked per request, short enough that a fragment added later is picked up without
+     * a redeploy. */
+    private static final long DEFAULT_MISS_RETRY_MILLIS = 60_000L;
+
     /** Flat-model elements typed as a number in the CF model, so the stringified read needs parsing back. */
     private static final Set<String> NUMERIC_FIELDS = Set.of("roundness", "panelBorderRadius", "buttonBorderRadius");
 
     private final Set<String> themeModels;
     private final ProductMappings productMappings;
-    private final Map<String, Optional<String>> fragmentPathBySite = new ConcurrentHashMap<>();
+    /** Sites whose theme fragment has been found; only a hit is kept for good. */
+    private final Map<String, String> fragmentPathBySite = new ConcurrentHashMap<>();
+    /** When each site's search last came up empty, so a themeless site is not walked on every export. */
+    private final Map<String, Long> missedAtBySite = new ConcurrentHashMap<>();
+    private final long missRetryMillis;
 
-    private SiteBranding(final Set<String> themeModels, final ProductMappings productMappings) {
+    private SiteBranding(final Set<String> themeModels, final ProductMappings productMappings,
+                         final long missRetryMillis) {
         this.themeModels = themeModels;
         this.productMappings = productMappings;
+        this.missRetryMillis = missRetryMillis;
     }
 
     /**
@@ -96,6 +108,11 @@ final class SiteBranding {
      *                        {@code /content/dam/luma3}) is only reachable through that mapping
      */
     static SiteBranding load(final String[] themeModels, final ProductMappings productMappings) {
+        return load(themeModels, productMappings, DEFAULT_MISS_RETRY_MILLIS);
+    }
+
+    static SiteBranding load(final String[] themeModels, final ProductMappings productMappings,
+                             final long missRetryMillis) {
         final Set<String> models = new LinkedHashSet<>();
         if (themeModels != null) {
             for (final String model : themeModels) {
@@ -104,7 +121,8 @@ final class SiteBranding {
                 }
             }
         }
-        return new SiteBranding(models, productMappings == null ? ProductMappings.EMPTY : productMappings);
+        return new SiteBranding(models, productMappings == null ? ProductMappings.EMPTY : productMappings,
+                missRetryMillis);
     }
 
     /**
@@ -167,9 +185,19 @@ final class SiteBranding {
         }
         final String site = StringUtils.substringAfterLast(siteRoot, "/");
         final ResourceResolver resolver = page.getContentResource().getResourceResolver();
-        final String fragmentPath = fragmentPathBySite
-                .computeIfAbsent(site, s -> findThemeFragment(resolver, searchRoots(siteRoot, s)))
-                .orElse(null);
+        String fragmentPath = fragmentPathBySite.get(site);
+        if (fragmentPath == null) {
+            final Long missedAt = missedAtBySite.get(site);
+            if (missedAt == null || System.currentTimeMillis() - missedAt >= missRetryMillis) {
+                fragmentPath = findThemeFragment(resolver, searchRoots(siteRoot, site)).orElse(null);
+                if (fragmentPath != null) {
+                    fragmentPathBySite.put(site, fragmentPath);
+                    missedAtBySite.remove(site);
+                } else {
+                    missedAtBySite.put(site, System.currentTimeMillis());
+                }
+            }
+        }
         if (fragmentPath == null) {
             LOG.info("No theme Content Fragment resolved for site {} (page {}) - no shipped branding",
                     site, page.getPath());
