@@ -132,6 +132,16 @@ class PlanSelectionFormsTest {
     }
 
     @Test
+    void theJointApplicantQuestionIsAHeadingBeforeItsRadio() {
+        final Map<String, Object> form = exportForm("plan-application");
+        final List<String> all = fields(form).stream().map(f -> String.valueOf(meta(f).get("id")))
+                .collect(Collectors.toList());
+        assertEquals(all.indexOf("joint-applicant-title") + 1, all.indexOf("jointApplicant"));
+        assertEquals("Is there a joint applicant?", content(field(form, "joint-applicant-title")).get("text"));
+        assertNull(content(field(form, "jointApplicant")).get("label"));
+    }
+
+    @Test
     void weHealthcareExtractsRichTextLinksIntoButtons() {
         final Page page = context.create().page("/content/we-healthcare/language-masters/en");
         assertEquals(Boolean.TRUE, SiteDefaults.load().forPage(page).get("extractInlineLinks"));
