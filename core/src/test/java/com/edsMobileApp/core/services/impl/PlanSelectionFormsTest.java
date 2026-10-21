@@ -131,6 +131,12 @@ class PlanSelectionFormsTest {
                 headingStyle(field(form, "step-3-title-sub2")));
     }
 
+    @Test
+    void weHealthcareExtractsRichTextLinksIntoButtons() {
+        final Page page = context.create().page("/content/we-healthcare/language-masters/en");
+        assertEquals(Boolean.TRUE, SiteDefaults.load().forPage(page).get("extractInlineLinks"));
+    }
+
     private static Map<String, Object> headingStyle(final Map<String, Object> heading) {
         final Map<String, Object> c = content(heading);
         return Map.of("size", c.get("size"), "weight", c.get("weight"), "textAlignment", c.get("textAlignment"));
