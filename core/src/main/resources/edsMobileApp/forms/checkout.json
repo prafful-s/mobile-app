@@ -57,7 +57,7 @@
   },
   {
     "id": "",
-    "name": "frequentFlyerId",
+    "name": "loyaltyId",
     "label": "Frequent Flyer ID",
     "value": "",
     "type": "text",
@@ -185,7 +185,7 @@
   },
   {
     "id": "",
-    "name": "seat",
+    "name": "travelPreferences.seat",
     "label": "Seat",
     "value": "",
     "type": "select",
@@ -206,7 +206,7 @@
   },
   {
     "id": "",
-    "name": "section",
+    "name": "travelPreferences.seatSection",
     "label": "Section",
     "value": "",
     "type": "select",
@@ -227,7 +227,7 @@
   },
   {
     "id": "",
-    "name": "meal",
+    "name": "travelPreferences.meal",
     "label": "Meal",
     "value": "",
     "type": "select",

@@ -55,6 +55,9 @@ final class FieldRule {
      */
     private static final String TYPE_CSV = "csv";
 
+    /** Splits authored {@code label,latitude,longitude} lines into the map component's coordinate rows. */
+    private static final String TYPE_MAP_COORDINATES = "mapCoordinates";
+
     /**
      * Empties to a literal JSON {@code null} rather than a typed zero, for reference fields whose
      * contract is exactly {@code "product": null} (a slot the client fills at runtime). A field
@@ -417,6 +420,9 @@ final class FieldRule {
         if (TYPE_CSV.equals(type)) {
             return toCsv(value);
         }
+        if (TYPE_MAP_COORDINATES.equals(type)) {
+            return toMapCoordinates(value);
+        }
         if (TYPE_CATEGORY_TOKENS.equals(type)) {
             return toCategoryTokens(value);
         }
@@ -596,6 +602,36 @@ final class FieldRule {
             }
         }
         return fallback;
+    }
+
+    /** See {@link #TYPE_MAP_COORDINATES}. */
+    private static Object toMapCoordinates(final Object value) {
+        final Iterable<?> items;
+        if (value instanceof Iterable) {
+            items = (Iterable<?>) value;
+        } else if (value instanceof Object[]) {
+            items = java.util.Arrays.asList((Object[]) value);
+        } else {
+            items = Collections.singletonList(value);
+        }
+        final List<Map<String, Object>> coordinates = new ArrayList<>();
+        int rowIndex = 0;
+        for (final Object item : items) {
+            if (item == null) {
+                continue;
+            }
+            for (final String line : String.valueOf(item).split("\\R")) {
+                final int index = rowIndex++;
+                final String[] parts = line.split(",", -1);
+                if (parts.length != 3 || StringUtils.isBlank(parts[0])
+                        || StringUtils.isBlank(parts[1]) || StringUtils.isBlank(parts[2])) {
+                    continue;
+                }
+                coordinates.add(Map.of("id", "row-" + index, "label", parts[0].trim(),
+                        "latitude", parts[1].trim(), "longitude", parts[2].trim()));
+            }
+        }
+        return coordinates;
     }
 
     /** See {@link #TYPE_CSV}. */
