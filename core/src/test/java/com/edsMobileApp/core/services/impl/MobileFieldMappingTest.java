@@ -86,13 +86,13 @@ class MobileFieldMappingTest {
         }
 
         @Test
-        void weHealthcareSearchesItsFragmentsFolderForTheThemeFragment() {
+        void weHealthcareSearchesItsAssetsFragmentsFolderForTheThemeFragment() {
         final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
         assertTrue(ProductMappings.load().rootsForSite("/content/we-healthcare")
-            .contains("/content/dam/we-healthcare/en/fragments"));
+            .contains("/content/dam/we-healthcare-assets/en/fragments"));
         final Page page = context.create().page("/content/we-healthcare/language-masters/en");
         context.create().resource(
-            "/content/dam/we-healthcare/en/fragments/brand-themes/wehealthcare-mobile/jcr:content/data",
+            "/content/dam/we-healthcare-assets/en/fragments/brand-themes/wehealthcare-mobile/jcr:content/data",
             "cq:model", model);
         final SiteBranding branding = SiteBranding.load(new String[]{model}, ProductMappings.load());
         assertEquals("wehealthcare-mobile", branding.themeNameForPage(page));
