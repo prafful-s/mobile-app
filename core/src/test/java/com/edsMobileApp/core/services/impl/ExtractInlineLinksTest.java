@@ -75,11 +75,16 @@ class ExtractInlineLinksTest {
     }
 
     private List<Map<String, Object>> exportText(final String site) {
+        return exportText(site,
+                "<p>Intro</p><p><a href=\"medicare-insurance-basics\">Medicare Insurance Basics</a></p>");
+    }
+
+    private List<Map<String, Object>> exportText(final String site, final String html) {
         final Page page = context.create().page("/content/" + site + "/language-masters/en");
         context.create().resource(page.getPath() + "/jcr:content/root");
         context.create().resource(page.getPath() + "/jcr:content/root/text1",
                 "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
-                "text", "<p>Intro</p><p><a href=\"medicare-insurance-basics\">Medicare Insurance Basics</a></p>");
+                "text", html);
         final UrlServiceImpl urlService = new UrlServiceImpl();
         final ModelFactory modelFactory = mock(ModelFactory.class);
         when(modelFactory.isModelAvailableForResource(any())).thenReturn(true);
@@ -107,5 +112,61 @@ class ExtractInlineLinksTest {
     @Test
     void aSiteWithoutTheSwitchKeepsTheLinkInTheText() {
         assertEquals(List.of("htmlText"), componentNames(exportText("frescopa")));
+    }
+
+    private static String textOf(final Map<String, Object> component) {
+        return String.valueOf(content(component).get("text"));
+    }
+
+    private static String labelOf(final Map<String, Object> component) {
+        return String.valueOf(content(component).get("label"));
+    }
+
+    private static final String SEVERAL = "<p>Start</p><p><a href=\"first\">First</a></p><p>Middle</p>"
+            + "<p><a href=\"second\">Second</a></p><p>End</p>";
+
+    @Test
+    void weHealthcareKeepsEachButtonAtItsOwnParagraph() {
+        final List<Map<String, Object>> tree = exportText("we-healthcare", SEVERAL);
+        assertEquals(List.of("htmlText", "button", "htmlText", "button", "htmlText"), componentNames(tree));
+        assertEquals("<p>Start</p>", textOf(tree.get(0)));
+        assertEquals("First", labelOf(tree.get(1)));
+        assertEquals("<p>Middle</p>", textOf(tree.get(2)));
+        assertEquals("Second", labelOf(tree.get(3)));
+        assertEquals("<p>End</p>", textOf(tree.get(4)));
+        assertEquals(List.of(0, 1, 2, 3, 4), tree.stream().map(c -> meta(c).get("order"))
+                .collect(Collectors.toList()));
+    }
+
+    @Test
+    void aBlockThatOpensWithALinkStartsWithItsButton() {
+        final List<Map<String, Object>> tree = exportText("we-healthcare",
+                "<p><a href=\"first\">First</a></p><p>Rest</p>");
+        assertEquals(List.of("button", "htmlText"), componentNames(tree));
+        assertEquals("<p>Rest</p>", textOf(tree.get(1)));
+    }
+
+    @Test
+    void twoLinksInOneParagraphGiveTwoButtonsAfterIt() {
+        final List<Map<String, Object>> tree = exportText("we-healthcare",
+                "<p>See <a href=\"first\">First</a> and <a href=\"second\">Second</a>.</p><p>End</p>");
+        assertEquals(List.of("htmlText", "button", "button", "htmlText"), componentNames(tree));
+        assertEquals("<p>See  and .</p>", textOf(tree.get(0)));
+        assertEquals("First", labelOf(tree.get(1)));
+        assertEquals("Second", labelOf(tree.get(2)));
+    }
+
+    @Test
+    void aLinkThatGoesNowhereStaysAsItsLabel() {
+        final List<Map<String, Object>> tree = exportText("we-healthcare",
+                "<p>Go <a href=\"#top\">up</a></p><p><a href=\"first\">First</a></p>");
+        assertEquals(List.of("htmlText", "button"), componentNames(tree));
+        assertEquals("<p>Go up</p>", textOf(tree.get(0)));
+    }
+
+    @Test
+    void aSiteWithOnlyTheExtractSwitchStillPutsAllButtonsAfterTheText() {
+        final List<Map<String, Object>> tree = exportText("carvelo", SEVERAL);
+        assertEquals(List.of("htmlText", "button", "button"), componentNames(tree));
     }
 }
