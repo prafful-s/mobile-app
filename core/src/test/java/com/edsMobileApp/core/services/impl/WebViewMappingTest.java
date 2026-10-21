@@ -21,4 +21,14 @@ class WebViewMappingTest {
                 "mobileNickname", "Adobe",
                 "url", "https://example.com"), Map.of()));
     }
+
+    @Test
+    void aVideoBlockIsShownInAWebViewOfItsVideoUrl() {
+        final ComponentMapping rule = mappings.find("video");
+        assertNotNull(rule);
+        assertEquals("webView", rule.getComponent());
+        assertEquals(Map.of("url", "https://example.com/medicare-101.mp4"), rule.apply(Map.of(
+                "videoUrl", "https://example.com/medicare-101.mp4",
+                "custom-class", "wh-video"), Map.of()));
+    }
 }
