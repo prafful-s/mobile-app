@@ -105,6 +105,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         this.confirmButtonDefaults = readConfirmButtonDefaults();
         this.formFieldPathOverrides = FormFieldPathOverrides.load();
         this.productCatalog = new ProductCatalog(productMappings);
+        this.walker.setSiteDefaults(this.siteDefaults);
     }
 
     @Override

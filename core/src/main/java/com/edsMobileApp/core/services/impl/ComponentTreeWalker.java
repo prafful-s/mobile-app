@@ -61,6 +61,12 @@ final class ComponentTreeWalker {
     private final FormBlockBuilder formBuilder;
     private SiteDefaults siteDefaults;
 
+    /** The per-site defaults this walker reads for its own site lookups - the inline-link extraction
+     * switch and the screen list. Set once, on activation, by the exporter. */
+    void setSiteDefaults(final SiteDefaults siteDefaults) {
+        this.siteDefaults = siteDefaults;
+    }
+
     /**
      * The {@code loginScreen}/{@code profileScreen}/{@code registrationScreen} keys this export's own
      * {@code navigation} already resolved to - set once per {@code export()} call (see
