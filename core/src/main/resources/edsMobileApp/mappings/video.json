@@ -1,9 +1,14 @@
 {
   "match": ["video"],
-  "component": "webView",
+  "component": "video",
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
-    { "target": "url", "from": "videoUrl" }
+    { "target": "url", "from": "videoUrl" },
+    { "target": "autoplay", "from": "autoplay", "type": "boolean", "default": true },
+    { "target": "loop", "from": "loop", "type": "boolean", "default": true },
+    { "target": "muted", "from": "muted", "type": "boolean", "default": true },
+    { "target": "controls", "from": "controls", "type": "boolean", "default": true },
+    { "target": "imageResize", "from": "mobileimageresize", "omitIfAbsent": true }
   ]
 }
