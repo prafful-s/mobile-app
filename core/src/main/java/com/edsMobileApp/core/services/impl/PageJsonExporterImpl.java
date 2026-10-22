@@ -1323,7 +1323,7 @@ public class PageJsonExporterImpl implements PageJsonExporter {
             "title", "image", "button", "productCard", "cartSummary", "divider", "dropdown", "formSubmitButton",
             "productImage", "productTitle", "productPrice", "productAddToCartButton", "productDescription",
                 "flightSearch", "flightResults", "offer", "offerRenderer", "inbox", "contentCards", "webView", "map",
-                "schedule-appointment");
+                "schedule-appointment", "video");
 
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> keepEnabledComponents(final List<Map<String, Object>> tree) {
