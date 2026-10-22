@@ -247,6 +247,7 @@ final class ComponentTreeWalker {
             return;
         }
         final boolean extractLinks = extractsInlineLinks(page);
+        final boolean splitLinks = splitsInlineLinks(page);
         boolean inserted = false;
         for (int i = 0; i < components.size(); i++) {
             final Map<String, Object> component = components.get(i);
@@ -263,7 +264,15 @@ final class ComponentTreeWalker {
                 prefixAssets(payload, assetHost);
                 if (isHtmlText(component)) {
                     rewriteHtmlTextLinks(payload);
-                    if (extractLinks) {
+                    if (splitLinks) {
+                        final List<Map<String, Object>> parts = splitAtInlineLinks(component, payload);
+                        if (parts != null) {
+                            components.remove(i);
+                            components.addAll(i, parts);
+                            i += parts.size() - 1;
+                            inserted = true;
+                        }
+                    } else if (extractLinks) {
                         for (final Map<String, Object> button : extractInlineLinkButtons(payload)) {
                             components.add(++i, button);
                             inserted = true;
@@ -296,6 +305,21 @@ final class ComponentTreeWalker {
         return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
     }
 
+    /**
+     * @return true when the site owning {@code page} opts in to {@code splitInlineLinks} in its
+     *         {@code defaults.json}: every navigable link in an htmlText block becomes a button
+     *         placed right after the paragraph that held it, with the text split around it, instead
+     *         of all of a block's buttons landing after the whole text. Takes the place of
+     *         {@code extractInlineLinks} for that site. See {@link #splitAtInlineLinks}.
+     */
+    private boolean splitsInlineLinks(final Page page) {
+        if (siteDefaults == null || page == null) {
+            return false;
+        }
+        final Object flag = siteDefaults.forPage(page).get("splitInlineLinks");
+        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
+    }
+
     /** Renumbers every component's {@code meta.order} to match its actual position in the list. */
     private static void reindexOrder(final List<Map<String, Object>> components) {
         for (int i = 0; i < components.size(); i++) {
@@ -307,6 +331,14 @@ final class ComponentTreeWalker {
         final Object meta = component.get(SchemaConstants.KEY_META);
         return meta instanceof Map && "htmlText".equals(((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT));
     }
+
+    /** The closing tag of the block a link sits in - where the text is split to place its button. */
+    private static final Pattern BLOCK_END = Pattern.compile(
+            "</(p|li|h[1-6]|div|blockquote)\\s*>", Pattern.CASE_INSENSITIVE);
+
+    /** A paragraph left with nothing in it once its link was taken out. */
+    private static final Pattern EMPTY_PARAGRAPH = Pattern.compile(
+            "<p[^>]*>\\s*(<br\\s*/?>)?\\s*</p>", Pattern.CASE_INSENSITIVE);
 
     /** Matches one {@code <a href="...">label</a>} - label captured raw, inner markup and all. */
     private static final Pattern INLINE_LINK = Pattern.compile(
@@ -435,6 +467,101 @@ final class ComponentTreeWalker {
         final String leaf =
                 StringUtils.removeEndIgnoreCase(StringUtils.substringAfterLast(withoutSuffix, "/"), ".html");
         return leaf.isEmpty() ? null : leaf + suffix;
+    }
+
+    /**
+     * Splits an htmlText block at each navigable link: the text up to the end of the paragraph that
+     * held the link (the link itself taken out), then the link's button, then on to the next - so
+     * the buttons keep their place in the reading order instead of all following the whole text. Two
+     * links in one paragraph give two buttons after it. A link that is not navigable is kept as its
+     * plain label; a part with no text left in it (the block opened with a link, say) is dropped.
+     *
+     * @return the components that replace {@code component}, in order; {@code null} when the text
+     *         has no navigable link, so the block is left exactly as authored
+     */
+    private static List<Map<String, Object>> splitAtInlineLinks(final Map<String, Object> component,
+                                                                 final Map<String, Object> payload) {
+        final Object value = payload.get("text");
+        if (!(value instanceof String) || !((String) value).contains("href")) {
+            return null;
+        }
+        final String text = (String) value;
+        final Matcher matcher = INLINE_LINK.matcher(text);
+        final List<int[]> spans = new ArrayList<>();
+        final List<String> labels = new ArrayList<>();
+        final List<String> targets = new ArrayList<>();
+        boolean navigable = false;
+        while (matcher.find()) {
+            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
+            final String linkTo = navigableScreenKey(matcher.group(2).trim());
+            spans.add(new int[] {matcher.start(), matcher.end()});
+            labels.add(label);
+            final boolean hasButton = linkTo != null && !label.isEmpty();
+            targets.add(hasButton ? linkTo : null);
+            navigable |= hasButton;
+        }
+        if (!navigable) {
+            return null;
+        }
+        final List<Map<String, Object>> parts = new ArrayList<>();
+        final String originalId = String.valueOf(asMeta(component.get(SchemaConstants.KEY_META))
+                .get(SchemaConstants.KEY_ID));
+        int cursor = 0;
+        int next = 0;
+        while (next < spans.size()) {
+            final Matcher blockEnd = BLOCK_END.matcher(text);
+            final int split = blockEnd.find(spans.get(next)[1]) ? blockEnd.end() : text.length();
+            final StringBuilder segment = new StringBuilder();
+            final List<Map<String, Object>> buttons = new ArrayList<>();
+            int position = cursor;
+            while (next < spans.size() && spans.get(next)[0] < split) {
+                segment.append(text, position, spans.get(next)[0]);
+                if (targets.get(next) != null) {
+                    buttons.add(inlineLinkButton(labels.get(next), targets.get(next)));
+                } else {
+                    segment.append(labels.get(next));
+                }
+                position = spans.get(next)[1];
+                next++;
+            }
+            segment.append(text, position, split);
+            cursor = split;
+            addTextPart(parts, component, payload, segment.toString(), originalId);
+            parts.addAll(buttons);
+        }
+        addTextPart(parts, component, payload, text.substring(cursor), originalId);
+        return parts;
+    }
+
+    /** Adds {@code html} as a copy of {@code component} carrying it, unless it holds no text. */
+    private static void addTextPart(final List<Map<String, Object>> parts, final Map<String, Object> component,
+                                    final Map<String, Object> payload, final String html,
+                                    final String originalId) {
+        final String cleaned = EMPTY_PARAGRAPH.matcher(html).replaceAll("");
+        if (StringUtils.isBlank(cleaned.replaceAll("<[^>]*>", "").replace("&nbsp;", " "))) {
+            return;
+        }
+        final Map<String, Object> meta = new LinkedHashMap<>(asMeta(component.get(SchemaConstants.KEY_META)));
+        boolean first = true;
+        for (final Map<String, Object> existing : parts) {
+            if ("htmlText".equals(asMeta(existing.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
+                first = false;
+                break;
+            }
+        }
+        if (!first) {
+            meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(originalId + "/part" + parts.size()));
+        }
+        final Map<String, Object> content = new LinkedHashMap<>(payload);
+        content.put("text", cleaned.trim());
+        final Map<String, Object> part = new LinkedHashMap<>();
+        part.put(SchemaConstants.KEY_META, meta);
+        final Object styles = component.get(SchemaConstants.KEY_STYLES);
+        if (styles instanceof Map) {
+            part.put(SchemaConstants.KEY_STYLES, new LinkedHashMap<>((Map<?, ?>) styles));
+        }
+        part.put(SchemaConstants.KEY_CONTENT, content);
+        parts.add(part);
     }
 
     /**
