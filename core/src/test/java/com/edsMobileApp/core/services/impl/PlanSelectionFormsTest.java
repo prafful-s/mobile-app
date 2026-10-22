@@ -131,6 +131,16 @@ class PlanSelectionFormsTest {
                 headingStyle(field(form, "step-3-title-sub2")));
     }
 
+    @Test
+    void theJointApplicantQuestionIsAHeadingBeforeItsRadio() {
+        final Map<String, Object> form = exportForm("plan-application");
+        final List<String> all = fields(form).stream().map(f -> String.valueOf(meta(f).get("id")))
+                .collect(Collectors.toList());
+        assertEquals(all.indexOf("joint-applicant-title") + 1, all.indexOf("jointApplicant"));
+        assertEquals("Is there a joint applicant?", content(field(form, "joint-applicant-title")).get("text"));
+        assertNull(content(field(form, "jointApplicant")).get("label"));
+    }
+
     private static Map<String, Object> headingStyle(final Map<String, Object> heading) {
         final Map<String, Object> c = content(heading);
         return Map.of("size", c.get("size"), "weight", c.get("weight"), "textAlignment", c.get("textAlignment"));
