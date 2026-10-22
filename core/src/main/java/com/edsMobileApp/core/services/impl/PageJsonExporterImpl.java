@@ -796,7 +796,9 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         meta.put("link", authoredLink instanceof String && StringUtils.isNotBlank((String) authoredLink)
             ? authoredLink : override(overrides, "link", authoredLink));
         meta.put(SchemaConstants.KEY_ORDER, old.get(SchemaConstants.KEY_ORDER));
-        meta.put("formId", override(overrides, "formId", old.get("formId")));
+        final Object authoredFormId = old.get("formId");
+        meta.put("formId", authoredFormId instanceof String && StringUtils.isNotBlank((String) authoredFormId)
+            ? authoredFormId : override(overrides, "formId", authoredFormId));
         meta.put(SchemaConstants.KEY_COMPONENT, old.get(SchemaConstants.KEY_COMPONENT));
         meta.put("eventType", old.get("eventType"));
         meta.put("webhookUrl", override(overrides, "webhookUrl", old.get("webhookUrl")));
