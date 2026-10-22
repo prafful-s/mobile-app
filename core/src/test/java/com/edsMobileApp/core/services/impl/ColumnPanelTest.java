@@ -433,13 +433,21 @@ class ColumnPanelTest {
         assertEquals(2, content(kids.get(0)).size(), "and the cells are still panels below it");
     }
 
+    /**
+     * {@code itemsAlignment} is not a field of the target's panel - its "Items alignment" is the
+     * {@code alignItems} exposed style, which this export already carries in {@code styles} and an
+     * author can set through Custom Mobile Style. The key was emitted on every panel hardcoded to
+     * "center", since no AEM property has ever backed it, so it told the client nothing it did not
+     * already assume.
+     */
     @Test
-    void everyPanelCarriesItemsAlignment() {
+    void noPanelCarriesAnItemsAlignmentKey() {
         final Map<String, Object> panel =
                 walker.componentsOf(rowWrappedColumnsPage("aligned"), null, true).get(0);
 
-        assertEquals("center", meta(panel).get("itemsAlignment"));
-        assertEquals("center", meta(content(panel).get(0)).get("itemsAlignment"));
+        assertFalse(meta(panel).containsKey("itemsAlignment"));
+        assertFalse(meta(content(panel).get(0)).containsKey("itemsAlignment"),
+                "the row wrapper's panel is emitted by the same code path");
     }
 
     // ---------------------------------------------------------------------------------------

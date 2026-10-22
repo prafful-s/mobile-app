@@ -1667,7 +1667,6 @@ final class ComponentTreeWalker {
         // them - itemsFillWidth true is what stretches cards to the panel width.
         final ValueMap panelProps = resource.getValueMap();
         meta.put("showBorder", panelProps.get("showBorder", Boolean.FALSE));
-        meta.put("itemsAlignment", panelProps.get("itemsAlignment", "center"));
         meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
         meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
 
