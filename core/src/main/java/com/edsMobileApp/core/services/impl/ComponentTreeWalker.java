@@ -1443,9 +1443,11 @@ final class ComponentTreeWalker {
         // meta. AEM has no equivalent property, so emit the target's own defaults rather than omit
         // them - itemsFillWidth true is what stretches cards to the panel width.
         final ValueMap panelProps = resource.getValueMap();
+        putAuthoredFlag(meta, panelProps, "fullHeight");
         meta.put("showBorder", panelProps.get("showBorder", Boolean.FALSE));
         meta.put("itemsAlignment", panelProps.get("itemsAlignment", "center"));
         meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
+        putAuthoredFlag(meta, panelProps, "itemsFillHeight");
         meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
 
         final boolean vertical = "vertical".equals(meta.get(SchemaConstants.KEY_LAYOUT));
@@ -1459,6 +1461,14 @@ final class ComponentTreeWalker {
         entry.put(SchemaConstants.KEY_CONTENT,
                 isColumnItem(resource) ? groupColumnImages(children, resource) : children);
         sink.add(entry);
+    }
+
+    /** Adds a boolean panel meta flag only when the section authored it. */
+    private static void putAuthoredFlag(final Map<String, Object> meta, final ValueMap props, final String key) {
+        final Object authored = props.get(key);
+        if (isSet(authored)) {
+            meta.put(key, Boolean.parseBoolean(String.valueOf(authored)));
+        }
     }
 
     private boolean isPageLevelComponent(final Map<String, Object> component) {

@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.List;
 import java.util.Map;
@@ -307,6 +308,45 @@ class ColumnPanelTest {
 
         assertEquals("vertical", meta(panel).get(SchemaConstants.KEY_LAYOUT));
         assertEquals(8, styles(panel).get("gap"));
+    }
+
+    @Test
+    void aSectionsCustomMobileStyleOverridesItsPanelStyles() {
+        final Map<String, Object> panel = sectionPanel("custom-style",
+                "custommobilestyle", new String[] {"gap:16", "padding:12"});
+
+        assertEquals(16L, styles(panel).get("gap"));
+        assertEquals(12L, styles(panel).get("padding"));
+        assertEquals(8, styles(panel).get("margin"), "unauthored styles keep their default");
+    }
+
+    @Test
+    void fullHeightAndItemsFillHeightAppearOnlyWhenAuthored() {
+        final Map<String, Object> unauthored = meta(sectionPanel("flags-unset"));
+        assertFalse(unauthored.containsKey("fullHeight"));
+        assertFalse(unauthored.containsKey("itemsFillHeight"));
+        assertEquals(false, unauthored.get("showBorder"), "showBorder keeps its default");
+
+        final Map<String, Object> authored = meta(sectionPanel("flags-set",
+                "fullHeight", true, "itemsFillHeight", "true", "showBorder", true));
+        assertEquals(true, authored.get("fullHeight"));
+        assertEquals(true, authored.get("itemsFillHeight"));
+        assertEquals(true, authored.get("showBorder"));
+
+        assertEquals(false, meta(sectionPanel("flags-off", "fullHeight", false)).get("fullHeight"));
+    }
+
+    @Test
+    void aSectionsLayoutStylesAreAllAuthorableThroughCustomMobileStyle() {
+        final Map<String, Object> styles = styles(sectionPanel("author-styles", "custommobilestyle",
+                new String[] {"gap:8", "margin:8", "padding:8", "alignItems:center",
+                    "justifyContent:space-between-author-value"}));
+
+        assertEquals(8L, styles.get("gap"));
+        assertEquals(8L, styles.get("margin"));
+        assertEquals(8L, styles.get("padding"));
+        assertEquals("center", styles.get("alignItems"));
+        assertEquals("space-between-author-value", styles.get("justifyContent"));
     }
 
     @Test
