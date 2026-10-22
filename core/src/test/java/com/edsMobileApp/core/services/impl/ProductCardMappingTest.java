@@ -47,4 +47,23 @@ class ProductCardMappingTest {
         assertEquals("contain", map("mobileimagestyle", "contain").get("imageResize"));
         assertEquals("contain", map("mobileimagestyle", "").get("imageResize"));
     }
+
+    @Test
+    void withNoShowButtonAuthoredTheProductCardCarriesNoButtonFields() {
+        final Map<String, Object> mapped = map("buttonText", "Buy", "ctastyle", "button");
+        assertEquals(null, mapped.get("showButton"));
+        assertEquals("Buy", mapped.get("buttonLabel"));
+        assertEquals("contained", mapped.get("buttonVariant"));
+    }
+
+    @Test
+    void theProductCardShowsAButtonFromItsButtonTextWhenAsked() {
+        final Map<String, Object> mapped = map("mobileshowbutton", "true", "buttonText", "Buy now",
+                "ctastyle", "button-secondary");
+        assertEquals(true, mapped.get("showButton"));
+        assertEquals("Buy now", mapped.get("buttonLabel"));
+        assertEquals("outlined", mapped.get("buttonVariant"));
+        assertEquals("elevated", map("mobilebuttonvariant", "elevated", "ctastyle", "button")
+                .get("buttonVariant"));
+    }
 }
