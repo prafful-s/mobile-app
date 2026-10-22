@@ -66,4 +66,17 @@ class ProductCardMappingTest {
         assertEquals("elevated", map("mobilebuttonvariant", "elevated", "ctastyle", "button")
                 .get("buttonVariant"));
     }
+
+    @Test
+    void theAddBorderSwitchBecomesTheCardsShowBorderStyle() {
+        assertNotNull(rule);
+        final Map<String, Object> source = new java.util.LinkedHashMap<>();
+        source.put("productName", "Jacket");
+        source.put("addBorder", "true");
+        assertEquals(true, rule.applyStyles(source, Map.of()).get("showBorder"));
+        source.put("addBorder", "false");
+        assertEquals(false, rule.applyStyles(source, Map.of()).get("showBorder"));
+        source.remove("addBorder");
+        assertEquals(null, rule.applyStyles(source, Map.of()).get("showBorder"));
+    }
 }

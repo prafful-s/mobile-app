@@ -27,6 +27,7 @@
   ],
   "styles": [
     { "target": "marginLeft", "const": "30" },
-    { "target": "marginRight", "const": "30" }
+    { "target": "marginRight", "const": "30" },
+    { "target": "showBorder", "from": "addBorder", "type": "boolean" }
   ]
 }
