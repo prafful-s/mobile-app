@@ -68,15 +68,18 @@ class ProductCardMappingTest {
     }
 
     @Test
-    void theAddBorderSwitchBecomesTheCardsShowBorderStyle() {
+    void theAddBorderSwitchBecomesAnOutlineBorderOnTheCard() {
         assertNotNull(rule);
         final Map<String, Object> source = new java.util.LinkedHashMap<>();
         source.put("productName", "Jacket");
         source.put("addBorder", "true");
-        assertEquals(true, rule.applyStyles(source, Map.of()).get("showBorder"));
+        assertEquals("solid 1px", rule.applyStyles(source, Map.of()).get("border"));
+        source.put("addBorder", true);
+        assertEquals("solid 1px", rule.applyStyles(source, Map.of()).get("border"));
         source.put("addBorder", "false");
-        assertEquals(false, rule.applyStyles(source, Map.of()).get("showBorder"));
+        assertEquals(null, rule.applyStyles(source, Map.of()).get("border"), "no border when the switch is off");
         source.remove("addBorder");
-        assertEquals(null, rule.applyStyles(source, Map.of()).get("showBorder"));
+        assertEquals(null, rule.applyStyles(source, Map.of()).get("border"));
+        assertEquals(null, rule.applyStyles(source, Map.of()).get("showBorder"), "never the showBorder key the app cannot take");
     }
 }

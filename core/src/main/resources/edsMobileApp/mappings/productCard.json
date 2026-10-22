@@ -28,6 +28,6 @@
   "styles": [
     { "target": "marginLeft", "const": "30" },
     { "target": "marginRight", "const": "30" },
-    { "target": "showBorder", "from": "addBorder", "type": "boolean" }
+    { "target": "border", "from": "addBorder", "map": { "true": "solid 1px", "false": "" } }
   ]
 }
