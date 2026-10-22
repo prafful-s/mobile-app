@@ -2,10 +2,11 @@
   "match": ["productTitle"],
   "component": "productTitle",
   "skeleton": true,
+  "customStyle": "mobileappproducttitlestyle",
   "fields": [
-    { "target": "size", "from": "size", "default": "medium" },
-    { "target": "weight", "from": "weight", "default": "bold" },
-    { "target": "textAlignment", "from": "textAlignment", "default": "left" }
+    { "target": "size", "from": "mobileappproducttitlesize", "default": "medium" },
+    { "target": "weight", "from": "mobileappproducttitleweight", "default": "bold" },
+    { "target": "textAlignment", "from": "mobileappproducttitlealignment", "default": "left" }
   ],
   "styles": [
     { "target": "color", "from": "color" }

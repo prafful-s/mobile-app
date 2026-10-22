@@ -2,9 +2,10 @@
   "match": ["productImage"],
   "component": "productImage",
   "skeleton": true,
+  "customStyle": "mobileappproductimagestyle",
   "fields": [
-    { "target": "fullWidth", "from": "fullWidth", "type": "boolean", "default": true },
-    { "target": "imageResize", "from": "imageResize", "default": "contain" }
+    { "target": "fullWidth", "from": "mobileappproductimagefullwidth", "type": "boolean", "default": true },
+    { "target": "imageResize", "from": "mobileimageresize", "default": "contain" }
   ],
   "styles": [
     { "target": "height", "from": "height", "type": "number", "default": 250 }
