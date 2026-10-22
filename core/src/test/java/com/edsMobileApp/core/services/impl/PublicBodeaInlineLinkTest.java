@@ -96,6 +96,51 @@ class PublicBodeaInlineLinkTest {
 
 
     @Test
+    void aListItemEmptiedByExtractionIsDroppedWithItsList() {
+        // What /services looked like: a bullet per extracted link, above the button column.
+        final List<Map<String, Object>> components = export("public-bodea", "list",
+                "<h3>Audit &amp; Assurance</h3><ul>"
+                        + "<li><a href=\"acc-rep-advisory\">Accounting</a></li>"
+                        + "<li><a href=\"legal-advisory-services\">Legal</a></li></ul>");
+
+        assertEquals(List.of("htmlText", "button", "button"), componentsOf(components));
+        assertEquals("<h3>Audit &amp; Assurance</h3>",
+                asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text"),
+                "the heading stays; the list that held nothing but anchors goes");
+    }
+
+    @Test
+    void aListItemThatStillHasContentKeepsItAndItsList() {
+        final List<Map<String, Object>> components = export("public-bodea", "mixed-list",
+                "<ul><li>Plain item</li><li><a href=\"tax-transformations\">Tax</a></li></ul>");
+
+        final String text = (String) asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text");
+        assertEquals("<ul><li>Plain item</li></ul>", text,
+                "only the emptied item is dropped - the list still has something to show");
+    }
+
+    @Test
+    void anEmptiedParagraphIsDroppedToo() {
+        final List<Map<String, Object>> components = export("public-bodea", "para",
+                "<p>Intro copy.</p><p><a href=\"acc-rep-advisory\">Read More</a></p>");
+
+        assertEquals("<p>Intro copy.</p>",
+                asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text"),
+                "the paragraph that held only the link leaves no empty tag behind");
+    }
+
+    @Test
+    void anAnchorInsideAnInlineWrapperTakesTheWrapperWithIt() {
+        final List<Map<String, Object>> components = export("public-bodea", "nested",
+                "<ul><li><strong><a href=\"tax-transformations\">Tax</a></strong></li></ul>");
+
+        assertEquals("", asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text"),
+                "strong, then li, then ul - each emptied by the one inside it");
+        assertEquals("tax-transformations",
+                asMap(components.get(1).get(SchemaConstants.KEY_CONTENT)).get("linkTo"));
+    }
+
+    @Test
     void aFullContentPathResolvesToItsLastSegment() {
         assertEquals("acc-rep-advisory", linkToFor("path",
                 "/content/public-bodea/language-masters/en/acc-rep-advisory"),

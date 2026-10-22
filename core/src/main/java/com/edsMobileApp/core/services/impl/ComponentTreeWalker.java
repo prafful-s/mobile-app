@@ -393,8 +393,40 @@ final class ComponentTreeWalker {
             return Collections.emptyList();
         }
         matcher.appendTail(delinked);
-        payload.put("text", delinked.toString());
+        payload.put("text", dropEmptiedWrappers(delinked.toString()));
         return buttons;
+    }
+
+    /**
+     * An element left with nothing inside it once its anchor was lifted out. Removing the anchor's
+     * label along with the anchor is deliberate - it lives on the button now - but the markup that
+     * wrapped it stays behind, and a service directory authored as a list came out as
+     * {@code <ul><li></li><li></li></ul>}: a column of empty bullets above the buttons.
+     *
+     * <p>Only wrappers are listed. Anything not here keeps whatever the author left in it.</p>
+     */
+    private static final Pattern EMPTIED_WRAPPER = Pattern.compile(
+            "<(p|li|ul|ol|span|strong|em|h[1-6])(?:\\s[^>]*)?>\\s*</\\1\\s*>",
+            Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Drops every {@link #EMPTIED_WRAPPER}, repeatedly: emptying the {@code <li>} children of a list
+     * is what empties the {@code <ul>} around them, so one pass is not enough.
+     *
+     * @return {@code text} with the emptied wrappers gone, the rest of the markup untouched
+     */
+    private static String dropEmptiedWrappers(final String text) {
+        String current = text;
+        // ponytail: five passes, not until-stable - five levels of wrapper nesting around one link
+        // is already pathological, and a bound beats trusting the regex to always shrink.
+        for (int pass = 0; pass < 5; pass++) {
+            final String next = EMPTIED_WRAPPER.matcher(current).replaceAll("");
+            if (next.equals(current)) {
+                break;
+            }
+            current = next;
+        }
+        return current;
     }
 
     /**
