@@ -41,6 +41,14 @@ class PublicBodeaInlineLinkTest {
 
     private static final String ASSET_HOST = "https://publish-p104656-e2246865.adobeaemcloud.com";
 
+    /**
+     * A site that still ships {@code extractInlineLinks}. Public Bodea is where these behaviours
+     * were found and fixed, but it has since moved to {@code splitInlineLinks} so that each
+     * heading keeps its own buttons; the extract path they pin is unchanged and is exercised here
+     * against a site that still uses it.
+     */
+    private static final String EXTRACT_SITE = "secur-financial";
+
     private final AemContext context = new AemContext();
 
     private ComponentTreeWalker walker() {
@@ -98,7 +106,7 @@ class PublicBodeaInlineLinkTest {
     @Test
     void aListItemEmptiedByExtractionIsDroppedWithItsList() {
         // What /services looked like: a bullet per extracted link, above the button column.
-        final List<Map<String, Object>> components = export("public-bodea", "list",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "list",
                 "<h3>Audit &amp; Assurance</h3><ul>"
                         + "<li><a href=\"acc-rep-advisory\">Accounting</a></li>"
                         + "<li><a href=\"legal-advisory-services\">Legal</a></li></ul>");
@@ -111,7 +119,7 @@ class PublicBodeaInlineLinkTest {
 
     @Test
     void aListItemThatStillHasContentKeepsItAndItsList() {
-        final List<Map<String, Object>> components = export("public-bodea", "mixed-list",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "mixed-list",
                 "<ul><li>Plain item</li><li><a href=\"tax-transformations\">Tax</a></li></ul>");
 
         final String text = (String) asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text");
@@ -121,7 +129,7 @@ class PublicBodeaInlineLinkTest {
 
     @Test
     void anEmptiedParagraphIsDroppedToo() {
-        final List<Map<String, Object>> components = export("public-bodea", "para",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "para",
                 "<p>Intro copy.</p><p><a href=\"acc-rep-advisory\">Read More</a></p>");
 
         assertEquals("<p>Intro copy.</p>",
@@ -131,7 +139,7 @@ class PublicBodeaInlineLinkTest {
 
     @Test
     void anAnchorInsideAnInlineWrapperTakesTheWrapperWithIt() {
-        final List<Map<String, Object>> components = export("public-bodea", "nested",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "nested",
                 "<ul><li><strong><a href=\"tax-transformations\">Tax</a></strong></li></ul>");
 
         assertEquals("", asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text"),
@@ -167,7 +175,7 @@ class PublicBodeaInlineLinkTest {
     void anExternalUrlIsLeftExactlyAsAuthored() {
         // screenKeyOf takes the last segment of whatever it is given, so without the external check
         // https://www.adobe.com/legal/terms.html became a button pointing at a "terms" screen.
-        final List<Map<String, Object>> components = export("public-bodea", "external",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "external",
                 "<p><a href=\"https://www.adobe.com/legal/terms.html\">Terms</a></p>");
 
         assertEquals(List.of("htmlText"), componentsOf(components),
@@ -179,7 +187,7 @@ class PublicBodeaInlineLinkTest {
 
     @Test
     void anExternalLinkBesideAnInternalOneDoesNotBlockIt() {
-        final List<Map<String, Object>> components = export("public-bodea", "mixed",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "mixed",
                 "<p><a href=\"https://www.adobe.com/\">Adobe</a> and "
                         + "<a href=\"/content/public-bodea/language-masters/en/tax-transformations\">Tax</a></p>");
 
@@ -195,7 +203,7 @@ class PublicBodeaInlineLinkTest {
     /** @return the {@code linkTo} of the button the anchor was extracted into */
     private String linkToFor(final String name, final String href) {
         final List<Map<String, Object>> components =
-                export("public-bodea", name, "<p><a href=\"" + href + "\">Label</a></p>");
+                export(EXTRACT_SITE, name, "<p><a href=\"" + href + "\">Label</a></p>");
         assertEquals(List.of("htmlText", "button"), componentsOf(components),
                 "an href naming a page of this site is navigable");
         return (String) asMap(components.get(1).get(SchemaConstants.KEY_CONTENT)).get("linkTo");
@@ -203,7 +211,7 @@ class PublicBodeaInlineLinkTest {
 
     @Test
     void aBareScreenKeyAnchorBecomesItsOwnButton() {
-        final List<Map<String, Object>> components = export("public-bodea", "services",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "services",
                 "<h3>Audit &amp; Assurance</h3>\n<ul>\n<li>"
                         + "<a href=\"acc-rep-advisory\" title=\"services\">Accounting &amp; Reporting</a>"
                         + "</li>\n</ul>");
@@ -223,7 +231,7 @@ class PublicBodeaInlineLinkTest {
     void aCharacterReferenceInTheLabelIsDecoded() {
         // Bodea's service names are full of "&amp;"; the label is plain text on the button, so an
         // entity left encoded here is rendered as the entity itself.
-        final List<Map<String, Object>> components = export("public-bodea", "entities",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "entities",
                 "<p><a href=\"advisory-and-transactions\">Mergers &amp; Acquisitions &ndash; EMEA</a></p>");
 
         assertEquals("Mergers & Acquisitions – EMEA",
@@ -232,7 +240,7 @@ class PublicBodeaInlineLinkTest {
 
     @Test
     void theAnchorIsRemovedFromTheTextLabelAndAll() {
-        final List<Map<String, Object>> components = export("public-bodea", "removed",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "removed",
                 "<h3>Taxes</h3>\n<ul>\n<li>"
                         + "<a href=\"tax-transformations\">Tax Transformations</a>"
                         + "</li>\n</ul>");
@@ -246,7 +254,7 @@ class PublicBodeaInlineLinkTest {
 
     @Test
     void everyAnchorGetsAButtonAndTheOrderIsRenumbered() {
-        final List<Map<String, Object>> components = export("public-bodea", "multiple",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "multiple",
                 "<ul>\n<li><a href=\"advisory-and-transactions\">Advisory &amp; Transactions</a></li>\n"
                         + "<li><a href=\"tax-transformations\">Tax Transformations</a></li>\n</ul>");
 
@@ -266,7 +274,7 @@ class PublicBodeaInlineLinkTest {
     @Test
     void aDeadAnchorIsDelinkedInPlaceRatherThanDropped() {
         // 15 of the 35 anchors on Bodea are href="#" - dead on the web too, but their label is copy.
-        final List<Map<String, Object>> components = export("public-bodea", "dead",
+        final List<Map<String, Object>> components = export(EXTRACT_SITE, "dead",
                 "<p><a href=\"#\">Read more</a></p>");
 
         assertEquals(List.of("htmlText"), componentsOf(components), "a dead href has no screen to point at");
