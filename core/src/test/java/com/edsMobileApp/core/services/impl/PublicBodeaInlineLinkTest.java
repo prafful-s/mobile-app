@@ -94,6 +94,68 @@ class PublicBodeaInlineLinkTest {
         return entries.stream().map(PublicBodeaInlineLinkTest::componentOf).collect(Collectors.toList());
     }
 
+
+    @Test
+    void aFullContentPathResolvesToItsLastSegment() {
+        assertEquals("acc-rep-advisory", linkToFor("path",
+                "/content/public-bodea/language-masters/en/acc-rep-advisory"),
+                "the page picker writes a repository path; the app navigates by screen key");
+    }
+
+    @Test
+    void aTrailingSlashAndAnHtmlExtensionAreBothStripped() {
+        assertEquals("acc-rep-advisory", linkToFor("slash",
+                "/content/public-bodea/language-masters/en/acc-rep-advisory/"));
+        assertEquals("acc-rep-advisory", linkToFor("html",
+                "/content/public-bodea/language-masters/en/acc-rep-advisory.html"));
+    }
+
+    @Test
+    void aPathTypedAgainstAnAemHostResolvesTheSameWay() {
+        assertEquals("acc-rep-advisory", linkToFor("absolute",
+                "https://author-p104656-e2246865.adobeaemcloud.com"
+                        + "/content/public-bodea/language-masters/en/acc-rep-advisory"),
+                "a link authored against one environment's host still names a page of this site");
+    }
+
+    @Test
+    void anExternalUrlIsLeftExactlyAsAuthored() {
+        // screenKeyOf takes the last segment of whatever it is given, so without the external check
+        // https://www.adobe.com/legal/terms.html became a button pointing at a "terms" screen.
+        final List<Map<String, Object>> components = export("public-bodea", "external",
+                "<p><a href=\"https://www.adobe.com/legal/terms.html\">Terms</a></p>");
+
+        assertEquals(List.of("htmlText"), componentsOf(components),
+                "somebody else's site is not a screen - no button stands in for it");
+        assertEquals("<p><a href=\"https://www.adobe.com/legal/terms.html\">Terms</a></p>",
+                asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text"),
+                "the anchor stays, so the renderer still hands it to the browser as before");
+    }
+
+    @Test
+    void anExternalLinkBesideAnInternalOneDoesNotBlockIt() {
+        final List<Map<String, Object>> components = export("public-bodea", "mixed",
+                "<p><a href=\"https://www.adobe.com/\">Adobe</a> and "
+                        + "<a href=\"/content/public-bodea/language-masters/en/tax-transformations\">Tax</a></p>");
+
+        assertEquals(List.of("htmlText", "button"), componentsOf(components));
+        assertEquals("tax-transformations",
+                asMap(components.get(1).get(SchemaConstants.KEY_CONTENT)).get("linkTo"));
+        final String text = (String) asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text");
+        assertTrue(text.contains("href=\"https://www.adobe.com/\""), "the external anchor survives");
+        assertFalse(text.contains("tax-transformations"), "the internal one moved to its button");
+    }
+
+
+    /** @return the {@code linkTo} of the button the anchor was extracted into */
+    private String linkToFor(final String name, final String href) {
+        final List<Map<String, Object>> components =
+                export("public-bodea", name, "<p><a href=\"" + href + "\">Label</a></p>");
+        assertEquals(List.of("htmlText", "button"), componentsOf(components),
+                "an href naming a page of this site is navigable");
+        return (String) asMap(components.get(1).get(SchemaConstants.KEY_CONTENT)).get("linkTo");
+    }
+
     @Test
     void aBareScreenKeyAnchorBecomesItsOwnButton() {
         final List<Map<String, Object>> components = export("public-bodea", "services",

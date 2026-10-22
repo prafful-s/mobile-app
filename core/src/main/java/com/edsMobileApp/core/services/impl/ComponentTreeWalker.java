@@ -371,11 +371,18 @@ final class ComponentTreeWalker {
         final StringBuffer delinked = new StringBuffer(text.length());
         final List<Map<String, Object>> buttons = new ArrayList<>();
         while (matcher.find()) {
+            final String href = matcher.group(2).trim();
+            if (isExternalUrl(href)) {
+                // Left exactly as authored, anchor and all: an external link belongs in the browser,
+                // which is what the renderer already does with an anchor it is handed.
+                matcher.appendReplacement(delinked, Matcher.quoteReplacement(matcher.group(0)));
+                continue;
+            }
             // jsoup rather than a tag-stripping regex: the label is plain text on the button, so a
             // character reference in the authored markup ("Accounting &amp; Reporting") has to be
             // decoded here or the app renders the entity itself.
             final String label = Jsoup.parse(matcher.group(3)).text().trim();
-            final String linkTo = navigableScreenKey(matcher.group(2).trim());
+            final String linkTo = navigableScreenKey(href);
             final boolean hasButton = linkTo != null && !label.isEmpty();
             matcher.appendReplacement(delinked, hasButton ? "" : Matcher.quoteReplacement(label));
             if (hasButton) {
@@ -408,6 +415,24 @@ final class ComponentTreeWalker {
         }
         final String leaf = screenKeyOf(href);
         return leaf != null ? leaf : href;
+    }
+
+    /**
+     * An {@code http(s)} link into somebody else's site, as opposed to one typed against an AEM
+     * publish host for a page of this one. {@link #screenKeyOf} takes the last path segment of
+     * whatever it is handed, which for an external URL yields a plausible-looking key naming no
+     * screen at all ({@code https://www.adobe.com/legal/terms.html} becomes {@code terms}), so an
+     * external link has to be recognised before the leaf is taken rather than after.
+     *
+     * @return true when {@code href} is absolute and its path is not an AEM {@code /content/} path
+     */
+    private static boolean isExternalUrl(final String href) {
+        if (!href.regionMatches(true, 0, "http://", 0, 7)
+                && !href.regionMatches(true, 0, "https://", 0, 8)) {
+            return false;
+        }
+        final String afterHost = StringUtils.substringAfter(StringUtils.substringAfter(href, "://"), "/");
+        return !("/" + afterHost).startsWith(ContentPaths.CONTENT_PREFIX);
     }
 
     /**
