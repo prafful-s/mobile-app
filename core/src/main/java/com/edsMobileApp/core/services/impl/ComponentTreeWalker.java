@@ -897,6 +897,10 @@ final class ComponentTreeWalker {
     private static final Set<String> ITEM_RENDERERS =
             Set.of("stacked", "overlay", "partial-overlay", "image-text-one-line", "image");
 
+    private boolean hidesSubtitle(final Resource block) {
+        return Boolean.parseBoolean(String.valueOf(listValue(block, "mobilehidesubtitle", "hideSubtitle", false)));
+    }
+
     private static Object knownItemRenderer(final Object value, final String fallback) {
         return value instanceof String && ITEM_RENDERERS.contains(value) ? value : fallback;
     }
@@ -1046,6 +1050,7 @@ final class ComponentTreeWalker {
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
+        content.put("hideSubtitle", hidesSubtitle(resource));
         content.put("titleFontWeight", "regular");
         content.put("subtitleFontWeight", "light");
 
@@ -1135,6 +1140,7 @@ final class ComponentTreeWalker {
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
+        content.put("hideSubtitle", hidesSubtitle(resource));
         content.put("titleFontWeight", "regular");
         content.put("subtitleFontWeight", "light");
 

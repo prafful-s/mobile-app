@@ -166,6 +166,12 @@ class CategoryProductsListerTest {
         assertEquals(1, map(authored("mobilelayout", "horizontal")).get("itemsInRow"), "unauthored stays 1");
     }
 
+    @Test
+    void hideSubtitleComesFromTheMobileTab() {
+        assertEquals(true, map(authored("mobilehidesubtitle", "true")).get("hideSubtitle"));
+        assertEquals(false, map(authored("mobilelayout", "horizontal")).get("hideSubtitle"), "unauthored stays false");
+    }
+
     /** The client's list option is imageResize; imageResizeMode was never read. */
     @Test
     void theResizeModeIsEmittedAsImageResize() {

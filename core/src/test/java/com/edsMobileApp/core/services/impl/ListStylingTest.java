@@ -62,6 +62,12 @@ class ListStylingTest {
         return block;
     }
 
+    @Test
+    void authoredHideSubtitleOverridesDefault() {
+        assertEquals(true, content(convert(trio("hide-subtitle", "mobilehidesubtitle", "true"))).get("hideSubtitle"));
+        assertEquals(false, content(convert(trio("show-subtitle"))).get("hideSubtitle"));
+    }
+
     private Map<String, Object> convert(final Resource block) {
         final Map<String, Object> list =
                 walker.cardsBlockAsList(block, 0, screens("mexico", "poland", "united-kingdom"));

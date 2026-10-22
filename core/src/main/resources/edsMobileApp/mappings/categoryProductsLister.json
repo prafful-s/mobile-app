@@ -28,6 +28,7 @@
     { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
     { "target": "filterOnlyProductScreens", "from": "filterOnlyProductScreens", "type": "boolean", "default": false },
     { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
-    { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" }
+    { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" },
+    { "target": "hideSubtitle", "from": "mobilehidesubtitle", "type": "boolean", "default": false }
   ]
 }
