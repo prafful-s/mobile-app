@@ -264,7 +264,9 @@ final class ComponentTreeWalker {
                 prefixAssets(payload, assetHost);
                 if (isHtmlText(component)) {
                     rewriteHtmlTextLinks(payload);
-                    if (splitLinks) {
+                    // Always consumed, whatever it says: it is an authoring instruction, not content.
+                    final LinkRender render = linkRenderOf(payload, extractLinks, splitLinks);
+                    if (render == LinkRender.SPLIT) {
                         final List<Map<String, Object>> parts = splitAtInlineLinks(component, payload);
                         if (parts != null) {
                             components.remove(i);
@@ -272,7 +274,7 @@ final class ComponentTreeWalker {
                             i += parts.size() - 1;
                             inserted = true;
                         }
-                    } else if (extractLinks) {
+                    } else if (render == LinkRender.EXTRACT) {
                         for (final Map<String, Object> button : extractInlineLinkButtons(payload)) {
                             components.add(++i, button);
                             inserted = true;
@@ -288,6 +290,51 @@ final class ComponentTreeWalker {
         if (inserted) {
             reindexOrder(components);
         }
+    }
+
+    /** How one htmlText block's links are rendered - see {@link #linkRenderOf}. */
+    private enum LinkRender {
+        /** Anchors stay exactly where they were authored; the app navigates them itself. */
+        INLINE,
+        /** Each navigable anchor becomes a button, all of them after the whole text. */
+        EXTRACT,
+        /** The text is split so each navigable anchor's button sits after the block that held it. */
+        SPLIT
+    }
+
+    /** An author's per-block override of the site's own link rendering - see {@link LinkRender}. */
+    private static final String LINK_STYLE_KEY = "mobilelinkstyle";
+
+    /**
+     * How this block's links render: the authored {@code mobilelinkstyle} when it names a mode,
+     * otherwise the site's own setting ({@code splitInlineLinks} first, since it replaces
+     * {@code extractInlineLinks} for a site carrying both), otherwise inline.
+     *
+     * <p>The key is removed from {@code payload} either way. It is an instruction to this exporter,
+     * not a piece of content, and {@code appendUnconsumedExtras} would otherwise pass it through to
+     * the client as a stray field - no mapping rule consumes it.</p>
+     *
+     * @param payload      the block's content, with {@code mobilelinkstyle} removed on return
+     * @param siteExtracts the site's {@code extractInlineLinks}
+     * @param siteSplits   the site's {@code splitInlineLinks}
+     */
+    private static LinkRender linkRenderOf(final Map<String, Object> payload,
+                                           final boolean siteExtracts, final boolean siteSplits) {
+        final Object authored = payload.remove(LINK_STYLE_KEY);
+        final String style = authored == null ? "" : String.valueOf(authored).trim();
+        if ("link".equalsIgnoreCase(style)) {
+            return LinkRender.INLINE;
+        }
+        if ("button".equalsIgnoreCase(style)) {
+            return LinkRender.EXTRACT;
+        }
+        if ("split".equalsIgnoreCase(style)) {
+            return LinkRender.SPLIT;
+        }
+        if (siteSplits) {
+            return LinkRender.SPLIT;
+        }
+        return siteExtracts ? LinkRender.EXTRACT : LinkRender.INLINE;
     }
 
     /**
@@ -549,13 +596,21 @@ final class ComponentTreeWalker {
         final Matcher matcher = INLINE_LINK.matcher(text);
         final List<int[]> spans = new ArrayList<>();
         final List<String> labels = new ArrayList<>();
+        final List<String> fallbacks = new ArrayList<>();
         final List<String> targets = new ArrayList<>();
         boolean navigable = false;
         while (matcher.find()) {
-            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
-            final String linkTo = navigableScreenKey(matcher.group(2).trim());
+            final String href = matcher.group(2).trim();
+            final boolean external = isExternalUrl(href);
+            // jsoup, not a tag-stripping regex: the label is plain text on the button, so a
+            // character reference has to be decoded or the app renders the entity itself.
+            final String label = Jsoup.parse(matcher.group(3)).text().trim();
+            final String linkTo = external ? null : navigableScreenKey(href);
             spans.add(new int[] {matcher.start(), matcher.end()});
             labels.add(label);
+            // Standing in for a link that gets no button: an external one keeps its whole anchor so
+            // the browser still gets it, a dead one keeps just its label as plain text.
+            fallbacks.add(external ? matcher.group(0) : label);
             final boolean hasButton = linkTo != null && !label.isEmpty();
             targets.add(hasButton ? linkTo : null);
             navigable |= hasButton;
@@ -579,7 +634,7 @@ final class ComponentTreeWalker {
                 if (targets.get(next) != null) {
                     buttons.add(inlineLinkButton(labels.get(next), targets.get(next)));
                 } else {
-                    segment.append(labels.get(next));
+                    segment.append(fallbacks.get(next));
                 }
                 position = spans.get(next)[1];
                 next++;
