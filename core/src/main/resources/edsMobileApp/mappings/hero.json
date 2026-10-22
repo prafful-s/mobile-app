@@ -18,6 +18,7 @@
       "map": { "button": "contained", "button-secondary": "contained-tonal", "link": "text", "*": "contained" },
       "default": "contained" },
     { "target": "imageResize", "from": "mobileimageresize", "default": "cover" },
+    { "target": "linkTo", "from": "link" },
     { "target": "linkTo",
       "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
       "nullable": true },
