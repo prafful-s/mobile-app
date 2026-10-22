@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.models.factory.ModelFactory;
+import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -370,7 +371,10 @@ final class ComponentTreeWalker {
         final StringBuffer delinked = new StringBuffer(text.length());
         final List<Map<String, Object>> buttons = new ArrayList<>();
         while (matcher.find()) {
-            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
+            // jsoup rather than a tag-stripping regex: the label is plain text on the button, so a
+            // character reference in the authored markup ("Accounting &amp; Reporting") has to be
+            // decoded here or the app renders the entity itself.
+            final String label = Jsoup.parse(matcher.group(3)).text().trim();
             final String linkTo = navigableScreenKey(matcher.group(2).trim());
             final boolean hasButton = linkTo != null && !label.isEmpty();
             matcher.appendReplacement(delinked, hasButton ? "" : Matcher.quoteReplacement(label));
