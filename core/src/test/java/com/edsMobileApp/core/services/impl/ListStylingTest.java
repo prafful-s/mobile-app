@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -66,6 +67,26 @@ class ListStylingTest {
     void authoredHideSubtitleOverridesDefault() {
         assertEquals(true, content(convert(trio("hide-subtitle", "mobilehidesubtitle", "true"))).get("hideSubtitle"));
         assertEquals(false, content(convert(trio("show-subtitle"))).get("hideSubtitle"));
+    }
+
+    @Test
+    void authoredTextStylesOverrideDefaults() {
+        final Map<String, Object> result = content(convert(trio("text-styles",
+                "mobiletitlefontweight", "black", "mobilesubtitlefontweight", "bold",
+                "mobiletitlesize", "labelMedium", "mobilesubtitlesize", "titleLarge")));
+        assertEquals("black", result.get("titleFontWeight"));
+        assertEquals("bold", result.get("subtitleFontWeight"));
+        assertEquals("labelMedium", result.get("titleSize"));
+        assertEquals("titleLarge", result.get("subtitleSize"));
+    }
+
+    @Test
+    void unsetTextStylesKeepDefaults() {
+        final Map<String, Object> result = content(convert(trio("text-defaults")));
+        assertEquals("regular", result.get("titleFontWeight"));
+        assertEquals("light", result.get("subtitleFontWeight"));
+        assertFalse(result.containsKey("titleSize"));
+        assertFalse(result.containsKey("subtitleSize"));
     }
 
     private Map<String, Object> convert(final Resource block) {

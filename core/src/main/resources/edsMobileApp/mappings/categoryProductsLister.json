@@ -27,8 +27,10 @@
     { "target": "itemHeight", "from": "mobileitemheight", "type": "number", "default": 150 },
     { "target": "filterProperty", "from": "filterProperty", "default": "Category" },
     { "target": "filterOnlyProductScreens", "from": "filterOnlyProductScreens", "type": "boolean", "default": false },
-    { "target": "titleFontWeight", "from": "titleFontWeight", "default": "regular" },
-    { "target": "subtitleFontWeight", "from": "subtitleFontWeight", "default": "light" },
-    { "target": "hideSubtitle", "from": "mobilehidesubtitle", "type": "boolean", "default": false }
+    { "target": "titleSize", "from": "mobiletitlesize", "omitIfAbsent": true },
+    { "target": "titleFontWeight", "from": "mobiletitlefontweight", "default": "regular" },
+    { "target": "hideSubtitle", "from": "mobilehidesubtitle", "type": "boolean", "default": false },
+    { "target": "subtitleSize", "from": "mobilesubtitlesize", "omitIfAbsent": true },
+    { "target": "subtitleFontWeight", "from": "mobilesubtitlefontweight", "default": "light" }
   ]
 }

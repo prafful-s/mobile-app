@@ -901,6 +901,21 @@ final class ComponentTreeWalker {
         return Boolean.parseBoolean(String.valueOf(listValue(block, "mobilehidesubtitle", "hideSubtitle", false)));
     }
 
+    /** Title/subtitle font weights and sizes; a size is only emitted when set. */
+    private void putListTextStyles(final Resource block, final Map<String, Object> content) {
+        content.put("titleFontWeight", listValue(block, "mobiletitlefontweight", "titleFontWeight", "regular"));
+        content.put("subtitleFontWeight",
+                listValue(block, "mobilesubtitlefontweight", "subtitleFontWeight", "light"));
+        final Object titleSize = listValue(block, "mobiletitlesize", "titleSize", null);
+        if (titleSize != null) {
+            content.put("titleSize", titleSize);
+        }
+        final Object subtitleSize = listValue(block, "mobilesubtitlesize", "subtitleSize", null);
+        if (subtitleSize != null) {
+            content.put("subtitleSize", subtitleSize);
+        }
+    }
+
     private static Object knownItemRenderer(final Object value, final String fallback) {
         return value instanceof String && ITEM_RENDERERS.contains(value) ? value : fallback;
     }
@@ -1051,8 +1066,7 @@ final class ComponentTreeWalker {
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
         content.put("hideSubtitle", hidesSubtitle(resource));
-        content.put("titleFontWeight", "regular");
-        content.put("subtitleFontWeight", "light");
+        putListTextStyles(resource, content);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1141,8 +1155,7 @@ final class ComponentTreeWalker {
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
         content.put("hideSubtitle", hidesSubtitle(resource));
-        content.put("titleFontWeight", "regular");
-        content.put("subtitleFontWeight", "light");
+        putListTextStyles(resource, content);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);

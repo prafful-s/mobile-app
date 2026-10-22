@@ -167,6 +167,26 @@ class CategoryProductsListerTest {
     }
 
     @Test
+    void textStylesComeFromTheMobileTab() {
+        final Map<String, Object> mapped = map(authored("mobiletitlefontweight", "black",
+                "mobilesubtitlefontweight", "bold", "mobiletitlesize", "labelMedium",
+                "mobilesubtitlesize", "titleLarge"));
+        assertEquals("black", mapped.get("titleFontWeight"));
+        assertEquals("bold", mapped.get("subtitleFontWeight"));
+        assertEquals("labelMedium", mapped.get("titleSize"));
+        assertEquals("titleLarge", mapped.get("subtitleSize"));
+    }
+
+    @Test
+    void unsetTextStylesKeepDefaults() {
+        final Map<String, Object> mapped = map(authored("mobilelayout", "horizontal"));
+        assertEquals("regular", mapped.get("titleFontWeight"));
+        assertEquals("light", mapped.get("subtitleFontWeight"));
+        assertFalse(mapped.containsKey("titleSize"));
+        assertFalse(mapped.containsKey("subtitleSize"));
+    }
+
+    @Test
     void hideSubtitleComesFromTheMobileTab() {
         assertEquals(true, map(authored("mobilehidesubtitle", "true")).get("hideSubtitle"));
         assertEquals(false, map(authored("mobilelayout", "horizontal")).get("hideSubtitle"), "unauthored stays false");
