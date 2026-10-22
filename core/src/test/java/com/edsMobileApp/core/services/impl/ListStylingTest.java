@@ -66,7 +66,7 @@ class ListStylingTest {
     @Test
     void authoredHideSubtitleOverridesDefault() {
         assertEquals(true, content(convert(trio("hide-subtitle", "mobilehidesubtitle", "true"))).get("hideSubtitle"));
-        assertEquals(false, content(convert(trio("show-subtitle"))).get("hideSubtitle"));
+        assertFalse(content(convert(trio("show-subtitle"))).containsKey("hideSubtitle"));
     }
 
     @Test

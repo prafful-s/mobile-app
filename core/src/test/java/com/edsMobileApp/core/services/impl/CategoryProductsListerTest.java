@@ -189,7 +189,7 @@ class CategoryProductsListerTest {
     @Test
     void hideSubtitleComesFromTheMobileTab() {
         assertEquals(true, map(authored("mobilehidesubtitle", "true")).get("hideSubtitle"));
-        assertEquals(false, map(authored("mobilelayout", "horizontal")).get("hideSubtitle"), "unauthored stays false");
+        assertFalse(map(authored("mobilelayout", "horizontal")).containsKey("hideSubtitle"), "unauthored is omitted");
     }
 
     /** The client's list option is imageResize; imageResizeMode was never read. */

@@ -29,7 +29,7 @@
     { "target": "filterOnlyProductScreens", "from": "filterOnlyProductScreens", "type": "boolean", "default": false },
     { "target": "titleSize", "from": "mobiletitlesize", "omitIfAbsent": true },
     { "target": "titleFontWeight", "from": "mobiletitlefontweight", "default": "regular" },
-    { "target": "hideSubtitle", "from": "mobilehidesubtitle", "type": "boolean", "default": false },
+    { "target": "hideSubtitle", "from": "mobilehidesubtitle", "type": "boolean", "omitIfAbsent": true },
     { "target": "subtitleSize", "from": "mobilesubtitlesize", "omitIfAbsent": true },
     { "target": "subtitleFontWeight", "from": "mobilesubtitlefontweight", "default": "light" }
   ]

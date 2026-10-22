@@ -897,8 +897,12 @@ final class ComponentTreeWalker {
     private static final Set<String> ITEM_RENDERERS =
             Set.of("stacked", "overlay", "partial-overlay", "image-text-one-line", "image");
 
-    private boolean hidesSubtitle(final Resource block) {
-        return Boolean.parseBoolean(String.valueOf(listValue(block, "mobilehidesubtitle", "hideSubtitle", false)));
+    /** hideSubtitle is only emitted when authored. */
+    private void putHideSubtitle(final Resource block, final Map<String, Object> content) {
+        final Object hide = listValue(block, "mobilehidesubtitle", "hideSubtitle", null);
+        if (hide != null) {
+            content.put("hideSubtitle", Boolean.parseBoolean(String.valueOf(hide)));
+        }
     }
 
     /** Title/subtitle font weights and sizes; a size is only emitted when set. */
@@ -1065,7 +1069,7 @@ final class ComponentTreeWalker {
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
-        content.put("hideSubtitle", hidesSubtitle(resource));
+        putHideSubtitle(resource, content);
         putListTextStyles(resource, content);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
@@ -1154,7 +1158,7 @@ final class ComponentTreeWalker {
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
-        content.put("hideSubtitle", hidesSubtitle(resource));
+        putHideSubtitle(resource, content);
         putListTextStyles(resource, content);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
