@@ -379,9 +379,17 @@ final class ComponentTreeWalker {
         return meta instanceof Map && "htmlText".equals(((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT));
     }
 
-    /** The closing tag of the block a link sits in - where the text is split to place its button. */
+    /**
+     * The closing tag of the block a link sits in - where the text is split to place its button.
+     *
+     * <p>A list closes at {@code </ul>}, not at the {@code </li>} of the item holding the link: a
+     * list is one block to the reader, and splitting inside it tore the list in half, leaving an
+     * unclosed {@code <ul>} on one part and an orphan {@code </ul>} opening the next. A service
+     * directory of {@code <h3>} plus a list of links now keeps each heading with its own buttons,
+     * which is the grouping the author wrote.</p>
+     */
     private static final Pattern BLOCK_END = Pattern.compile(
-            "</(p|li|h[1-6]|div|blockquote)\\s*>", Pattern.CASE_INSENSITIVE);
+            "</(p|ul|ol|h[1-6]|div|blockquote)\\s*>", Pattern.CASE_INSENSITIVE);
 
     /** A paragraph left with nothing in it once its link was taken out. */
     private static final Pattern EMPTY_PARAGRAPH = Pattern.compile(
@@ -652,7 +660,9 @@ final class ComponentTreeWalker {
     private static void addTextPart(final List<Map<String, Object>> parts, final Map<String, Object> component,
                                     final Map<String, Object> payload, final String html,
                                     final String originalId) {
-        final String cleaned = EMPTY_PARAGRAPH.matcher(html).replaceAll("");
+        // EMPTY_PARAGRAPH first for the <p><br></p> an editor leaves behind, then the general
+        // sweep: lifting an anchor out of a list item empties the item, which empties the list.
+        final String cleaned = dropEmptiedWrappers(EMPTY_PARAGRAPH.matcher(html).replaceAll(""));
         if (StringUtils.isBlank(cleaned.replaceAll("<[^>]*>", "").replace("&nbsp;", " "))) {
             return;
         }

@@ -41,9 +41,9 @@ class InlineLinkRenderTest {
     private static final String ASSET_HOST = "https://publish-p104656-e2246865.adobeaemcloud.com";
 
     /** Ships {@code extractInlineLinks}. */
-    private static final String EXTRACT_SITE = "public-bodea";
+    private static final String EXTRACT_SITE = "secur-financial";
     /** Ships {@code splitInlineLinks}. */
-    private static final String SPLIT_SITE = "we-healthcare";
+    private static final String SPLIT_SITE = "public-bodea";
     /** Ships neither. */
     private static final String INLINE_SITE = "citi-signal";
 
@@ -113,6 +113,61 @@ class InlineLinkRenderTest {
             "<p>Legal work. <a href=\"legal-advisory-services\">Read More</a></p>"
                     + "<p>Tax work. <a href=\"tax-transformations\">Read More</a></p>";
 
+    /** Public Bodea's services directory, as authored: a heading per group, its links in a list. */
+    private static final String SERVICES_DIRECTORY =
+            "<h3>Audit &amp; Assurance</h3><ul>"
+                    + "<li><a href=\"acc-rep-advisory\">Accounting &amp; Reporting</a></li>"
+                    + "<li><a href=\"assurance-services\">Assurance Services</a></li></ul>"
+                    + "<h3>Consulting</h3><ul>"
+                    + "<li><a href=\"customer-and-marketing-services\">Customer &amp; Marketing</a></li>"
+                    + "<li><a href=\"business-services\">Human Capital</a></li></ul>";
+
+    @Test
+    void eachHeadingKeepsItsOwnButtonsInsteadOfStackingThemAtTheEnd() {
+        final List<Map<String, Object>> components =
+                export(SPLIT_SITE, "services-grouped", null, SERVICES_DIRECTORY);
+
+        assertEquals(List.of("htmlText", "button", "button", "htmlText", "button", "button"),
+                componentsOf(components),
+                "the author's grouping survives - heading, its links, next heading");
+        assertEquals("<h3>Audit &amp; Assurance</h3>", textOf(components.get(0)));
+        assertEquals("<h3>Consulting</h3>", textOf(components.get(3)));
+        assertEquals(List.of("Accounting & Reporting", "Assurance Services",
+                        "Customer & Marketing", "Human Capital"),
+                components.stream()
+                        .filter(c -> "button".equals(asMap(c.get(SchemaConstants.KEY_META))
+                                .get(SchemaConstants.KEY_COMPONENT)))
+                        .map(c -> asMap(c.get(SchemaConstants.KEY_CONTENT)).get("label"))
+                        .collect(Collectors.toList()));
+    }
+
+    @Test
+    void aListIsNotTornInHalfAroundTheLinkItHeld() {
+        // Splitting at </li> left an unclosed <ul> on one part and an orphan </ul> opening the next.
+        for (final Map<String, Object> component :
+                export(SPLIT_SITE, "balanced", null, SERVICES_DIRECTORY)) {
+            final Object text = asMap(component.get(SchemaConstants.KEY_CONTENT)).get("text");
+            if (text instanceof String) {
+                final String html = (String) text;
+                assertFalse(html.contains("<ul>") || html.contains("</ul>"),
+                        "a list whose every item was a link leaves nothing behind: " + html);
+                assertFalse(html.contains("<li>"), "no stray list item: " + html);
+            }
+        }
+    }
+
+    @Test
+    void aLinkInAParagraphStillSplitsAtThatParagraph() {
+        // we-healthcare's own shape - unchanged by moving the list boundary from </li> to </ul>.
+        final List<Map<String, Object>> components = export(SPLIT_SITE, "paragraphs", null,
+                "<p>Legal work. <a href=\"legal-advisory-services\">Read More</a></p>"
+                        + "<p>Tax work. <a href=\"tax-transformations\">Read More</a></p>");
+
+        assertEquals(List.of("htmlText", "button", "htmlText", "button"), componentsOf(components));
+        assertEquals("<p>Legal work. </p>", textOf(components.get(0)));
+        assertEquals("<p>Tax work. </p>", textOf(components.get(2)));
+    }
+
     @Test
     void linkKeepsTheAnchorsInlineOnASiteThatWouldExtractThem() {
         final List<Map<String, Object>> components =
@@ -149,10 +204,10 @@ class InlineLinkRenderTest {
     void anUnsetStyleLeavesEverySiteOnItsOwnSetting() {
         assertEquals(List.of("htmlText", "button", "button"),
                 componentsOf(export(EXTRACT_SITE, "default-extract", null, TWO_PARAGRAPHS)),
-                "public-bodea extracts");
+                "secur-financial extracts");
         assertEquals(List.of("htmlText", "button", "htmlText", "button"),
                 componentsOf(export(SPLIT_SITE, "default-split", null, TWO_PARAGRAPHS)),
-                "we-healthcare splits");
+                "public-bodea splits");
         assertEquals(List.of("htmlText"),
                 componentsOf(export(INLINE_SITE, "default-inline", null, TWO_PARAGRAPHS)),
                 "citi-signal leaves them inline");
