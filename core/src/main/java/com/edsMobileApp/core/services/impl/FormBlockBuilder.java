@@ -111,7 +111,7 @@ final class FormBlockBuilder {
         // Forms with no heading property in their block - default is the form's own name.
         headings.put("add-external", new Heading(NO_KEYS, "Add External"));
         headings.put("checkout", new Heading(NO_KEYS, "Checkout"));
-        headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout Shipping"));
+        headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout"));
         headings.put("child-account-application", new Heading(NO_KEYS, "Child Account Application"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
         headings.put("get-offer", new Heading(NO_KEYS, "Get Offer"));
