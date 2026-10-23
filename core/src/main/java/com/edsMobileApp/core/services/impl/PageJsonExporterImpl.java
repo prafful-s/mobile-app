@@ -917,6 +917,10 @@ public class PageJsonExporterImpl implements PageJsonExporter {
         if (!(authoredToast instanceof String) || StringUtils.isBlank((String) authoredToast)) {
             putIfConfigured(meta, "toastMessage", settings.get("toastMessage"));
         }
+        // Whether the form shows its Reset button beside Submit; the form builder hides it by default.
+        if (settings.get("hideResetButton") instanceof Boolean) {
+            meta.put("hideResetButton", settings.get("hideResetButton"));
+        }
     }
 
     /**

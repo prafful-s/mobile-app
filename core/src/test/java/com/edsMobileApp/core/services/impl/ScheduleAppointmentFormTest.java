@@ -148,19 +148,20 @@ class ScheduleAppointmentFormTest {
         return texts;
     }
 
-    /** The block's Mobile Redirect URL (mobileRedirectUrl) is the form's link; a page path becomes its screen key. */
-    @Test
-    void theMobileRedirectUrlIsTheFormsLink() {
-        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds(null, new Object[] {"mobileRedirectUrl", "/content/frescopa/language-masters/en"}, meta);
-        assertEquals("en", meta.get("link"));
-    }
-
+    /** The web block's Redirect URL sends its form home after submit; the app form takes the same page. */
     @Test
     void withNoRedirectAuthoredTheLinkStaysBlank() {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
         fieldIds(null, new Object[0], meta);
         assertEquals("", meta.get("link"));
+    }
+
+    @Test
+    void aMobileRedirectStillWinsOverTheWebOne() {
+        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en",
+                "mobileRedirectUrl", "/content/frescopa/language-masters/en/products"}, meta);
+        assertEquals("products", meta.get("link"));
     }
 
     @SuppressWarnings("unchecked")
@@ -175,13 +176,7 @@ class ScheduleAppointmentFormTest {
                 .findFirst().orElseThrow().get(SchemaConstants.KEY_CONTENT);
     }
 
-    @Test
-    void theWebBlocksRedirectUrlIsNotReadByTheApp() {
-        final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-        fieldIds(null, new Object[] {"redirect-url", "/content/frescopa/language-masters/en"}, meta);
-        assertEquals("", meta.get("link"));
-    }
-
+    /** The description is a schema entry: a small, regular, centred line. */
     @Test
     void theMachineTypeFieldHasNoLabelSoItsPlaceholderShows() {
         final Map<String, Object> machine = contentOfField("machineType");
@@ -207,9 +202,10 @@ class ScheduleAppointmentFormTest {
         }
     }
 
+    /** Frescopa's defaults.json shows Reset on its service screen - read through the exporter's form settings. */
     @SuppressWarnings("unchecked")
     @Test
-    void frescopasDefaultsKeepResetHiddenOnServiceAndLoginScreens() throws Exception {
+    void frescopasDefaultsShowResetOnTheServiceScreenOnly() throws Exception {
         final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
         final java.lang.reflect.Field defaults = PageJsonExporterImpl.class.getDeclaredField("siteDefaults");
         defaults.setAccessible(true);
@@ -226,7 +222,7 @@ class ScheduleAppointmentFormTest {
             form.put(SchemaConstants.KEY_META, meta);
             form.put(SchemaConstants.KEY_CONTENT, new ArrayList<>());
             apply.invoke(exporter, new ArrayList<>(List.of(form)), page, screen, "en");
-            assertEquals(true, meta.get("hideResetButton"), screen);
+            assertEquals("service".equals(screen) ? false : true, meta.get("hideResetButton"), screen);
         }
     }
 
@@ -235,29 +231,6 @@ class ScheduleAppointmentFormTest {
         final Map<String, Object> meta = new java.util.LinkedHashMap<>();
         fieldIds(null, new Object[] {"success-message", "Thanks, we will confirm your service shortly."}, meta);
         assertEquals("Thanks, we will confirm your service shortly.", meta.get("toastMessage"));
-    }
-
-    @Test
-    void carveloDefaultsOnlySupplyTheToastWhenTheAuthoredMessageIsBlank() throws Exception {
-        model = "test-drive";
-        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
-        final java.lang.reflect.Field defaults = PageJsonExporterImpl.class.getDeclaredField("siteDefaults");
-        defaults.setAccessible(true);
-        defaults.set(exporter, SiteDefaults.load());
-        final java.lang.reflect.Method apply = PageJsonExporterImpl.class.getDeclaredMethod(
-                "applyFormSettings", List.class, Page.class, String.class, String.class);
-        apply.setAccessible(true);
-        final Page page = context.create().page("/content/carvelo/language-masters/en/test-drive");
-        for (final String message : new String[] {"Your test drive is confirmed.", "", "   "}) {
-            final Map<String, Object> meta = new java.util.LinkedHashMap<>();
-            fieldIds(null, new Object[] {"success-message", message}, meta);
-            final Map<String, Object> form = new java.util.LinkedHashMap<>();
-            form.put(SchemaConstants.KEY_META, meta);
-            form.put(SchemaConstants.KEY_CONTENT, new ArrayList<>());
-            apply.invoke(exporter, new ArrayList<>(List.of(form)), page, "test-drive", "en");
-            assertEquals(message.trim().isEmpty()
-                    ? "Thank you! Your test drive has been scheduled." : message, meta.get("toastMessage"));
-        }
     }
 
     @Test

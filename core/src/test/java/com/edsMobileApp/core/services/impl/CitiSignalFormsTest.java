@@ -173,6 +173,18 @@ class CitiSignalFormsTest {
     }
 
     @Test
+    void anAuthoredWidthReplacesTheDefaultButKeepsTheVerticalLayout() {
+        final Map<String, Object> form = exportForm("mobile-additional-service",
+                "custommobilestyle", new String[] {"checkbox-width:260"});
+        for (final Map<String, Object> group : byComponent(form, "checkboxGroup")) {
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> styles = (Map<String, Object>) group.get(SchemaConstants.KEY_STYLES);
+            assertEquals(260, styles.get("width"));
+            assertEquals("vertical", styles.get("flexDirection"));
+        }
+    }
+
+    @Test
     void otherFormsAreUntouchedByTheSchemaStyleSupport() {
         final Map<String, Object> form = exportForm("set-up-auto-save");
         assertEquals("Submit", meta(form).get("submitButtonLabel"));
