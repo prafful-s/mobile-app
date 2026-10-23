@@ -1,6 +1,9 @@
 {
   "match": ["card"],
   "component": "card",
+  "variants": [
+    { "when": { "field": "mobileshowbutton", "equals": "true" }, "useRule": "card-with-button" }
+  ],
   "requires": "image",
   "fallback": {
     "component": "htmlText",

@@ -1,0 +1,48 @@
+{
+  "_comment": "A card whose Show Button switch is on. Keep the fields in step with card.json: this is that rule plus the button fields, and CardWithButtonMappingTest checks the two agree.",
+  "match": ["card-with-button"],
+  "component": "card",
+  "requires": "image",
+  "fallback": {
+    "component": "htmlText",
+    "fields": [
+      { "target": "text", "from": "text" }
+    ]
+  },
+  "fields": [
+    { "target": "link",
+      "from": "link",
+      "extract": { "from": "text", "select": "a", "as": "attr", "attribute": "href" },
+      "default": "#" },
+    { "target": "image", "from": "image" },
+    { "target": "imageResize", "from": "mobileimagestyle",
+      "map": {
+        "": "cover",
+        "contain": "contain",
+        "*": "cover"
+      }, "default": "cover" },
+    { "target": "title", "extract": { "from": "text", "select": "h1, h2, h3, h4", "as": "text" } },
+    { "target": "cardType", "from": "mobilecardstyle",
+      "map": { "one-line": "image-text-one-line", "below": "stacked" },
+      "default": "overlay" },
+    { "target": "subtitle",
+      "extract": { "from": "text", "select": "p:not(:has(a)), li", "as": "text", "all": true },
+      "nullable": true },
+    { "target": "showButton", "const": true },
+    { "target": "buttonLabel",
+      "extract": { "from": "text", "select": "a", "as": "text" }, "nullable": true },
+    { "target": "buttonVariant", "from": "ctastyle",
+      "map": { "cta-button": "contained", "cta-button-secondary": "outlined",
+               "cta-button-dark": "contained-tonal", "cta-link": "text", "*": "contained" },
+      "default": "contained" },
+    { "target": "buttonVariant", "from": "mobilebuttonvariant" },
+    { "target": "titleVariant", "const": "titleLarge" },
+    { "target": "subtitleVariant", "const": "titleMedium" },
+    { "target": "titleFontWeight", "const": "regular" },
+    { "target": "subtitleFontWeight", "const": "regular" }
+  ],
+  "styles": [
+    { "target": "color", "from": "textcolor", "type": "hexColor", "nullable": true }
+  ]
+}
+
