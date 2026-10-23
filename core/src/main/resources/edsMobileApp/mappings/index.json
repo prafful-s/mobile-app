@@ -1,6 +1,7 @@
 [
   "hero",
   "card",
+  "cardButton",
   "productCard",
   "productDetail",
   "productImage",
