@@ -63,9 +63,11 @@ final class ComponentTreeWalker {
     private SiteDefaults siteDefaults;
 
     /** The per-site defaults this walker reads for its own site lookups - the inline-link extraction
-     * switch and the screen list. Set once, on activation, by the exporter. */
+     * switch and the screen list - forwarded to the internal {@link FormBlockBuilder} so form headings
+     * can honour per-site overrides. Set once, on activation, by the exporter. */
     void setSiteDefaults(final SiteDefaults siteDefaults) {
         this.siteDefaults = siteDefaults;
+        this.formBuilder.setSiteDefaults(siteDefaults);
     }
 
     /**
@@ -994,6 +996,12 @@ final class ComponentTreeWalker {
             if (hierarchical && isFormBlock(child, authoredName, authored)) {
                 final String formName = formNameOf(authoredName, authored);
                 final Map<String, Object> resolvedAuthored = formBuilder.withDefaultVariant(formName, authored);
+                final Map<String, Object> heading = formBuilder.heading(formName, resolvedAuthored,
+                        AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size(),
+                        child.getPath());
+                if (heading != null) {
+                    sink.add(heading);
+                }
                 sink.add(formBuilder.build(child, formName, model.getId(), sink.size(), resolvedAuthored));
                 final Map<String, Object> secondaryLink = formBuilder.secondaryLink(formName,
                         navScreensByRole, AbstractComponentModel.generateId(child.getPath() + "/secondary-link"),
