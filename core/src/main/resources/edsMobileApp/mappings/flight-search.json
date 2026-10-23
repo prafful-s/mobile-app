@@ -6,7 +6,7 @@
     { "target": "link", "from": "mobileRedirectUrl", "default": "flights" },
     { "target": "mode", "const": "outlined" },
     { "target": "type", "const": "automaticPicker" },
-    { "target": "formId", "from": "mobileFormID", "default": "flights" },
+    { "target": "formId", "from": "mobileFormID", "default": "flightSearch" },
     { "target": "toPath", "const": "flight.to" },
     { "target": "options", "const": [
         { "path": "flight.options.businessClass", "label": "Business class" },
