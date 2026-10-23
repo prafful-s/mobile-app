@@ -85,6 +85,20 @@ class MobileFieldMappingTest {
         }
 
         @Test
+        void aThemeFragmentAddedAfterAMissIsFoundOnceTheRetryWindowHasPassed() {
+        final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
+        final Page page = context.create().page("/content/late-theme-test/en");
+        final SiteBranding retriesAtOnce = SiteBranding.load(new String[]{model}, ProductMappings.load(), 0L);
+        final SiteBranding retriesLater = SiteBranding.load(new String[]{model}, ProductMappings.load(), 60_000L);
+        assertEquals(null, retriesAtOnce.themeNameForPage(page));
+        assertEquals(null, retriesLater.themeNameForPage(page));
+        context.create().resource("/content/dam/late-theme-test/en/fragments/brand-themes/late-theme/jcr:content/data",
+            "cq:model", model);
+        assertEquals("late-theme", retriesAtOnce.themeNameForPage(page));
+        assertEquals(null, retriesLater.themeNameForPage(page), "a recent miss is not searched again yet");
+        }
+
+        @Test
         void fieldOverridesUseTheResolvedThemeFragmentName() {
         final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
         final Page page = context.create().page("/content/override-test/en");
