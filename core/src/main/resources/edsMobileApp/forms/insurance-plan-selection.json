@@ -1,18 +1,8 @@
 [
   {
-    "id": "step-1-title",
-    "component": "title",
-    "content": {
-      "size": "large",
-      "text": "Are you looking for coverage for yourself or your family?",
-      "weight": "bold",
-      "textAlignment": "center"
-    }
-  },
-  {
     "id": "coverageFor",
     "name": "coverageFor",
-    "label": "",
+    "label": "Are you looking for coverage for yourself or your family?",
     "value": "",
     "type": "radio",
     "options": [
@@ -27,29 +17,14 @@
     ]
   },
   {
-    "id": "step-2-title",
-    "component": "title",
-    "content": {
-      "size": "large",
-      "text": "How often do you get care?",
-      "weight": "bold",
-      "textAlignment": "center"
-    }
-  },
-  {
     "id": "step-2-sub",
-    "component": "title",
-    "content": {
-      "size": "small",
-      "text": "This includes needing coverage for things like ongoing prescriptions, regular lab tests, etc.",
-      "weight": "regular",
-      "textAlignment": "center"
-    }
+    "type": "heading",
+    "label": "This includes needing coverage for things like ongoing prescriptions, regular lab tests, etc."
   },
   {
     "id": "careFrequency",
     "name": "careFrequency",
-    "label": "",
+    "label": "How often do you get care?",
     "value": "",
     "type": "radio",
     "options": [
@@ -72,19 +47,9 @@
     ]
   },
   {
-    "id": "step-3-title",
-    "component": "title",
-    "content": {
-      "size": "large",
-      "text": "Would you rather:",
-      "weight": "bold",
-      "textAlignment": "center"
-    }
-  },
-  {
     "id": "costPreference",
     "name": "costPreference",
-    "label": "",
+    "label": "Would you rather:",
     "value": "",
     "type": "radio",
     "options": [

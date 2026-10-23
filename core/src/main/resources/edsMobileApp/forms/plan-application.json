@@ -1,13 +1,8 @@
 [
   {
     "id": "step-1-subtitle",
-    "component": "title",
-    "content": {
-      "size": "medium",
-      "text": "Personal Details",
-      "weight": "regular",
-      "textAlignment": "left"
-    }
+    "type": "heading",
+    "label": "Personal Details"
   },
   {
     "id": "firstName",
@@ -79,19 +74,9 @@
     "defaultValue": ""
   },
   {
-    "id": "joint-applicant-title",
-    "component": "title",
-    "content": {
-      "size": "small",
-      "text": "Is there a joint applicant?",
-      "weight": "bold",
-      "textAlignment": "left"
-    }
-  },
-  {
     "id": "jointApplicant",
     "name": "jointApplicant",
-    "label": "",
+    "label": "Is there a joint applicant?",
     "value": "",
     "type": "radio",
     "options": [
@@ -107,13 +92,8 @@
   },
   {
     "id": "address-heading",
-    "component": "title",
-    "content": {
-      "size": "medium",
-      "text": "Address",
-      "weight": "regular",
-      "textAlignment": "left"
-    }
+    "type": "heading",
+    "label": "Address"
   },
   {
     "id": "address",
@@ -126,13 +106,8 @@
   },
   {
     "id": "identity-heading",
-    "component": "title",
-    "content": {
-      "size": "medium",
-      "text": "Identity",
-      "weight": "regular",
-      "textAlignment": "left"
-    }
+    "type": "heading",
+    "label": "Identity"
   },
   {
     "id": "ssn",

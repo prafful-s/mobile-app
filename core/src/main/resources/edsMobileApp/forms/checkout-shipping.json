@@ -168,40 +168,5 @@
         "value": "PICKUP"
       }
     ]
-  },
-  {
-    "id": "h-account",
-    "type": "heading",
-    "label": "Account"
-  },
-  {
-    "id": "lumaLoyalty",
-    "name": "lumaLoyalty",
-    "value": "",
-    "type": "checkbox",
-    "variant": "switch",
-    "condition": {
-      "field": "show-loyalty",
-      "default": false
-    },
-    "options": [
-      {
-        "label": "I want to join Luma+ Loyalty Program",
-        "value": "true"
-      }
-    ]
-  },
-  {
-    "id": "createAccount",
-    "name": "createAccount",
-    "value": "",
-    "type": "checkbox",
-    "variant": "switch",
-    "options": [
-      {
-        "label": "I want to create the account",
-        "value": "true"
-      }
-    ]
   }
 ]
