@@ -68,6 +68,9 @@ final class FormBlockBuilder {
     /** No authored property backs this form's heading - see {@link #FORM_HEADINGS}. */
     private static final String[] NO_KEYS = new String[0];
 
+    /** The Form Title field a block's Basic tab carries - see {@link #FORM_HEADINGS}. */
+    private static final String[] FORM_TITLE_KEYS = {"form-title", "formtitle"};
+
     /**
      * Per-form heading configuration: the block's own property name(s) for its on-page title, and
      * the text the block itself falls back to when none is authored. Every form gets an entry, so
@@ -108,18 +111,21 @@ final class FormBlockBuilder {
         // ("Your personal informations") is the first title, so the outer one is not duplicated.
         headings.put("test-drive", new Heading(new String[]{"form-title", "formtitle"}, ""));
 
+        // Forms whose title comes only from the Form Title authored on the Basic tab: no compiled
+        // default, so with nothing authored (and no site override) heading() emits nothing.
+        for (final String form : new String[]{"add-external", "automatic-payments", "child-account-application",
+            "mobile-additional-service", "name-change-request", "set-up-auto-save", "transfer-funds",
+            "tv-additional-service"}) {
+            headings.put(form, new Heading(FORM_TITLE_KEYS, ""));
+        }
+
         // Forms with no heading property in their block - default is the form's own name.
-        headings.put("add-external", new Heading(NO_KEYS, "Add External"));
         headings.put("checkout", new Heading(NO_KEYS, "Checkout"));
         headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout"));
-        headings.put("child-account-application", new Heading(NO_KEYS, "Child Account Application"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
         headings.put("get-offer", new Heading(NO_KEYS, "Get Offer"));
-        headings.put("name-change-request", new Heading(NO_KEYS, "Name Change Request"));
         headings.put("plan-application", new Heading(NO_KEYS, "Plan Application"));
-        headings.put("set-up-auto-save", new Heading(NO_KEYS, "Set Up Auto Save"));
         headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
-        headings.put("transfer-funds", new Heading(NO_KEYS, "Transfer Funds"));
         return Collections.unmodifiableMap(headings);
     }
 
