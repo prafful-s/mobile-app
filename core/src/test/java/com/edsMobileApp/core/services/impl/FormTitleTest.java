@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Map;
 
@@ -9,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import com.edsMobileApp.core.schema.SchemaConstants;
 
 /**
- * A form's pre-form heading is its authored Form Title when there is one, and otherwise the text the
- * form has always shown - so a page authored before the field existed exports exactly what it did.
+ * These forms' pre-form heading comes only from the authored Form Title: with none authored (or only
+ * blank text) the export has no heading for them, rather than a compiled-in default.
  */
 class FormTitleTest {
 
@@ -34,19 +35,12 @@ class FormTitleTest {
     }
 
     @Test
-    void withoutAFormTitleTheHeadingIsTheDefaultItAlwaysHad() {
-        assertEquals("Add External", titleOf("add-external", Map.of()));
-        assertEquals("Child Account Application", titleOf("child-account-application", Map.of()));
-        assertEquals("Name Change Request", titleOf("name-change-request", Map.of()));
-        assertEquals("Set Up Auto Save", titleOf("set-up-auto-save", Map.of()));
-        assertEquals("Transfer Funds", titleOf("transfer-funds", Map.of()));
-        assertEquals("Transfer Funds", titleOf("transfer-funds", Map.of("form-title", "  ")));
-    }
-
-    @Test
-    void theThreeFormsThatHadNoHeadingGetOneFromTheirName() {
-        assertEquals("Automatic Payments", titleOf("automatic-payments", Map.of()));
-        assertEquals("Mobile Additional Services", titleOf("mobile-additional-service", Map.of()));
-        assertEquals("TV Additional Services", titleOf("tv-additional-service", Map.of()));
+    void withoutAFormTitleThereIsNoHeading() {
+        for (final String form : new String[] {"add-external", "child-account-application", "name-change-request",
+            "set-up-auto-save", "transfer-funds", "automatic-payments", "mobile-additional-service",
+            "tv-additional-service"}) {
+            assertNull(titleOf(form, Map.of()), form);
+            assertNull(titleOf(form, Map.of("form-title", "  ")), form);
+        }
     }
 }
