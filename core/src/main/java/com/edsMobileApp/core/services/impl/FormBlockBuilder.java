@@ -98,13 +98,13 @@ final class FormBlockBuilder {
         headings.put("credit-card-application-form",
                 new Heading(new String[]{"form-title", "formtitle"}, "Credit Card Application"));
         headings.put("insurance", new Heading(new String[]{"title"}, "Life Insurance"));
-        headings.put("insurance-plan-selection", new Heading(
-                new String[]{"formHeading", "formheading"}, "Which type of health insurance should I get?"));
+        // The plan selections' heading is their authored Form Title only - no compiled default and no
+        // fallback to the block's Main Heading.
+        headings.put("insurance-plan-selection", new Heading(FORM_TITLE_KEYS, ""));
         headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, "JOIN WKND FLY CLUB"));
         headings.put("loan-application-form",
                 new Heading(new String[]{"form-title", "formtitle"}, "Home Loan Application Form"));
-        headings.put("medicare-plan-selection", new Heading(
-                new String[]{"formHeading", "formheading"}, "Which type of Medicare plan should I get?"));
+        headings.put("medicare-plan-selection", new Heading(FORM_TITLE_KEYS, ""));
         headings.put("new-account",
                 new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
         // No compiled default: test-drive (and its schedule-appointment variant) show a pre-form
@@ -126,7 +126,7 @@ final class FormBlockBuilder {
         headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
         headings.put("get-offer", new Heading(NO_KEYS, "Get Offer"));
-        headings.put("plan-application", new Heading(NO_KEYS, "Plan Application"));
+        headings.put("plan-application", new Heading(FORM_TITLE_KEYS, ""));
         headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
         return Collections.unmodifiableMap(headings);
     }

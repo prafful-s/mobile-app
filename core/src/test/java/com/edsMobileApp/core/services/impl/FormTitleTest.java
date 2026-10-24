@@ -35,6 +35,24 @@ class FormTitleTest {
     }
 
     @Test
+    void thePlanFormsTakeTheirHeadingOnlyFromAuthoring() {
+        assertEquals("Apply", titleOf("plan-application", Map.of("form-title", "Apply")));
+        assertEquals("Pick", titleOf("medicare-plan-selection", Map.of("form-title", "Pick")));
+        assertEquals("Pick", titleOf("insurance-plan-selection", Map.of("form-title", "Pick")));
+        assertEquals("Pick", titleOf("medicare-plan-selection", Map.of("formtitle", "Pick")));
+        // The block's Main Heading is not a source for the app heading.
+        assertNull(titleOf("medicare-plan-selection", Map.of("formHeading", "Heading")));
+        assertNull(titleOf("insurance-plan-selection", Map.of("formHeading", "Heading")));
+        assertEquals("Title", titleOf("insurance-plan-selection",
+                Map.of("form-title", "Title", "formHeading", "Heading")));
+        for (final String form : new String[] {"plan-application", "medicare-plan-selection",
+            "insurance-plan-selection"}) {
+            assertNull(titleOf(form, Map.of()), form);
+            assertNull(titleOf(form, Map.of("formHeading", " ", "form-title", " ")), form);
+        }
+    }
+
+    @Test
     void withoutAFormTitleThereIsNoHeading() {
         for (final String form : new String[] {"add-external", "child-account-application", "name-change-request",
             "set-up-auto-save", "transfer-funds", "automatic-payments", "mobile-additional-service",
