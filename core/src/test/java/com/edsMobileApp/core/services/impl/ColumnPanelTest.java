@@ -192,6 +192,35 @@ class ColumnPanelTest {
     }
 
     @Test
+    void signInFormsBecomeNativeLoginComponents() {
+        for (final String model : List.of("sign-in", "form")) {
+            final Page page = context.create().page("/content/s/en/login-" + model);
+            context.create().resource(page.getPath() + "/jcr:content/root/signin",
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                    "model", model, "formName", "sign-in");
+
+            final List<Map<String, Object>> components = walker.componentsOf(page, null, true);
+            assertEquals(1, components.size());
+            assertEquals("userLogin", meta(components.get(0)).get(SchemaConstants.KEY_COMPONENT));
+            assertEquals(0, meta(components.get(0)).get(SchemaConstants.KEY_ORDER));
+            assertEquals(Map.of("title", "Login", "passwordLabel", "Password", "usernameLabel", "Email"),
+                    components.get(0).get(SchemaConstants.KEY_CONTENT));
+
+            final ModifiableValueMap properties = context.resourceResolver()
+                    .getResource(page.getPath() + "/jcr:content/root/signin")
+                    .adaptTo(ModifiableValueMap.class);
+            properties.put("title", "Welcome back");
+            properties.put("usernameLabel", "Username");
+            properties.put("passwordLabel", "Passcode");
+            assertEquals(Map.of("title", "Welcome back", "passwordLabel", "Passcode",
+                    "usernameLabel", "Username"),
+                    walker.componentsOf(page, null, true).get(0).get(SchemaConstants.KEY_CONTENT));
+            assertEquals(model, meta(walker.componentsOf(page, null, false).get(0))
+                    .get(SchemaConstants.KEY_COMPONENT));
+        }
+    }
+
+    @Test
     void mobileHiddenSectionsDoNotContributeFormSchemas() {
         final Page page = sectionVisibilityPage("hide-in-mobile", true);
         context.create().resource(page.getPath() + "/jcr:content/root/restricted/form",

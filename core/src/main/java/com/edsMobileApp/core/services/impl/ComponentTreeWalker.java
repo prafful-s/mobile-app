@@ -740,6 +740,23 @@ final class ComponentTreeWalker {
             // because that contract is already published.
             if (hierarchical && isFormBlock(child, authoredName, authored)) {
                 final String formName = formNameOf(authoredName, authored);
+                if ("sign-in".equals(formName)) {
+                    final ComponentMapping loginMapping = mappings.find(formName);
+                    if (loginMapping != null) {
+                        final Map<String, Object> loginMeta = new LinkedHashMap<>();
+                        loginMeta.put(SchemaConstants.KEY_ID, model.getId());
+                        loginMeta.put(SchemaConstants.KEY_ORDER, sink.size());
+                        loginMeta.put(SchemaConstants.KEY_COMPONENT, loginMapping.getComponent());
+                        final Map<String, Object> login = new LinkedHashMap<>();
+                        login.put(SchemaConstants.KEY_META, loginMeta);
+                        login.put(SchemaConstants.KEY_CONTENT, loginMapping.apply(authored, sectionProps));
+                        if (!styles.isEmpty()) {
+                            login.put(SchemaConstants.KEY_STYLES, styles);
+                        }
+                        sink.add(login);
+                        continue;
+                    }
+                }
                 final Map<String, Object> resolvedAuthored = formBuilder.withDefaultVariant(formName, authored);
                 final Map<String, Object> heading = formBuilder.heading(formName, resolvedAuthored,
                         AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size(),
