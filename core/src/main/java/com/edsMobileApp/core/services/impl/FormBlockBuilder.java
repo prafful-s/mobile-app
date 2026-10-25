@@ -95,13 +95,13 @@ final class FormBlockBuilder {
         headings.put("credit-card-application-form",
                 new Heading(new String[]{"form-title", "formtitle"}, "Credit Card Application"));
         headings.put("insurance", new Heading(new String[]{"title"}, "Life Insurance"));
-        headings.put("insurance-plan-selection", new Heading(
-                new String[]{"formHeading", "formheading"}, "Which type of health insurance should I get?"));
+        // The plan selections, plan application and get offer take their heading only from the
+        // authored Form Title: no compiled default and no fallback to the block's Main Heading.
+        headings.put("insurance-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, "JOIN WKND FLY CLUB"));
         headings.put("loan-application-form",
                 new Heading(new String[]{"form-title", "formtitle"}, "Home Loan Application Form"));
-        headings.put("medicare-plan-selection", new Heading(
-                new String[]{"formHeading", "formheading"}, "Which type of Medicare plan should I get?"));
+        headings.put("medicare-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("new-account",
                 new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
         // No compiled default: test-drive (and its schedule-appointment variant) show a pre-form
@@ -116,9 +116,9 @@ final class FormBlockBuilder {
         headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout Shipping"));
         headings.put("child-account-application", new Heading(NO_KEYS, "Child Account Application"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
-        headings.put("get-offer", new Heading(NO_KEYS, "Get Offer"));
+        headings.put("get-offer", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("name-change-request", new Heading(NO_KEYS, "Name Change Request"));
-        headings.put("plan-application", new Heading(NO_KEYS, "Plan Application"));
+        headings.put("plan-application", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("set-up-auto-save", new Heading(NO_KEYS, "Set Up Auto Save"));
         headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
         headings.put("transfer-funds", new Heading(NO_KEYS, "Transfer Funds"));
