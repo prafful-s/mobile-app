@@ -125,7 +125,7 @@ final class FormBlockBuilder {
         headings.put("checkout", new Heading(NO_KEYS, "Checkout"));
         headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
-        headings.put("get-offer", new Heading(NO_KEYS, "Get Offer"));
+        headings.put("get-offer", new Heading(FORM_TITLE_KEYS, ""));
         headings.put("plan-application", new Heading(FORM_TITLE_KEYS, ""));
         headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
         return Collections.unmodifiableMap(headings);

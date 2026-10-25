@@ -37,6 +37,8 @@ class FormTitleTest {
     @Test
     void thePlanFormsTakeTheirHeadingOnlyFromAuthoring() {
         assertEquals("Apply", titleOf("plan-application", Map.of("form-title", "Apply")));
+        assertEquals("Offer", titleOf("get-offer", Map.of("form-title", "Offer")));
+        assertNull(titleOf("get-offer", Map.of()));
         assertEquals("Pick", titleOf("medicare-plan-selection", Map.of("form-title", "Pick")));
         assertEquals("Pick", titleOf("insurance-plan-selection", Map.of("form-title", "Pick")));
         assertEquals("Pick", titleOf("medicare-plan-selection", Map.of("formtitle", "Pick")));
