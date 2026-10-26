@@ -16,6 +16,111 @@ The main parts of the template are:
 * all: a single content package that embeds all of the compiled modules (bundles and content packages) including any vendor dependencies
 * analyse: this module runs analysis on the project which provides additional validation for deploying into AEMaaCS
 
+## Review-order confirmation button
+
+The confirmation button's shared content and styles are configured in
+`core/src/main/resources/edsMobileApp/components/confirm-button.json`. Java generates
+only its component metadata (ID, order, and component type).
+
+The authored `order-summary` component's JCR property `mobilebuttoneventtype`
+is mapped to `eventType` by `mappings/orderSummary.json`. Review-order assembly
+passes this mapped value to Confirm, without a second JCR lookup, and removes
+the intermediate field from the exported `cartSummary` content. A nonblank value
+is emitted as both Confirm's `content.events` and `content.customEvent`. When absent or
+blank, both event fields are omitted; no default event is fired by this configuration.
+
+To override other button content for one site, add this section to that site's
+`core/src/main/resources/edsMobileApp/sites/<site>/defaults.json`:
+
+```json
+{
+    "confirmButton": {
+        "content": {
+            "label": "Place order"
+        }
+    }
+}
+```
+
+JSON overrides for `events` and `customEvent` are ignored. Other `content` fields, such as
+`label`, `formId`, `linkTo`, and `message`, and individual `styles` fields can also
+be overridden. Omitted fields keep the shared defaults; an empty string clears
+a configured string value. Configuration ships with the bundle and requires a
+rebuild and deployment to change.
+
+## Theme Form Field Overrides
+
+Configure exported form field paths in
+`core/src/main/resources/edsMobileApp/forms/field-path-overrides.json`:
+
+```json
+{
+    "carvelo-theme": {
+        "person.mobileNumber": "mobilePhone.number"
+    }
+}
+```
+
+The outer key matches the app root's authored `theme` property (for example,
+`carvelo-theme`), inherited from the nearest parent within the site when absent.
+If no page theme is authored, the resolved theme Content Fragment name is used
+as a fallback. It is not the site folder or theme model. Overrides run after
+all screens have been assembled. Add any original field path and replacement
+under that theme to override it across all exported forms, including authored
+fields, bundled schemas, nested fields, and checkbox options. Only exact `path`
+matches inside form content are replaced, once per field. Other themes,
+unmatched paths, field IDs, labels, and source schemas remain unchanged.
+Blank replacements are ignored. Changes require a bundle rebuild and deployment.
+
+## Authorable Form Headings
+
+All supported form models in `migration-parent-repo` expose **Mobile Form Heading**
+(`mobileFormHeading`) under the **Mobile Specific** tab. Models without tabs now
+have **Basic** and **Mobile Specific** tabs: web/general properties stay in Basic,
+and mobile-only properties sit in Mobile Specific. This includes all bundled
+forms, flight search, and the authored Adaptive Form model.
+
+In the v2 export, a nonblank `mobileFormHeading` becomes a standalone `title`
+component immediately before the form, with medium size, bold weight, and left
+alignment. The lowercase alias `mobileformheading` is also accepted. This works
+even for forms without a compiled heading default and authored forms without a
+schema name. The heading is not an input field or form metadata.
+
+Blank or absent values retain the existing `formHeadings` site default, then the
+compiled default in `FormBlockBuilder`. For example, credit-card application keeps
+"Credit Card Application", loan application keeps "Home Loan Application Form",
+and plan application keeps "Plan Application". Forms without a previous default
+(including test drive, schedule appointment/consultation, automatic payments,
+additional services, and the coffee quiz) still omit the pre-form heading unless
+one is authored or configured.
+
+The mobile exporter no longer reads `form-title`, `formtitle`,
+`createaccounttitle`, `title`, `formHeading`, or `formheading` as heading sources.
+To retain a customized web heading in the mobile output, copy its text into
+`mobileFormHeading`. The original fields remain available for web rendering and
+analytics; neither web JavaScript nor form fields/submission behavior changes.
+Existing `forms.<screenKey>.heading` site overrides still run after heading
+generation and can replace the title; remove that override when the authored
+mobile heading should control the text.
+
+Run `npm run build:json:models` in `migration-parent-repo` after changing the
+authoring models to regenerate the Universal Editor's `component-models.json`.
+Rebuild and deploy the core bundle, then re-export v2 JSON to see exporter changes.
+
+## Checkout Submit Event
+
+Checkout's `meta.eventType` comes only from the `checkout-shipping` component's
+authored `mobilebuttoneventtype` property. An absent or blank property leaves the
+event blank. `checkoutForm.eventType` site overrides are ignored, and no
+`commerce.checkouts` fallback is applied. Other checkout defaults are unchanged.
+
+## HTMLText styles
+
+The text-to-`htmlText` mapping exports `styles.padding` and `styles.color` only
+when authored and nonblank. Invalid hex colors are omitted. If no styles remain,
+the component has no `styles` object. Valid `custommobilestyle` rows still add or
+override styles. The content skeleton is unchanged: missing text remains `""`.
+
 ## How to build
 
 To build all the modules run in the project root directory the following command with Maven 3:
