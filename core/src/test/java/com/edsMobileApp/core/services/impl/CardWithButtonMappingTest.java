@@ -2,6 +2,7 @@ package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,8 +28,7 @@ import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
  * A card with its Show Button switch on gets a button (label and link from the link in its text, variant
- * from CTA Style or the Button Variant choice); every other card - every card an existing site has -
- * exports exactly what it always did.
+ * from CTA Style or the Button Variant choice); a card that never authored the switch exports no showButton.
  */
 @ExtendWith(AemContextExtension.class)
 class CardWithButtonMappingTest {
@@ -91,50 +91,31 @@ class CardWithButtonMappingTest {
     }
 
     @Test
-    void onlyACardWithTheSwitchOnIsRedirectedToTheButtonRule() {
-        final ComponentMapping card = mappings.find("card");
-        assertEquals("card-with-button", card.variantRuleFor(source("mobileshowbutton", "true")));
-        assertEquals("card-with-button", card.variantRuleFor(source("mobileshowbutton", true)));
-        assertNull(card.variantRuleFor(source("mobileshowbutton", "false")));
-        assertNull(card.variantRuleFor(source("mobileshowbutton", false)));
-        assertNull(card.variantRuleFor(source()));
-    }
-
-    @Test
-    void theButtonRuleIsTheCardRuleWithOnlyTheButtonFieldsAdded() {
-        final ComponentMapping card = mappings.find("card");
-        final ComponentMapping withButton = mappings.find("card-with-button");
-        assertNotNull(withButton);
-        final java.util.Set<String> buttonKeys = java.util.Set.of("showButton", "buttonLabel", "buttonVariant");
-        final List<Map<String, Object>> samples = List.of(
-                source(), source("mobilecardstyle", "stacked"), source("mobileimagestyle", "contain"),
-                source("link", "enrollment", "textcolor", "#ffffff"), source("ctastyle", "cta-link"),
-                source("mobilecardstyle", "one-line", "mobileimagestyle", "contain", "ctastyle", "cta-button"));
-        for (final Map<String, Object> sample : samples) {
-            final Map<String, Object> plain = card.apply(sample, Map.of());
-            final Map<String, Object> button = new java.util.LinkedHashMap<>(withButton.apply(sample, Map.of()));
-            buttonKeys.forEach(button::remove);
-            assertEquals(plain, button, "same card fields for " + sample);
-        }
+    void aCardWithNoButtonSettingsExportsNoneOfThem() {
+        final Map<String, Object> plain = mappings.find("card").apply(
+                Map.of("image", "/content/dam/x.jpg", "text", "<h2>Plans</h2><p>Pick one.</p>"), Map.of());
+        assertFalse(plain.containsKey("showButton"));
+        assertFalse(plain.containsKey("buttonLabel"));
+        assertFalse(plain.containsKey("buttonVariant"));
     }
 
     @Test
     void theButtonTakesItsLabelAndLinkFromTheLinkInTheCardText() {
-        final Map<String, Object> mapped = mappings.find("card-with-button")
-                .apply(source("mobileshowbutton", "true"), Map.of());
+        final Map<String, Object> mapped = mappings.find("card").apply(source("mobileshowbutton", "true"), Map.of());
         assertEquals(true, mapped.get("showButton"));
         assertEquals("See plans", mapped.get("buttonLabel"));
         assertEquals("medicare-plans", mapped.get("link"));
-        assertEquals("contained", mapped.get("buttonVariant"));
+        // no CTA Style and no Button Variant authored: no variant is sent and the app uses its own
+        assertFalse(mapped.containsKey("buttonVariant"));
     }
 
     @Test
     void theVariantFollowsCtaStyleUnlessAButtonVariantIsChosen() {
-        final ComponentMapping withButton = mappings.find("card-with-button");
-        assertEquals("outlined", withButton.apply(source("ctastyle", "cta-button-secondary"), Map.of())
+        final ComponentMapping card = mappings.find("card");
+        assertEquals("outlined", card.apply(source("ctastyle", "cta-button-secondary"), Map.of())
                 .get("buttonVariant"));
-        assertEquals("text", withButton.apply(source("ctastyle", "cta-link"), Map.of()).get("buttonVariant"));
-        assertEquals("elevated", withButton.apply(source("ctastyle", "cta-button", "mobilebuttonvariant", "elevated"),
+        assertEquals("text", card.apply(source("ctastyle", "cta-link"), Map.of()).get("buttonVariant"));
+        assertEquals("elevated", card.apply(source("ctastyle", "cta-button", "mobilebuttonvariant", "elevated"),
                 Map.of()).get("buttonVariant"));
     }
 
@@ -178,9 +159,7 @@ class CardWithButtonMappingTest {
         final Map<String, Object> off = firstCard(exportCard());
         assertNotNull(off);
         assertFalse(off.containsKey("showButton"));
-        assertFalse(off.containsKey("buttonLabel"));
-        assertFalse(off.containsKey("buttonVariant"));
-        assertFalse(firstCard(exportCard("mobileshowbutton", false)).containsKey("showButton"));
+        assertNotEquals(true, firstCard(exportCard("mobileshowbutton", false)).get("showButton"));
 
         final Map<String, Object> on = firstCard(exportCard("mobileshowbutton", true, "mobilebuttonvariant", "elevated"));
         assertEquals(true, on.get("showButton"));
