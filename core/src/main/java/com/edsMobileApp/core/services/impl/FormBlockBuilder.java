@@ -95,15 +95,13 @@ final class FormBlockBuilder {
         final Map<String, Heading> headings = new LinkedHashMap<>();
         // Forms whose block authors a heading property - key(s) and default read from the block .js.
         headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
-        headings.put("credit-card-application-form",
-                new Heading(new String[]{"form-title", "formtitle"}, "Credit Card Application"));
+        headings.put("credit-card-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("insurance", new Heading(new String[]{"title"}, "Life Insurance"));
         // The plan selections' heading is their authored Form Title only - no compiled default and no
         // fallback to the block's Main Heading.
         headings.put("insurance-plan-selection", new Heading(FORM_TITLE_KEYS, ""));
         headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, "JOIN WKND FLY CLUB"));
-        headings.put("loan-application-form",
-                new Heading(new String[]{"form-title", "formtitle"}, "Home Loan Application Form"));
+        headings.put("loan-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("medicare-plan-selection", new Heading(FORM_TITLE_KEYS, ""));
         headings.put("new-account",
                 new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
