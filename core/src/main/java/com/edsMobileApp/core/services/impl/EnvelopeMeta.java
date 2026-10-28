@@ -184,7 +184,10 @@ final class EnvelopeMeta {
      * Builds a screen's {@code meta} in DSN reference field order, as a fixed skeleton.
      *
      * <p>Every key defined by the target contract is always present, so a client parsing a fixed
-     * shape need not distinguish "author set nothing" from "exporter forgot the key". Missing
+     * shape need not distinguish "author set nothing" from "exporter forgot the key", except that
+     * {@code mobilepageeventtype} values {@code commerce.productViews} and
+     * {@code commerce.categoryViews} map to {@code event} and omit
+     * {@code customEvent} and {@code eventType}. Missing
      * string properties emit as {@code ""}; {@code navigationOrder} is {@code null} for screens
      * off the menu, since {@code 0} would falsely claim the first slot.</p>
      *
@@ -198,7 +201,7 @@ final class EnvelopeMeta {
      * @param menu       the app menu, in order, so navigation membership and order are consistent
      *                   with what {@code meta.navigation.menu} already says
      * @param rolePreset the preset implied by this screen's navigation role (login/registration/
-     *                   profile), or blank when it has none; an explicit {@code preset} prop wins
+     *                   profile), or blank when it has none; an explicit {@code mobilePreset} prop wins
      */
     static Map<String, Object> screenMeta(final Page page, final Page root, final String screenKey,
                                           final List<String> menu, final String rolePreset) {
@@ -211,7 +214,10 @@ final class EnvelopeMeta {
         meta.put("icon", StringUtils.defaultString(props.get("mobileIcon", String.class)));
         meta.put("iconInactive", StringUtils.defaultString(props.get("mobileIconInactive", String.class)));
         meta.put("name", screenKey);
-        meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
+        final String eventType = StringUtils.defaultString(props.get("mobilepageeventtype", String.class));
+        final boolean commerceView = "commerce.productViews".equals(eventType)
+                || "commerce.categoryViews".equals(eventType);
+        meta.put("event", commerceView ? eventType : StringUtils.defaultString(props.get("event", String.class)));
         // Keep the review screen's display title independent of its order-summary navigation key.
         meta.put("title", "order-summary".equals(screenKey)
                 ? "Review Order"
@@ -219,7 +225,7 @@ final class EnvelopeMeta {
 
         // preset: explicit prop wins, then the screen's navigation role, else the content default.
         meta.put("preset", StringUtils.firstNonBlank(
-                props.get("preset", String.class),
+                props.get("mobilePreset", String.class),
                 rolePreset,
                 DEFAULT_SCREEN_PRESET));
 
@@ -233,11 +239,13 @@ final class EnvelopeMeta {
 
         meta.put("template", screenTemplate(props));
 
-        meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
+        if (!commerceView) {
+            meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
 
-        // Page-level event type: the page's own authored mobilepageeventtype, emitted under the
-        // normalized eventType key the client reads (block-level forms use the same key name).
-        meta.put("eventType", StringUtils.defaultString(props.get("mobilepageeventtype", String.class)));
+            // Page-level event type: the page's own authored mobilepageeventtype, emitted under the
+            // normalized eventType key the client reads (block-level forms use the same key name).
+            meta.put("eventType", eventType);
+        }
 
         meta.put("isRootScreen", StringUtils.equals(page.getPath(), root.getPath()));
 

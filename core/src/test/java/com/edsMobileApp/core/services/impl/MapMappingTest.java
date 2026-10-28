@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,25 @@ class MapMappingTest {
         assertEquals("blue", styles.get("color"));
         assertEquals(500, styles.get("height"));
         assertEquals("green", styles.get("locationColor"));
+    }
+
+    @Test
+    void authoredCoordinatesExportAsMapRows() {
+        final String[] labels = {"Apple Fifth Avenue", "Apple Grand Central", "Apple SoHo",
+                "Apple Williamsburg (Brooklyn)", "Apple Columbus Circle"};
+        final String[] latitudes = {"40.7640", "40.7532", "40.7240", "40.7104", "40.7681"};
+        final String[] longitudes = {"73.9730", "73.9766", "74.0008", "73.9600", "73.9819"};
+        final String[] lines = new String[labels.length];
+        final List<Map<String, Object>> expected = new java.util.ArrayList<>();
+        for (int index = 0; index < labels.length; index++) {
+            final String latitude = latitudes[index] + "\u00b0\u202fN";
+            final String longitude = "\u2013" + longitudes[index] + "\u00b0\u202fW";
+            lines[index] = labels[index] + "," + latitude + "," + longitude;
+            expected.add(Map.of("id", "row-" + index, "label", labels[index],
+                    "latitude", latitude, "longitude", longitude));
+        }
+
+        assertEquals(expected, content(authored("mobileMapCoordinates", lines)).get("mapCoordinates"));
     }
 
     @Test

@@ -32,7 +32,12 @@ final class CustomMobileStyle {
      *         field is absent or carries no valid row
      */
     static Map<String, Object> asMap(final Map<String, Object> authored) {
-        final Object raw = authored.get(FIELD_NAME);
+        return asMap(authored, FIELD_NAME);
+    }
+
+    /** As {@link #asMap(Map)}, reading the rows from {@code field} - a mapping may declare its own. */
+    static Map<String, Object> asMap(final Map<String, Object> authored, final String field) {
+        final Object raw = authored.get(field);
         final List<?> rows = raw instanceof List ? (List<?>) raw
                 : raw instanceof String[] ? Arrays.asList((String[]) raw) : null;
         if (rows == null) {

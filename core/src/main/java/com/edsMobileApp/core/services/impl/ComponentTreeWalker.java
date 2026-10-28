@@ -938,15 +938,13 @@ final class ComponentTreeWalker {
                     ? Collections.emptyMap() : ancestorSection.getValueMap();
             if (hierarchical && "product-detail".equals(authoredName)
                     && child.getValueMap().get("mobileappcustomproductdetails", Boolean.FALSE)) {
-                final Map<String, Object> componentSource = new LinkedHashMap<>();
-                componentSource.put("imageResize", authored.get("mobileimageresize"));
                 final List<String> enabledComponents = new ArrayList<>();
                 for (final String name : PRODUCT_DETAIL_COMPONENTS) {
                     if (child.getValueMap().get("mobileappshow" + name.toLowerCase(Locale.ROOT), Boolean.TRUE)) {
                         enabledComponents.add(name);
                     }
                 }
-                emitMappedComponents(child, enabledComponents, componentSource, sectionProps, sink);
+                emitMappedComponents(child, enabledComponents, sectionProps, sink);
                 continue;
             }
 
@@ -980,7 +978,8 @@ final class ComponentTreeWalker {
                 } else {
                     componentName = mapping.getComponent();
                     content = new LinkedHashMap<>(mapped);
-                    styles = mergeCustomStyles(mapping.applyStyles(ruleSource, sectionProps), authored);
+                    styles = mergeCustomStyles(mapping.applyStyles(ruleSource, sectionProps), authored,
+                            mapping.customStyleProperty());
                     if (mapping.isSkeleton()) {
                         // Extras come from the component's own properties only - a referenced
                         // fragment's fields that no rule targeted stay internal, not leaked as extras.
@@ -995,6 +994,23 @@ final class ComponentTreeWalker {
             // because that contract is already published.
             if (hierarchical && isFormBlock(child, authoredName, authored)) {
                 final String formName = formNameOf(authoredName, authored);
+                if ("sign-in".equals(formName)) {
+                    final ComponentMapping loginMapping = mappings.find(formName);
+                    if (loginMapping != null) {
+                        final Map<String, Object> loginMeta = new LinkedHashMap<>();
+                        loginMeta.put(SchemaConstants.KEY_ID, model.getId());
+                        loginMeta.put(SchemaConstants.KEY_ORDER, sink.size());
+                        loginMeta.put(SchemaConstants.KEY_COMPONENT, loginMapping.getComponent());
+                        final Map<String, Object> login = new LinkedHashMap<>();
+                        login.put(SchemaConstants.KEY_META, loginMeta);
+                        login.put(SchemaConstants.KEY_CONTENT, loginMapping.apply(authored, sectionProps));
+                        if (!styles.isEmpty()) {
+                            login.put(SchemaConstants.KEY_STYLES, styles);
+                        }
+                        sink.add(login);
+                        continue;
+                    }
+                }
                 final Map<String, Object> resolvedAuthored = formBuilder.withDefaultVariant(formName, authored);
                 final Map<String, Object> heading = formBuilder.heading(formName, resolvedAuthored,
                         AbstractComponentModel.generateId(child.getPath() + "/heading"), sink.size(),
@@ -1050,7 +1066,14 @@ final class ComponentTreeWalker {
      */
     private static Map<String, Object> mergeCustomStyles(final Map<String, Object> mapped,
                                                           final Map<String, Object> authored) {
-        final Map<String, Object> custom = CustomMobileStyle.asMap(authored);
+        return mergeCustomStyles(mapped, authored, CustomMobileStyle.FIELD_NAME);
+    }
+
+    /** As above, reading the rows from {@code property} - the one the component's mapping declares. */
+    private static Map<String, Object> mergeCustomStyles(final Map<String, Object> mapped,
+                                                          final Map<String, Object> authored,
+                                                          final String property) {
+        final Map<String, Object> custom = CustomMobileStyle.asMap(authored, property);
         if (custom.isEmpty()) {
             return mapped;
         }
@@ -1151,6 +1174,29 @@ final class ComponentTreeWalker {
     private static final Set<String> ITEM_RENDERERS =
             Set.of("stacked", "overlay", "partial-overlay", "image-text-one-line", "image");
 
+    /** hideSubtitle is only emitted when authored. */
+    private void putHideSubtitle(final Resource block, final Map<String, Object> content) {
+        final Object hide = listValue(block, "mobilehidesubtitle", "hideSubtitle", null);
+        if (hide != null) {
+            content.put("hideSubtitle", Boolean.parseBoolean(String.valueOf(hide)));
+        }
+    }
+
+    /** Title/subtitle font weights and sizes; a size is only emitted when set. */
+    private void putListTextStyles(final Resource block, final Map<String, Object> content) {
+        content.put("titleFontWeight", listValue(block, "mobiletitlefontweight", "titleFontWeight", "regular"));
+        content.put("subtitleFontWeight",
+                listValue(block, "mobilesubtitlefontweight", "subtitleFontWeight", "light"));
+        final Object titleSize = listValue(block, "mobiletitlesize", "titleSize", null);
+        if (titleSize != null) {
+            content.put("titleSize", titleSize);
+        }
+        final Object subtitleSize = listValue(block, "mobilesubtitlesize", "subtitleSize", null);
+        if (subtitleSize != null) {
+            content.put("subtitleSize", subtitleSize);
+        }
+    }
+
     private static Object knownItemRenderer(final Object value, final String fallback) {
         return value instanceof String && ITEM_RENDERERS.contains(value) ? value : fallback;
     }
@@ -1176,8 +1222,9 @@ final class ComponentTreeWalker {
     }
 
     private void emitMappedComponents(final Resource resource, final List<String> componentNames,
-                                      final Map<String, Object> source, final Map<String, Object> sectionProps,
+                                      final Map<String, Object> sectionProps,
                                       final List<Map<String, Object>> sink) {
+        final ValueMap props = resource.getValueMap();
         for (final String componentName : componentNames) {
             final ComponentMapping matched = mappings.find(componentName);
             if (matched == null) {
@@ -1185,9 +1232,9 @@ final class ComponentTreeWalker {
                         resource.getPath());
                 continue;
             }
-            final String variantRule = matched.variantRuleFor(source);
+            final String variantRule = matched.variantRuleFor(props);
             final ComponentMapping redirected = variantRule == null ? null : mappings.find(variantRule);
-            final ComponentMapping mapping = (redirected == null ? matched : redirected).effectiveFor(source);
+            final ComponentMapping mapping = (redirected == null ? matched : redirected).effectiveFor(props);
             final Map<String, Object> meta = new LinkedHashMap<>();
             meta.put(SchemaConstants.KEY_ID,
                     AbstractComponentModel.generateId(resource.getPath() + "/" + componentName));
@@ -1195,7 +1242,11 @@ final class ComponentTreeWalker {
             meta.put(SchemaConstants.KEY_COMPONENT, mapping.getComponent());
             final Map<String, Object> entry = new LinkedHashMap<>();
             entry.put(SchemaConstants.KEY_META, meta);
-            entry.put(SchemaConstants.KEY_CONTENT, new LinkedHashMap<>(mapping.apply(source, sectionProps)));
+            final Map<String, Object> styles = CustomMobileStyle.asMap(props, mapping.customStyleProperty());
+            if (!styles.isEmpty()) {
+                entry.put(SchemaConstants.KEY_STYLES, styles);
+            }
+            entry.put(SchemaConstants.KEY_CONTENT, new LinkedHashMap<>(mapping.apply(props, sectionProps)));
             sink.add(entry);
         }
     }
@@ -1300,8 +1351,8 @@ final class ComponentTreeWalker {
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
-        content.put("titleFontWeight", "regular");
-        content.put("subtitleFontWeight", "light");
+        putHideSubtitle(resource, content);
+        putListTextStyles(resource, content);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1389,8 +1440,8 @@ final class ComponentTreeWalker {
         content.put("filterProperty", "Category");
         content.put("imageResize", listValue(resource, "mobileImageResize", null, "cover"));
         content.put("filterOnlyProductScreens", false);
-        content.put("titleFontWeight", "regular");
-        content.put("subtitleFontWeight", "light");
+        putHideSubtitle(resource, content);
+        putListTextStyles(resource, content);
 
         final Map<String, Object> styles = new LinkedHashMap<>();
         styles.put("gap", 12);
@@ -1674,8 +1725,10 @@ final class ComponentTreeWalker {
         // meta. AEM has no equivalent property, so emit the target's own defaults rather than omit
         // them - itemsFillWidth true is what stretches cards to the panel width.
         final ValueMap panelProps = resource.getValueMap();
+        putAuthoredFlag(meta, panelProps, "fullHeight");
         meta.put("showBorder", panelProps.get("showBorder", Boolean.FALSE));
         meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
+        putAuthoredFlag(meta, panelProps, "itemsFillHeight");
         meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
 
         final boolean vertical = "vertical".equals(meta.get(SchemaConstants.KEY_LAYOUT));
@@ -1689,6 +1742,14 @@ final class ComponentTreeWalker {
         entry.put(SchemaConstants.KEY_CONTENT,
                 isColumnItem(resource) ? groupColumnImages(children, resource) : children);
         sink.add(entry);
+    }
+
+    /** Adds a boolean panel meta flag only when the section authored it. */
+    private static void putAuthoredFlag(final Map<String, Object> meta, final ValueMap props, final String key) {
+        final Object authored = props.get(key);
+        if (isSet(authored)) {
+            meta.put(key, Boolean.parseBoolean(String.valueOf(authored)));
+        }
     }
 
     private boolean isPageLevelComponent(final Map<String, Object> component) {

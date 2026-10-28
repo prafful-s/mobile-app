@@ -978,6 +978,31 @@ class MobileFieldMappingTest {
     }
 
     @Test
+    void productDetailExpansionMapsEachComponentsAuthoredFieldsAndStyles() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileappproductimagefullwidth", "false", "mobileimageresize", "cover",
+                        "mobileappproducttitlesize", "xlarge", "mobileappproducttitleweight", "light",
+                        "mobileappproducttitlealignment", "center",
+                        "mobileappproductaddtocartbuttonvariant", "contained",
+                        "mobileappproductaddtocartbuttonalignment", "stretch",
+                        "mobileappproductaddtocartbuttonappearancevariant", "icon",
+                        "mobileappproducttitlestyle", new String[] {"marginTop:8"},
+                        "mobileappproductpricestyle", new String[] {"color:#ffffff"}), false);
+
+        assertEquals(Map.of("fullWidth", false, "imageResize", "cover"), entries.get(0).get("content"));
+        assertEquals(Map.of("size", "xlarge", "weight", "light", "textAlignment", "center"),
+                entries.get(1).get("content"));
+        assertEquals(Map.of("marginTop", 8L), entries.get(1).get("styles"));
+        assertEquals(Map.of(), entries.get(2).get("content"));
+        assertEquals(Map.of("color", "#ffffff"), entries.get(2).get("styles"));
+        assertEquals(Map.of("label", "Add", "variant", "contained", "alignment", "stretch",
+                "appearanceVariant", "icon"), entries.get(3).get("content"));
+        assertEquals(false, entries.get(0).containsKey("styles"));
+        assertEquals(false, entries.get(3).containsKey("styles"));
+        assertEquals(false, entries.get(4).containsKey("styles"));
+    }
+
+    @Test
     void productDetailExpansionStaysInSectionAndSerializes() throws Exception {
         final List<Map<String, Object>> entries = exportProductDetail(false, true, true, Map.of(), true);
         assertEquals(1, entries.size());

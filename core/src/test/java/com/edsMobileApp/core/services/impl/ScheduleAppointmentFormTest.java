@@ -234,6 +234,29 @@ class ScheduleAppointmentFormTest {
     }
 
     @Test
+    void carveloDefaultsOnlySupplyTheToastWhenTheAuthoredMessageIsBlank() throws Exception {
+        model = "test-drive";
+        final PageJsonExporterImpl exporter = new PageJsonExporterImpl();
+        final java.lang.reflect.Field defaults = PageJsonExporterImpl.class.getDeclaredField("siteDefaults");
+        defaults.setAccessible(true);
+        defaults.set(exporter, SiteDefaults.load());
+        final java.lang.reflect.Method apply = PageJsonExporterImpl.class.getDeclaredMethod(
+                "applyFormSettings", List.class, Page.class, String.class, String.class);
+        apply.setAccessible(true);
+        final Page page = context.create().page("/content/carvelo/language-masters/en/test-drive");
+        for (final String message : new String[] {"Your test drive is confirmed.", "", "   "}) {
+            final Map<String, Object> meta = new java.util.LinkedHashMap<>();
+            fieldIds(null, new Object[] {"success-message", message}, meta);
+            final Map<String, Object> form = new java.util.LinkedHashMap<>();
+            form.put(SchemaConstants.KEY_META, meta);
+            form.put(SchemaConstants.KEY_CONTENT, new ArrayList<>());
+            apply.invoke(exporter, new ArrayList<>(List.of(form)), page, "test-drive", "en");
+            assertEquals(message.trim().isEmpty()
+                    ? "Thank you! Your test drive has been scheduled." : message, meta.get("toastMessage"));
+        }
+    }
+
+    @Test
     void theScheduleAppointmentBlockHasTheCustomerServiceFields() {
         assertEquals(List.of("machine-heading", "machineType",
                 "service-address-heading", "serviceStreet", "serviceCity", "service-slot-heading",

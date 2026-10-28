@@ -4,8 +4,8 @@
   "skeleton": true,
   "ignoreExtras": ["*"],
   "fields": [
-    { "comment": "mapCoordinates omitted - mobileMapCoordinates is a multi-line 'label,latitude,longitude' string the mapping engine does not split into objects yet.",
-      "target": "displayAs", "from": "mobileDisplayAs", "default": "fullMap" }
+    { "target": "displayAs", "from": "mobileDisplayAs", "default": "fullMap" },
+    { "target": "mapCoordinates", "from": "mobileMapCoordinates", "type": "mapCoordinates", "omitIfAbsent": true }
   ],
   "styles": [
     { "target": "color", "from": "mobileColor", "default": "blue" },

@@ -93,6 +93,32 @@ class ActionButtonCustomStyleTest {
     }
 
     @Test
+    void htmlTextOmitsUnavailableStylesAndPreservesCustomOverrides() {
+        final Page page = context.create().page("/content/s/en/text-styles");
+        context.create().resource(page.getPath() + "/jcr:content/root");
+        context.create().resource(page.getPath() + "/jcr:content/root/text",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "text",
+                "text", "<p>Body</p>");
+        context.create().resource(page.getPath() + "/jcr:content/root/styled-text",
+                "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                "model", "text",
+                "text", "<p>Styled</p>",
+                "padding", "16",
+                "color", "#123456",
+                "custommobilestyle", new String[] {"padding:0", "color:#abcdef"});
+
+        final List<Map<String, Object>> components =
+                walkerWithMockedModelFactory().componentsOf(page, "https://assets.example.com", true, false);
+
+        assertEquals(2, components.size());
+        assertEquals("htmlText", ((Map<?, ?>) components.get(0).get(SchemaConstants.KEY_META)).get("component"));
+        assertFalse(components.get(0).containsKey(SchemaConstants.KEY_STYLES));
+        assertEquals(Map.of("text", "<p>Body</p>"), components.get(0).get(SchemaConstants.KEY_CONTENT));
+        assertEquals(Map.of("padding", 0L, "color", "#abcdef"), components.get(1).get(SchemaConstants.KEY_STYLES));
+    }
+
+    @Test
         @SuppressWarnings("unchecked")
         void aWebViewExportsUrlAndCustomMobileStyles() {
         final Page page = context.create().page("/content/s/en/web-view");
