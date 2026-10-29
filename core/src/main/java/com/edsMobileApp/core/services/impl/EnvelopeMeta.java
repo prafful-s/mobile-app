@@ -187,12 +187,13 @@ final class EnvelopeMeta {
      * shape need not distinguish "author set nothing" from "exporter forgot the key", except that
      * {@code mobilepageeventtype} values {@code commerce.productViews} and
      * {@code commerce.categoryViews} map to {@code event} and omit
-     * {@code customEvent} and {@code eventType}. Missing
+    * {@code customEvent}. Other non-blank page event types emit {@code event="customEvent"}
+    * and their value under {@code customEvent}. Screen metadata never emits {@code eventType}. Missing
      * string properties emit as {@code ""}; {@code navigationOrder} is {@code null} for screens
      * off the menu, since {@code 0} would falsely claim the first slot.</p>
      *
      * <p>Field order: icon, iconInactive, name, event, title, preset, mboxName, template,
-     * customEvent, eventType, isRootScreen, navigationOrder, includeInNavigation. {@code mboxName}
+    * customEvent, isRootScreen, navigationOrder, includeInNavigation. {@code mboxName}
      * is emitted only when the page authors an Adobe Target mbox.</p>
      *
      * @param page       the screen
@@ -217,7 +218,9 @@ final class EnvelopeMeta {
         final String eventType = StringUtils.defaultString(props.get("mobilepageeventtype", String.class));
         final boolean commerceView = "commerce.productViews".equals(eventType)
                 || "commerce.categoryViews".equals(eventType);
-        meta.put("event", commerceView ? eventType : StringUtils.defaultString(props.get("event", String.class)));
+        final boolean customPageEvent = !commerceView && StringUtils.isNotBlank(eventType);
+        meta.put("event", commerceView ? eventType : customPageEvent ? "customEvent"
+            : StringUtils.defaultString(props.get("event", String.class)));
         // Keep the review screen's display title independent of its order-summary navigation key.
         meta.put("title", "order-summary".equals(screenKey)
                 ? "Review Order"
@@ -240,11 +243,8 @@ final class EnvelopeMeta {
         meta.put("template", screenTemplate(props));
 
         if (!commerceView) {
-            meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
-
-            // Page-level event type: the page's own authored mobilepageeventtype, emitted under the
-            // normalized eventType key the client reads (block-level forms use the same key name).
-            meta.put("eventType", eventType);
+            meta.put("customEvent", customPageEvent && !"custom".equals(eventType) ? eventType
+                    : StringUtils.defaultString(props.get("customEvent", String.class)));
         }
 
         meta.put("isRootScreen", StringUtils.equals(page.getPath(), root.getPath()));
