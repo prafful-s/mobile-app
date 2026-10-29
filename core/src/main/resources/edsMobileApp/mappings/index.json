@@ -25,6 +25,7 @@
   "inbox",
   "map",
   "web-view",
+  "video",
   "decisioning-container",
   "decisioning-offer"
 ]
