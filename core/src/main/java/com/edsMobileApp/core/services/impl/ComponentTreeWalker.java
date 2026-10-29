@@ -246,8 +246,6 @@ final class ComponentTreeWalker {
         if (StringUtils.isBlank(assetHost)) {
             return;
         }
-        final boolean extractLinks = extractsInlineLinks(page);
-        final boolean splitLinks = splitsInlineLinks(page);
         boolean inserted = false;
         for (int i = 0; i < components.size(); i++) {
             final Map<String, Object> component = components.get(i);
@@ -264,19 +262,13 @@ final class ComponentTreeWalker {
                 prefixAssets(payload, assetHost);
                 if (isHtmlText(component)) {
                     rewriteHtmlTextLinks(payload);
-                    if (splitLinks) {
-                        final List<Map<String, Object>> parts = splitAtInlineLinks(component, payload);
-                        if (parts != null) {
-                            components.remove(i);
-                            components.addAll(i, parts);
-                            i += parts.size() - 1;
-                            inserted = true;
-                        }
-                    } else if (extractLinks) {
-                        for (final Map<String, Object> button : extractInlineLinkButtons(payload)) {
-                            components.add(++i, button);
-                            inserted = true;
-                        }
+                    // Every site: each navigable link becomes a button right after its paragraph.
+                    final List<Map<String, Object>> parts = splitAtInlineLinks(component, payload);
+                    if (parts != null) {
+                        components.remove(i);
+                        components.addAll(i, parts);
+                        i += parts.size() - 1;
+                        inserted = true;
                     }
                 }
             } else if (content instanceof List) {
@@ -288,36 +280,6 @@ final class ComponentTreeWalker {
         if (inserted) {
             reindexOrder(components);
         }
-    }
-
-    /**
-     * @return true when the site owning {@code page} opts in to extracting a rich-text link into
-     *         its own tappable {@code button} via {@code extractInlineLinks} in its
-     *         {@code defaults.json}. Absent (the default) means today's behaviour is unchanged - a
-     *         link embedded in an htmlText block stays exactly where it was authored. See
-     *         {@link #extractInlineLinkButtons}.
-     */
-    private boolean extractsInlineLinks(final Page page) {
-        if (siteDefaults == null || page == null) {
-            return false;
-        }
-        final Object flag = siteDefaults.forPage(page).get("extractInlineLinks");
-        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
-    }
-
-    /**
-     * @return true when the site owning {@code page} opts in to {@code splitInlineLinks} in its
-     *         {@code defaults.json}: every navigable link in an htmlText block becomes a button
-     *         placed right after the paragraph that held it, with the text split around it, instead
-     *         of all of a block's buttons landing after the whole text. Takes the place of
-     *         {@code extractInlineLinks} for that site. See {@link #splitAtInlineLinks}.
-     */
-    private boolean splitsInlineLinks(final Page page) {
-        if (siteDefaults == null || page == null) {
-            return false;
-        }
-        final Object flag = siteDefaults.forPage(page).get("splitInlineLinks");
-        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
     }
 
     /** Renumbers every component's {@code meta.order} to match its actual position in the list. */
@@ -344,48 +306,6 @@ final class ComponentTreeWalker {
     private static final Pattern INLINE_LINK = Pattern.compile(
             "<a\\s+[^>]*href\\s*=\\s*([\"'])([^\"']*)\\1[^>]*>(.*?)</a>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    /**
-     * Extracts every navigable {@code <a>} out of an htmlText block's {@code text} into its own
-     * sibling {@code button} component (inserted right after it by the caller), removing the
-     * anchor - label and all - from the text rather than just de-linking it, so the label doesn't
-     * appear twice ("Book Trip" as the button, not also sitting there as dead plain text beside
-     * it). An anchor whose href isn't a real navigation target ({@code #}, {@code mailto:},
-     * {@code tel:}, {@code javascript:}, blank) has no button to stand in for it, so it is
-     * de-linked in place instead - its label kept as plain text - rather than silently dropped.
-     *
-     * <p>A link embedded in rich text is never tappable in the app regardless of what its href says
-     * (confirmed against every reference app export available - none embeds a tappable link inside
-     * rich text) - a dedicated {@code button} is the shape the app actually routes through.</p>
-     *
-     * @return the buttons to insert, in the order their anchors appeared; empty when the text had
-     *         no navigable link (the text is left untouched in that case)
-     */
-    private static List<Map<String, Object>> extractInlineLinkButtons(final Map<String, Object> payload) {
-        final Object value = payload.get("text");
-        if (!(value instanceof String) || !((String) value).contains("href")) {
-            return Collections.emptyList();
-        }
-        final String text = (String) value;
-        final Matcher matcher = INLINE_LINK.matcher(text);
-        final StringBuffer delinked = new StringBuffer(text.length());
-        final List<Map<String, Object>> buttons = new ArrayList<>();
-        while (matcher.find()) {
-            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
-            final String linkTo = navigableScreenKey(matcher.group(2).trim());
-            final boolean hasButton = linkTo != null && !label.isEmpty();
-            matcher.appendReplacement(delinked, hasButton ? "" : Matcher.quoteReplacement(label));
-            if (hasButton) {
-                buttons.add(inlineLinkButton(label, linkTo));
-            }
-        }
-        if (buttons.isEmpty()) {
-            return Collections.emptyList();
-        }
-        matcher.appendTail(delinked);
-        payload.put("text", delinked.toString());
-        return buttons;
-    }
 
     /**
      * The screen key {@code href} navigates to - the last path segment of a {@code /content/...}
