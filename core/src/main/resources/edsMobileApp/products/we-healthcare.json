@@ -1,0 +1,6 @@
+{
+  "match": ["/conf/dsn-eds-configuration/settings/dam/cfm/models/product-model"],
+  "component": "product",
+  "sites": ["/content/we-healthcare"],
+  "scope": ["/content/dam/we-healthcare-assets/en/fragments"]
+}

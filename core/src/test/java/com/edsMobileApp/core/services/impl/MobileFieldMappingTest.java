@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,6 +83,19 @@ class MobileFieldMappingTest {
             .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "luma-theme");
         assertEquals("luma-theme", branding.themeNameForPage(page));
         assertEquals(content, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        }
+
+        @Test
+        void weHealthcareSearchesItsAssetsFragmentsFolderForTheThemeFragment() {
+        final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
+        assertTrue(ProductMappings.load().rootsForSite("/content/we-healthcare")
+            .contains("/content/dam/we-healthcare-assets/en/fragments"));
+        final Page page = context.create().page("/content/we-healthcare/language-masters/en");
+        context.create().resource(
+            "/content/dam/we-healthcare-assets/en/fragments/brand-themes/wehealthcare-mobile/jcr:content/data",
+            "cq:model", model);
+        final SiteBranding branding = SiteBranding.load(new String[]{model}, ProductMappings.load());
+        assertEquals("wehealthcare-mobile", branding.themeNameForPage(page));
         }
 
         @Test
