@@ -1,5 +1,14 @@
 [
   {
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "What is the reason for your name change?",
+      "weight": "regular",
+      "textAlignment": "left"
+    }
+  },
+  {
     "id": "reasonForNameChange",
     "name": "reasonForNameChange",
     "value": "",

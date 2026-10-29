@@ -2,6 +2,7 @@
   "match": ["productPrice"],
   "component": "productPrice",
   "skeleton": true,
+  "customStyle": "mobileappproductpricestyle",
   "ignoreExtras": ["*"],
   "fields": []
 }

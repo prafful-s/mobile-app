@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,6 +83,19 @@ class MobileFieldMappingTest {
             .adaptTo(org.apache.sling.api.resource.ModifiableValueMap.class).put("theme", "luma-theme");
         assertEquals("luma-theme", branding.themeNameForPage(page));
         assertEquals(content, FormFieldPathOverrides.load().apply(content, branding.themeNameForPage(page)));
+        }
+
+        @Test
+        void weHealthcareSearchesItsAssetsFragmentsFolderForTheThemeFragment() {
+        final String model = "/conf/dsn-eds-configuration/settings/dam/cfm/models/mobile-app-theme";
+        assertTrue(ProductMappings.load().rootsForSite("/content/we-healthcare")
+            .contains("/content/dam/we-healthcare-assets/en/fragments"));
+        final Page page = context.create().page("/content/we-healthcare/language-masters/en");
+        context.create().resource(
+            "/content/dam/we-healthcare-assets/en/fragments/brand-themes/wehealthcare-mobile/jcr:content/data",
+            "cq:model", model);
+        final SiteBranding branding = SiteBranding.load(new String[]{model}, ProductMappings.load());
+        assertEquals("wehealthcare-mobile", branding.themeNameForPage(page));
         }
 
         @Test
@@ -961,6 +975,31 @@ class MobileFieldMappingTest {
         assertEquals(Map.of("fullWidth", true, "imageResize", "cover"), entries.get(0).get("content"));
         assertEquals(Map.of(), entries.get(2).get("content"));
         assertEquals(Map.of(), entries.get(4).get("content"));
+    }
+
+    @Test
+    void productDetailExpansionMapsEachComponentsAuthoredFieldsAndStyles() {
+        final List<Map<String, Object>> entries = exportProductDetail(false, true, true,
+                Map.of("mobileappproductimagefullwidth", "false", "mobileimageresize", "cover",
+                        "mobileappproducttitlesize", "xlarge", "mobileappproducttitleweight", "light",
+                        "mobileappproducttitlealignment", "center",
+                        "mobileappproductaddtocartbuttonvariant", "contained",
+                        "mobileappproductaddtocartbuttonalignment", "stretch",
+                        "mobileappproductaddtocartbuttonappearancevariant", "icon",
+                        "mobileappproducttitlestyle", new String[] {"marginTop:8"},
+                        "mobileappproductpricestyle", new String[] {"color:#ffffff"}), false);
+
+        assertEquals(Map.of("fullWidth", false, "imageResize", "cover"), entries.get(0).get("content"));
+        assertEquals(Map.of("size", "xlarge", "weight", "light", "textAlignment", "center"),
+                entries.get(1).get("content"));
+        assertEquals(Map.of("marginTop", 8L), entries.get(1).get("styles"));
+        assertEquals(Map.of(), entries.get(2).get("content"));
+        assertEquals(Map.of("color", "#ffffff"), entries.get(2).get("styles"));
+        assertEquals(Map.of("label", "Add", "variant", "contained", "alignment", "stretch",
+                "appearanceVariant", "icon"), entries.get(3).get("content"));
+        assertEquals(false, entries.get(0).containsKey("styles"));
+        assertEquals(false, entries.get(3).containsKey("styles"));
+        assertEquals(false, entries.get(4).containsKey("styles"));
     }
 
     @Test

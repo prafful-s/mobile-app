@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.List;
 import java.util.Map;
@@ -191,6 +192,35 @@ class ColumnPanelTest {
     }
 
     @Test
+    void signInFormsBecomeNativeLoginComponents() {
+        for (final String model : List.of("sign-in", "form")) {
+            final Page page = context.create().page("/content/s/en/login-" + model);
+            context.create().resource(page.getPath() + "/jcr:content/root/signin",
+                    "sling:resourceType", SchemaConstants.RT_FRANKLIN_BLOCK,
+                    "model", model, "formName", "sign-in");
+
+            final List<Map<String, Object>> components = walker.componentsOf(page, null, true);
+            assertEquals(1, components.size());
+            assertEquals("userLogin", meta(components.get(0)).get(SchemaConstants.KEY_COMPONENT));
+            assertEquals(0, meta(components.get(0)).get(SchemaConstants.KEY_ORDER));
+            assertEquals(Map.of("title", "Login", "passwordLabel", "Password", "usernameLabel", "Email"),
+                    components.get(0).get(SchemaConstants.KEY_CONTENT));
+
+            final ModifiableValueMap properties = context.resourceResolver()
+                    .getResource(page.getPath() + "/jcr:content/root/signin")
+                    .adaptTo(ModifiableValueMap.class);
+            properties.put("title", "Welcome back");
+            properties.put("usernameLabel", "Username");
+            properties.put("passwordLabel", "Passcode");
+            assertEquals(Map.of("title", "Welcome back", "passwordLabel", "Passcode",
+                    "usernameLabel", "Username"),
+                    walker.componentsOf(page, null, true).get(0).get(SchemaConstants.KEY_CONTENT));
+            assertEquals(model, meta(walker.componentsOf(page, null, false).get(0))
+                    .get(SchemaConstants.KEY_COMPONENT));
+        }
+    }
+
+    @Test
     void mobileHiddenSectionsDoNotContributeFormSchemas() {
         final Page page = sectionVisibilityPage("hide-in-mobile", true);
         context.create().resource(page.getPath() + "/jcr:content/root/restricted/form",
@@ -307,6 +337,45 @@ class ColumnPanelTest {
 
         assertEquals("vertical", meta(panel).get(SchemaConstants.KEY_LAYOUT));
         assertEquals(8, styles(panel).get("gap"));
+    }
+
+    @Test
+    void aSectionsCustomMobileStyleOverridesItsPanelStyles() {
+        final Map<String, Object> panel = sectionPanel("custom-style",
+                "custommobilestyle", new String[] {"gap:16", "padding:12"});
+
+        assertEquals(16L, styles(panel).get("gap"));
+        assertEquals(12L, styles(panel).get("padding"));
+        assertEquals(8, styles(panel).get("margin"), "unauthored styles keep their default");
+    }
+
+    @Test
+    void fullHeightAndItemsFillHeightAppearOnlyWhenAuthored() {
+        final Map<String, Object> unauthored = meta(sectionPanel("flags-unset"));
+        assertFalse(unauthored.containsKey("fullHeight"));
+        assertFalse(unauthored.containsKey("itemsFillHeight"));
+        assertEquals(false, unauthored.get("showBorder"), "showBorder keeps its default");
+
+        final Map<String, Object> authored = meta(sectionPanel("flags-set",
+                "fullHeight", true, "itemsFillHeight", "true", "showBorder", true));
+        assertEquals(true, authored.get("fullHeight"));
+        assertEquals(true, authored.get("itemsFillHeight"));
+        assertEquals(true, authored.get("showBorder"));
+
+        assertEquals(false, meta(sectionPanel("flags-off", "fullHeight", false)).get("fullHeight"));
+    }
+
+    @Test
+    void aSectionsLayoutStylesAreAllAuthorableThroughCustomMobileStyle() {
+        final Map<String, Object> styles = styles(sectionPanel("author-styles", "custommobilestyle",
+                new String[] {"gap:8", "margin:8", "padding:8", "alignItems:center",
+                    "justifyContent:space-between-author-value"}));
+
+        assertEquals(8L, styles.get("gap"));
+        assertEquals(8L, styles.get("margin"));
+        assertEquals(8L, styles.get("padding"));
+        assertEquals("center", styles.get("alignItems"));
+        assertEquals("space-between-author-value", styles.get("justifyContent"));
     }
 
     @Test

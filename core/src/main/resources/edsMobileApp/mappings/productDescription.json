@@ -2,6 +2,7 @@
   "match": ["productDescription"],
   "component": "productDescription",
   "skeleton": true,
+  "customStyle": "mobileappproductdescriptionstyle",
   "ignoreExtras": ["*"],
   "fields": []
 }

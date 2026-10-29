@@ -18,12 +18,14 @@
   "search",
   "actionButton",
   "divider",
+  "userLogin",
   "flight-search",
   "flights",
   "contentCards",
   "inbox",
   "map",
   "web-view",
+  "video",
   "decisioning-container",
   "decisioning-offer"
 ]

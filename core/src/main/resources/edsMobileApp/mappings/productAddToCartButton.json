@@ -2,11 +2,12 @@
   "match": ["productAddToCartButton"],
   "component": "productAddToCartButton",
   "skeleton": true,
+  "customStyle": "mobileappproductaddtocartbuttonstyle",
   "ignoreExtras": ["*"],
   "fields": [
     { "target": "label", "from": "label", "default": "Add" },
-    { "target": "variant", "from": "variant", "default": "text" },
-    { "target": "alignment", "from": "alignment", "default": "center" },
-    { "target": "appearanceVariant", "from": "appearanceVariant", "default": "text-icon" }
+    { "target": "variant", "from": "mobileappproductaddtocartbuttonvariant", "default": "text" },
+    { "target": "alignment", "from": "mobileappproductaddtocartbuttonalignment", "default": "center" },
+    { "target": "appearanceVariant", "from": "mobileappproductaddtocartbuttonappearancevariant", "default": "text-icon" }
   ]
 }

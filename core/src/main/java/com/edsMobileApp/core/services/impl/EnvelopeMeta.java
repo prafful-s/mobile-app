@@ -184,7 +184,10 @@ final class EnvelopeMeta {
      * Builds a screen's {@code meta} in DSN reference field order, as a fixed skeleton.
      *
      * <p>Every key defined by the target contract is always present, so a client parsing a fixed
-     * shape need not distinguish "author set nothing" from "exporter forgot the key". Missing
+     * shape need not distinguish "author set nothing" from "exporter forgot the key", except that
+     * {@code mobilepageeventtype} values {@code commerce.productViews} and
+     * {@code commerce.categoryViews} map to {@code event} and omit
+     * {@code customEvent} and {@code eventType}. Missing
      * string properties emit as {@code ""}; {@code navigationOrder} is {@code null} for screens
      * off the menu, since {@code 0} would falsely claim the first slot.</p>
      *
@@ -211,7 +214,10 @@ final class EnvelopeMeta {
         meta.put("icon", StringUtils.defaultString(props.get("mobileIcon", String.class)));
         meta.put("iconInactive", StringUtils.defaultString(props.get("mobileIconInactive", String.class)));
         meta.put("name", screenKey);
-        meta.put("event", StringUtils.defaultString(props.get("event", String.class)));
+        final String eventType = StringUtils.defaultString(props.get("mobilepageeventtype", String.class));
+        final boolean commerceView = "commerce.productViews".equals(eventType)
+                || "commerce.categoryViews".equals(eventType);
+        meta.put("event", commerceView ? eventType : StringUtils.defaultString(props.get("event", String.class)));
         // Keep the review screen's display title independent of its order-summary navigation key.
         meta.put("title", "order-summary".equals(screenKey)
                 ? "Review Order"
@@ -233,11 +239,13 @@ final class EnvelopeMeta {
 
         meta.put("template", screenTemplate(props));
 
-        meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
+        if (!commerceView) {
+            meta.put("customEvent", StringUtils.defaultString(props.get("customEvent", String.class)));
 
-        // Page-level event type: the page's own authored mobilepageeventtype, emitted under the
-        // normalized eventType key the client reads (block-level forms use the same key name).
-        meta.put("eventType", StringUtils.defaultString(props.get("mobilepageeventtype", String.class)));
+            // Page-level event type: the page's own authored mobilepageeventtype, emitted under the
+            // normalized eventType key the client reads (block-level forms use the same key name).
+            meta.put("eventType", eventType);
+        }
 
         meta.put("isRootScreen", StringUtils.equals(page.getPath(), root.getPath()));
 

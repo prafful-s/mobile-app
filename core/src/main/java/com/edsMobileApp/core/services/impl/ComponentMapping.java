@@ -35,6 +35,7 @@ final class ComponentMapping {
     private final List<Variant> variants;
     private final LinkQuery linkQuery;
     private final Set<String> ignoreExtras;
+    private final String customStyleProperty;
 
     private ComponentMapping(final List<String> matches, final String component,
                              final List<FieldRule> fields, final List<FieldRule> styleFields,
@@ -42,7 +43,7 @@ final class ComponentMapping {
                              final ContentFragmentFolderRef contentFragmentFolderRef,
                              final String requiresField, final ComponentMapping fallback,
                              final List<Variant> variants, final LinkQuery linkQuery,
-                             final Set<String> ignoreExtras) {
+                             final Set<String> ignoreExtras, final String customStyleProperty) {
         this.matches = matches;
         this.component = component;
         this.fields = fields;
@@ -55,6 +56,7 @@ final class ComponentMapping {
         this.variants = variants;
         this.linkQuery = linkQuery;
         this.ignoreExtras = ignoreExtras;
+        this.customStyleProperty = customStyleProperty;
     }
 
     /** A {@code fallback} mapping: no {@code requires}, no further fallback, no variants/linkQuery/ignoreExtras. */
@@ -63,7 +65,7 @@ final class ComponentMapping {
                              final boolean skeleton, final String contentFragmentRef,
                              final ContentFragmentFolderRef contentFragmentFolderRef) {
         this(matches, component, fields, styleFields, skeleton, contentFragmentRef,
-                contentFragmentFolderRef, null, null, Collections.emptyList(), null, Collections.emptySet());
+                contentFragmentFolderRef, null, null, Collections.emptyList(), null, Collections.emptySet(), null);
     }
 
     /**
@@ -90,7 +92,8 @@ final class ComponentMapping {
         return new ComponentMapping(Collections.unmodifiableList(matches), component,
                 Collections.unmodifiableList(fields), Collections.unmodifiableList(styleFields),
                 skeleton, contentFragmentRef, contentFragmentFolderRef, requiresField, fallback,
-                variants, linkQuery, Collections.unmodifiableSet(ignoreExtras));
+                variants, linkQuery, Collections.unmodifiableSet(ignoreExtras),
+                trimmed(definition.get("customStyle")));
     }
 
     /**
@@ -325,6 +328,11 @@ final class ComponentMapping {
         return component;
     }
 
+    /** The property holding this component's free-form {@code key:value} style rows; {@code custommobilestyle} unless declared. */
+    String customStyleProperty() {
+        return customStyleProperty == null ? CustomMobileStyle.FIELD_NAME : customStyleProperty;
+    }
+
     /**
      * True when this rule opts in to fixed-shape output: every declared field is emitted always,
      * typed to an empty default when unauthored (empty string, {@code 0}, or {@code false} - see
@@ -377,6 +385,9 @@ final class ComponentMapping {
             consumed.add(contentFragmentFolderRef.getProperty());
         }
         consumed.addAll(ignoreExtras);
+        if (customStyleProperty != null) {
+            consumed.add(customStyleProperty);
+        }
         return consumed;
     }
 
