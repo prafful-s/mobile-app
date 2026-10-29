@@ -1473,7 +1473,6 @@ final class ComponentTreeWalker {
         final ValueMap panelProps = resource.getValueMap();
         putAuthoredFlag(meta, panelProps, "fullHeight");
         meta.put("showBorder", panelProps.get("showBorder", Boolean.FALSE));
-        meta.put("itemsAlignment", panelProps.get("itemsAlignment", "center"));
         meta.put("itemsFillWidth", panelProps.get("itemsFillWidth", Boolean.TRUE));
         putAuthoredFlag(meta, panelProps, "itemsFillHeight");
         meta.put("wrapOverflowing", panelProps.get("wrapOverflowing", Boolean.FALSE));
