@@ -1,13 +1,23 @@
 [
   {
     "id": "step-1-title",
-    "type": "heading",
-    "label": "Let's get started"
+    "component": "title",
+    "content": {
+      "size": "large",
+      "text": "Let's get started",
+      "weight": "bold",
+      "textAlignment": "center"
+    }
   },
   {
     "id": "step-1-sub",
-    "type": "heading",
-    "label": "When choosing your plan, let us know what matters most to you—cost, benefits, or the doctors, medications and facilities you need covered. Based on your selections, we'll show you a list of recommended plans you can choose from before signing up."
+    "component": "title",
+    "content": {
+      "size": "small",
+      "text": "When choosing your plan, let us know what matters most to you—cost, benefits, or the doctors, medications and facilities you need covered. Based on your selections, we'll show you a list of recommended plans you can choose from before signing up.",
+      "weight": "regular",
+      "textAlignment": "center"
+    }
   },
   {
     "id": "zipCode",
@@ -19,9 +29,19 @@
     "defaultValue": ""
   },
   {
+    "id": "step-2-title",
+    "component": "title",
+    "content": {
+      "size": "large",
+      "text": "When you think about your monthly payment, which best describes you?",
+      "weight": "bold",
+      "textAlignment": "center"
+    }
+  },
+  {
     "id": "monthlyPaymentPreference",
     "name": "monthlyPaymentPreference",
-    "label": "When you think about your monthly payment, which best describes you?",
+    "label": "",
     "value": "",
     "type": "radio",
     "options": [
@@ -37,18 +57,38 @@
   },
   {
     "id": "step-3-title-main",
-    "type": "heading",
-    "label": "Benefits"
+    "component": "title",
+    "content": {
+      "size": "large",
+      "text": "Benefits",
+      "weight": "bold",
+      "textAlignment": "center"
+    }
   },
   {
     "id": "step-3-sub-main",
-    "type": "heading",
-    "label": "Tell us more about what you want your plan to do for you."
+    "component": "title",
+    "content": {
+      "size": "small",
+      "text": "Tell us more about what you want your plan to do for you.",
+      "weight": "regular",
+      "textAlignment": "center"
+    }
+  },
+  {
+    "id": "step-3-title-sub1",
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "Which type of benefits do you want in your plan?",
+      "weight": "bold",
+      "textAlignment": "center"
+    }
   },
   {
     "id": "preferredBenefits",
     "name": "preferredBenefits",
-    "label": "Which type of benefits do you want in your plan?",
+    "label": "",
     "value": "",
     "type": "radio",
     "options": [
@@ -68,8 +108,13 @@
   },
   {
     "id": "step-3-title-sub2",
-    "type": "heading",
-    "label": "Are there optional benefits that you'd like to add to your plan?"
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "Are there optional benefits that you'd like to add to your plan?",
+      "weight": "bold",
+      "textAlignment": "center"
+    }
   },
   {
     "id": "additionalBenefits",
@@ -86,18 +131,38 @@
   },
   {
     "id": "step-4-title-main",
-    "type": "heading",
-    "label": "Access to Care"
+    "component": "title",
+    "content": {
+      "size": "large",
+      "text": "Access to Care",
+      "weight": "bold",
+      "textAlignment": "center"
+    }
   },
   {
     "id": "step-4-sub-main",
-    "type": "heading",
-    "label": "Tell us when and where you want to access healthcare."
+    "component": "title",
+    "content": {
+      "size": "small",
+      "text": "Tell us when and where you want to access healthcare.",
+      "weight": "regular",
+      "textAlignment": "center"
+    }
+  },
+  {
+    "id": "step-4-title-sub",
+    "component": "title",
+    "content": {
+      "size": "medium",
+      "text": "Which best describes you?",
+      "weight": "bold",
+      "textAlignment": "center"
+    }
   },
   {
     "id": "networkPreference",
     "name": "networkPreference",
-    "label": "Which best describes you?",
+    "label": "",
     "value": "",
     "type": "radio",
     "options": [

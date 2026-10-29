@@ -58,6 +58,8 @@ final class FormBlockBuilder {
     /** The one {@code custommobilestyle} row key this export currently understands - see
      *  {@link #applyCheckboxWidth}. */
     private static final String STYLE_KEY_WIDTH = "checkbox-width";
+    /** The radio counterpart of {@link #STYLE_KEY_WIDTH} - see {@link #applyCheckboxWidth}. */
+    private static final String STYLE_KEY_RADIO_WIDTH = "radio-width";
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
@@ -95,12 +97,12 @@ final class FormBlockBuilder {
         headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
         headings.put("credit-card-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("insurance", new Heading(new String[]{"title"}, "Life Insurance"));
-        headings.put("insurance-plan-selection", new Heading(
-                new String[]{"formHeading", "formheading"}, "Which type of health insurance should I get?"));
+        // The plan selections, plan application and get offer take their heading only from the
+        // authored Form Title: no compiled default and no fallback to the block's Main Heading.
+        headings.put("insurance-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, "JOIN WKND FLY CLUB"));
         headings.put("loan-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("medicare-plan-selection", new Heading(
-                new String[]{"formHeading", "formheading"}, "Which type of Medicare plan should I get?"));
+        headings.put("medicare-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("new-account",
                 new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
         // No compiled default: test-drive (and its schedule-appointment variant) show a pre-form
@@ -121,8 +123,8 @@ final class FormBlockBuilder {
         headings.put("checkout", new Heading(NO_KEYS, "Checkout"));
         headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
-        headings.put("get-offer", new Heading(NO_KEYS, "Get Offer"));
-        headings.put("plan-application", new Heading(NO_KEYS, "Plan Application"));
+        headings.put("get-offer", new Heading(new String[]{"form-title", "formtitle"}, ""));
+        headings.put("plan-application", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
         return Collections.unmodifiableMap(headings);
     }
@@ -509,7 +511,7 @@ final class FormBlockBuilder {
 
     /**
      * Applies the block's authored {@code custommobilestyle} - a multifield of free-text
-     * {@code key:value} rows (e.g. {@code "checkbox-width:250"}) - as {@code
+     * {@code key:value} rows (e.g. {@code "checkbox-width:250"}, {@code "radio-width:250"}) - as {@code
      * styles.width} on every {@code checkboxGroup} field this form emits. The mapping has no way
      * to express a per-instance width, and several checkboxGroup labels run long enough on a phone
      * screen to need one (WKND Fly Club's consent, SecurFinancial's mortgage authorization and
@@ -531,13 +533,25 @@ final class FormBlockBuilder {
     @SuppressWarnings("unchecked")
     private static void applyCheckboxWidth(final List<Map<String, Object>> fields,
                                            final Map<String, Object> authored) {
-        final Integer width = authoredCustomStyleInt(authored, STYLE_KEY_WIDTH);
+        applyWidth(fields, authored, STYLE_KEY_WIDTH, FormFieldFactory.CHECKBOX_GROUP);
+        applyWidth(fields, authored, STYLE_KEY_RADIO_WIDTH, FormFieldFactory.RADIO_GROUP);
+    }
+
+    /**
+     * {@code checkbox-width} reaches every {@code checkboxGroup} and {@code radio-width} every
+     * {@code radioGroup}, each under its own row key so a form can size one without the other.
+     */
+    @SuppressWarnings("unchecked")
+    private static void applyWidth(final List<Map<String, Object>> fields,
+                                   final Map<String, Object> authored, final String key,
+                                   final String component) {
+        final Integer width = authoredCustomStyleInt(authored, key);
         if (width == null) {
             return;
         }
         for (final Map<String, Object> field : fields) {
             final Object meta = field.get(SchemaConstants.KEY_META);
-            if (!(meta instanceof Map) || !FormFieldFactory.CHECKBOX_GROUP.equals(
+            if (!(meta instanceof Map) || !component.equals(
                     ((Map<String, Object>) meta).get(SchemaConstants.KEY_COMPONENT))) {
                 continue;
             }
