@@ -12,9 +12,14 @@
     "target": "cart"
   },
   "forms": {
-    "schedule-appointment": { "toastMessage": "Thank you! Your service appointment has been scheduled." },
-    "test-drive":           { "toastMessage": "Thank you! Your test drive has been scheduled." },
-    "car-loan":             { "redirectAfterSubmit": "carloan-application-submitted" }
-  },
-  "extractInlineLinks": true
+    "schedule-appointment": {
+      "toastMessage": "Thank you! Your service appointment has been scheduled."
+    },
+    "test-drive": {
+      "toastMessage": "Thank you! Your test drive has been scheduled."
+    },
+    "car-loan": {
+      "redirectAfterSubmit": "carloan-application-submitted"
+    }
+  }
 }

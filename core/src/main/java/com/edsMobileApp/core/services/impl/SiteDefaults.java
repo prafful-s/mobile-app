@@ -37,9 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   "meta":              { "brand": "...", "thumbnail": "...", "template": "...", "vertical": "...",
  *                          "rightIcon": "...", "rightIconTarget": "...", "useCart": true },
  *   "flightDestinationsFragment": "/content/dam/.../flight-source-destination-dropdown",
- *   "screenList":        { "textColor": "...", "color": "..." },
- *   "extractInlineLinks": true,
- *   "splitInlineLinks":   true
+ *   "screenList":        { "textColor": "...", "color": "..." }
  * }
  * </pre>
  *

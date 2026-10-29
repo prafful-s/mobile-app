@@ -248,8 +248,6 @@ final class ComponentTreeWalker {
         if (StringUtils.isBlank(assetHost)) {
             return;
         }
-        final boolean extractLinks = extractsInlineLinks(page);
-        final boolean splitLinks = splitsInlineLinks(page);
         boolean inserted = false;
         for (int i = 0; i < components.size(); i++) {
             final Map<String, Object> component = components.get(i);
@@ -267,7 +265,7 @@ final class ComponentTreeWalker {
                 if (isHtmlText(component)) {
                     rewriteHtmlTextLinks(payload);
                     // Always consumed, whatever it says: it is an authoring instruction, not content.
-                    final LinkRender render = linkRenderOf(payload, extractLinks, splitLinks);
+                    final LinkRender render = linkRenderOf(payload);
                     if (render == LinkRender.SPLIT) {
                         final List<Map<String, Object>> parts = splitAtInlineLinks(component, payload);
                         if (parts != null) {
@@ -309,19 +307,15 @@ final class ComponentTreeWalker {
 
     /**
      * How this block's links render: the authored {@code mobilelinkstyle} when it names a mode,
-     * otherwise the site's own setting ({@code splitInlineLinks} first, since it replaces
-     * {@code extractInlineLinks} for a site carrying both), otherwise inline.
+     * otherwise split - every site, with no per-site setting.
      *
      * <p>The key is removed from {@code payload} either way. It is an instruction to this exporter,
      * not a piece of content, and {@code appendUnconsumedExtras} would otherwise pass it through to
      * the client as a stray field - no mapping rule consumes it.</p>
      *
-     * @param payload      the block's content, with {@code mobilelinkstyle} removed on return
-     * @param siteExtracts the site's {@code extractInlineLinks}
-     * @param siteSplits   the site's {@code splitInlineLinks}
+     * @param payload the block's content, with {@code mobilelinkstyle} removed on return
      */
-    private static LinkRender linkRenderOf(final Map<String, Object> payload,
-                                           final boolean siteExtracts, final boolean siteSplits) {
+    private static LinkRender linkRenderOf(final Map<String, Object> payload) {
         final Object authored = payload.remove(LINK_STYLE_KEY);
         final String style = authored == null ? "" : String.valueOf(authored).trim();
         if ("link".equalsIgnoreCase(style)) {
@@ -333,40 +327,7 @@ final class ComponentTreeWalker {
         if ("split".equalsIgnoreCase(style)) {
             return LinkRender.SPLIT;
         }
-        if (siteSplits) {
-            return LinkRender.SPLIT;
-        }
-        return siteExtracts ? LinkRender.EXTRACT : LinkRender.INLINE;
-    }
-
-    /**
-     * @return true when the site owning {@code page} opts in to extracting a rich-text link into
-     *         its own tappable {@code button} via {@code extractInlineLinks} in its
-     *         {@code defaults.json}. Absent (the default) means today's behaviour is unchanged - a
-     *         link embedded in an htmlText block stays exactly where it was authored. See
-     *         {@link #extractInlineLinkButtons}.
-     */
-    private boolean extractsInlineLinks(final Page page) {
-        if (siteDefaults == null || page == null) {
-            return false;
-        }
-        final Object flag = siteDefaults.forPage(page).get("extractInlineLinks");
-        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
-    }
-
-    /**
-     * @return true when the site owning {@code page} opts in to {@code splitInlineLinks} in its
-     *         {@code defaults.json}: every navigable link in an htmlText block becomes a button
-     *         placed right after the paragraph that held it, with the text split around it, instead
-     *         of all of a block's buttons landing after the whole text. Takes the place of
-     *         {@code extractInlineLinks} for that site. See {@link #splitAtInlineLinks}.
-     */
-    private boolean splitsInlineLinks(final Page page) {
-        if (siteDefaults == null || page == null) {
-            return false;
-        }
-        final Object flag = siteDefaults.forPage(page).get("splitInlineLinks");
-        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
+        return LinkRender.SPLIT;
     }
 
     /** Renumbers every component's {@code meta.order} to match its actual position in the list. */

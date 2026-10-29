@@ -80,12 +80,17 @@ class PublicBodeaInlineLinkTest {
         return walker;
     }
 
-    /** @param site the content site the page belongs to - the only thing the flag keys off */
+    /** The button style is authored: these tests pin the extract path, which is no longer a site default. */
     private List<Map<String, Object>> export(final String site, final String name, final String text) {
+        return export(site, name, text, "button");
+    }
+
+    private List<Map<String, Object>> export(final String site, final String name, final String text,
+                                             final String style) {
         final Page page = context.create().page("/content/" + site + "/language-masters/en/" + name);
         context.create().resource(page.getPath() + "/jcr:content/root/text",
                 "sling:resourceType", SchemaConstants.RT_FRANKLIN_TEXT,
-                "text", text, "model", "text");
+                "text", text, "model", "text", "mobilelinkstyle", style);
         return walker().componentsOf(page, ASSET_HOST, true, false);
     }
 
@@ -284,12 +289,12 @@ class PublicBodeaInlineLinkTest {
     }
 
     @Test
-    void aSiteWithoutTheFlagKeepsItsAnchorsInline() {
+    void aBlockAuthoredAsLinkKeepsItsAnchorsInline() {
         final List<Map<String, Object>> components = export("citi-signal", "support",
-                "<p><a href=\"contact\">Contact us</a></p>");
+                "<p><a href=\"contact\">Contact us</a></p>", "link");
 
         assertEquals(List.of("htmlText"), componentsOf(components),
-                "extraction is opt-in per site - citi-signal ships no extractInlineLinks");
+                "an author can still keep a block's links inline");
         assertTrue(((String) asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text"))
                         .contains("href=\"contact\""),
                 "the anchor is left exactly where it was authored");

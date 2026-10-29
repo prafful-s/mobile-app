@@ -25,8 +25,8 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
- * A site that sets {@code extractInlineLinks} in its {@code defaults.json} gets each navigable link in
- * a rich-text block as its own button right after the text; a site that does not is left untouched.
+ * Every site gets each navigable link in a rich-text block as its own button, right after the
+ * paragraph that held it; no per-site setting is involved.
  */
 @ExtendWith(AemContextExtension.class)
 class ExtractInlineLinksTest {
@@ -110,8 +110,8 @@ class ExtractInlineLinksTest {
     }
 
     @Test
-    void aSiteWithoutTheSwitchKeepsTheLinkInTheText() {
-        assertEquals(List.of("htmlText"), componentNames(exportText("frescopa")));
+    void everySiteSplitsByDefault() {
+        assertEquals(List.of("htmlText", "button"), componentNames(exportText("frescopa")));
     }
 
     private static String textOf(final Map<String, Object> component) {
@@ -165,8 +165,8 @@ class ExtractInlineLinksTest {
     }
 
     @Test
-    void aSiteWithOnlyTheExtractSwitchStillPutsAllButtonsAfterTheText() {
+    void carveloKeepsEachButtonAtItsOwnParagraphToo() {
         final List<Map<String, Object>> tree = exportText("carvelo", SEVERAL);
-        assertEquals(List.of("htmlText", "button", "button"), componentNames(tree));
+        assertEquals(List.of("htmlText", "button", "htmlText", "button", "htmlText"), componentNames(tree));
     }
 }

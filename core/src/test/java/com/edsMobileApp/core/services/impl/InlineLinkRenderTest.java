@@ -201,16 +201,12 @@ class InlineLinkRenderTest {
     }
 
     @Test
-    void anUnsetStyleLeavesEverySiteOnItsOwnSetting() {
-        assertEquals(List.of("htmlText", "button", "button"),
-                componentsOf(export(EXTRACT_SITE, "default-extract", null, TWO_PARAGRAPHS)),
-                "secur-financial extracts");
-        assertEquals(List.of("htmlText", "button", "htmlText", "button"),
-                componentsOf(export(SPLIT_SITE, "default-split", null, TWO_PARAGRAPHS)),
-                "public-bodea splits");
-        assertEquals(List.of("htmlText"),
-                componentsOf(export(INLINE_SITE, "default-inline", null, TWO_PARAGRAPHS)),
-                "citi-signal leaves them inline");
+    void anUnsetStyleSplitsOnEverySite() {
+        for (final String site : new String[] {EXTRACT_SITE, SPLIT_SITE, INLINE_SITE}) {
+            assertEquals(List.of("htmlText", "button", "htmlText", "button"),
+                    componentsOf(export(site, "default-" + site, null, TWO_PARAGRAPHS)),
+                    site + " splits");
+        }
     }
 
     @Test
@@ -227,10 +223,10 @@ class InlineLinkRenderTest {
     }
 
     @Test
-    void anUnrecognisedStyleFallsBackToTheSiteRatherThanGuessing() {
-        assertEquals(List.of("htmlText", "button", "button"),
+    void anUnrecognisedStyleFallsBackToSplitRatherThanGuessing() {
+        assertEquals(List.of("htmlText", "button", "htmlText", "button"),
                 componentsOf(export(EXTRACT_SITE, "typo", "Buton", TWO_PARAGRAPHS)),
-                "a typo must not silently turn a site's own choice into something else");
+                "a typo must not silently turn the default into something else");
     }
 
     @Test

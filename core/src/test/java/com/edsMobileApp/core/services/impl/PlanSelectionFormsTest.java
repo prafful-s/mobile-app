@@ -141,12 +141,6 @@ class PlanSelectionFormsTest {
         assertNull(content(field(form, "jointApplicant")).get("label"));
     }
 
-    @Test
-    void weHealthcareExtractsRichTextLinksIntoButtons() {
-        final Page page = context.create().page("/content/we-healthcare/language-masters/en");
-        assertEquals(Boolean.TRUE, SiteDefaults.load().forPage(page).get("extractInlineLinks"));
-    }
-
     private static Map<String, Object> headingStyle(final Map<String, Object> heading) {
         final Map<String, Object> c = content(heading);
         return Map.of("size", c.get("size"), "weight", c.get("weight"), "textAlignment", c.get("textAlignment"));
