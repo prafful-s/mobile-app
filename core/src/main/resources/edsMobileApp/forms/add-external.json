@@ -50,6 +50,11 @@
     ]
   },
   {
+    "id": "heading-authorization",
+    "type": "heading",
+    "label": "Authorization"
+  },
+  {
     "id": "authorizedUserName",
     "name": "externalAccount.authorizedUserName",
     "label": "Authorized user name",
