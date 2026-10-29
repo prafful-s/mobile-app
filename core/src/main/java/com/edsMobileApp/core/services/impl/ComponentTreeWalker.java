@@ -328,6 +328,30 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * A link into somebody else's site, as opposed to one typed against an AEM publish host for a page
+     * of this one. {@link #screenKeyOf} takes the last path segment of whatever it is handed, which for
+     * an external URL yields a plausible-looking key naming no screen at all
+     * ({@code https://www.adobe.com/legal/terms.html} becomes {@code terms}), so an external link has
+     * to be recognised before the leaf is taken rather than after.
+     *
+     * <p>A protocol-relative link ({@code //example.com/x}) and one typed without a scheme
+     * ({@code www.example.com}) are external too: neither names a screen of this app.</p>
+     *
+     * @return true when {@code href} is absolute and its path is not an AEM {@code /content/} path
+     */
+    private static boolean isExternalUrl(final String href) {
+        if (href.startsWith("//") || href.regionMatches(true, 0, "www.", 0, 4)) {
+            return true;
+        }
+        if (!href.regionMatches(true, 0, "http://", 0, 7)
+                && !href.regionMatches(true, 0, "https://", 0, 8)) {
+            return false;
+        }
+        final String afterHost = StringUtils.substringAfter(StringUtils.substringAfter(href, "://"), "/");
+        return !("/" + afterHost).startsWith(ContentPaths.CONTENT_PREFIX);
+    }
+
+    /**
      * Matches an htmlText block's {@code <a href="...">} authored as a full URL into a non-asset
      * {@code /content/...} page - e.g. a "Book Trip" CTA typed against one specific AEM
      * environment's publish host, rather than a repository-relative path. Never matched by
@@ -413,7 +437,10 @@ final class ComponentTreeWalker {
         boolean navigable = false;
         while (matcher.find()) {
             final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
-            final String linkTo = navigableScreenKey(matcher.group(2).trim());
+            final String href = matcher.group(2).trim();
+            // An external link is the button's own target, URL and all; screenKeyOf would turn it into
+            // the last path segment, naming no screen.
+            final String linkTo = isExternalUrl(href) ? href : navigableScreenKey(href);
             spans.add(new int[] {matcher.start(), matcher.end()});
             labels.add(label);
             final boolean hasButton = linkTo != null && !label.isEmpty();
@@ -487,10 +514,10 @@ final class ComponentTreeWalker {
     /**
      * A button carrying one extracted inline link, matching every field
      * {@code edsMobileApp/mappings/button.json} would default it to for an authored button with no
-     * {@code linkType} set ({@code variant: "contained"}) - so a synthetically-extracted button is
-     * indistinguishable, field for field, from one the mapping produced. Only {@code label},
-     * {@code linkTo} and {@code alignment} (left, since this sits inline with a sentence rather
-     * than standing alone as a CTA) are set to anything but the mapping's own default.
+     * {@code linkType} set, except that a link in a sentence is the quiet {@code text} variant
+     * rather than {@code contained}. Only {@code label}, {@code linkTo}, {@code variant} and
+     * {@code alignment} (left, since this sits inline with a sentence rather than standing alone as
+     * a CTA) are set to anything but the mapping's own default.
      */
     private static Map<String, Object> inlineLinkButton(final String label, final String linkTo) {
         final Map<String, Object> meta = new LinkedHashMap<>();
@@ -503,7 +530,7 @@ final class ComponentTreeWalker {
         content.put("formId", "");
         content.put("linkTo", linkTo);
         content.put("message", "");
-        content.put("variant", "contained");
+        content.put("variant", "text");
         content.put("alignment", "left");
         content.put("customEvent", "");
         final Map<String, Object> styles = new LinkedHashMap<>();
