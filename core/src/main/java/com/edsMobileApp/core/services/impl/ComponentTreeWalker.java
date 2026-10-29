@@ -474,9 +474,15 @@ final class ComponentTreeWalker {
      * screen at all ({@code https://www.adobe.com/legal/terms.html} becomes {@code terms}), so an
      * external link has to be recognised before the leaf is taken rather than after.
      *
+     * <p>A protocol-relative link ({@code //example.com/x}) and one typed without a scheme
+     * ({@code www.example.com}) are external too: neither names a screen of this app.</p>
+     *
      * @return true when {@code href} is absolute and its path is not an AEM {@code /content/} path
      */
     private static boolean isExternalUrl(final String href) {
+        if (href.startsWith("//") || href.regionMatches(true, 0, "www.", 0, 4)) {
+            return true;
+        }
         if (!href.regionMatches(true, 0, "http://", 0, 7)
                 && !href.regionMatches(true, 0, "https://", 0, 8)) {
             return false;

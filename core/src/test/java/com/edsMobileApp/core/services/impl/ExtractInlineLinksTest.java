@@ -110,6 +110,17 @@ class ExtractInlineLinksTest {
     }
 
     @Test
+    void anExternalLinkStaysInlineWhateverWayItIsTyped() {
+        for (final String href : new String[] {"https://www.adobe.com/legal/terms.html", "http://example.com",
+            "//example.com/x", "www.example.com"}) {
+            final List<Map<String, Object>> tree = exportText("frescopa",
+                    "<p>Go <a href=\"" + href + "\">Link</a> now</p><p>End</p>");
+            assertEquals(List.of("htmlText"), componentNames(tree), href);
+            assertEquals("<p>Go <a href=\"" + href + "\">Link</a> now</p><p>End</p>", textOf(tree.get(0)), href);
+        }
+    }
+
+    @Test
     void everySiteSplitsByDefault() {
         assertEquals(List.of("htmlText", "button"), componentNames(exportText("frescopa")));
     }
