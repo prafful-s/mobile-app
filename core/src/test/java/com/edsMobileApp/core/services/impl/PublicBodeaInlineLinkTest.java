@@ -177,17 +177,15 @@ class PublicBodeaInlineLinkTest {
     }
 
     @Test
-    void anExternalUrlIsLeftExactlyAsAuthored() {
+    void anExternalUrlBecomesAButtonCarryingTheWholeUrl() {
         // screenKeyOf takes the last segment of whatever it is given, so without the external check
         // https://www.adobe.com/legal/terms.html became a button pointing at a "terms" screen.
         final List<Map<String, Object>> components = export(EXTRACT_SITE, "external",
                 "<p><a href=\"https://www.adobe.com/legal/terms.html\">Terms</a></p>");
 
-        assertEquals(List.of("htmlText"), componentsOf(components),
-                "somebody else's site is not a screen - no button stands in for it");
-        assertEquals("<p><a href=\"https://www.adobe.com/legal/terms.html\">Terms</a></p>",
-                asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text"),
-                "the anchor stays, so the renderer still hands it to the browser as before");
+        assertEquals("button", componentOf(components.get(components.size() - 1)));
+        assertEquals("https://www.adobe.com/legal/terms.html",
+                asMap(components.get(components.size() - 1).get(SchemaConstants.KEY_CONTENT)).get("linkTo"));
     }
 
     @Test
@@ -196,11 +194,12 @@ class PublicBodeaInlineLinkTest {
                 "<p><a href=\"https://www.adobe.com/\">Adobe</a> and "
                         + "<a href=\"/content/public-bodea/language-masters/en/tax-transformations\">Tax</a></p>");
 
-        assertEquals(List.of("htmlText", "button"), componentsOf(components));
-        assertEquals("tax-transformations",
+        assertEquals(List.of("htmlText", "button", "button"), componentsOf(components));
+        assertEquals("https://www.adobe.com/",
                 asMap(components.get(1).get(SchemaConstants.KEY_CONTENT)).get("linkTo"));
+        assertEquals("tax-transformations",
+                asMap(components.get(2).get(SchemaConstants.KEY_CONTENT)).get("linkTo"));
         final String text = (String) asMap(components.get(0).get(SchemaConstants.KEY_CONTENT)).get("text");
-        assertTrue(text.contains("href=\"https://www.adobe.com/\""), "the external anchor survives");
         assertFalse(text.contains("tax-transformations"), "the internal one moved to its button");
     }
 

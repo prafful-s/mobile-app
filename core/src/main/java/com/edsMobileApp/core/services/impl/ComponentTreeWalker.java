@@ -390,17 +390,11 @@ final class ComponentTreeWalker {
         final List<Map<String, Object>> buttons = new ArrayList<>();
         while (matcher.find()) {
             final String href = matcher.group(2).trim();
-            if (isExternalUrl(href)) {
-                // Left exactly as authored, anchor and all: an external link belongs in the browser,
-                // which is what the renderer already does with an anchor it is handed.
-                matcher.appendReplacement(delinked, Matcher.quoteReplacement(matcher.group(0)));
-                continue;
-            }
             // jsoup rather than a tag-stripping regex: the label is plain text on the button, so a
             // character reference in the authored markup ("Accounting &amp; Reporting") has to be
             // decoded here or the app renders the entity itself.
             final String label = Jsoup.parse(matcher.group(3)).text().trim();
-            final String linkTo = navigableScreenKey(href);
+            final String linkTo = isExternalUrl(href) ? href : navigableScreenKey(href);
             final boolean hasButton = linkTo != null && !label.isEmpty();
             matcher.appendReplacement(delinked, hasButton ? "" : Matcher.quoteReplacement(label));
             if (hasButton) {
@@ -578,16 +572,16 @@ final class ComponentTreeWalker {
         boolean navigable = false;
         while (matcher.find()) {
             final String href = matcher.group(2).trim();
-            final boolean external = isExternalUrl(href);
             // jsoup, not a tag-stripping regex: the label is plain text on the button, so a
             // character reference has to be decoded or the app renders the entity itself.
             final String label = Jsoup.parse(matcher.group(3)).text().trim();
-            final String linkTo = external ? null : navigableScreenKey(href);
+            // An external link is the button's own target, URL and all; screenKeyOf would turn it into
+            // the last path segment, naming no screen.
+            final String linkTo = isExternalUrl(href) ? href : navigableScreenKey(href);
             spans.add(new int[] {matcher.start(), matcher.end()});
             labels.add(label);
-            // Standing in for a link that gets no button: an external one keeps its whole anchor so
-            // the browser still gets it, a dead one keeps just its label as plain text.
-            fallbacks.add(external ? matcher.group(0) : label);
+            // Standing in for a link that gets no button: a dead one keeps just its label as plain text.
+            fallbacks.add(label);
             final boolean hasButton = linkTo != null && !label.isEmpty();
             targets.add(hasButton ? linkTo : null);
             navigable |= hasButton;
@@ -677,7 +671,7 @@ final class ComponentTreeWalker {
         content.put("formId", "");
         content.put("linkTo", linkTo);
         content.put("message", "");
-        content.put("variant", "contained");
+        content.put("variant", "text");
         content.put("alignment", "left");
         content.put("customEvent", "");
         final Map<String, Object> styles = new LinkedHashMap<>();

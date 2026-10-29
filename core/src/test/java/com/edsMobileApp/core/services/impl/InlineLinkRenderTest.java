@@ -240,17 +240,19 @@ class InlineLinkRenderTest {
     }
 
     @Test
-    void splitLeavesAnExternalLinkAsAuthored() {
+    void splitMakesAnExternalLinkATextButtonCarryingItsUrl() {
         final List<Map<String, Object>> components = export(SPLIT_SITE, "split-external", null,
                 "<p>See <a href=\"https://www.adobe.com/legal/terms.html\">Terms</a>. "
                         + "<a href=\"acc-rep-advisory\">Advisory</a></p>");
 
-        assertEquals(List.of("htmlText", "button"), componentsOf(components),
-                "one button, for the internal link only");
-        assertEquals("acc-rep-advisory",
+        assertEquals(List.of("htmlText", "button", "button"), componentsOf(components));
+        assertEquals("https://www.adobe.com/legal/terms.html",
                 asMap(components.get(1).get(SchemaConstants.KEY_CONTENT)).get("linkTo"),
-                "the external URL used to resolve to a \"terms\" screen that does not exist");
-        assertTrue(textOf(components.get(0)).contains("href=\"https://www.adobe.com/legal/terms.html\""),
-                "its anchor survives whole, so the browser still receives it");
+                "the whole URL - taking its last segment used to name a \"terms\" screen that does not exist");
+        assertEquals("acc-rep-advisory",
+                asMap(components.get(2).get(SchemaConstants.KEY_CONTENT)).get("linkTo"));
+        for (final int button : new int[] {1, 2}) {
+            assertEquals("text", asMap(components.get(button).get(SchemaConstants.KEY_CONTENT)).get("variant"));
+        }
     }
 }

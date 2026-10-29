@@ -110,14 +110,22 @@ class ExtractInlineLinksTest {
     }
 
     @Test
-    void anExternalLinkStaysInlineWhateverWayItIsTyped() {
+    void anExternalLinkBecomesATextButtonCarryingItsOwnUrl() {
         for (final String href : new String[] {"https://www.adobe.com/legal/terms.html", "http://example.com",
             "//example.com/x", "www.example.com"}) {
             final List<Map<String, Object>> tree = exportText("frescopa",
                     "<p>Go <a href=\"" + href + "\">Link</a> now</p><p>End</p>");
-            assertEquals(List.of("htmlText"), componentNames(tree), href);
-            assertEquals("<p>Go <a href=\"" + href + "\">Link</a> now</p><p>End</p>", textOf(tree.get(0)), href);
+            assertEquals(List.of("htmlText", "button", "htmlText"), componentNames(tree), href);
+            assertEquals(href, content(tree.get(1)).get("linkTo"), "the URL itself, not a screen key from it");
+            assertEquals("text", content(tree.get(1)).get("variant"), href);
         }
+    }
+
+    @Test
+    void everyLinkButtonIsTheQuietTextVariant() {
+        final List<Map<String, Object>> tree = exportText("frescopa", SEVERAL);
+        assertEquals("text", content(tree.get(1)).get("variant"));
+        assertEquals("text", content(tree.get(3)).get("variant"));
     }
 
     @Test
