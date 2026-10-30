@@ -4,6 +4,5 @@
     "template": "mobile-v2/generic-fsi-v4",
     "vertical": "FSI",
     "useCart": false
-  },
-  "extractInlineLinks": true
+  }
 }

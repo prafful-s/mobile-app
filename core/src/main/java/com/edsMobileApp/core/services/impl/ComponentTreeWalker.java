@@ -246,7 +246,6 @@ final class ComponentTreeWalker {
         if (StringUtils.isBlank(assetHost)) {
             return;
         }
-        final boolean extractLinks = extractsInlineLinks(page);
         boolean inserted = false;
         for (int i = 0; i < components.size(); i++) {
             final Map<String, Object> component = components.get(i);
@@ -263,11 +262,13 @@ final class ComponentTreeWalker {
                 prefixAssets(payload, assetHost);
                 if (isHtmlText(component)) {
                     rewriteHtmlTextLinks(payload);
-                    if (extractLinks) {
-                        for (final Map<String, Object> button : extractInlineLinkButtons(payload)) {
-                            components.add(++i, button);
-                            inserted = true;
-                        }
+                    // Every site: each navigable link becomes a button right after its paragraph.
+                    final List<Map<String, Object>> parts = splitAtInlineLinks(component, payload);
+                    if (parts != null) {
+                        components.remove(i);
+                        components.addAll(i, parts);
+                        i += parts.size() - 1;
+                        inserted = true;
                     }
                 }
             } else if (content instanceof List) {
@@ -279,21 +280,6 @@ final class ComponentTreeWalker {
         if (inserted) {
             reindexOrder(components);
         }
-    }
-
-    /**
-     * @return true when the site owning {@code page} opts in to extracting a rich-text link into
-     *         its own tappable {@code button} via {@code extractInlineLinks} in its
-     *         {@code defaults.json}. Absent (the default) means today's behaviour is unchanged - a
-     *         link embedded in an htmlText block stays exactly where it was authored. See
-     *         {@link #extractInlineLinkButtons}.
-     */
-    private boolean extractsInlineLinks(final Page page) {
-        if (siteDefaults == null || page == null) {
-            return false;
-        }
-        final Object flag = siteDefaults.forPage(page).get("extractInlineLinks");
-        return Boolean.TRUE.equals(flag) || "true".equalsIgnoreCase(String.valueOf(flag));
     }
 
     /** Renumbers every component's {@code meta.order} to match its actual position in the list. */
@@ -308,52 +294,18 @@ final class ComponentTreeWalker {
         return meta instanceof Map && "htmlText".equals(((Map<?, ?>) meta).get(SchemaConstants.KEY_COMPONENT));
     }
 
+    /** The closing tag of the block a link sits in - where the text is split to place its button. */
+    private static final Pattern BLOCK_END = Pattern.compile(
+            "</(p|li|h[1-6]|div|blockquote)\\s*>", Pattern.CASE_INSENSITIVE);
+
+    /** A paragraph left with nothing in it once its link was taken out. */
+    private static final Pattern EMPTY_PARAGRAPH = Pattern.compile(
+            "<p[^>]*>\\s*(<br\\s*/?>)?\\s*</p>", Pattern.CASE_INSENSITIVE);
+
     /** Matches one {@code <a href="...">label</a>} - label captured raw, inner markup and all. */
     private static final Pattern INLINE_LINK = Pattern.compile(
             "<a\\s+[^>]*href\\s*=\\s*([\"'])([^\"']*)\\1[^>]*>(.*?)</a>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    /**
-     * Extracts every navigable {@code <a>} out of an htmlText block's {@code text} into its own
-     * sibling {@code button} component (inserted right after it by the caller), removing the
-     * anchor - label and all - from the text rather than just de-linking it, so the label doesn't
-     * appear twice ("Book Trip" as the button, not also sitting there as dead plain text beside
-     * it). An anchor whose href isn't a real navigation target ({@code #}, {@code mailto:},
-     * {@code tel:}, {@code javascript:}, blank) has no button to stand in for it, so it is
-     * de-linked in place instead - its label kept as plain text - rather than silently dropped.
-     *
-     * <p>A link embedded in rich text is never tappable in the app regardless of what its href says
-     * (confirmed against every reference app export available - none embeds a tappable link inside
-     * rich text) - a dedicated {@code button} is the shape the app actually routes through.</p>
-     *
-     * @return the buttons to insert, in the order their anchors appeared; empty when the text had
-     *         no navigable link (the text is left untouched in that case)
-     */
-    private static List<Map<String, Object>> extractInlineLinkButtons(final Map<String, Object> payload) {
-        final Object value = payload.get("text");
-        if (!(value instanceof String) || !((String) value).contains("href")) {
-            return Collections.emptyList();
-        }
-        final String text = (String) value;
-        final Matcher matcher = INLINE_LINK.matcher(text);
-        final StringBuffer delinked = new StringBuffer(text.length());
-        final List<Map<String, Object>> buttons = new ArrayList<>();
-        while (matcher.find()) {
-            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
-            final String linkTo = navigableScreenKey(matcher.group(2).trim());
-            final boolean hasButton = linkTo != null && !label.isEmpty();
-            matcher.appendReplacement(delinked, hasButton ? "" : Matcher.quoteReplacement(label));
-            if (hasButton) {
-                buttons.add(inlineLinkButton(label, linkTo));
-            }
-        }
-        if (buttons.isEmpty()) {
-            return Collections.emptyList();
-        }
-        matcher.appendTail(delinked);
-        payload.put("text", delinked.toString());
-        return buttons;
-    }
 
     /**
      * The screen key {@code href} navigates to - the last path segment of a {@code /content/...}
@@ -373,6 +325,30 @@ final class ComponentTreeWalker {
         }
         final String leaf = screenKeyOf(href);
         return leaf != null ? leaf : href;
+    }
+
+    /**
+     * A link into somebody else's site, as opposed to one typed against an AEM publish host for a page
+     * of this one. {@link #screenKeyOf} takes the last path segment of whatever it is handed, which for
+     * an external URL yields a plausible-looking key naming no screen at all
+     * ({@code https://www.adobe.com/legal/terms.html} becomes {@code terms}), so an external link has
+     * to be recognised before the leaf is taken rather than after.
+     *
+     * <p>A protocol-relative link ({@code //example.com/x}) and one typed without a scheme
+     * ({@code www.example.com}) are external too: neither names a screen of this app.</p>
+     *
+     * @return true when {@code href} is absolute and its path is not an AEM {@code /content/} path
+     */
+    private static boolean isExternalUrl(final String href) {
+        if (href.startsWith("//") || href.regionMatches(true, 0, "www.", 0, 4)) {
+            return true;
+        }
+        if (!href.regionMatches(true, 0, "http://", 0, 7)
+                && !href.regionMatches(true, 0, "https://", 0, 8)) {
+            return false;
+        }
+        final String afterHost = StringUtils.substringAfter(StringUtils.substringAfter(href, "://"), "/");
+        return !("/" + afterHost).startsWith(ContentPaths.CONTENT_PREFIX);
     }
 
     /**
@@ -438,12 +414,110 @@ final class ComponentTreeWalker {
     }
 
     /**
+     * Splits an htmlText block at each navigable link: the text up to the end of the paragraph that
+     * held the link (the link itself taken out), then the link's button, then on to the next - so
+     * the buttons keep their place in the reading order instead of all following the whole text. Two
+     * links in one paragraph give two buttons after it. A link that is not navigable is kept as its
+     * plain label; a part with no text left in it (the block opened with a link, say) is dropped.
+     *
+     * @return the components that replace {@code component}, in order; {@code null} when the text
+     *         has no navigable link, so the block is left exactly as authored
+     */
+    private static List<Map<String, Object>> splitAtInlineLinks(final Map<String, Object> component,
+                                                                 final Map<String, Object> payload) {
+        final Object value = payload.get("text");
+        if (!(value instanceof String) || !((String) value).contains("href")) {
+            return null;
+        }
+        final String text = (String) value;
+        final Matcher matcher = INLINE_LINK.matcher(text);
+        final List<int[]> spans = new ArrayList<>();
+        final List<String> labels = new ArrayList<>();
+        final List<String> targets = new ArrayList<>();
+        boolean navigable = false;
+        while (matcher.find()) {
+            final String label = matcher.group(3).replaceAll("<[^>]*>", "").trim();
+            final String href = matcher.group(2).trim();
+            // An external link is the button's own target, URL and all; screenKeyOf would turn it into
+            // the last path segment, naming no screen.
+            final String linkTo = isExternalUrl(href) ? href : navigableScreenKey(href);
+            spans.add(new int[] {matcher.start(), matcher.end()});
+            labels.add(label);
+            final boolean hasButton = linkTo != null && !label.isEmpty();
+            targets.add(hasButton ? linkTo : null);
+            navigable |= hasButton;
+        }
+        if (!navigable) {
+            return null;
+        }
+        final List<Map<String, Object>> parts = new ArrayList<>();
+        final String originalId = String.valueOf(asMeta(component.get(SchemaConstants.KEY_META))
+                .get(SchemaConstants.KEY_ID));
+        int cursor = 0;
+        int next = 0;
+        while (next < spans.size()) {
+            final Matcher blockEnd = BLOCK_END.matcher(text);
+            final int split = blockEnd.find(spans.get(next)[1]) ? blockEnd.end() : text.length();
+            final StringBuilder segment = new StringBuilder();
+            final List<Map<String, Object>> buttons = new ArrayList<>();
+            int position = cursor;
+            while (next < spans.size() && spans.get(next)[0] < split) {
+                segment.append(text, position, spans.get(next)[0]);
+                if (targets.get(next) != null) {
+                    buttons.add(inlineLinkButton(labels.get(next), targets.get(next)));
+                } else {
+                    segment.append(labels.get(next));
+                }
+                position = spans.get(next)[1];
+                next++;
+            }
+            segment.append(text, position, split);
+            cursor = split;
+            addTextPart(parts, component, payload, segment.toString(), originalId);
+            parts.addAll(buttons);
+        }
+        addTextPart(parts, component, payload, text.substring(cursor), originalId);
+        return parts;
+    }
+
+    /** Adds {@code html} as a copy of {@code component} carrying it, unless it holds no text. */
+    private static void addTextPart(final List<Map<String, Object>> parts, final Map<String, Object> component,
+                                    final Map<String, Object> payload, final String html,
+                                    final String originalId) {
+        final String cleaned = EMPTY_PARAGRAPH.matcher(html).replaceAll("");
+        if (StringUtils.isBlank(cleaned.replaceAll("<[^>]*>", "").replace("&nbsp;", " "))) {
+            return;
+        }
+        final Map<String, Object> meta = new LinkedHashMap<>(asMeta(component.get(SchemaConstants.KEY_META)));
+        boolean first = true;
+        for (final Map<String, Object> existing : parts) {
+            if ("htmlText".equals(asMeta(existing.get(SchemaConstants.KEY_META)).get(SchemaConstants.KEY_COMPONENT))) {
+                first = false;
+                break;
+            }
+        }
+        if (!first) {
+            meta.put(SchemaConstants.KEY_ID, AbstractComponentModel.generateId(originalId + "/part" + parts.size()));
+        }
+        final Map<String, Object> content = new LinkedHashMap<>(payload);
+        content.put("text", cleaned.trim());
+        final Map<String, Object> part = new LinkedHashMap<>();
+        part.put(SchemaConstants.KEY_META, meta);
+        final Object styles = component.get(SchemaConstants.KEY_STYLES);
+        if (styles instanceof Map) {
+            part.put(SchemaConstants.KEY_STYLES, new LinkedHashMap<>((Map<?, ?>) styles));
+        }
+        part.put(SchemaConstants.KEY_CONTENT, content);
+        parts.add(part);
+    }
+
+    /**
      * A button carrying one extracted inline link, matching every field
      * {@code edsMobileApp/mappings/button.json} would default it to for an authored button with no
-     * {@code linkType} set ({@code variant: "contained"}) - so a synthetically-extracted button is
-     * indistinguishable, field for field, from one the mapping produced. Only {@code label},
-     * {@code linkTo} and {@code alignment} (left, since this sits inline with a sentence rather
-     * than standing alone as a CTA) are set to anything but the mapping's own default.
+     * {@code linkType} set, except that a link in a sentence is the quiet {@code text} variant
+     * rather than {@code contained}. Only {@code label}, {@code linkTo}, {@code variant} and
+     * {@code alignment} (left, since this sits inline with a sentence rather than standing alone as
+     * a CTA) are set to anything but the mapping's own default.
      */
     private static Map<String, Object> inlineLinkButton(final String label, final String linkTo) {
         final Map<String, Object> meta = new LinkedHashMap<>();
@@ -456,7 +530,7 @@ final class ComponentTreeWalker {
         content.put("formId", "");
         content.put("linkTo", linkTo);
         content.put("message", "");
-        content.put("variant", "contained");
+        content.put("variant", "text");
         content.put("alignment", "left");
         content.put("customEvent", "");
         final Map<String, Object> styles = new LinkedHashMap<>();
