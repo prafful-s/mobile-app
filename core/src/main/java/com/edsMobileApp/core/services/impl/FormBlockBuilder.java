@@ -100,7 +100,7 @@ final class FormBlockBuilder {
         // The plan selections, plan application and get offer take their heading only from the
         // authored Form Title: no compiled default and no fallback to the block's Main Heading.
         headings.put("insurance-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, "JOIN WKND FLY CLUB"));
+        headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("loan-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("medicare-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("new-account",
