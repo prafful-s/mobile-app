@@ -28,7 +28,7 @@ class FormTitleTest {
     void anAuthoredFormTitleIsTheHeading() {
         for (final String form : new String[] {"add-external", "child-account-application", "name-change-request",
             "set-up-auto-save", "transfer-funds", "automatic-payments", "mobile-additional-service",
-            "tv-additional-service"}) {
+            "tv-additional-service", "join-us"}) {
             assertEquals("My title", titleOf(form, Map.of("form-title", "My title")), form);
             assertEquals("My title", titleOf(form, Map.of("formtitle", "My title")), form);
         }
@@ -38,7 +38,7 @@ class FormTitleTest {
     void withoutAFormTitleThereIsNoHeading() {
         for (final String form : new String[] {"add-external", "child-account-application", "name-change-request",
             "set-up-auto-save", "transfer-funds", "automatic-payments", "mobile-additional-service",
-            "tv-additional-service"}) {
+            "tv-additional-service", "join-us"}) {
             assertNull(titleOf(form, Map.of()), form);
             assertNull(titleOf(form, Map.of("form-title", "  ")), form);
         }
