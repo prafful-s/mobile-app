@@ -114,8 +114,8 @@ final class FormBlockBuilder {
         // Forms whose title comes only from the Form Title authored on the Basic tab: no compiled
         // default, so with nothing authored (and no site override) heading() emits nothing.
         for (final String form : new String[]{"add-external", "automatic-payments", "child-account-application",
-            "mobile-additional-service", "name-change-request", "set-up-auto-save", "transfer-funds",
-            "tv-additional-service"}) {
+            "mobile-additional-service", "name-change-request", "schedule-consultation", "set-up-auto-save",
+            "transfer-funds", "tv-additional-service"}) {
             headings.put(form, new Heading(FORM_TITLE_KEYS, ""));
         }
 
