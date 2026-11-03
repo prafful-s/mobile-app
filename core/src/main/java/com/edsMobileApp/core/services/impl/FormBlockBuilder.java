@@ -96,15 +96,14 @@ final class FormBlockBuilder {
         // Forms whose block authors a heading property - key(s) and default read from the block .js.
         headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
         headings.put("credit-card-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("insurance", new Heading(new String[]{"title"}, "Life Insurance"));
+        headings.put("insurance", new Heading(new String[]{"title"}, ""));
         // The plan selections, plan application and get offer take their heading only from the
         // authored Form Title: no compiled default and no fallback to the block's Main Heading.
         headings.put("insurance-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("loan-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
         headings.put("medicare-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("new-account",
-                new Heading(new String[]{"form-title", "formtitle"}, "New Account Application"));
+        headings.put("new-account", new Heading(new String[]{"form-title", "formtitle"}, ""));
         // No compiled default: test-drive (and its schedule-appointment variant) show a pre-form
         // title only when the block authors form-title, or a site overrides it (e.g. luma's
         // defaults.json). With neither, heading() emits nothing - the form's own field-list heading
