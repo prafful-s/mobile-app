@@ -30,6 +30,24 @@ class SingleFieldMappingTest {
                 "label and text are not read");
     }
 
+    @Test
+    void aButtonsInternalLinkIsTheScreenKey() {
+        assertEquals("events", map("button", "link", "/content/public-bodea/language-masters/en/events").get("linkTo"));
+        assertEquals("events", map("button", "link", "/content/public-bodea/en/events.html").get("linkTo"));
+        assertEquals("events?a=b",
+                map("button", "link", "https://publish.example.com/content/s/en/events?a=b").get("linkTo"),
+                "a link typed against a publish host is still a page of this site");
+    }
+
+    @Test
+    void aButtonsExternalLinkIsKeptWhole() {
+        for (final String url : new String[] {"https://dsn.adobe.com/install", "http://dsn.adobe.com/install/",
+            "https://dsn.adobe.com/a/b.html?x=y#z", "https://dsn.adobe.com", "//dsn.adobe.com/install",
+            "www.adobe.com/install"}) {
+            assertEquals(url, map("button", "link", url).get("linkTo"));
+        }
+    }
+
     /**
      * The hero's Mobile Specific tab carries only horizontal alignment and overlay opacity. Content and
      * vertical alignment come from the web fields and the title and subtitle from the text, so the
