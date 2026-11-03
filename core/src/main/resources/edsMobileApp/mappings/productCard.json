@@ -22,8 +22,12 @@
     { "target": "isSubtitleRichText", "const": true },
     { "target": "titleVariant", "const": "titleLarge" },
     { "target": "subtitleVariant", "const": "titleMedium" },
-    { "target": "titleFontWeight", "const": "regular" },
-    { "target": "subtitleFontWeight", "const": "regular" }
+    { "target": "titleFontWeight",
+      "extract": { "from": "productName", "select": "strong, b", "as": "text" },
+      "map": { "*": "bold" }, "default": "regular" },
+    { "target": "subtitleFontWeight",
+      "extract": { "from": "productDescription", "select": "strong, b", "as": "text" },
+      "map": { "*": "bold" }, "default": "regular" }
   ],
   "styles": [
     { "target": "marginLeft", "const": "30" },
