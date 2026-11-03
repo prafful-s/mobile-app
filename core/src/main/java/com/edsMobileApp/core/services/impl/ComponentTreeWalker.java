@@ -473,7 +473,7 @@ final class ComponentTreeWalker {
      *
      * @return true when {@code href} is absolute and its path is not an AEM {@code /content/} path
      */
-    private static boolean isExternalUrl(final String href) {
+    static boolean isExternalUrl(final String href) {
         if (href.startsWith("//") || href.regionMatches(true, 0, "www.", 0, 4)) {
             return true;
         }
