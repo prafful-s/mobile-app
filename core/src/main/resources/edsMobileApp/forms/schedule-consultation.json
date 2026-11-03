@@ -1,10 +1,5 @@
 [
   {
-    "id": "consultation-slot-heading",
-    "type": "heading",
-    "label": "Next Available Slots"
-  },
-  {
     "id": "consultation-slot",
     "type": "timeslot",
     "name": "consultation.dateTime",
