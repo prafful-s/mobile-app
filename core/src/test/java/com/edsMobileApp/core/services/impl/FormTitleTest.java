@@ -39,6 +39,11 @@ class FormTitleTest {
         assertEquals("Apply", titleOf("plan-application", Map.of("form-title", "Apply")));
         assertEquals("Offer", titleOf("get-offer", Map.of("form-title", "Offer")));
         assertEquals("Join", titleOf("join-us", Map.of("form-title", "Join")));
+        assertEquals("Account", titleOf("new-account", Map.of("form-title", "Account")));
+        assertNull(titleOf("new-account", Map.of()));
+        assertEquals("Cover", titleOf("insurance", Map.of("title", "Cover")));
+        assertNull(titleOf("insurance", Map.of()));
+        assertNull(titleOf("insurance", Map.of("title", " ")));
         assertNull(titleOf("join-us", Map.of()));
         assertNull(titleOf("join-us", Map.of("form-title", " ")));
         assertEquals("Loan", titleOf("loan-application-form", Map.of("form-title", "Loan")));
