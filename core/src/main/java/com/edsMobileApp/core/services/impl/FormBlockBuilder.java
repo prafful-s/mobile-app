@@ -96,7 +96,7 @@ final class FormBlockBuilder {
         // Forms whose block authors a heading property - key(s) and default read from the block .js.
         headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
         headings.put("credit-card-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("insurance", new Heading(new String[]{"title"}, ""));
+        headings.put("insurance", new Heading(new String[]{"form-title", "formtitle"}, ""));
         // The plan selections, plan application and get offer take their heading only from the
         // authored Form Title: no compiled default and no fallback to the block's Main Heading.
         headings.put("insurance-plan-selection", new Heading(new String[]{"form-title", "formtitle"}, ""));
