@@ -1,8 +1,8 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -69,9 +69,9 @@ class FormTitleTest {
         }
     }
 
-    /** The authored Form Title is this form's only heading; its Slots Label is not sent to the app. */
+    /** The authored Form Title heads the form; the slots' own heading stays config, not its Slots Label. */
     @Test
-    void scheduleConsultationTakesItsHeadingOnlyFromItsFormTitle() throws Exception {
+    void scheduleConsultationTakesItsTitleFromAuthoringAndItsSlotHeadingFromConfig() throws Exception {
         assertEquals("Appointment", titleOf("schedule-consultation",
                 Map.of("form-title", "Appointment", "slots-label", "next")));
         assertNull(titleOf("schedule-consultation", Map.of()));
@@ -80,7 +80,7 @@ class FormTitleTest {
 
         try (InputStream schema = getClass().getResourceAsStream("/edsMobileApp/forms/schedule-consultation.json")) {
             final String fields = new String(schema.readAllBytes(), StandardCharsets.UTF_8);
-            assertFalse(fields.contains("\"heading\""), "no heading is configured among the form's fields");
+            assertTrue(fields.contains("\"Next Available Slots\""), "the slot heading is configured");
         }
     }
 
