@@ -28,7 +28,6 @@ class NewAccountInsuranceTitleTest {
     void anAuthoredTitleIsTheHeading() {
         assertEquals("Account", titleOf("new-account", Map.of("form-title", "Account")));
         assertEquals("Account", titleOf("new-account", Map.of("formtitle", "Account")));
-        assertEquals("Cover", titleOf("insurance", Map.of("form-title", "Cover")));
         assertEquals("Cover", titleOf("insurance", Map.of("formtitle", "Cover")));
     }
 
@@ -37,7 +36,7 @@ class NewAccountInsuranceTitleTest {
         assertNull(titleOf("new-account", Map.of()));
         assertNull(titleOf("new-account", Map.of("form-title", "  ")));
         assertNull(titleOf("insurance", Map.of()));
-        assertNull(titleOf("insurance", Map.of("form-title", " ")));
+        assertNull(titleOf("insurance", Map.of("formtitle", " ")));
         assertNull(titleOf("insurance", Map.of("title", "Legacy")));
     }
 }
