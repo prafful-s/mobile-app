@@ -1,6 +1,5 @@
 package com.edsMobileApp.core.services.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Map;
@@ -10,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import com.edsMobileApp.core.schema.SchemaConstants;
 
 /**
- * The loan and credit card applications show a heading above the form only when a Form Title is
- * authored - nothing is compiled in.
+ * The loan and credit card applications show no heading above the form: their Wizard Title only goes to
+ * the data layer, so neither it nor the old Form Title is a source.
  */
 class LoanCreditFormTitleTest {
 
@@ -25,18 +24,12 @@ class LoanCreditFormTitleTest {
     }
 
     @Test
-    void anAuthoredFormTitleIsTheHeading() {
-        for (final String form : new String[] {"loan-application-form", "credit-card-application-form"}) {
-            assertEquals("My title", titleOf(form, Map.of("form-title", "My title")), form);
-            assertEquals("My title", titleOf(form, Map.of("formtitle", "My title")), form);
-        }
-    }
-
-    @Test
-    void withoutAFormTitleThereIsNoHeading() {
+    void thereIsNoHeadingWhateverTitleIsAuthored() {
         for (final String form : new String[] {"loan-application-form", "credit-card-application-form"}) {
             assertNull(titleOf(form, Map.of()), form);
-            assertNull(titleOf(form, Map.of("form-title", "  ")), form);
+            assertNull(titleOf(form, Map.of("wizard-title", "My title")), form);
+            assertNull(titleOf(form, Map.of("form-title", "My title")), form);
+            assertNull(titleOf(form, Map.of("formtitle", "My title")), form);
         }
     }
 }
