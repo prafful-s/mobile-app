@@ -1,7 +1,6 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,9 +8,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * A banner, card or product card is bold where its rich text is: a {@code strong} or {@code b} tag
- * inside the title makes the title bold, inside the subtitle makes the subtitle bold. Without one
- * a card keeps its regular weight and a banner carries no weight at all.
+ * A card or product card is bold where its rich text is: a {@code strong} or {@code b} tag inside the
+ * title makes the title bold, inside the subtitle makes the subtitle bold. Without one the weight stays
+ * regular. A banner has no font weight properties in the component catalog, so it is not covered.
  */
 class BoldFontWeightTest {
 
@@ -22,30 +21,6 @@ class BoldFontWeightTest {
         }
         final ComponentMapping mapping = ComponentMappings.load().find(rule);
         return mapping.effectiveFor(authored).apply(authored, Map.of());
-    }
-
-    @Test
-    void aBannerTitleIsBoldWhenItHoldsAStrongOrBTag() {
-        assertEquals("bold", map("hero", "text", "<h1><strong>Big sale</strong></h1><p>Sub</p>")
-                .get("titleFontWeight"));
-        assertEquals("bold", map("hero", "text", "<h2>Big <b>sale</b></h2><p>Sub</p>").get("titleFontWeight"));
-        assertNull(map("hero", "text", "<h1>Big sale</h1><p>Sub</p>").get("titleFontWeight"));
-    }
-
-    @Test
-    void aBannerSubtitleIsBoldWhenItHoldsAStrongOrBTag() {
-        final Map<String, Object> mapped = map("hero",
-                "text", "<h1>Title</h1><p><strong>Providing affordable</strong></p>");
-        assertEquals("bold", mapped.get("subtitleFontWeight"));
-        assertNull(mapped.get("titleFontWeight"), "bold in the subtitle leaves the title alone");
-        assertEquals("bold", map("hero", "text", "<h1>Title</h1><h3><b>Sub</b></h3>").get("subtitleFontWeight"));
-        assertNull(map("hero", "text", "<h1>Title</h1><p>Sub</p>").get("subtitleFontWeight"));
-    }
-
-    @Test
-    void aBoldCallToActionDoesNotMakeABannerSubtitleBold() {
-        assertNull(map("hero", "text", "<h1>Title</h1><p><a href=\"/x\"><strong>Go</strong></a></p>")
-                .get("subtitleFontWeight"));
     }
 
     @Test
@@ -69,6 +44,12 @@ class BoldFontWeightTest {
     }
 
     @Test
+    void aBoldCallToActionDoesNotMakeACardSubtitleBold() {
+        assertEquals("regular", map("card", "image", "/a.jpg",
+                "text", "<h3>Title</h3><p><a href=\"/x\"><strong>Go</strong></a></p>").get("subtitleFontWeight"));
+    }
+
+    @Test
     void aProductCardIsRegularUnlessItsNameOrDescriptionIsBold() {
         final Map<String, Object> plain = map("product-card", "productName", "Jacket",
                 "productDescription", "<p>Warm</p>");
@@ -79,5 +60,12 @@ class BoldFontWeightTest {
                 "productDescription", "<p><b>Warm</b> and dry</p>");
         assertEquals("bold", bold.get("titleFontWeight"));
         assertEquals("bold", bold.get("subtitleFontWeight"));
+    }
+
+    @Test
+    void aBannerCarriesNoFontWeight() {
+        final Map<String, Object> mapped = map("hero", "text", "<h1><strong>Big sale</strong></h1><p><b>Sub</b></p>");
+        assertEquals(null, mapped.get("titleFontWeight"));
+        assertEquals(null, mapped.get("subtitleFontWeight"));
     }
 }
