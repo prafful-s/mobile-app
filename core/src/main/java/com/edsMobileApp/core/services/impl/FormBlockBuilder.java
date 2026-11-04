@@ -76,7 +76,8 @@ final class FormBlockBuilder {
     /**
      * Per-form heading configuration: the block's own property name(s) for its on-page title, and
      * the text the block itself falls back to when none is authored. Every form gets an entry, so
-     * every form gets a heading component - for the eight forms whose block actually has a heading
+     * every form gets a heading component, except the wizard forms (see below). For the eight forms
+     * whose block actually has a heading
      * field (create-account, credit-card-application-form, insurance, insurance-plan-selection,
      * join-us, loan-application-form, medicare-plan-selection, new-account, test-drive) the property
      * key(s) and default text are read straight off that block's source (the EDS block {@code .js},
@@ -96,15 +97,10 @@ final class FormBlockBuilder {
         // Forms whose block authors a heading property - key(s) and default read from the block .js.
         headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
         // The wizard forms (credit card, loan, new account, the plan selections and the plan application)
-        // author a Wizard Title that only goes to the data layer and is not shown on the page, so it is not
-        // a heading in the app either.
-        headings.put("credit-card-application-form", new Heading(NO_KEYS, ""));
+        // have no entry on purpose: their Wizard Title only goes to the data layer and is not shown on the
+        // page, so heading() emits nothing for them.
         headings.put("insurance", new Heading(new String[]{"title"}, ""));
-        headings.put("insurance-plan-selection", new Heading(NO_KEYS, ""));
         headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("loan-application-form", new Heading(NO_KEYS, ""));
-        headings.put("medicare-plan-selection", new Heading(NO_KEYS, ""));
-        headings.put("new-account", new Heading(NO_KEYS, ""));
         // No compiled default: test-drive (and its schedule-appointment variant) show a pre-form
         // title only when the block authors form-title, or a site overrides it (e.g. luma's
         // defaults.json). With neither, heading() emits nothing - the form's own field-list heading
@@ -124,7 +120,6 @@ final class FormBlockBuilder {
         headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
         headings.put("get-offer", new Heading(FORM_TITLE_KEYS, ""));
-        headings.put("plan-application", new Heading(NO_KEYS, ""));
         headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
         return Collections.unmodifiableMap(headings);
     }
