@@ -1,6 +1,7 @@
 package com.edsMobileApp.core.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.Method;
@@ -34,6 +35,32 @@ class VideoMappingTest {
         assertEquals(false, mapped.get("muted"));
         assertEquals(true, mapped.get("loop"));
         assertEquals("contain", mapped.get("imageResize"));
+    }
+
+    /** The dialog's switches save as real booleans or as text, depending on how the block was saved. */
+    @Test
+    void everyVideoSwitchCanBeTurnedOff() {
+        for (final Object off : new Object[] {false, "false"}) {
+            final Map<String, Object> mapped = mappings.find("video").apply(Map.of(
+                    "videoUrl", "https://example.com/v.mp4", "autoplay", off, "loop", off, "muted", off,
+                    "controls", off), Map.of());
+            assertEquals(false, mapped.get("autoplay"));
+            assertEquals(false, mapped.get("loop"));
+            assertEquals(false, mapped.get("muted"));
+            assertEquals(false, mapped.get("controls"));
+        }
+    }
+
+    @Test
+    void imageResizeCarriesEitherOptionAndIsLeftOutWhenBlank() {
+        final ComponentMapping rule = mappings.find("video");
+        for (final String mode : new String[] {"contain", "cover"}) {
+            assertEquals(mode, rule.apply(Map.of("videoUrl", "https://example.com/v.mp4",
+                    "mobileimageresize", mode), Map.of()).get("imageResize"));
+        }
+        assertFalse(rule.apply(Map.of("videoUrl", "https://example.com/v.mp4"), Map.of()).containsKey("imageResize"));
+        assertFalse(rule.apply(Map.of("videoUrl", "https://example.com/v.mp4", "mobileimageresize", " "), Map.of())
+                .containsKey("imageResize"));
     }
 
     @Test
