@@ -38,34 +38,27 @@ class FormTitleTest {
     }
 
     @Test
-    void thePlanFormsTakeTheirHeadingOnlyFromAuthoring() {
-        assertEquals("Apply", titleOf("plan-application", Map.of("form-title", "Apply")));
+    void getOfferJoinUsAndInsuranceTakeTheirHeadingOnlyFromAuthoring() {
         assertEquals("Offer", titleOf("get-offer", Map.of("form-title", "Offer")));
         assertEquals("Join", titleOf("join-us", Map.of("form-title", "Join")));
-        assertEquals("Account", titleOf("new-account", Map.of("form-title", "Account")));
-        assertNull(titleOf("new-account", Map.of()));
         assertEquals("Cover", titleOf("insurance", Map.of("title", "Cover")));
         assertNull(titleOf("insurance", Map.of()));
         assertNull(titleOf("insurance", Map.of("title", " ")));
         assertNull(titleOf("join-us", Map.of()));
         assertNull(titleOf("join-us", Map.of("form-title", " ")));
-        assertEquals("Loan", titleOf("loan-application-form", Map.of("form-title", "Loan")));
-        assertEquals("Card", titleOf("credit-card-application-form", Map.of("formtitle", "Card")));
-        assertNull(titleOf("loan-application-form", Map.of()));
-        assertNull(titleOf("credit-card-application-form", Map.of("form-title", " ")));
         assertNull(titleOf("get-offer", Map.of()));
-        assertEquals("Pick", titleOf("medicare-plan-selection", Map.of("form-title", "Pick")));
-        assertEquals("Pick", titleOf("insurance-plan-selection", Map.of("form-title", "Pick")));
-        assertEquals("Pick", titleOf("medicare-plan-selection", Map.of("formtitle", "Pick")));
-        // The block's Main Heading is not a source for the app heading.
-        assertNull(titleOf("medicare-plan-selection", Map.of("formHeading", "Heading")));
-        assertNull(titleOf("insurance-plan-selection", Map.of("formHeading", "Heading")));
-        assertEquals("Title", titleOf("insurance-plan-selection",
-                Map.of("form-title", "Title", "formHeading", "Heading")));
+    }
+
+    /** Their Wizard Title only goes to the data layer and is not shown on the page, so it is no heading. */
+    @Test
+    void theWizardFormsHaveNoHeadingWhateverTitleIsAuthored() {
         for (final String form : new String[] {"plan-application", "medicare-plan-selection",
-            "insurance-plan-selection"}) {
+            "insurance-plan-selection", "new-account", "loan-application-form", "credit-card-application-form"}) {
             assertNull(titleOf(form, Map.of()), form);
-            assertNull(titleOf(form, Map.of("formHeading", " ", "form-title", " ")), form);
+            assertNull(titleOf(form, Map.of("wizard-title", "Title")), form);
+            assertNull(titleOf(form, Map.of("form-title", "Title")), form);
+            assertNull(titleOf(form, Map.of("formtitle", "Title")), form);
+            assertNull(titleOf(form, Map.of("formHeading", "Heading")), form);
         }
     }
 

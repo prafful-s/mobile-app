@@ -95,16 +95,16 @@ final class FormBlockBuilder {
         final Map<String, Heading> headings = new LinkedHashMap<>();
         // Forms whose block authors a heading property - key(s) and default read from the block .js.
         headings.put("create-account", new Heading(new String[]{"createaccounttitle"}, "Create an account"));
-        headings.put("credit-card-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
+        // The wizard forms (credit card, loan, new account, the plan selections and the plan application)
+        // author a Wizard Title that only goes to the data layer and is not shown on the page, so it is not
+        // a heading in the app either.
+        headings.put("credit-card-application-form", new Heading(NO_KEYS, ""));
         headings.put("insurance", new Heading(new String[]{"title"}, ""));
-        // The plan selections' heading is their authored Form Title only - no compiled default and no
-        // fallback to the block's Main Heading.
-        headings.put("insurance-plan-selection", new Heading(FORM_TITLE_KEYS, ""));
+        headings.put("insurance-plan-selection", new Heading(NO_KEYS, ""));
         headings.put("join-us", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("loan-application-form", new Heading(new String[]{"form-title", "formtitle"}, ""));
-        headings.put("medicare-plan-selection", new Heading(FORM_TITLE_KEYS, ""));
-        headings.put("new-account",
-                new Heading(new String[]{"form-title", "formtitle"}, ""));
+        headings.put("loan-application-form", new Heading(NO_KEYS, ""));
+        headings.put("medicare-plan-selection", new Heading(NO_KEYS, ""));
+        headings.put("new-account", new Heading(NO_KEYS, ""));
         // No compiled default: test-drive (and its schedule-appointment variant) show a pre-form
         // title only when the block authors form-title, or a site overrides it (e.g. luma's
         // defaults.json). With neither, heading() emits nothing - the form's own field-list heading
@@ -124,7 +124,7 @@ final class FormBlockBuilder {
         headings.put("checkout-shipping", new Heading(NO_KEYS, "Checkout"));
         headings.put("flight-search", new Heading(NO_KEYS, "Flight Search"));
         headings.put("get-offer", new Heading(FORM_TITLE_KEYS, ""));
-        headings.put("plan-application", new Heading(FORM_TITLE_KEYS, ""));
+        headings.put("plan-application", new Heading(NO_KEYS, ""));
         headings.put("sign-in", new Heading(NO_KEYS, "Sign In"));
         return Collections.unmodifiableMap(headings);
     }
