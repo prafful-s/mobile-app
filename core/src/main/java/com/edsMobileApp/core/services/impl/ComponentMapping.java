@@ -447,7 +447,7 @@ final class ComponentMapping {
      * segment, the same key the export files a page under, with a trailing {@code .html} dropped
      * (an authoring artefact, not part of the key) - not the whole authoring path. A value that is
      * not a {@code /content} path (a bare {@code #}, an anchor, {@code mailto:}, ...) is left as
-     * authored.
+     * authored, and an external URL names no screen at all, so it is kept whole.
      *
      * <p>Whatever query string or fragment the author put on the link (a product page link's
      * {@code ?productId=<sku>}, say) is carried through onto the leaf unchanged - it was authored,
@@ -464,6 +464,9 @@ final class ComponentMapping {
             return value;
         }
         final String text = ((String) value).trim();
+        if (ComponentTreeWalker.isExternalUrl(text)) {
+            return text;
+        }
         final int cut = StringUtils.indexOfAny(text, '?', '#');
         final String suffix = cut >= 0 ? text.substring(cut) : "";
         final String path = StringUtils.stripEnd(cut >= 0 ? text.substring(0, cut) : text, "/");
