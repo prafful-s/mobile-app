@@ -64,6 +64,9 @@ final class FormBlockBuilder {
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
     private static final String[] SUBMIT_LABEL_KEYS = {
         "submitButtonLabel", "buttontext", "button-label", "sign-in-btn-text", "submitText",
+        // The other names a form's Submit Button Text field goes by: create-account, the plan selections and
+        // the plan application, and test-drive, schedule-appointment and schedule-consultation.
+        "createaccountbuttontext", "submitbuttontext", "submit-label",
     };
     private static final String[] RESET_LABEL_KEYS = {"resetButtonLabel", "resetText"};
 
