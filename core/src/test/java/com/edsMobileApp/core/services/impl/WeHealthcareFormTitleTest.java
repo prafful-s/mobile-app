@@ -10,8 +10,9 @@ import org.junit.jupiter.api.Test;
 import com.edsMobileApp.core.schema.SchemaConstants;
 
 /**
- * The plan selections, the plan application and get offer show a heading above the form only when a
- * Form Title is authored - nothing compiled in, and the plan selections' Main Heading is not a source.
+ * Get offer shows a heading above the form only when a Form Title is authored. The plan selections and
+ * the plan application show none: their Wizard Title only goes to the data layer, and the plan
+ * selections' Main Heading is not a source either.
  */
 class WeHealthcareFormTitleTest {
 
@@ -25,20 +26,21 @@ class WeHealthcareFormTitleTest {
     }
 
     @Test
-    void anAuthoredFormTitleIsTheHeading() {
-        for (final String form : new String[] {"plan-application", "medicare-plan-selection",
-            "insurance-plan-selection", "get-offer"}) {
-            assertEquals("My title", titleOf(form, Map.of("form-title", "My title")), form);
-            assertEquals("My title", titleOf(form, Map.of("formtitle", "My title")), form);
-        }
+    void anAuthoredFormTitleIsGetOffersHeading() {
+        assertEquals("My title", titleOf("get-offer", Map.of("form-title", "My title")));
+        assertEquals("My title", titleOf("get-offer", Map.of("formtitle", "My title")));
+        assertNull(titleOf("get-offer", Map.of()));
+        assertNull(titleOf("get-offer", Map.of("form-title", "  ")));
     }
 
     @Test
-    void withoutAFormTitleThereIsNoHeading() {
+    void thePlanFormsHaveNoHeadingWhateverTitleIsAuthored() {
         for (final String form : new String[] {"plan-application", "medicare-plan-selection",
-            "insurance-plan-selection", "get-offer"}) {
+            "insurance-plan-selection"}) {
             assertNull(titleOf(form, Map.of()), form);
-            assertNull(titleOf(form, Map.of("form-title", "  ")), form);
+            assertNull(titleOf(form, Map.of("wizard-title", "My title")), form);
+            assertNull(titleOf(form, Map.of("form-title", "My title")), form);
+            assertNull(titleOf(form, Map.of("formtitle", "My title")), form);
         }
     }
 

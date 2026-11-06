@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import com.edsMobileApp.core.schema.SchemaConstants;
 
 /**
- * The new account and insurance forms show a heading above the form only when one is authored - no
- * "New Account Application" or "Life Insurance" is compiled in.
+ * Insurance shows a heading above the form only when one is authored - no "Life Insurance" is compiled
+ * in. New account shows none: its Wizard Title only goes to the data layer.
  */
 class NewAccountInsuranceTitleTest {
 
@@ -26,15 +26,19 @@ class NewAccountInsuranceTitleTest {
 
     @Test
     void anAuthoredTitleIsTheHeading() {
-        assertEquals("Account", titleOf("new-account", Map.of("form-title", "Account")));
-        assertEquals("Account", titleOf("new-account", Map.of("formtitle", "Account")));
         assertEquals("Cover", titleOf("insurance", Map.of("formtitle", "Cover")));
     }
 
     @Test
-    void withoutATitleThereIsNoHeading() {
+    void newAccountHasNoHeadingWhateverTitleIsAuthored() {
         assertNull(titleOf("new-account", Map.of()));
-        assertNull(titleOf("new-account", Map.of("form-title", "  ")));
+        assertNull(titleOf("new-account", Map.of("wizard-title", "Account")));
+        assertNull(titleOf("new-account", Map.of("form-title", "Account")));
+        assertNull(titleOf("new-account", Map.of("formtitle", "Account")));
+    }
+
+    @Test
+    void withoutATitleThereIsNoHeading() {
         assertNull(titleOf("insurance", Map.of()));
         assertNull(titleOf("insurance", Map.of("formtitle", " ")));
         assertNull(titleOf("insurance", Map.of("title", "Legacy")));
