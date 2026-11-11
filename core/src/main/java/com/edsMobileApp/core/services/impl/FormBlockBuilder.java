@@ -419,12 +419,14 @@ final class FormBlockBuilder {
         // 'order' is the visible position - increment only when the field survives the visibleIf
         // filter, so the client renders 1..N without gaps that would look like dropped fields.
         int order = 1;
-        for (final Map<String, Object> field : schema) {
-            if (!FormFieldFactory.isVisible(field, authored)) {
+        for (final Map<String, Object> configured : schema) {
+            if (!FormFieldFactory.isVisible(configured, authored)) {
                 LOG.debug("Field '{}' hidden by visibleIf against authored properties",
-                        field.get("id"));
+                        configured.get("id"));
                 continue;
             }
+            // A field may take its label from a block property - see withAuthoredLabel.
+            final Map<String, Object> field = FormFieldFactory.withAuthoredLabel(configured, authored);
             final Map<String, Object> built;
             if (field.get(SchemaConstants.KEY_COMPONENT) != null) {
                 final Map<String, Object> meta = new LinkedHashMap<>();
