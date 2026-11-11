@@ -62,19 +62,36 @@ class FormTitleTest {
         }
     }
 
-    /** The authored Form Title heads the form; the slots' own heading stays config, not its Slots Label. */
+    /** schedule-consultation has no pre-form heading: its Form Title is not sent to the app. */
     @Test
-    void scheduleConsultationTakesItsTitleFromAuthoringAndItsSlotHeadingFromConfig() throws Exception {
-        assertEquals("Appointment", titleOf("schedule-consultation",
-                Map.of("form-title", "Appointment", "slots-label", "next")));
+    void scheduleConsultationHasNoFormHeading() {
+        assertNull(titleOf("schedule-consultation", Map.of("form-title", "Appointment")));
+        assertNull(titleOf("schedule-consultation", Map.of("formtitle", "Appointment")));
         assertNull(titleOf("schedule-consultation", Map.of()));
-        assertNull(titleOf("schedule-consultation", Map.of("form-title", " ")));
-        assertNull(titleOf("schedule-consultation", Map.of("slots-label", "next")));
+    }
 
+    /** The heading above the slots takes the block's Slots Label, and keeps its configured text without one. */
+    @Test
+    void theSlotsHeadingTakesTheAuthoredSlotsLabel() throws Exception {
+        final Map<String, Object> configured;
         try (InputStream schema = getClass().getResourceAsStream("/edsMobileApp/forms/schedule-consultation.json")) {
             final String fields = new String(schema.readAllBytes(), StandardCharsets.UTF_8);
-            assertTrue(fields.contains("\"Next Available Slots\""), "the slot heading is configured");
+            assertTrue(fields.contains("\"labelFrom\": \"slots-label\""), "the heading names its block property");
+            assertTrue(fields.contains("\"Next Available Slots\""), "and keeps a configured fallback");
+            configured = Map.of("id", "consultation-slot-heading", "type", "heading",
+                    "label", "Next Available Slots", "labelFrom", "slots-label");
         }
+
+        assertEquals("Pick a time",
+                FormFieldFactory.withAuthoredLabel(configured, Map.of("slots-label", "Pick a time")).get("label"));
+        assertEquals("Pick a time",
+                FormFieldFactory.withAuthoredLabel(configured, Map.of("slots-label", "  Pick a time  ")).get("label"));
+        assertEquals("Next Available Slots",
+                FormFieldFactory.withAuthoredLabel(configured, Map.of()).get("label"));
+        assertEquals("Next Available Slots",
+                FormFieldFactory.withAuthoredLabel(configured, Map.of("slots-label", " ")).get("label"));
+        assertEquals("Next Available Slots",
+                FormFieldFactory.withAuthoredLabel(configured, null).get("label"));
     }
 
     @Test

@@ -120,6 +120,33 @@ final class FormFieldFactory {
      * @return true when the field should be emitted; true also when the entry has none of the
      *         three shapes above, so annotating a schema is opt-in per field
      */
+    /**
+     * A schema entry may name the block property that carries its label, with {@code labelFrom}.
+     * Where the block authors that property, its value replaces the configured label; where it is
+     * absent or blank, the configured label stands, so a form without the field keeps its wording.
+     *
+     * <p>This is how an authored label reaches a field the schema owns - the heading above
+     * schedule-consultation's slots, for example, whose text the block authors as Slots Label.</p>
+     *
+     * @param field    a schema entry
+     * @param authored the block's own authored properties
+     * @return the entry unchanged, or a copy carrying the authored label
+     */
+    static Map<String, Object> withAuthoredLabel(final Map<String, Object> field,
+                                                 final Map<String, Object> authored) {
+        final String key = str(field.get("labelFrom"));
+        if (StringUtils.isBlank(key) || authored == null) {
+            return field;
+        }
+        final String authoredLabel = str(authored.get(key));
+        if (StringUtils.isBlank(authoredLabel)) {
+            return field;
+        }
+        final Map<String, Object> resolved = new LinkedHashMap<>(field);
+        resolved.put("label", authoredLabel.trim());
+        return resolved;
+    }
+
     static boolean isVisible(final Map<String, Object> field, final Map<String, Object> authored) {
         final Object conditions = field.get("conditions");
         if (conditions instanceof List) {
