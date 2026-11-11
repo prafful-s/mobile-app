@@ -113,8 +113,8 @@ final class FormBlockBuilder {
         // Forms whose title comes only from the Form Title authored on the Basic tab: no compiled
         // default, so with nothing authored (and no site override) heading() emits nothing.
         for (final String form : new String[]{"add-external", "automatic-payments", "child-account-application",
-            "mobile-additional-service", "name-change-request", "schedule-consultation", "set-up-auto-save",
-            "transfer-funds", "tv-additional-service"}) {
+            "mobile-additional-service", "name-change-request", "set-up-auto-save", "transfer-funds",
+            "tv-additional-service"}) {
             headings.put(form, new Heading(FORM_TITLE_KEYS, ""));
         }
 
@@ -416,12 +416,14 @@ final class FormBlockBuilder {
         // 'order' is the visible position - increment only when the field survives the visibleIf
         // filter, so the client renders 1..N without gaps that would look like dropped fields.
         int order = 1;
-        for (final Map<String, Object> field : schema) {
-            if (!FormFieldFactory.isVisible(field, authored)) {
+        for (final Map<String, Object> configured : schema) {
+            if (!FormFieldFactory.isVisible(configured, authored)) {
                 LOG.debug("Field '{}' hidden by visibleIf against authored properties",
-                        field.get("id"));
+                        configured.get("id"));
                 continue;
             }
+            // A field may take its label from a block property - see withAuthoredLabel.
+            final Map<String, Object> field = FormFieldFactory.withAuthoredLabel(configured, authored);
             final Map<String, Object> built;
             if (field.get(SchemaConstants.KEY_COMPONENT) != null) {
                 final Map<String, Object> meta = new LinkedHashMap<>();
