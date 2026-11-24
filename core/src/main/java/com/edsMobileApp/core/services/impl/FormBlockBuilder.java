@@ -54,10 +54,12 @@ final class FormBlockBuilder {
     private static final String DEFAULT_SUBMIT_LABEL = "Submit";
 
     /** Authored property names per emitted setting, most specific first. */
-    private static final String[] EVENT_TYPE_KEYS = {"mobilebuttoneventtype"};
-    /** The mobile-specific event name an author sets on the submit button - see {@link #eventTypeFromEvents}. */
+    private static final String[] MOBILE_EVENT_TYPE_KEYS = {"mobilebuttoneventtype"};
+    /** The block's web event name, read when no mobile one is authored - see {@link #eventType}. */
+    private static final String[] WEB_EVENT_TYPE_KEYS = {"buttoneventtype"};
+    /** The mobile-specific event name an author sets on the submit button - see {@link #eventType}. */
     private static final Pattern MOBILE_EVENT_CALL = eventCall("setMobileEventType");
-    /** The Launch event name, read when no mobile-specific one is set - see {@link #eventTypeFromEvents}. */
+    /** The Launch event name, read when no mobile-specific one is set - see {@link #eventType}. */
     private static final Pattern LAUNCH_EVENT_CALL = eventCall("fireLaunchEvent");
     /** The handler property both calls are authored in - see {@link #collectClickHandlers}. */
     private static final String CLICK_HANDLERS_KEY = "click";
@@ -288,8 +290,7 @@ final class FormBlockBuilder {
         if (mobileFormId instanceof String && StringUtils.isNotBlank((String) mobileFormId)) {
             meta.put("formId", mobileFormId);
         }
-        meta.put("eventType", StringUtils.defaultIfBlank(first(authored, EVENT_TYPE_KEYS, null),
-                eventTypeFromEvents(resource)));
+        meta.put("eventType", eventType(resource, authored));
         meta.put("webhookUrl", first(authored, WEBHOOK_KEYS, StringUtils.EMPTY));
         meta.put("toastMessage", StringUtils.defaultIfBlank(first(authored, TOAST_KEYS, null),
                 toastFromSubmitAction(authored)));
@@ -516,9 +517,9 @@ final class FormBlockBuilder {
     }
 
     /**
-     * The event name an Adaptive Form's submit button carries in its {@code fd:events} {@code click}
-     * handlers. A form built in the AEM Forms editor has no {@code mobilebuttoneventtype} field to
-     * author - its analytics calls live on the button instead:
+     * The analytics event name this form's submit fires, from the most specific source that names
+     * one. A form built in the AEM Forms editor has no mobile field to author - its analytics calls
+     * live on the submit button instead:
      *
      * <pre>
      * click = [ "pushFormToDataLayer()",
@@ -527,18 +528,31 @@ final class FormBlockBuilder {
      *           "fireLaunchEvent('create-account-submit')" ]
      * </pre>
      *
-     * <p>{@code setMobileEventType} wins wherever in the array it appears, because it exists only to
-     * name the app's event and an author who wrote it meant it. {@code fireLaunchEvent} is the
-     * fallback: it names the web event, which is on every form that reports to Launch and is closer
-     * to right than nothing. Neither present means no event type rather than a guessed one.</p>
+     * <p>In order: the block's own Mobile Button Event Type, a {@code setMobileEventType} call, the
+     * block's Button Event Type, a {@code fireLaunchEvent} call. The two mobile sources come first
+     * because they exist only to name the app's event and an author who set one meant it; the two
+     * web sources follow because they name the same submit from the site's side, which is closer to
+     * right than nothing. Within each pair the authored field wins over the scripted call, since the
+     * field is the one a site author can see. No source naming an event means empty rather than a
+     * guessed name.</p>
      *
-     * @return the event name, or empty when the form's tree declares none. Never null.
+     * @return the event name, or empty when nothing names one. Never null.
      */
-    private static String eventTypeFromEvents(final Resource resource) {
+    private static String eventType(final Resource resource, final Map<String, Object> authored) {
         final List<String> handlers = new ArrayList<>();
         collectClickHandlers(resource, handlers, 0);
-        return StringUtils.defaultIfBlank(firstMatch(handlers, MOBILE_EVENT_CALL),
-                firstMatch(handlers, LAUNCH_EVENT_CALL));
+        final String[] candidates = {
+            first(authored, MOBILE_EVENT_TYPE_KEYS, null),
+            firstMatch(handlers, MOBILE_EVENT_CALL),
+            first(authored, WEB_EVENT_TYPE_KEYS, null),
+            firstMatch(handlers, LAUNCH_EVENT_CALL),
+        };
+        for (final String candidate : candidates) {
+            if (StringUtils.isNotBlank(candidate)) {
+                return candidate;
+            }
+        }
+        return StringUtils.EMPTY;
     }
 
     /**

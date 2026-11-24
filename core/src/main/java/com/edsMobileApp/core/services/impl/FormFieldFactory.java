@@ -8,6 +8,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
+import org.jsoup.Jsoup;
 
 import com.edsMobileApp.core.schema.SchemaConstants;
 
@@ -73,6 +74,9 @@ final class FormFieldFactory {
      */
     private static final String FD_PANEL = "panel";
     private static final String FD_BUTTON = "button";
+    /** The Forms editor's Text component - static text an author placed among the fields, see
+     *  {@link #staticText}. */
+    private static final String FD_PLAIN_TEXT = "plain-text";
 
     /** Rendering mode the target uses for inputs. */
     private static final String MODE_OUTLINED = "outlined";
@@ -309,6 +313,9 @@ final class FormFieldFactory {
     static Map<String, Object> fromResource(final Resource resource, final int order) {
         final ValueMap props = resource.getValueMap();
         final String fieldType = props.get("fieldType", String.class);
+        if (FD_PLAIN_TEXT.equals(fieldType)) {
+            return staticText(resource, props, order);
+        }
         final String component = componentForFieldType(fieldType);
         if (component == null) {
             return null;
@@ -479,6 +486,37 @@ final class FormFieldFactory {
         // Otherwise the variant is named after the control.
         content.put("variant", StringUtils.defaultIfBlank(configuredVariant, "checkbox"));
         return content;
+    }
+
+    /**
+     * Static text an author placed among a form's fields - the Forms editor's Text component
+     * ({@code fieldType} {@code plain-text}, resource type {@code core/fd/components/form/text/v1/text}).
+     * Not a value the user supplies, but not noise either: it is how a form built in that editor
+     * carries its own headings, the way a bundled schema carries them as {@link #TYPE_HEADING}
+     * fields. So it maps to the same {@code title} component, in its authored position among the
+     * fields - the form's first heading stays above the first field, a mid-form one stays above the
+     * group it introduces.
+     *
+     * <pre>
+     * { "fieldType": "plain-text", "name": "heading-create-account",
+     *   "value": "&lt;h1&gt;Create an account&lt;/h1&gt;", "textIsRich": true }
+     * </pre>
+     *
+     * <p>The text is authored as rich text and flattened here, because a title renders a string and
+     * not markup. Text the author hid, or left empty, maps to nothing rather than an empty title.</p>
+     */
+    private static Map<String, Object> staticText(final Resource resource, final ValueMap props,
+                                                  final int order) {
+        if (!props.get("visible", true)) {
+            return null;
+        }
+        final String text = Jsoup.parseBodyFragment(
+                StringUtils.defaultString(props.get("value", String.class))).text().trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        return component(StringUtils.defaultIfBlank(props.get("name", String.class), resource.getName()),
+                order, COMPONENT_TITLE, headingContent(text));
     }
 
     /**

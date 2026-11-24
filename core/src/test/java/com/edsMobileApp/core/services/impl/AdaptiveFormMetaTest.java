@@ -22,31 +22,44 @@ import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
 /**
- * A form built in the AEM Forms editor has none of the mobile fields an EDS block carries, so the two
- * settings the app needs are read from what that editor does author: the event name from the submit
- * button's own click handlers, and the toast from the message the form shows on submit.
+ * A form built in the AEM Forms editor carries none of the mobile fields an EDS block does, so what
+ * the app needs is read from what that editor does author: the event name from the submit button's
+ * own click handlers, the toast from the message shown on submit, and the form's own headings from
+ * the static text components sitting among its fields.
  */
 @ExtendWith(AemContextExtension.class)
 class AdaptiveFormMetaTest {
+
+    /** The submit button every case authors, since the form's label is read off it. */
+    private static final Object[] SUBMIT_BUTTON =
+        {"submitButton", "fieldType", "button", "jcr:title", "Create account"};
 
     private final AemContext context = new AemContext();
 
     /** Each case authors its own page, so one case's properties cannot leak into the next. */
     private int form;
 
+    /**
+     * @param click     the submit button's authored click handlers, or null for none
+     * @param formProps properties on the form node itself
+     * @param children  one {@code {nodeName, key, value, ...}} array per authored child, in order
+     */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> formMetaOf(final String[] click, final Object... formProps) {
+    private Map<String, Object> formComponentOf(final String[] click, final Object[] formProps,
+                                                final Object[]... children) {
         final Page page = context.create().page("/content/s/en/create-account-adaptive-" + (++form));
         context.create().resource(page.getPath() + "/jcr:content/root");
         final List<Object> props = new ArrayList<>(List.of(
                 "sling:resourceType", "fd/franklin/components/form/v1/form", "fieldType", "form"));
         props.addAll(Arrays.asList(formProps));
-        context.create().resource(page.getPath() + "/jcr:content/root/form", props.toArray());
-        context.create().resource(page.getPath() + "/jcr:content/root/form/submitButton",
-                "fieldType", "button", "jcr:title", "Create account");
+        final String formPath = page.getPath() + "/jcr:content/root/form";
+        context.create().resource(formPath, props.toArray());
+        for (final Object[] child : children) {
+            context.create().resource(formPath + "/" + child[0],
+                    Arrays.copyOfRange(child, 1, child.length));
+        }
         if (click != null) {
-            context.create().resource(page.getPath() + "/jcr:content/root/form/submitButton/events",
-                    "click", click);
+            context.create().resource(formPath + "/submitButton/events", "click", click);
         }
 
         final UrlServiceImpl urlService = new UrlServiceImpl();
@@ -58,32 +71,40 @@ class AdaptiveFormMetaTest {
         schemas.activate();
         final ComponentTreeWalker walker = new ComponentTreeWalker(modelFactory, urlService, schemas,
                 new StyleResolver(new String[0]), ComponentMappings.load());
-        final Map<String, Object> component =
-                walker.componentsOf(page, "https://assets.example.com", true, false)
-                        .stream()
-                        .filter(c -> "form".equals(((Map<String, Object>) c.get(SchemaConstants.KEY_META))
-                                .get(SchemaConstants.KEY_COMPONENT)))
-                        .findFirst().orElseThrow(() -> new AssertionError("no form exported"));
-        return (Map<String, Object>) component.get(SchemaConstants.KEY_META);
+        return walker.componentsOf(page, "https://assets.example.com", true, false)
+                .stream()
+                .filter(c -> "form".equals(((Map<String, Object>) c.get(SchemaConstants.KEY_META))
+                        .get(SchemaConstants.KEY_COMPONENT)))
+                .findFirst().orElseThrow(() -> new AssertionError("no form exported"));
     }
 
-    private String eventTypeOf(final String[] click, final String blockProp) {
-        final Object[] props = blockProp == null
-                ? new Object[0]
-                : new Object[] {"mobilebuttoneventtype", blockProp};
-        return (String) formMetaOf(click, props).get("eventType");
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> metaOf(final String[] click, final Object... formProps) {
+        return (Map<String, Object>) formComponentOf(click, formProps, SUBMIT_BUTTON)
+                .get(SchemaConstants.KEY_META);
     }
 
-    private String toastOf(final String option, final String message, final Object... extra) {
-        final List<Object> props = new ArrayList<>();
-        if (option != null) {
-            props.addAll(List.of("thankYouOption", option));
+    private String eventTypeOf(final String[] click, final Object... formProps) {
+        return (String) metaOf(click, formProps).get("eventType");
+    }
+
+    private String toastOf(final Object... formProps) {
+        return (String) metaOf(null, formProps).get("toastMessage");
+    }
+
+    /** The form's field list, one {@code "component :: label-or-text"} per entry, in order. */
+    @SuppressWarnings("unchecked")
+    private List<String> fieldsOf(final Object[]... children) {
+        final List<Map<String, Object>> fields = (List<Map<String, Object>>)
+                formComponentOf(null, new Object[0], children).get(SchemaConstants.KEY_CONTENT);
+        final List<String> described = new ArrayList<>();
+        for (final Map<String, Object> field : fields) {
+            final Map<String, Object> meta = (Map<String, Object>) field.get(SchemaConstants.KEY_META);
+            final Map<String, Object> content = (Map<String, Object>) field.get(SchemaConstants.KEY_CONTENT);
+            described.add(meta.get(SchemaConstants.KEY_COMPONENT) + " :: "
+                    + content.getOrDefault("label", content.getOrDefault("text", "")));
         }
-        if (message != null) {
-            props.addAll(List.of("thankYouMessage", message));
-        }
-        props.addAll(Arrays.asList(extra));
-        return (String) formMetaOf(null, props.toArray()).get("toastMessage");
+        return described;
     }
 
     @Test
@@ -91,48 +112,105 @@ class AdaptiveFormMetaTest {
         assertEquals("mobile.registration", eventTypeOf(new String[] {
             "pushFormToDataLayer()",
             "fireLaunchEvent('create-account-submit')",
-            "setMobileEventType('mobile.registration')"}, null));
+            "setMobileEventType('mobile.registration')"}));
     }
 
     @Test
-    void theLaunchEventIsTheFallback() {
+    void theLaunchEventIsTheLastResort() {
         assertEquals("create-account-submit", eventTypeOf(new String[] {
             "pushFormToDataLayer()",
             "setLaunchIdentity($form.\"personalEmail.address\".$value)",
-            "fireLaunchEvent('create-account-submit')"}, null));
+            "fireLaunchEvent('create-account-submit')"}));
     }
 
     @Test
-    void neitherCallMeansNoEventType() {
-        assertEquals("", eventTypeOf(new String[] {"pushFormToDataLayer()"}, null));
-        assertEquals("", eventTypeOf(null, null));
+    void neitherCallNorFieldMeansNoEventType() {
+        assertEquals("", eventTypeOf(new String[] {"pushFormToDataLayer()"}));
+        assertEquals("", eventTypeOf(null));
     }
 
     @Test
-    void theBlockEventFieldStillWins() {
-        assertEquals("mobile.signup",
-                eventTypeOf(new String[] {"setMobileEventType('mobile.registration')"}, "mobile.signup"));
+    void theMobileFieldWinsOverEverything() {
+        assertEquals("mobile.signup", eventTypeOf(
+                new String[] {"setMobileEventType('mobile.registration')"},
+                "mobilebuttoneventtype", "mobile.signup", "buttoneventtype", "create-account-submit"));
+    }
+
+    @Test
+    void theWebFieldIsReadWhenNoMobileSourceNamesAnEvent() {
+        assertEquals("create-account-submit",
+                eventTypeOf(null, "buttoneventtype", "create-account-submit"));
+    }
+
+    @Test
+    void aMobileCallStillBeatsTheWebField() {
+        assertEquals("mobile.registration", eventTypeOf(
+                new String[] {"setMobileEventType('mobile.registration')"},
+                "buttoneventtype", "create-account-submit"));
+    }
+
+    @Test
+    void theWebFieldBeatsTheLaunchCall() {
+        assertEquals("create-account-submit", eventTypeOf(
+                new String[] {"fireLaunchEvent('web.legacy.name')"},
+                "buttoneventtype", "create-account-submit"));
     }
 
     @Test
     void theOnSubmitMessageBecomesTheToast() {
         assertEquals("Thanks, your account is on its way.",
-                toastOf("message", "<p>Thanks, your account is on its way.</p>"));
+                toastOf("thankYouOption", "message",
+                        "thankYouMessage", "<p>Thanks, your account is on its way.</p>"));
     }
 
     @Test
     void aRedirectOnSubmitLeavesNoToast() {
-        assertEquals("", toastOf("page", "<p>Stale text from an earlier choice</p>"));
+        assertEquals("", toastOf("thankYouOption", "page",
+                "thankYouMessage", "<p>Stale text from an earlier choice</p>"));
     }
 
     @Test
     void noMessageContentMeansNoToast() {
-        assertEquals("", toastOf("message", null));
-        assertEquals("", toastOf(null, null));
+        assertEquals("", toastOf("thankYouOption", "message"));
+        assertEquals("", toastOf());
     }
 
     @Test
     void theBlockToastFieldStillWins() {
-        assertEquals("Booked", toastOf("message", "<p>Ignored</p>", "toastMessage", "Booked"));
+        assertEquals("Booked", toastOf("thankYouOption", "message",
+                "thankYouMessage", "<p>Ignored</p>", "toastMessage", "Booked"));
+    }
+
+    @Test
+    void staticTextBecomesATitleWhereTheAuthorPutIt() {
+        assertEquals(List.of(
+                "title :: Create an account",
+                "textField :: Email address",
+                "title :: Communication preferences",
+                // A checkboxGroup carries its text in its options, not in a label of its own.
+                "checkboxGroup :: "),
+                fieldsOf(
+                    new Object[] {"heading", "fieldType", "plain-text", "name", "heading-create-account",
+                        "value", "<h1>Create an account</h1><p></p>", "textIsRich", Boolean.TRUE},
+                    new Object[] {"email", "fieldType", "email", "name", "personalEmail.address",
+                        "jcr:title", "Email address"},
+                    new Object[] {"commHeading", "fieldType", "plain-text", "name", "heading-comm",
+                        "value", "<h2>Communication preferences</h2>"},
+                    new Object[] {"prefEmail", "fieldType", "checkbox", "name", "consents.marketing.email.val",
+                        "jcr:title", "Email me"},
+                    SUBMIT_BUTTON));
+    }
+
+    @Test
+    void hiddenOrEmptyStaticTextMapsToNothing() {
+        assertEquals(List.of("textField :: Email address"),
+                fieldsOf(
+                    new Object[] {"hidden", "fieldType", "plain-text", "name", "heading-hidden",
+                        "value", "<h1>Not shown</h1>", "visible", Boolean.FALSE},
+                    new Object[] {"empty", "fieldType", "plain-text", "name", "heading-empty",
+                        "value", "<p></p>"},
+                    new Object[] {"email", "fieldType", "email", "name", "personalEmail.address",
+                        "jcr:title", "Email address"},
+                    SUBMIT_BUTTON));
     }
 }
