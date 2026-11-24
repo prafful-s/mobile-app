@@ -6,10 +6,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
+import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +55,12 @@ final class FormBlockBuilder {
 
     /** Authored property names per emitted setting, most specific first. */
     private static final String[] EVENT_TYPE_KEYS = {"mobilebuttoneventtype"};
+    /** The mobile-specific event name an author sets on the submit button - see {@link #eventTypeFromEvents}. */
+    private static final Pattern MOBILE_EVENT_CALL = eventCall("setMobileEventType");
+    /** The Launch event name, read when no mobile-specific one is set - see {@link #eventTypeFromEvents}. */
+    private static final Pattern LAUNCH_EVENT_CALL = eventCall("fireLaunchEvent");
+    /** The handler property both calls are authored in - see {@link #collectClickHandlers}. */
+    private static final String CLICK_HANDLERS_KEY = "click";
     private static final String[] MOBILE_REDIRECT_KEYS = {"mobileRedirectUrl"};
     /** Authored per-block custom style rows the block emits - see {@link #applyCheckboxWidth}. */
     private static final String CUSTOM_MOBILE_STYLE_KEY = "custommobilestyle";
@@ -62,6 +71,12 @@ final class FormBlockBuilder {
     private static final String STYLE_KEY_RADIO_WIDTH = "radio-width";
     private static final String[] WEBHOOK_KEYS = {"webhookUrl", "webhook", "action", "endpoint"};
     private static final String[] TOAST_KEYS = {"toastMessage", "toast-message", "success-message"};
+    /** The Adaptive Form's "On Submit" choice - see {@link #toastFromSubmitAction}. */
+    private static final String THANK_YOU_OPTION = "thankYouOption";
+    /** The one {@link #THANK_YOU_OPTION} value that means a message is shown. */
+    private static final String SHOW_MESSAGE = "message";
+    /** The "Message Content" rich text, under both names it is authored with. */
+    private static final String[] THANK_YOU_MESSAGE_KEYS = {"thankYouMessage", "thankYouMsg"};
     private static final String[] SUBMIT_LABEL_KEYS = {
         "submitButtonLabel", "buttontext", "button-label", "sign-in-btn-text", "submitText",
         // The other names a form's Submit Button Text field goes by: create-account, the plan selections and
@@ -273,9 +288,11 @@ final class FormBlockBuilder {
         if (mobileFormId instanceof String && StringUtils.isNotBlank((String) mobileFormId)) {
             meta.put("formId", mobileFormId);
         }
-        meta.put("eventType", first(authored, EVENT_TYPE_KEYS, StringUtils.EMPTY));
+        meta.put("eventType", StringUtils.defaultIfBlank(first(authored, EVENT_TYPE_KEYS, null),
+                eventTypeFromEvents(resource)));
         meta.put("webhookUrl", first(authored, WEBHOOK_KEYS, StringUtils.EMPTY));
-        meta.put("toastMessage", first(authored, TOAST_KEYS, StringUtils.EMPTY));
+        meta.put("toastMessage", StringUtils.defaultIfBlank(first(authored, TOAST_KEYS, null),
+                toastFromSubmitAction(authored)));
 
         // A reset button is opt-in: most authored forms have no reset control, and showing one the
         // author never asked for is worse than omitting a rarely-used affordance.
@@ -496,6 +513,85 @@ final class FormBlockBuilder {
             }
         }
         return null;
+    }
+
+    /**
+     * The event name an Adaptive Form's submit button carries in its {@code fd:events} {@code click}
+     * handlers. A form built in the AEM Forms editor has no {@code mobilebuttoneventtype} field to
+     * author - its analytics calls live on the button instead:
+     *
+     * <pre>
+     * click = [ "pushFormToDataLayer()",
+     *           "setLaunchIdentity($form.\"personalEmail.address\".$value)",
+     *           "setMobileEventType('mobile.registration')",
+     *           "fireLaunchEvent('create-account-submit')" ]
+     * </pre>
+     *
+     * <p>{@code setMobileEventType} wins wherever in the array it appears, because it exists only to
+     * name the app's event and an author who wrote it meant it. {@code fireLaunchEvent} is the
+     * fallback: it names the web event, which is on every form that reports to Launch and is closer
+     * to right than nothing. Neither present means no event type rather than a guessed one.</p>
+     *
+     * @return the event name, or empty when the form's tree declares none. Never null.
+     */
+    private static String eventTypeFromEvents(final Resource resource) {
+        final List<String> handlers = new ArrayList<>();
+        collectClickHandlers(resource, handlers, 0);
+        return StringUtils.defaultIfBlank(firstMatch(handlers, MOBILE_EVENT_CALL),
+                firstMatch(handlers, LAUNCH_EVENT_CALL));
+    }
+
+    /**
+     * Every {@code click} handler in the form's authored tree, in document order. The handlers sit on
+     * an {@code fd:events} child of the button, but any node carrying {@code click} is read, so a form
+     * that attaches its handlers elsewhere is understood too.
+     */
+    private static void collectClickHandlers(final Resource resource, final List<String> sink,
+                                             final int depth) {
+        if (depth > MAX_FIELD_DEPTH) {
+            return;
+        }
+        for (final Resource child : resource.getChildren()) {
+            sink.addAll(Arrays.asList(child.getValueMap().get(CLICK_HANDLERS_KEY, new String[0])));
+            collectClickHandlers(child, sink, depth + 1);
+        }
+    }
+
+    /** @return the name the first handler calling {@code call} passes, or empty. Never null. */
+    private static String firstMatch(final List<String> handlers, final Pattern call) {
+        for (final String handler : handlers) {
+            final Matcher matcher = call.matcher(handler);
+            if (matcher.find()) {
+                return matcher.group(1);
+            }
+        }
+        return StringUtils.EMPTY;
+    }
+
+    /** The call to {@code function} with the single quoted argument this export reads. */
+    private static Pattern eventCall(final String function) {
+        return Pattern.compile(Pattern.quote(function) + "\\s*\\(\\s*['\"]([^'\"]+)['\"]");
+    }
+
+    /**
+     * The confirmation text an Adaptive Form shows after a successful submit, used as the app's toast.
+     * The Forms editor's Submission tab offers "On Submit: Show message" with a rich-text "Message
+     * Content" ({@code thankYouOption} / {@code thankYouMessage} - see the {@code form} model in each
+     * site's own {@code component-models.json}), which is the same promise a toast makes, so the author
+     * states it once and both channels honour it.
+     *
+     * <p>Read only when the author chose to show a message: a form that redirects on submit may still
+     * carry message text from an earlier choice, and showing it would contradict the redirect. The
+     * rich text is flattened to its text, because a toast renders a string and not markup.</p>
+     *
+     * @return the toast text, or empty when the form configures no message. Never null.
+     */
+    private static String toastFromSubmitAction(final Map<String, Object> authored) {
+        if (!SHOW_MESSAGE.equals(authored.get(THANK_YOU_OPTION))) {
+            return StringUtils.EMPTY;
+        }
+        final String message = first(authored, THANK_YOU_MESSAGE_KEYS, StringUtils.EMPTY);
+        return message.isEmpty() ? message : Jsoup.parseBodyFragment(message).text();
     }
 
     private static String first(final Map<String, Object> authored, final String[] keys,
