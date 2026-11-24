@@ -133,27 +133,14 @@ class AdaptiveFormMetaTest {
     void theMobileFieldWinsOverEverything() {
         assertEquals("mobile.signup", eventTypeOf(
                 new String[] {"setMobileEventType('mobile.registration')"},
-                "mobilebuttoneventtype", "mobile.signup", "buttoneventtype", "create-account-submit"));
+                "mobilebuttoneventtype", "mobile.signup"));
     }
 
     @Test
-    void theWebFieldIsReadWhenNoMobileSourceNamesAnEvent() {
-        assertEquals("create-account-submit",
-                eventTypeOf(null, "buttoneventtype", "create-account-submit"));
-    }
-
-    @Test
-    void aMobileCallStillBeatsTheWebField() {
-        assertEquals("mobile.registration", eventTypeOf(
-                new String[] {"setMobileEventType('mobile.registration')"},
-                "buttoneventtype", "create-account-submit"));
-    }
-
-    @Test
-    void theWebFieldBeatsTheLaunchCall() {
-        assertEquals("create-account-submit", eventTypeOf(
-                new String[] {"fireLaunchEvent('web.legacy.name')"},
-                "buttoneventtype", "create-account-submit"));
+    void theBlocksWebEventFieldIsNotRead() {
+        // buttoneventtype is the name the block JS fires on the web; whether app analytics should
+        // take it is still open, so a form that sets only that field still exports no event.
+        assertEquals("", eventTypeOf(null, "buttoneventtype", "create-account-submit"));
     }
 
     @Test
